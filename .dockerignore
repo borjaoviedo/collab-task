@@ -1,0 +1,28 @@
+# --- Version control ---
+.git
+.gitignore
+
+# --- Dependencies and build outputs ---
+node_modules
+dist
+build
+bin
+obj
+
+# --- Temporary files / logs ---
+*.log
+logs
+coverage
+__pycache__/
+*.pyc
+*.pyo
+*.swp
+
+# --- Local configuration ---
+.env
+*.local
+*.dev.json
+.vscode
+.idea
+.DS_Store
+Thumbs.db

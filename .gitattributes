@@ -1,0 +1,41 @@
+# Normalize line endings across the repository (LF). Prevents cross-OS diffs.
+* text=auto eol=lf
+
+# C# and .NET files
+*.cs           text diff=csharp
+*.csproj       text eol=lf
+*.sln          text eol=lf
+*.props        text eol=lf
+*.targets      text eol=lf
+Directory.Build.props   text eol=lf
+Directory.Build.targets text eol=lf
+
+# JavaScript / TypeScript / Config / Docs
+*.js    text eol=lf
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.json  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.md    text eol=lf
+
+# Scripts
+*.sh    text eol=lf
+*.ps1   text eol=crlf
+
+# Images (binary, no text filters)
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+
+# SVG is text; normalize line endings
+*.svg   text eol=lf
+
+# Exclude generated and documentation files from GitHub linguist stats
+web/src/shared/api/types.ts linguist-generated
+contracts/openapi.json     linguist-documentation
+
+# Lockfiles
+package-lock.json text eol=lf
+*.lock            text eol=lf
