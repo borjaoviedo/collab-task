@@ -42,5 +42,47 @@ namespace Infrastructure.Security
 
             return _handler.WriteToken(token);
         }
+
+        public ClaimsPrincipal? ValidateToken(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token)) return null;
+
+            var parameters = BuildValidationParameters(_clock, _options);
+
+            try
+            {
+                var principal = _handler.ValidateToken(token, parameters, out _);
+                return principal;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static TokenValidationParameters BuildValidationParameters(
+            IDateTimeProvider clock,
+            JwtOptions opts)
+        {
+            return new TokenValidationParameters
+            {
+                ValidateIssuer = !string.IsNullOrWhiteSpace(opts.Issuer),
+                ValidIssuer = opts.Issuer,
+
+                ValidateAudience = !string.IsNullOrWhiteSpace(opts.Audience),
+                ValidAudience = opts.Audience,
+
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(opts.SigningKey)),
+
+                RequireExpirationTime = true,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero,
+                LifetimeValidator = (_, _, _, _) =>
+                {
+                    return true;
+                }
+            };
+        }
     }
 }
