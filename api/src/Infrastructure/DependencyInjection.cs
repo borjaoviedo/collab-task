@@ -4,6 +4,8 @@ using Infrastructure.Data;
 using Infrastructure.Data.Interceptors;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using Application.Common.Abstractions.Security;
+using Infrastructure.Security;
 
 namespace Infrastructure
 {
@@ -13,6 +15,7 @@ namespace Infrastructure
         {
             services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
             services.AddScoped<AuditingSaveChangesInterceptor>();
+            services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
 
             services.AddDbContext<AppDbContext>((sp, options) =>
             {
