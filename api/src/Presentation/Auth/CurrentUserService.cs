@@ -1,8 +1,7 @@
 using Application.Common.Abstractions.Auth;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
 
-namespace Infrastructure.Security
+namespace Api.Auth
 {
     public sealed class CurrentUserService : ICurrentUserService
     {
