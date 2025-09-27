@@ -1,7 +1,7 @@
 using Domain.Entities;
 using Domain.Enums;
 
-namespace Application.Abstractions.Repositories
+namespace Application.Users.Abstractions
 {
     public interface IUserRepository
     {

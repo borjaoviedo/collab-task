@@ -1,5 +1,4 @@
-
-namespace Application.Abstractions.Auth
+namespace Application.Common.Abstractions.Auth
 {
     public interface ICurrentUserService
     {
