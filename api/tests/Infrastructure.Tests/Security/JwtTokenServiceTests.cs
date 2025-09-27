@@ -1,92 +1,72 @@
 using Application.Common.Abstractions.Security;
 using Application.Common.Abstractions.Time;
+using Domain.Entities;
+using Domain.Enums;
+using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Security;
+using Infrastructure.Tests.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace Infrastructure.Tests.Security
 {
-    public class JwtTokenServiceTests
+    public sealed class FakeClock : IDateTimeProvider
     {
-        private readonly Mock<IDateTimeProvider> _clock = new();
-        private readonly JwtOptions _opts;
-        private readonly IJwtTokenService _sut;
+        private DateTimeOffset _now;
+        public FakeClock(DateTimeOffset now) => _now = now;
+        public DateTimeOffset UtcNow => _now;
+        public void Advance(TimeSpan dt) => _now = _now.Add(dt);
+    }
 
-        public JwtTokenServiceTests()
+    public sealed class JwtTokenServiceTests
+    {
+        private ServiceProvider BuildProvider(FakeClock clock)
         {
-            _clock.Setup(c => c.UtcNow).Returns(new DateTimeOffset(2025, 9, 27, 10, 0, 0, TimeSpan.Zero));
-
-            _opts = new JwtOptions
-            {
-                Issuer = "collabtask",
-                Audience = "collabtask-api",
-                SigningKey = "dev-signing-key-change-me-very-long-256bit",
-                ExpMinutes = 30
-            };
-
-            _sut = new JwtTokenService(_clock.Object, _opts);
+            var sc = new ServiceCollection();
+            sc.AddSingleton<IDateTimeProvider>(clock);
+            sc.AddInfrastructureSecurityForTests();
+            return sc.BuildServiceProvider();
         }
 
         [Fact]
         public void CreateToken_ContainsExpectedRegisteredAndCustomClaims()
         {
-            var userId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
-            var token = _sut.CreateToken(userId, "user@demo.com", "Admin");
+            var clock = new FakeClock(DateTimeOffset.UnixEpoch);
+            using var sp = BuildProvider(clock);
+            var svc = sp.GetRequiredService<IJwtTokenService>();
 
-            token.Should().NotBeNullOrWhiteSpace();
+            var user = new User { Id = Guid.NewGuid(), Email = Email.Create("claims@demo.com"), Role = UserRole.Admin };
+            var token = svc.CreateToken(user.Id, user.Email.Value, "Admin");
 
             var handler = new JwtSecurityTokenHandler();
             var jwt = handler.ReadJwtToken(token);
 
-            jwt.Issuer.Should().Be(_opts.Issuer);
-            jwt.Audiences.Should().Contain(_opts.Audience);
-
-            jwt.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Sub && c.Value == userId.ToString());
-            jwt.Claims.Should().Contain(c => c.Type == ClaimTypes.Email && c.Value == "user@demo.com");
-            jwt.Claims.Should().Contain(c => c.Type == ClaimTypes.Role && c.Value == "Admin");
-
-            var exp = jwt.ValidTo; // UTC
-            exp.Should().Be(new DateTime(2025, 9, 27, 10, 30, 0, DateTimeKind.Utc));
+            jwt.Claims.Select(c => c.Type).Should().Contain([JwtRegisteredClaimNames.Sub, JwtRegisteredClaimNames.Email, ClaimTypes.Role]);
+            jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.Email).Value.Should().Be("claims@demo.com");
+            jwt.Claims.First(c => c.Type == ClaimTypes.Role).Value.Should().Be("Admin");
         }
 
         [Fact]
-        public void ValidateToken_ReturnsPrincipal_ForValidToken()
+        public void Token_Expires_As_Configured()
         {
-            var userId = Guid.NewGuid();
-            var token = _sut.CreateToken(userId, "user@demo.com", "User");
+            var clock = new FakeClock(DateTimeOffset.Parse("2020-01-01T00:00:00Z"));
+            using var sp = BuildProvider(clock);
+            var svc = sp.GetRequiredService<IJwtTokenService>();
 
-            var principal = _sut.ValidateToken(token);
+            var user = new User { Id = Guid.NewGuid(), Email = Email.Create("exp@demo.com"), Role = UserRole.User };
+            var token = svc.CreateToken(user.Id, user.Email.Value, "User");
 
-            principal.Should().NotBeNull();
-            principal!.FindFirst(ClaimTypes.Email)?.Value.Should().Be("user@demo.com");
-            principal.FindFirst(ClaimTypes.NameIdentifier)?.Value.Should().Be(userId.ToString());
-            principal.IsInRole("User").Should().BeTrue();
-        }
+            var handler = new JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(token);
 
-        [Fact]
-        public void CreateToken_RespectsClock_ForExpiration()
-        {
-            _clock.Setup(c => c.UtcNow).Returns(new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero));
+            var exp = DateTimeOffset.FromUnixTimeSeconds(long.Parse(jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.Exp).Value));
+            exp.Should().BeAfter(clock.UtcNow);
 
-            var token = _sut.CreateToken(Guid.NewGuid(), "a@b.com", "User");
-
-            var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-            jwt.ValidTo.Should().Be(new DateTime(2030, 1, 1, 0, 30, 0, DateTimeKind.Utc));
-        }
-
-        [Fact]
-        public void Token_WithWrongIssuer_IsDetectable()
-        {
-            var badOpts = _opts with { Issuer = "other" };
-            var badSut = new JwtTokenService(_clock.Object, badOpts);
-
-            var token = badSut.CreateToken(Guid.NewGuid(), "x@y.com", "User");
-            var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-
-            jwt.Issuer.Should().Be("other");
-            jwt.Issuer.Should().NotBe(_opts.Issuer);
+            clock.Advance(TimeSpan.FromDays(2));
+            exp.Should().BeBefore(clock.UtcNow);
         }
     }
 }

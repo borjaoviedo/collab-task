@@ -2,17 +2,15 @@ using Application.Common.Abstractions.Security;
 using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Data;
-using Infrastructure.Data.Extensions;
 using Infrastructure.Data.Seeders;
 using Infrastructure.Tests.Containers;
-using Infrastructure.Tests.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Tests.Seed
 {
-    [Collection(nameof(DbCollection))]
-    public class DevSeederTests
+    [Collection("SqlServerContainer")]
+    public sealed class DevSeederTests : IClassFixture<MsSqlContainerFixture>
     {
         private readonly MsSqlContainerFixture _fx;
         public DevSeederTests(MsSqlContainerFixture fx) => _fx = fx;
@@ -49,6 +47,29 @@ namespace Infrastructure.Tests.Seed
 
             (await db2.Projects.AsNoTracking().CountAsync(p => p.Slug == ProjectSlug.Create("demo-project"))).Should().Be(1);
             (await db2.ProjectMembers.AsNoTracking().CountAsync()).Should().BeGreaterThan(0);
+        }
+
+        [Fact]
+        public async Task Seed_Is_Idempotent()
+        {
+            var baseCs = _fx.ContainerConnectionString;
+            var dbName = $"CollabTaskTest_{Guid.NewGuid():N}";
+            var cs = $"{baseCs};Database={dbName}";
+
+            var sc = new ServiceCollection().AddInfrastructure(cs).BuildServiceProvider();
+
+            using (var s = sc.CreateScope())
+                await s.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
+
+            await DevSeeder.SeedAsync(sc);
+            await DevSeeder.SeedAsync(sc);
+
+            using var s2 = sc.CreateScope();
+            var db = s2.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            (await db.Users.CountAsync(u => u.Email == Email.Create("admin@demo.com"))).Should().Be(1);
+            (await db.Users.CountAsync(u => u.Email == Email.Create("user@demo.com"))).Should().Be(1);
+            (await db.Projects.CountAsync(p => p.Slug == ProjectSlug.Create("demo-project"))).Should().Be(1);
         }
     }
 }
