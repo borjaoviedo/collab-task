@@ -30,6 +30,7 @@ namespace Application.Users.Mapping
         public static void ApplyRoleChange(this User entity, UserSetRoleDto dto)
         {
             entity.Role = dto.Role;
+            entity.RowVersion = dto.RowVersion;
         }
     }
 }
