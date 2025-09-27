@@ -1,6 +1,7 @@
 using Api.Auth;
 using Application.Common.Abstractions.Auth;
 using Infrastructure;
+using Infrastructure.Data.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,5 +32,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
    .WithName("Health")
    .WithSummary("Health check")
    .Produces(StatusCodes.Status200OK);
+
+await app.Services.ApplyMigrationsAndSeedAsync();
 
 app.Run();
