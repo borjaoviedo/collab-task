@@ -43,7 +43,6 @@ namespace Infrastructure.Data.Interceptors
 
                 if (entry.State == EntityState.Modified)
                 {
-                    // Ignora cambios solo en UpdatedAt/RowVersion para evitar UPDATE vacío
                     var hasRealChanges = entry.Properties.Any(p =>
                         p.IsModified &&
                         p.Metadata.Name is not nameof(IAuditable.UpdatedAt) &&
