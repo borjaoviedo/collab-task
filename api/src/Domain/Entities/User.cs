@@ -1,10 +1,11 @@
+using Domain.Common;
 using Domain.Enums;
 using Domain.ValueObjects;
 using System.ComponentModel.DataAnnotations;
 
 namespace Domain.Entities
 {
-    public sealed class User
+    public sealed class User : IAuditable
     {
         public Guid Id { get; set; }
         public required Email Email { get; set; }
