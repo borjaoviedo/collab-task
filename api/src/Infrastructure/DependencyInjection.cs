@@ -1,10 +1,11 @@
 using Application.Common.Abstractions.Persistence;
 using Application.Common.Abstractions.Security;
 using Application.Common.Abstractions.Time;
-using Infrastructure.Common.Persistence;
+using Application.Users.Abstractions;
 using Infrastructure.Common.Time;
 using Infrastructure.Data;
 using Infrastructure.Data.Interceptors;
+using Infrastructure.Data.Repositories;
 using Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,17 +16,28 @@ namespace Infrastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
         {
-            services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
-            services.AddScoped<AuditingSaveChangesInterceptor>();
-            services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
+            // Common services
+            services
+                .AddSingleton<IDateTimeProvider, SystemDateTimeProvider>()
+                .AddScoped<AuditingSaveChangesInterceptor>();
 
+            // Security
+            services
+                .AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>()
+                .AddScoped<IJwtTokenService, JwtTokenService>();
+
+            // EF Core DbContext + interceptors
             services.AddDbContext<AppDbContext>((sp, options) =>
             {
                 options.UseSqlServer(connectionString);
                 options.AddInterceptors(sp.GetRequiredService<AuditingSaveChangesInterceptor>());
             });
 
+            // UoW
             services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
+
+            // Repositories
+            services.AddScoped<IUserRepository, UserRepository>();
 
             return services;
         }
