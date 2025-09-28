@@ -1,11 +1,13 @@
+using Application.Common.Abstractions.Persistence;
+using Application.Common.Abstractions.Security;
 using Application.Common.Abstractions.Time;
-using Infrastructure.Common;
+using Infrastructure.Common.Persistence;
+using Infrastructure.Common.Time;
 using Infrastructure.Data;
 using Infrastructure.Data.Interceptors;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
-using Application.Common.Abstractions.Security;
 using Infrastructure.Security;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure
 {
@@ -16,6 +18,7 @@ namespace Infrastructure
             services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
             services.AddScoped<AuditingSaveChangesInterceptor>();
             services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.AddDbContext<AppDbContext>((sp, options) =>
             {
