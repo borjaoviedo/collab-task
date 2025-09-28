@@ -1,6 +1,6 @@
 using Application.Common.Abstractions.Time;
 
-namespace Infrastructure.Common
+namespace Infrastructure.Common.Time
 {
     public sealed class SystemDateTimeProvider : IDateTimeProvider
     {
