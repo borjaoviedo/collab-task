@@ -18,13 +18,14 @@ namespace Infrastructure
             services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
             services.AddScoped<AuditingSaveChangesInterceptor>();
             services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.AddDbContext<AppDbContext>((sp, options) =>
             {
                 options.UseSqlServer(connectionString);
                 options.AddInterceptors(sp.GetRequiredService<AuditingSaveChangesInterceptor>());
             });
+
+            services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
 
             return services;
         }
