@@ -1,9 +1,6 @@
 using Application.Common.Abstractions.Security;
-using Application.Common.Abstractions.Time;
 using Infrastructure.Security;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Internal;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -17,12 +14,12 @@ namespace Infrastructure.Tests.TestHost
             {
                 Issuer = "ct.test",
                 Audience = "ct.test.clients",
-                SigningKey = "dev-test-secret-32-bytes-minimum!!!!!",
+                Key = "dev-test-secret-32-bytes-minimum!!!!!",
                 ExpMinutes = 30
             };
             services.AddSingleton(opts);
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(opts.SigningKey));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(opts.Key));
             services.AddSingleton<SecurityKey>(key);
             services.AddSingleton(new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
 
