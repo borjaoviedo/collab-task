@@ -8,7 +8,7 @@ namespace Domain.Entities
         public Guid UserId { get; set; }
         public ProjectRole Role { get; set; }
         public DateTimeOffset JoinedAt { get; set; }
-        public DateTime? InvitedAt { get; set; }
+        public DateTimeOffset? InvitedAt { get; set; }
         public DateTimeOffset? RemovedAt { get; set; }
         public byte[] RowVersion { get; set; } = default!;
         public Project Project { get; set; } = null!;

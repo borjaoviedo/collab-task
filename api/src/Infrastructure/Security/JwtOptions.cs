@@ -3,9 +3,9 @@ namespace Infrastructure.Security
 {
     public sealed record JwtOptions
     {
-        public string Issuer { get; init; } = string.Empty;
-        public string Audience { get; init; } = string.Empty;
-        public string SigningKey { get; init; } = string.Empty;
-        public int ExpMinutes { get; init; } = 30;
+        public string Issuer { get; set; } = string.Empty;
+        public string Audience { get; set; } = string.Empty;
+        public string SigningKey { get; set; } = string.Empty;
+        public int ExpMinutes { get; set; } = 30;
     }
 }

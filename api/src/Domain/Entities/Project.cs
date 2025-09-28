@@ -1,9 +1,10 @@
 
+using Domain.Common;
 using Domain.ValueObjects;
 
 namespace Domain.Entities
 {
-    public sealed class Project
+    public sealed class Project : IAuditable
     {
         public Guid Id { get; set; }
         public required ProjectName Name { get; set; }
