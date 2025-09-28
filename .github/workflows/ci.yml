@@ -23,6 +23,9 @@ jobs:
             --configuration Release --no-build --nologo \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=cobertura
+        env:
+          ASPNETCORE_ENVIRONMENT: Testing
+          DISABLE_DB_INIT: "true"
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

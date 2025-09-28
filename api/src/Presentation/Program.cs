@@ -34,7 +34,13 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
    .WithSummary("Health check")
    .Produces(StatusCodes.Status200OK);
 
-await app.Services.ApplyMigrationsAndSeedAsync();
+var isTesting = app.Environment.IsEnvironment("Testing");
+var disableDbInit = Environment.GetEnvironmentVariable("DISABLE_DB_INIT") == "true";
+
+if (!isTesting && !disableDbInit)
+{
+    await app.Services.ApplyMigrationsAndSeedAsync();
+}
 
 app.Run();
 
