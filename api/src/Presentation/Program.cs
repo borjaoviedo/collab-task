@@ -1,4 +1,5 @@
 using Api.Auth;
+using Api.Endpoints.Health;
 using Application.Common.Abstractions.Auth;
 using Infrastructure;
 using Infrastructure.Data.Extensions;
@@ -28,11 +29,7 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 // app.UseHttpsRedirection();
 
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
-   .WithTags("Health")
-   .WithName("Health")
-   .WithSummary("Health check")
-   .Produces(StatusCodes.Status200OK);
+app.MapHealth();
 
 var isTesting = app.Environment.IsEnvironment("Testing");
 var disableDbInit = Environment.GetEnvironmentVariable("DISABLE_DB_INIT") == "true";
