@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <!-- Fail build if coverage is below threshold -->
+    <CoverletOutputFormat>opencover</CoverletOutputFormat>
+    <Threshold>100</Threshold>
+    <ThresholdType>line</ThresholdType>
+    <ThresholdStat>Total</ThresholdStat>
+
+    <!-- Treat warnings as errors -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>
