@@ -7,6 +7,7 @@ using FluentAssertions;
 using Infrastructure.Security;
 using Infrastructure.Tests.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Moq;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -23,12 +24,22 @@ namespace Infrastructure.Tests.Security
 
     public sealed class JwtTokenServiceTests
     {
-        private ServiceProvider BuildProvider(FakeClock clock)
+        private static ServiceProvider BuildProvider(IDateTimeProvider clock)
         {
-            var sc = new ServiceCollection();
-            sc.AddSingleton<IDateTimeProvider>(clock);
-            sc.AddInfrastructureSecurityForTests();
-            return sc.BuildServiceProvider();
+            var services = new ServiceCollection();
+
+            services.AddSingleton(clock);
+            services.AddSingleton(Options.Create(new JwtOptions
+            {
+                Issuer = "Test",
+                Audience = "Test",
+                Key = new string('k', 32),
+                ExpMinutes = 60
+            }));
+
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
+
+            return services.BuildServiceProvider();
         }
 
         [Fact]
