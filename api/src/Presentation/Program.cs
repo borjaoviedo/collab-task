@@ -18,11 +18,24 @@ if (builder.Environment.IsDevelopment())
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Connection string 'Default' not found.");
 
-builder.Services
-    .AddOptions<JwtOptions>()
-    .Bind(builder.Configuration.GetSection(JwtOptions.SectionName))
-    .Validate(o => !string.IsNullOrWhiteSpace(o.Key) && o.Key.Length >= 32, "Jwt:Key must be at least 32 chars.")
-    .ValidateOnStart();
+if (builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.Configure<JwtOptions>(o =>
+    {
+        o.Issuer = "Test";
+        o.Audience = "Test";
+        o.Key = new string('k', 32);
+        o.ExpMinutes = 60;
+    });
+}
+else
+{
+    builder.Services
+        .AddOptions<JwtOptions>()
+        .Bind(builder.Configuration.GetSection(JwtOptions.SectionName))
+        .Validate(o => !string.IsNullOrWhiteSpace(o.Key) && o.Key.Length >= 32, "Jwt:Key must be at least 32 chars.")
+        .ValidateOnStart();
+}
 
 // --- Services ---
 
