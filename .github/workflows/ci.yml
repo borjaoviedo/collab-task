@@ -17,12 +17,12 @@ jobs:
       - name: Build (Release)
         run: dotnet build api/CollabTask.sln --configuration Release --no-restore --nologo
 
-      - name: Test (with coverage)
+      - name: Test (with coverage + threshold)
         run: |
           dotnet test api/CollabTask.sln \
             --configuration Release --no-build --nologo \
-            --collect:"XPlat Code Coverage" \
-            --logger "trx;LogFileName=tests.trx"
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=cobertura
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
