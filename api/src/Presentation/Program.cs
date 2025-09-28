@@ -3,6 +3,7 @@ using Application.Common.Abstractions.Auth;
 using Infrastructure;
 using Infrastructure.Data.Extensions;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("Default")
@@ -36,3 +37,5 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
 await app.Services.ApplyMigrationsAndSeedAsync();
 
 app.Run();
+
+public partial class Program { }
