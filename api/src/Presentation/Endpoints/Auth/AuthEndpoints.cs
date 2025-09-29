@@ -10,6 +10,8 @@ using FluentValidation;
 using Infrastructure.Data.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Api.Endpoints.Auth
 {
@@ -48,18 +50,11 @@ namespace Api.Endpoints.Auth
                     throw new DuplicateEntityException("Could not complete registration.");
                 }
 
-                var token = jwt.CreateToken(user.Id, user.Email.Value, user.Role.ToString());
-
-                var payload = new AuthTokenReadDto
-                {
-                    AccessToken = token,
-                    UserId = user.Id,
-                    Email = user.Email.Value,
-                    Role = user.Role.ToString()
-                };
-
+                var (accessToken, expiresAtUtc) = jwt.CreateToken(user.Id, user.Email.Value, user.Role.ToString());
+                var payload = user.ToReadDto(accessToken, expiresAtUtc);
                 return Results.Ok(payload);
             })
+            .AllowAnonymous()
             .RequireValidation<UserCreateDto>()
             .Produces<AuthTokenReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -67,6 +62,50 @@ namespace Api.Endpoints.Auth
             .WithSummary("Register new user")
             .WithDescription("Creates a user and returns a JWT for auto-login")
             .WithName("Auth_Register");
+
+            // POST /auth/login
+            group.MapPost("/login", async (
+                [FromServices] IUserRepository users,
+                [FromServices] IPasswordHasher hasher,
+                [FromServices] IJwtTokenService jwt,
+                [FromServices] IUnitOfWork uow,
+                [FromServices] ILoggerFactory loggerFactory,
+                [FromBody] UserLoginDto dto,
+                CancellationToken ct = default) =>
+            {
+                var log = loggerFactory.CreateLogger("Auth.Login");
+
+                await Task.Delay(Random.Shared.Next(10, 30), ct); // jitter
+
+                var user = await users.GetByEmailAsync(dto.Email, ct);
+
+                var valid = user is not null &&
+                            hasher.Verify(dto.Password, user.PasswordSalt, user.PasswordHash);
+
+                if (!valid)
+                {
+                    // anonymized logging
+                    var emailHash = Convert.ToHexString(
+                        SHA256.HashData(Encoding.UTF8.GetBytes(dto.Email ?? "")));
+                    log.LogInformation("Login failed emailHash={EmailHash}", emailHash);
+
+                    throw new InvalidCredentialsException("Email or password is incorrect.");
+                }
+
+                log.LogInformation("Login success userId={UserId}", user!.Id);
+
+                var (accessToken, expiresAtUtc) = jwt.CreateToken(user!.Id, user.Email.Value, user.Role.ToString());
+                var payload = user.ToReadDto(accessToken, expiresAtUtc);
+
+                return Results.Ok(payload);
+            })
+            .AllowAnonymous()
+            .RequireValidation<UserLoginDto>()
+            .Produces<AuthTokenReadDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .WithSummary("Authenticate user with email and password")
+            .WithDescription("Returns a JWT bearer token on successful authentication.")
+            .WithName("Auth_Login");
 
             return group;
         }
