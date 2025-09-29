@@ -6,7 +6,7 @@ using Api.Tests.Testing;
 
 namespace Api.Tests.Endpoints.Auth
 {
-    public sealed class RegisterEndpointTests
+    public sealed class AuthRegisterEndpointTests
     {
         private sealed record RegisterReq(string Email, string Password);
         private sealed record AuthTokenReadDtoContract(string AccessToken, Guid UserId, string Email, string Role);
