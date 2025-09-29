@@ -2,6 +2,7 @@ using Api.Auth;
 using Api.Endpoints.Auth;
 using Api.Endpoints.Health;
 using Api.Errors;
+using Api.Extensions;
 using Application.Common.Abstractions.Auth;
 using Infrastructure;
 using Infrastructure.Data.Extensions;
@@ -9,6 +10,7 @@ using Infrastructure.Security;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
 
 // --- Configuration ---
 
@@ -37,9 +39,11 @@ else
         .ValidateOnStart();
 }
 
+
 // --- Services ---
 
 builder.Services
+    .AddAppValidation()
     .AddInfrastructure(connectionString)
     .AddEndpointsApiExplorer()
     .AddSwaggerGen()
