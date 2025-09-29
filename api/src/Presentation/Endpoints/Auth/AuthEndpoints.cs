@@ -1,10 +1,12 @@
 using Api.Auth;
+using Api.Extensions;
 using Application.Common.Abstractions.Persistence;
 using Application.Common.Abstractions.Security;
 using Application.Common.Exceptions;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
+using FluentValidation;
 using Infrastructure.Data.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -58,6 +60,7 @@ namespace Api.Endpoints.Auth
 
                 return Results.Ok(payload);
             })
+            .RequireValidation<UserCreateDto>()
             .Produces<AuthTokenReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict)
