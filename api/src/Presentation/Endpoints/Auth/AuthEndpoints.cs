@@ -106,7 +106,7 @@ namespace Api.Endpoints.Auth
             .Produces<AuthTokenReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("Authenticate user with email and password")
-            .WithDescription("Returns a JWT bearer token on successful authentication.")
+            .WithDescription("Returns a JWT bearer token on successful authentication")
             .WithName("Auth_Login");
 
             // GET /auth/me
@@ -141,7 +141,8 @@ namespace Api.Endpoints.Auth
             .Produces<UserReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithName("Auth_GetMe")
-            .WithSummary("Returns the authenticated user's profile");
+            .WithSummary("Returns the authenticated user's profile")
+            .WithDescription("User profile");
 
             return group;
         }
