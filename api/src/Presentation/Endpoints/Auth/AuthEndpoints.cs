@@ -10,6 +10,8 @@ using FluentValidation;
 using Infrastructure.Data.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -106,6 +108,40 @@ namespace Api.Endpoints.Auth
             .WithSummary("Authenticate user with email and password")
             .WithDescription("Returns a JWT bearer token on successful authentication.")
             .WithName("Auth_Login");
+
+            // GET /auth/me
+            group.MapGet("/me", async (
+                HttpContext http,
+                [FromServices] IUserRepository users,
+                [FromServices] ILoggerFactory loggerFactory,
+                CancellationToken ct = default) =>
+            {
+                var logger = loggerFactory.CreateLogger("Auth.Me");
+
+                var sub =
+                    http.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ??
+                    http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (string.IsNullOrWhiteSpace(sub) || !Guid.TryParse(sub, out var userId))
+                {
+                    logger.LogWarning("Missing or invalid 'sub' claim.");
+                    throw new InvalidCredentialsException("Invalid or missing authentication claims.");
+                }
+
+                var user = await users.GetByIdAsync(userId, ct);
+                if (user is null)
+                {
+                    logger.LogWarning("Authenticated user not found. userId: {UserId}", userId);
+                    throw new InvalidCredentialsException("User not found or token invalid.");
+                }
+
+                return Results.Ok(user.ToReadDto());
+            })
+            .RequireAuthorization()
+            .Produces<UserReadDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .WithName("Auth_GetMe")
+            .WithSummary("Returns the authenticated user's profile");
 
             return group;
         }
