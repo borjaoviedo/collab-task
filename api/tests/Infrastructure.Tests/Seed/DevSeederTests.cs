@@ -43,7 +43,7 @@ namespace Infrastructure.Tests.Seed
 
             var hasher = sp.GetRequiredService<IPasswordHasher>();
             var admin = users.Single(u => u.Email.Value == "admin@demo.com");
-            hasher.Verify("Admin123!", admin.PasswordHash, admin.PasswordSalt).Should().BeTrue();
+            hasher.Verify("Admin123!", admin.PasswordSalt, admin.PasswordHash).Should().BeTrue();
 
             (await db2.Projects.AsNoTracking().CountAsync(p => p.Slug == ProjectSlug.Create("demo-project"))).Should().Be(1);
             (await db2.ProjectMembers.AsNoTracking().CountAsync()).Should().BeGreaterThan(0);
