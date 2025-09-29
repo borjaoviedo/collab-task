@@ -17,7 +17,7 @@ namespace Infrastructure.Data.Extensions
             await db.Database.MigrateAsync(ct);
 
             if (env.IsDevelopment())
-                await DevSeeder.SeedAsync(services, ct);
+                await DevSeeder.SeedAsync(scope.ServiceProvider, ct);
         }
     }
 }
