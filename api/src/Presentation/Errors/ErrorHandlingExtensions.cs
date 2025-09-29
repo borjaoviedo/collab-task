@@ -109,6 +109,14 @@ namespace Api.Errors
                         "Authentication required.",
                         extensions);
 
+                case InvalidCredentialsException ice:
+                    return (
+                        StatusCodes.Status401Unauthorized,
+                        ProblemTypes.Unauthorized,
+                        "Unauthorized",
+                        ice.Message,
+                        extensions);
+
                 case ForbiddenAccessException fae:
                     return (
                         StatusCodes.Status403Forbidden,
