@@ -24,7 +24,7 @@ namespace Infrastructure.Security
             return (hash, salt);
         }
 
-        public bool Verify(string password, byte[] hash, byte[] salt)
+        public bool Verify(string password, byte[] salt, byte[] hash)
         {
             if (string.IsNullOrWhiteSpace(password))
                 return false;
