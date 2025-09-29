@@ -20,29 +20,33 @@ namespace Infrastructure.Security
             _options = options.Value;
         }
 
-        public string CreateToken(Guid userId, string email, string role)
+        public (string Token, DateTime ExpiresAtUtc) CreateToken(Guid userId, string email, string role)
         {
             var key = GetSigningKey(_options.Key);
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new List<Claim>
-        {
-            new(JwtRegisteredClaimNames.Sub, userId.ToString()),
-            new(JwtRegisteredClaimNames.Email, email),
-            new(ClaimTypes.Role, role),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
+            {
+                new(JwtRegisteredClaimNames.Sub, userId.ToString()),
+                new(JwtRegisteredClaimNames.Email, email),
+                new(ClaimTypes.Role, role),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
 
             var now = _clock.UtcNow;
+            var expiresAtUtc = now.AddMinutes(_options.ExpMinutes).UtcDateTime;
+
             var token = new JwtSecurityToken(
                 issuer: _options.Issuer,
                 audience: _options.Audience,
                 claims: claims,
                 notBefore: now.UtcDateTime,
-                expires: now.AddMinutes(_options.ExpMinutes).UtcDateTime,
+                expires: expiresAtUtc,
                 signingCredentials: creds);
 
-            return _handler.WriteToken(token);
+            var tokenStr = _handler.WriteToken(token);
+
+            return (tokenStr, expiresAtUtc);
         }
 
         public ClaimsPrincipal? ValidateToken(string token)
