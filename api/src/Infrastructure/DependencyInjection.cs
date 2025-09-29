@@ -2,10 +2,12 @@ using Application.Common.Abstractions.Persistence;
 using Application.Common.Abstractions.Security;
 using Application.Common.Abstractions.Time;
 using Application.Users.Abstractions;
+using Infrastructure.Common.Persistence;
 using Infrastructure.Common.Time;
 using Infrastructure.Data;
 using Infrastructure.Data.Interceptors;
 using Infrastructure.Data.Repositories;
+using Infrastructure.Initialization;
 using Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,10 +36,13 @@ namespace Infrastructure
             });
 
             // UoW
-            services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             // Repositories
             services.AddScoped<IUserRepository, UserRepository>();
+
+            // DB init as hosted service
+            services.AddHostedService<DbInitHostedService>();
 
             return services;
         }
