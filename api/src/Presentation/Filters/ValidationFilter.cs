@@ -1,25 +1,20 @@
-using FluentValidation;
 
 namespace Api.Filters
 {
     public sealed class ValidationFilter<T> : IEndpointFilter
     {
-        private readonly IValidator<T> _validator;
-        public ValidationFilter(IValidator<T> validator) => _validator = validator;
-
         public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext ctx, EndpointFilterDelegate next)
         {
-            var model = ctx.Arguments.OfType<T>().FirstOrDefault();
-            if (model is null) return Results.BadRequest("Invalid payload.");
+            var validator = ctx.HttpContext.RequestServices.GetRequiredService<FluentValidation.IValidator<T>>();
+            var arg = ctx.Arguments.OfType<T>().FirstOrDefault();
 
-            var vr = await _validator.ValidateAsync(model, ctx.HttpContext.RequestAborted);
-            if (!vr.IsValid)
+            if (arg is not null)
             {
-                var errors = vr.Errors
-                    .GroupBy(e => e.PropertyName)
-                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
-                return Results.ValidationProblem(errors);
+                var result = await validator.ValidateAsync(arg, ctx.HttpContext.RequestAborted);
+                if (!result.IsValid)
+                    return Results.ValidationProblem(result.ToDictionary());
             }
+
             return await next(ctx);
         }
     }
