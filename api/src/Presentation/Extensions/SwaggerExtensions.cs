@@ -41,11 +41,15 @@ namespace Api.Extensions
 
         public static IApplicationBuilder UseSwaggerUiIfDev(this IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
+            if (!env.IsDevelopment()) return app;
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
             {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "CollabTask API v1");
+                c.RoutePrefix = "swagger"; // => /swagger/index.html
+            });
+
             return app;
         }
     }
