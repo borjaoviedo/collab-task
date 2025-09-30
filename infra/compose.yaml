@@ -1,0 +1,48 @@
+name: collabtask
+
+networks:
+  app:
+    driver: bridge
+
+volumes:
+  mssql-data:
+
+services:
+  api:
+    build:
+      context: ../api
+      dockerfile: ../infra/docker/api.Dockerfile
+    image: collabtask-api:${TAG:-local}
+    environment:
+      # Connection string uses the service name 'sql' and default SQL Server port
+      ConnectionStrings__Default: "Server=sql,1433;Database=CollabTask;User Id=sa;Password=${SA_PASSWORD:-Your_password123};TrustServerCertificate=true;Encrypt=false"
+    expose:
+      - "8080"   # expose to the compose network only; overlays decide public ports
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+    depends_on:
+      sql:
+        condition: service_healthy
+    networks: ["app"]
+
+  sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD:-Your_password123}"
+      MSSQL_PID: "Developer"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/1433'"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 60s
+    restart: unless-stopped
+    networks: ["app"]
