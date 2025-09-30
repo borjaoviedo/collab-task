@@ -25,6 +25,19 @@
   },
   "homepage": "https://github.com/borjaoviedo/collab-task#readme",
   "devDependencies": {
-    "openapi-typescript": "^7.9.1"
+    "@tailwindcss/postcss": "^4.1.13",
+    "@types/node": "^24.6.0",
+    "autoprefixer": "^10.4.21",
+    "openapi-typescript": "^7.9.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.13"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.2",
+    "clsx": "^2.1.1",
+    "react-router-dom": "^7.9.3",
+    "tailwind-merge": "^3.3.1",
+    "zod": "^4.1.11",
+    "zustand": "^5.0.8"
   }
 }
