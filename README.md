@@ -15,8 +15,6 @@ The solution includes two levels of automated tests:
 - **Integration tests (with infrastructure)**  
   Validate the **Infrastructure** layer using [Testcontainers for .NET](https://github.com/testcontainers/testcontainers-dotnet) with SQL Server to exercise EF Core persistence, migrations, idempotent seeding, and concurrency.
   
----
-
 ### Run tests
 
 ```
@@ -25,14 +23,14 @@ npm run test:infra    # run infrastructure tests with Testcontainers
 npm run test:all      # run full test suite (unit + integration)
 ```
 
----
-
 ### Notes
 
 - Integration tests require Docker running locally.
 - Each infrastructure test suite spins up an ephemeral SQL Server container.
 - Tests are isolated and leave no state behind.
 - Test coverage thresholds are configured in `Directory.Build.props`.
+
+---
 
 ### Continuous Integration
 
