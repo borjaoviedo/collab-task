@@ -3,8 +3,16 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       DOTNET_ENVIRONMENT: Development
+      Jwt__Key: "${JWT_KEY:-dev_32bytes_minimum_base64_or_random_string_XXXXXXXX}"
+      Jwt__Issuer: "collabtask"
+      Jwt__Audience: "collabtask"
     ports:
       - "8080:8080"   # map container API port to host for quick local access
+    profiles: ["dev"]
+
+  web:
+    ports:
+      - "8081:8080" # map Web to host (avoid collision with API)
     profiles: ["dev"]
 
   sql:

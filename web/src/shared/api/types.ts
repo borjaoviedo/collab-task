@@ -38,11 +38,222 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register new user
+         * @description Creates a user and returns a JWT for auto-login
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UserCreateDto"];
+                };
+            };
+            responses: {
+                /** @description Authenticated payload */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AuthTokenReadDto"];
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                409: components["responses"]["Conflict"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Authenticate user with email and password
+         * @description Returns a JWT bearer token on successful authentication.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UserLoginDto"];
+                };
+            };
+            responses: {
+                /** @description Authenticated payload */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AuthTokenReadDto"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Returns the authenticated user's profile */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description User profile */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UserReadDto"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: never;
-    responses: never;
+    schemas: {
+        UserCreateDto: {
+            /** Format: email */
+            email: string;
+            password: string;
+        };
+        UserLoginDto: {
+            /** Format: email */
+            email: string;
+            password: string;
+        };
+        UserReadDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            /** @enum {string} */
+            role: "User" | "Admin";
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int32 */
+            projectMembershipsCount: number;
+        };
+        UserSetRoleDto: {
+            /** @enum {string} */
+            role: "User" | "Admin";
+            /**
+             * Format: byte
+             * @description Base64-encoded concurrency token
+             */
+            rowVersion: string;
+        };
+        AuthTokenReadDto: {
+            accessToken: string;
+            /** @example Bearer */
+            tokenType: string;
+            /** Format: date-time */
+            expiresAtUtc: string;
+            /** Format: uuid */
+            userId: string;
+            /** Format: email */
+            email: string;
+            /** @enum {string} */
+            role: "User" | "Admin";
+        };
+        ProblemDetails: {
+            type?: string;
+            title?: string;
+            /** Format: int32 */
+            status?: number;
+            detail?: string;
+            instance?: string;
+        } & {
+            [key: string]: unknown;
+        };
+    };
+    responses: {
+        /** @description Bad Request */
+        BadRequest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ProblemDetails"];
+            };
+        };
+        /** @description Unauthorized */
+        Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ProblemDetails"];
+            };
+        };
+        /** @description Conflict */
+        Conflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ProblemDetails"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;
