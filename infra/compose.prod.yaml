@@ -1,0 +1,14 @@
+services:
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      DOTNET_ENVIRONMENT: Production
+    # For demo deployments we expose directly on port 8080 (host:container).
+    # In real production scenarios, a reverse proxy (80/443) is recommended.
+    ports:
+      - "8080:8080"
+    profiles: ["prod"]
+
+  sql:
+    # Database is not exposed in prod; only accessible through the internal Docker network.
+    profiles: ["prod"]

@@ -1,46 +1,43 @@
 using Api.Auth;
+using Api.Endpoints.Auth;
+using Api.Endpoints.Health;
+using Api.Errors;
+using Api.Extensions;
 using Application.Common.Abstractions.Auth;
 using Infrastructure;
-using Infrastructure.Data.Extensions;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+// --- Configuration ---
 
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Connection string 'Default' not found.");
 
 builder.Services
     .AddInfrastructure(connectionString)
-    .AddEndpointsApiExplorer()
-    .AddSwaggerGen()
-    .AddProblemDetails()
+    .AddSwaggerWithJwt()
+    .AddJwtAuth(builder.Configuration)
     .AddHttpContextAccessor()
-    .AddScoped<ICurrentUserService, CurrentUserService>();
+    .AddScoped<ICurrentUserService, CurrentUserService>()
+    .AddAppValidation()
+    .AddProblemDetailsAndExceptionMapping();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
-app.UseExceptionHandler();
-// app.UseHttpsRedirection();
+// --- Middleware  ---
 
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
-   .WithTags("Health")
-   .WithName("Health")
-   .WithSummary("Health check")
-   .Produces(StatusCodes.Status200OK);
+app.UseGlobalExceptionHandling();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseSwaggerUiIfDev(app.Environment);
 
-var isTesting = app.Environment.IsEnvironment("Testing");
-var disableDbInit = Environment.GetEnvironmentVariable("DISABLE_DB_INIT") == "true";
 
-if (!isTesting && !disableDbInit)
-{
-    await app.Services.ApplyMigrationsAndSeedAsync();
-}
+// --- Endpoints ---
+
+app.MapHealth();
+app.MapAuth();
 
 app.Run();
 

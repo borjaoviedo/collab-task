@@ -30,7 +30,7 @@ namespace Infrastructure.Tests.Security
             var p = "Str0ng_Pass!";
             var (hash, salt) = _sut.Hash(p);
 
-            var ok = _sut.Verify(p, hash, salt);
+            var ok = _sut.Verify(p, salt, hash);
 
             ok.Should().BeTrue();
         }
@@ -40,7 +40,7 @@ namespace Infrastructure.Tests.Security
         {
             var (hash, salt) = _sut.Hash("correct");
 
-            var ok = _sut.Verify("wrong", hash, salt);
+            var ok = _sut.Verify("wrong", salt, hash);
 
             ok.Should().BeFalse();
         }

@@ -1,0 +1,13 @@
+services:
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      DOTNET_ENVIRONMENT: Development
+    ports:
+      - "8080:8080"   # map container API port to host for quick local access
+    profiles: ["dev"]
+
+  sql:
+    ports:
+      - "1433:1433"   # expose database only in dev for tooling access
+    profiles: ["dev"]

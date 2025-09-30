@@ -6,68 +6,61 @@ Collaborative real-time task management app built with **ASP.NET Core** (backend
 
 ## Testing
 
-The solution includes two categories of automated tests:
+The solution includes two levels of automated tests:
 
-- **Unit tests**  
-  Validate **Domain** and **Application** layers in isolation.  
-  They run fast and without infrastructure dependencies.
+- **Unit tests (fast, no external infra)**  
+  Cover **Domain**, **Application**, and **API** surface (minimal endpoints, filters, problem details) using in-memory doubles and test host.  
+  No database or external services are required.
 
-- **Integration tests**  
-  Validate the **Infrastructure** layer using [Testcontainers for .NET](https://github.com/testcontainers/testcontainers-dotnet) with SQL Server.
+- **Integration tests (with infrastructure)**  
+  Validate the **Infrastructure** layer using [Testcontainers for .NET](https://github.com/testcontainers/testcontainers-dotnet) with SQL Server to exercise EF Core persistence, migrations, idempotent seeding, and concurrency.
   
-  These tests cover:
-  - EF Core persistence
-  - Database migrations
-  - Idempotent seeding
-  - Concurrency handling
-
----
-
-### Run tests (Linux/macOS)
+### Run tests
 
 ```
-./scripts/test-unit.sh      # run unit tests only
-./scripts/test-infra.sh     # run infrastructure tests with Testcontainers
-dotnet test                 # run full test suite (unit + integration)
+npm run test:unit     # run unit tests only (Domain, Application, API)
+npm run test:infra    # run infrastructure tests with Testcontainers
+npm run test:all      # run full test suite (unit + integration)
 ```
-
-### Run tests (Windows Powershell)
-
-```
-.\scripts\test-unit.ps1     # run unit tests only
-.\scripts\test-infra.ps1    # run infrastructure tests with Testcontainers
-dotnet test                 # run full test suite (unit + integration)
-```
-
----
 
 ### Notes
 
-- Integration tests require Docker to be running locally.
-- Each infrastructure test suite spins up its own ephemeral SQL Server container.
+- Integration tests require Docker running locally.
+- Each infrastructure test suite spins up an ephemeral SQL Server container.
 - Tests are isolated and leave no state behind.
-- Test coverage thresholds are configured in the solution (see `Directory.Build.props`).
+- Test coverage thresholds are configured in `Directory.Build.props`.
+
+---
 
 ### Continuous Integration
 
-- CI is configured through GitHub Actions (`.github/workflows/ci.yml`).
+- CI is configured via GitHub Actions (`.github/workflows/ci.yml`).
 - On every push or pull request:
-  - The solution is built against .NET 8.
-  - Unit tests run on all jobs.
-  - Integration tests run inside GitHub-hosted runners with Docker support.
-- The workflow fails if:
-  - Any test fails.
-  - Test coverage drops below the configured threshold.
+  - Build against .NET 8.
+  - Run unit and integration tests (with Docker on hosted runners).
+- The workflow fails if any test fails or coverage drops below the configured threshold.
  
 ---
 
 ### Local Development
 
 - Requires **.NET 8 SDK**, **Node.js 20+**, and **Docker Desktop** (for integration tests).
-- Backend and frontend can be run independently or together via `docker-compose` (see `infra/` folder).
+```
+npm run dev   # docker-compose up for development
+npm run prod  # docker-compose up for production profile
+```
+- Backend and frontend can be run independently or together via the `infra/` compose files.
 
 ---
 
+### Developer utilities
+
+```
+npm run gen:api         # generate TypeScript types from OpenAPI (web/src/shared/api/types.ts)
+npm run check:contract  # validate OpenAPI contract vs expected invariants
+```
+
+---
 ### License
 
 This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.

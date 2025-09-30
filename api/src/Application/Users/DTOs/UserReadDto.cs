@@ -1,4 +1,5 @@
 using Domain.Enums;
+using System.Text.Json.Serialization;
 
 namespace Application.Users.DTOs
 {
@@ -6,7 +7,7 @@ namespace Application.Users.DTOs
     {
         public Guid Id { get; set; }
         public string Email { get; set; } = default!;
-        public UserRole Role { get; set; }
+        [JsonConverter(typeof(JsonStringEnumConverter))] public UserRole Role { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
         public int ProjectMembershipsCount { get; set; }
