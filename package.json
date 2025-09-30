@@ -1,6 +1,6 @@
 {
   "name": "collab-task",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Collaborative real-time task management app built with ASP.NET Core and React.",
   "main": "index.js",
   "scripts": {
