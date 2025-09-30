@@ -3,10 +3,20 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       DOTNET_ENVIRONMENT: Production
+      Jwt__Key: "${JWT_KEY:-change_me_with_real_32_bytes}"
+      Jwt__Issuer: "collabtask"
+      Jwt__Audience: "collabtask"
     # For demo deployments we expose directly on port 8080 (host:container).
     # In real production scenarios, a reverse proxy (80/443) is recommended.
     ports:
       - "8080:8080"
+    profiles: ["prod"]
+
+  web:
+    # Demo deployments expose Web directly on host 8081.
+    # In real production, serve Web via a reverse proxy on 80/443.
+    ports:
+      - "8081:8080"
     profiles: ["prod"]
 
   sql:
