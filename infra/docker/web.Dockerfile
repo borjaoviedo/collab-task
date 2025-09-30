@@ -9,18 +9,18 @@ WORKDIR /src
 
 # Reproducible installs in CI/containers
 ENV NPM_CONFIG_FUND=false \
-    NPM_CONFIG_AUDIT=false \
-    NODE_ENV=${BUILD_MODE}
+    NPM_CONFIG_AUDIT=false
 
 # Copy manifests first to leverage layer caching
-COPY web/package.json web/package-lock.json* ./
+COPY package.json package-lock.json* ./
 RUN npm ci
 
 # Copy full source
-COPY web/ .
+COPY . .
 
 # Build static assets
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV NODE_ENV=${BUILD_MODE} \
+    VITE_API_BASE_URL=${VITE_API_BASE_URL}
 RUN npm run build
 
 # ---------------------------------------
@@ -39,7 +39,8 @@ LABEL org.opencontainers.image.title="CollabTask Web" \
 RUN apk add --no-cache curl
 
 # Nginx config with SPA fallback
-RUN printf "server {\n\
+RUN printf "include /etc/nginx/mime.types;\n\
+server {\n\
   listen 8080;\n\
   server_name _;\n\
   root /usr/share/nginx/html;\n\
@@ -47,7 +48,6 @@ RUN printf "server {\n\
   location / {\n\
     try_files \$uri /index.html;\n\
   }\n\
-  types { application/wasm wasm; }\n\
 }\n" > /etc/nginx/conf.d/default.conf
 
 # Copy built app
