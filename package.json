@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "description": "Collaborative real-time task management app built with ASP.NET Core and React.",
   "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node scripts/run.js dev",
+    "prod": "node scripts/run.js prod",
+    "test:unit": "node scripts/run.js test:unit",
+    "test:infra": "node scripts/run.js test:infra",
+    "test:all": "node scripts/run.js test:all",
     "gen:api": "openapi-typescript contracts/openapi.json -o web/src/shared/api/types.ts",
-    "check:contract": "node scripts/check-openapi.js"
+    "check:contract": "node scripts/tools/check-openapi.js"
   },
   "repository": {
     "type": "git",
