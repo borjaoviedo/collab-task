@@ -44,7 +44,53 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          
-      - run: npm ci || npm i
-      - run: npm run check:contract
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install root deps
+        run: npm ci
+
+      - name: Generate OpenAPI types
+        run: npm run gen:api
+
+      - name: Check OpenAPI contract
+        run: npm run check:contract
+
+      - name: Upload generated types
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-openapi-types
+          path: web/src/shared/api/types.ts
+          if-no-files-found: error
+
+  web:
+    runs-on: ubuntu-latest
+    needs: contract
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            web/package-lock.json
+
+      - name: Install web deps
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload web dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+          if-no-files-found: error
