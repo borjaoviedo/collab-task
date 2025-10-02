@@ -90,9 +90,13 @@ function httpTitle(status?: number): string | undefined {
   }
 }
 
+/** Public API: returns null when there is no error */
+export type UiErrorOrNone = UiError | null
+
 /** Hook: memorizes normalized error and adds opinionated tweaks */
-export function useApiError(error: unknown) {
+export function useApiError(error: unknown): UiErrorOrNone {
   return useMemo(() => {
+    if (error == null) return null;
     const ui = normalizeError(error)
 
     if (ui.status === 401) {
