@@ -19,7 +19,11 @@ export function RegisterPage() {
   const [error, setError] = useState<unknown>(null);
   const uiError = useApiError(error);
 
-  const isValidation = uiError.status === 422 && typeof uiError.details === "object" && uiError.details !== null;
+  const isValidation =
+    uiError.status === 422 &&
+    typeof uiError.details === "object" &&
+    uiError.details !== null;
+
   const fieldErrors = useMemo(() => {
     if (!isValidation) return {} as Record<string, string[]>;
     const raw = uiError.details as Record<string, string[] | string>;
@@ -49,21 +53,31 @@ export function RegisterPage() {
     }
   }
 
-  const alertId = uiError.title ? "register-alert" : undefined;
+  const hasError = error !== null;
+  const alertId = hasError ? "register-alert" : undefined;
 
   return (
     <main className="mx-auto w-full max-w-sm p-6">
       <Card title="Create account" className="w-full">
-        {uiError.title && (
+        {hasError && uiError.title && (
           <div id={alertId} role="alert" className="mb-4">
             <p className="font-medium">{uiError.title}</p>
-            {uiError.message && <p className="text-sm mt-1">{uiError.message}</p>}
+            {uiError.message && (
+              <p className="text-sm mt-1">{uiError.message}</p>
+            )}
           </div>
         )}
 
-        <form onSubmit={onSubmit} className="space-y-4" noValidate aria-describedby={alertId}>
+        <form
+          onSubmit={onSubmit}
+          className="space-y-4"
+          noValidate
+          aria-describedby={alertId}
+        >
           <div>
-            <Label htmlFor="email" size="md" requiredMark>Email</Label>
+            <Label htmlFor="email" size="md" requiredMark>
+              Email
+            </Label>
             <Input
               id="email"
               type="email"
@@ -83,7 +97,9 @@ export function RegisterPage() {
           </div>
 
           <div>
-            <Label htmlFor="password" size="md" requiredMark>Password</Label>
+            <Label htmlFor="password" size="md" requiredMark>
+              Password
+            </Label>
             <Input
               id="password"
               type="password"
@@ -102,14 +118,22 @@ export function RegisterPage() {
             ) : null}
           </div>
 
-          <Button type="submit" className="w-full" isLoading={submitting} disabled={submitting}>
-            {submitting ? (<span className="spinner" aria-hidden="true" />) : null}
+          <Button
+            type="submit"
+            className="w-full"
+            isLoading={submitting}
+            disabled={submitting}
+          >
+            {submitting ? <span className="spinner" aria-hidden="true" /> : null}
             {submitting ? "Creating…" : "Create account"}
           </Button>
         </form>
 
         <p className="mt-4 text-sm">
-          Already have an account? <Link to="/login" className="underline">Sign in</Link>
+          Already have an account?{" "}
+          <Link to="/login" className="underline">
+            Sign in
+          </Link>
         </p>
       </Card>
     </main>
