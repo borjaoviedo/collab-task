@@ -14,4 +14,10 @@ export default defineConfig({
       '@presentation': path.resolve(__dirname, 'src/presentation'),
     },
   },
+  server: {
+    host: true,
+    port: 5173,
+    strictPort: true,
+    hmr: { clientPort: 8081 }
+  }
 })
