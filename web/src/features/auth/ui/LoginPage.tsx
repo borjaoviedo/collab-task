@@ -83,7 +83,7 @@ export function LoginPage() {
     }
   }
 
-  const hasApiError = error !== null && Boolean(uiError.title);
+  const hasApiError = uiError != null;
   const alertId = hasApiError ? "login-alert" : undefined;
 
   return (
@@ -91,8 +91,8 @@ export function LoginPage() {
       <Card title="Sign in" className="w-full">
         {hasApiError && (
           <div id={alertId} role="alert" aria-live="polite" className="mb-4">
-            <p className="font-medium">{uiError.title}</p>
-            {uiError.message && <p className="text-sm mt-1">{uiError.message}</p>}
+            <p className="font-medium">{uiError?.title}</p>
+            {uiError?.message && <p className="text-sm mt-1">{uiError.message}</p>}
           </div>
         )}
 

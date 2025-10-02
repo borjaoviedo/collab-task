@@ -97,7 +97,7 @@ export function RegisterPage() {
     }
   }
 
-  const hasApiError = error !== null && Boolean(uiError.title);
+  const hasApiError = uiError != null;
   const alertId = hasApiError ? "register-alert" : undefined;
 
   return (
@@ -105,8 +105,8 @@ export function RegisterPage() {
       <Card title="Create account" className="w-full">
         {hasApiError && (
           <div id={alertId} role="alert" aria-live="polite" className="mb-4">
-            <p className="font-medium">{uiError.title}</p>
-            {uiError.message && <p className="text-sm mt-1">{uiError.message}</p>}
+            <p className="font-medium">{uiError?.title}</p>
+            {uiError?.message && <p className="text-sm mt-1">{uiError.message}</p>}
           </div>
         )}
 
