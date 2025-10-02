@@ -6,16 +6,41 @@ services:
       Jwt__Key: "${JWT_KEY:-dev_32bytes_minimum_base64_or_random_string_XXXXXXXX}"
       Jwt__Issuer: "collabtask"
       Jwt__Audience: "collabtask"
-    ports:
-      - "8080:8080"   # map container API port to host for quick local access
+    # In dev we expose the API directly to the host on 8080
+    ports: ["8080:8080"]
     profiles: ["dev"]
 
   web:
-    ports:
-      - "8081:8080" # map Web to host (avoid collision with API)
+    # Use Node image to run Vite dev server.
+    image: node:20-alpine
+    working_dir: /app
+
+    # Install deps fresh each time (isolated from host) and run Vite in dev mode
+    # Host is set to 0.0.0.0 so container is reachable from host on mapped port
+    command: sh -lc "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"
+
+    # Map host 8081 to container 5173 → visit http://localhost:8081
+    ports: ["8081:5173"]
+
+    environment:
+      # In dev, the frontend talks to the API exposed on host:8080
+      VITE_API_BASE_URL: "http://localhost:8080"
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_INTERVAL: "300"
+    volumes:
+      # Mount project sources so edits on host are reflected live
+      - ../web:/app
+      # Keep node_modules cached in a named volume to avoid reinstalling every rebuild
+      - web_node_modules:/app/node_modules
+
     profiles: ["dev"]
 
   sql:
-    ports:
-      - "1433:1433"   # expose database only in dev for tooling access
+    # For dev we expose SQL Server to host on 1433 (connect with SSMS, DBeaver, etc.)
+    ports: ["1433:1433"]
     profiles: ["dev"]
+
+volumes:
+  # Named volume for node_modules to speed up iterative development
+  web_node_modules:
