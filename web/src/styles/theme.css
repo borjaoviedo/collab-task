@@ -1,0 +1,240 @@
+/* ====== Base typography, radius, shadows (shared) ====== */
+/* These tokens are theme-agnostic and reused across palettes */
+:root {
+  /* Typography scale (rem values) */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
+  /* Border radius scale */
+  --radius-sm: 0.25rem;
+  --radius: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-full: 9999px;
+
+  /* Shadow presets */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.10), 0 2px 4px -2px rgb(0 0 0 / 0.10);
+  --shadow-lg: 0 12px 16px -4px rgb(0 0 0 / 0.12), 0 4px 8px -4px rgb(0 0 0 / 0.10);
+
+  /* Input background (default light) */
+  --color-input: oklch(0.98 0.002 95);
+
+  /* Base swatches for theme selector */
+  /* Neutral ~ achromatic, Warm ~ orange, Cool ~ blue */
+  --neutral-base: oklch(0.80 0.010 270);
+  --warm-base:    oklch(0.80 0.040 40);
+  --cool-base:    oklch(0.80 0.080 240); 
+}
+
+/* ====== Neutral palette (default, low-chroma grays) ====== */
+/* Light Neutral */
+:root,
+:root[data-palette="neutral"] {
+  --neutral-base: oklch(0.80 0.010 270);
+  --warm-base:    oklch(0.80 0.040 40);
+  --cool-base:    oklch(0.80 0.080 240);
+
+  --color-background: oklch(0.985 0.003 95);
+  --color-foreground: oklch(0.22 0.004 95);
+
+  --color-muted: oklch(0.94 0.004 95);
+  --color-muted-foreground: oklch(0.47 0.008 95);
+
+  --color-border: oklch(0.88 0.004 95);
+  --color-ring: oklch(0.73 0.030 260);
+
+  --color-primary: oklch(0.56 0.060 260);
+  --color-primary-foreground: oklch(0.99 0.001 95);
+
+  --color-secondary: oklch(0.70 0.020 260);  
+  --color-secondary-foreground: oklch(0.18 0.004 95);
+
+  --color-success: oklch(0.76 0.12 155);
+  --color-warning: oklch(0.88 0.11 90);
+  --color-danger:  oklch(0.60 0.16 27);
+
+  --background-gradient: linear-gradient(
+    135deg,
+    oklch(0.97 0.004 260),
+    oklch(0.90 0.008 260)
+  );
+}
+
+/* Dark Neutral */
+:root[data-theme="dark"][data-palette="neutral"],
+.dark[data-palette="neutral"] {
+  --neutral-base: oklch(0.60 0.010 270);
+  --warm-base:    oklch(0.60 0.060 40);
+  --cool-base:    oklch(0.60 0.080 240);
+
+  --color-background: oklch(0.14 0.004 95);
+  --color-foreground: oklch(0.96 0.004 95);
+
+  --color-muted: oklch(0.22 0.006 95);
+  --color-muted-foreground: oklch(0.78 0.010 95);
+
+  --color-border: oklch(0.28 0.006 95);
+  --color-ring: oklch(0.76 0.040 260);
+
+  --color-primary: oklch(0.70 0.060 260);
+  --color-primary-foreground: oklch(0.16 0.004 95);
+
+  --color-secondary: oklch(0.62 0.020 260);
+  --color-secondary-foreground: oklch(0.98 0.002 95);
+
+  --color-success: oklch(0.78 0.12 155);
+  --color-warning: oklch(0.82 0.11 90);
+  --color-danger:  oklch(0.66 0.16 27);
+
+  --background-gradient: linear-gradient(
+    135deg,
+    oklch(0.22 0.010 260),
+    oklch(0.16 0.014 250)
+  );
+
+  --color-input: oklch(0.22 0.006 95);
+}
+
+/* ====== Warm palette (orange/coral tones) ====== */
+/* Light Warm */
+:root[data-palette="warm"] {
+  --neutral-base: oklch(0.80 0.010 270);
+  --warm-base:    oklch(0.76 0.080 55);
+  --cool-base:    oklch(0.80 0.040 220);
+
+  --color-background: oklch(0.990 0.006 85);
+  --color-foreground: oklch(0.24 0.015 70);
+
+  --color-muted: oklch(0.95 0.015 80);
+  --color-muted-foreground: oklch(0.50 0.020 70);
+
+  --color-border: oklch(0.90 0.012 80);
+  --color-ring: oklch(0.78 0.080 45);
+
+  --color-primary: oklch(0.72 0.160 35);
+  --color-primary-foreground: oklch(0.99 0.002 95);
+
+  --color-secondary: oklch(0.74 0.090 25);
+  --color-secondary-foreground: oklch(0.18 0.006 95);
+
+  --color-success: oklch(0.78 0.12 150);
+  --color-warning: oklch(0.87 0.14 85);
+  --color-danger:  oklch(0.62 0.20 28);
+
+  --background-gradient: linear-gradient(
+    120deg,
+    oklch(0.96 0.030 80),
+    oklch(0.93 0.040 45)
+  );
+}
+
+/* Dark Warm */
+:root[data-theme="dark"][data-palette="warm"],
+.dark[data-palette="warm"] {
+  --neutral-base: oklch(0.60 0.010 270);
+  --warm-base:    oklch(0.62 0.100 55);
+
+  --color-background: oklch(0.17 0.016 60);
+  --color-foreground: oklch(0.96 0.006 90);
+
+  --color-muted: oklch(0.23 0.016 60);
+  --color-muted-foreground: oklch(0.78 0.012 85);
+
+  --color-border: oklch(0.30 0.016 60);
+  --color-ring: oklch(0.78 0.090 50);
+
+  --color-primary: oklch(0.70 0.170 35);
+  --color-primary-foreground: oklch(0.16 0.006 95);
+
+  --color-secondary: oklch(0.64 0.110 25);
+  --color-secondary-foreground: oklch(0.98 0.003 95);
+
+  --color-success: oklch(0.76 0.12 150);
+  --color-warning: oklch(0.82 0.14 85);
+  --color-danger:  oklch(0.66 0.20 28);
+
+  --background-gradient: linear-gradient(
+    120deg,
+    oklch(0.30 0.035 75),
+    oklch(0.24 0.045 40)
+  );
+
+  --color-input: oklch(0.22 0.012 65);
+}
+
+/* ====== Cool palette (blue-violet tones) ====== */
+/* Light Cool */
+:root[data-palette="cool"] {
+  --neutral-base: oklch(0.80 0.010 270);
+  --warm-base:    oklch(0.80 0.040 40);
+  --cool-base:    oklch(0.75 0.120 245);
+
+  --color-background: oklch(0.990 0.015 230);
+  --color-foreground: oklch(0.20 0.018 255);
+
+  --color-muted: oklch(0.95 0.020 240);
+  --color-muted-foreground: oklch(0.48 0.030 255);
+
+  --color-border: oklch(0.90 0.022 245);
+  --color-ring: oklch(0.70 0.110 260);
+
+  --color-primary: oklch(0.63 0.210 255);
+  --color-primary-foreground: oklch(0.98 0.003 95);
+
+  --color-secondary: oklch(0.72 0.090 230);
+  --color-secondary-foreground: oklch(0.15 0.010 95);
+
+  --color-success: oklch(0.78 0.13 155);
+  --color-warning: oklch(0.88 0.11 95);
+  --color-danger:  oklch(0.60 0.22 25);
+
+  --background-gradient: linear-gradient(
+    120deg,
+    oklch(0.95 0.030 210),
+    oklch(0.93 0.050 275)
+  );
+}
+
+/* Dark Cool */
+:root[data-theme="dark"][data-palette="cool"],
+.dark[data-palette="cool"] {
+  --neutral-base: oklch(0.60 0.010 270);
+  --warm-base:    oklch(0.60 0.060 40);
+  --cool-base:    oklch(0.60 0.140 245);
+
+  --color-background: oklch(0.14 0.020 255);
+  --color-foreground: oklch(0.96 0.004 255);
+
+  --color-muted: oklch(0.22 0.020 250);
+  --color-muted-foreground: oklch(0.76 0.020 255);
+
+  --color-border: oklch(0.28 0.020 250);
+  --color-ring: oklch(0.76 0.110 260);
+
+  --color-primary: oklch(0.70 0.200 255);
+  --color-primary-foreground: oklch(0.16 0.010 95);
+
+  --color-secondary: oklch(0.64 0.100 230);
+  --color-secondary-foreground: oklch(0.98 0.003 95);
+
+  --color-success: oklch(0.78 0.13 155);
+  --color-warning: oklch(0.82 0.12 95);
+  --color-danger:  oklch(0.66 0.23 25);
+
+  --background-gradient: linear-gradient(
+    120deg,
+    oklch(0.28 0.050 210),
+    oklch(0.22 0.060 275)
+  );
+
+  --color-input: oklch(0.22 0.018 255);
+}
+
+/* ====== Utility ====== */
+/* Background helpers for hero/sections */
+.bg-app-gradient { background-image: var(--background-gradient); }
