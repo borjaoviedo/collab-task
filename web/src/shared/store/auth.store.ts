@@ -14,10 +14,53 @@ type AuthActions = {
   setToken: (t: AuthToken) => void;
   setProfile: (p: UserProfile | null) => void;
   clear: () => void;
+  logout: () => void;
   hydrate: () => void;
 };
 
-export const useAuthStore = create<AuthState & AuthActions>((set) => ({
+let logoutTimer: number | null = null;
+
+function getExpiryUtcSeconds(t: AuthToken | null): number | null {
+  if (!t) return null;
+  const explicit = (t as unknown as { expiresAtUtc?: string | number | Date })?.expiresAtUtc;
+  if (explicit) {
+    const ms = typeof explicit === "number" ? explicit : new Date(explicit).getTime();
+    return Number.isFinite(ms) ? Math.floor(ms / 1000) : null;
+  }
+  try {
+    const parts = t.accessToken.split(".");
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    const exp = typeof payload.exp === "number" ? payload.exp : null;
+    return exp ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function isExpired(t: AuthToken | null): boolean {
+  const exp = getExpiryUtcSeconds(t);
+  if (!exp) return false;
+  const now = Math.floor(Date.now() / 1000);
+  return now >= exp;
+}
+
+function scheduleAutoLogout(clearFn: () => void, t: AuthToken | null) {
+  if (logoutTimer !== null) {
+    window.clearTimeout(logoutTimer);
+    logoutTimer = null;
+  }
+  const exp = getExpiryUtcSeconds(t);
+  if (!exp) return;
+  const ms = exp * 1000 - Date.now();
+  if (ms <= 0) {
+    clearFn();
+    return;
+  }
+  logoutTimer = window.setTimeout(clearFn, ms);
+}
+
+export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   token: null,
   profile: null,
   isAuthenticated: false,
@@ -25,7 +68,10 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
   setToken: (t) => {
     localStorage.setItem(TOKEN_KEY, t.accessToken);
     localStorage.setItem(TOKEN_FULL_KEY, JSON.stringify(t));
-    set({ token: t, isAuthenticated: true });
+
+    const expired = isExpired(t);
+    set({ token: expired ? null : t, isAuthenticated: !expired });
+    scheduleAutoLogout(() => get().clear(), expired ? null : t);
   },
 
   setProfile: (p) => set({ profile: p }),
@@ -33,20 +79,33 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
   clear: () => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(TOKEN_FULL_KEY);
+    if (logoutTimer !== null) {
+      window.clearTimeout(logoutTimer);
+      logoutTimer = null;
+    }
     set({ token: null, profile: null, isAuthenticated: false });
+  },
+
+  logout: () => {
+    get().clear();
   },
 
   hydrate: () => {
     const raw = localStorage.getItem(TOKEN_FULL_KEY);
-    if (!raw) return;
+    if (!raw) {
+      set({ token: null, isAuthenticated: false });
+      return;
+    }
     try {
       const t = JSON.parse(raw) as AuthToken;
       if (t?.accessToken && localStorage.getItem(TOKEN_KEY) !== t.accessToken) {
         localStorage.setItem(TOKEN_KEY, t.accessToken);
       }
-      set({ token: t, isAuthenticated: true });
+      const expired = isExpired(t);
+      set({ token: expired ? null : t, isAuthenticated: !expired });
+      scheduleAutoLogout(() => get().clear(), expired ? null : t);
     } catch {
-      /* ignore */
+      set({ token: null, isAuthenticated: false });
     }
   },
 }));
@@ -58,12 +117,16 @@ window.addEventListener("storage", (e) => {
     s.clear();
     return;
   }
-  if (e.key === TOKEN_FULL_KEY && e.newValue) {
+  if (e.key === TOKEN_FULL_KEY) {
+    if (!e.newValue) {
+      s.clear();
+      return;
+    }
     try {
       const t = JSON.parse(e.newValue) as AuthToken;
       s.setToken(t);
     } catch {
-      /* ignore */
+      s.clear();
     }
   }
 });
