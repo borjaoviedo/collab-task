@@ -1,4 +1,3 @@
-// web/src/features/auth/application/auth.usecases.ts
 import { apiFetchJsonAuth } from "@shared/api/authClient";
 import { useAuthStore } from "@shared/store/auth.store";
 import type { AuthToken, UserProfile } from "@shared/types/auth";
