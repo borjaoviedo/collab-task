@@ -1,85 +1,67 @@
-import { useState, useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Navigate, Link, useNavigate } from "react-router-dom";
 import { register } from "@features/auth/application/auth.usecases";
 import { useAuthStore } from "@shared/store/auth.store";
 import { useApiError } from "@shared/hooks/useApiError";
-
 import { Card } from "@shared/ui/Card";
 import { Label } from "@shared/ui/Label";
 import { Input } from "@shared/ui/Input";
 import { Button } from "@shared/ui/Button";
 import { FormErrorText } from "@shared/ui/FormErrorText";
 import { Checkbox } from "@shared/ui/Checkbox";
-
-function isValidEmail(value: string): boolean {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(value);
-}
-
-function passwordError(value: string): string | null {
-  if (value.length < 8) return "Password must be at least 8 characters.";
-  if (!/[A-Z]/.test(value)) return "Password must include at least one uppercase letter.";
-  if (!/[^A-Za-z0-9]/.test(value)) return "Password must include at least one special character.";
-  return null;
-}
+import {
+  isValidEmail,
+  passwordError,
+  normalizeServerFieldErrors,
+} from "@shared/validation/auth";
 
 export function RegisterPage() {
   const isAuth = useAuthStore((s) => s.isAuthenticated);
   const navigate = useNavigate();
 
-  // Fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
-  // Focus/touched control
-  const [touchedEmail, setTouchedEmail] = useState(false);
-  const [touchedPassword, setTouchedPassword] = useState(false);
-  const [touchedConfirm, setTouchedConfirm] = useState(false);
-  const [wasSubmitted, setWasSubmitted] = useState(false);
-
-  // Show/hide password
   const [showPasswords, setShowPasswords] = useState(false);
 
-  // Submission + API error
+  const [wasSubmitted, setWasSubmitted] = useState(false);
+  const [pwdFocused, setPwdFocused] = useState(false);
+  const [confirmFocused, setConfirmFocused] = useState(false);
+  const [touchedEmail, setTouchedEmail] = useState(false);
+  const [touchedPwd, setTouchedPwd] = useState(false);
+  const [touchedConfirm, setTouchedConfirm] = useState(false);
+
+  const emailRef = useRef<HTMLInputElement | null>(null);
+  const pwdRef = useRef<HTMLInputElement | null>(null);
+  const confirmRef = useRef<HTMLInputElement | null>(null);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const uiError = useApiError(error);
 
-  // Server-side validation map (only when an API 422 happened)
-  const isValidation =
-    error !== null &&
-    uiError.status === 422 &&
-    typeof uiError.details === "object" &&
-    uiError.details !== null;
+  const fieldErrors = useMemo(() => normalizeServerFieldErrors(uiError), [uiError]);
 
-  const fieldErrors = useMemo(() => {
-    if (!isValidation) return {} as Record<string, string[]>;
-    const raw = uiError.details as Record<string, string[] | string>;
-    const norm: Record<string, string[]> = {};
-    for (const [k, v] of Object.entries(raw)) {
-      norm[k.toLowerCase()] = Array.isArray(v) ? v : [String(v)];
-    }
-    return norm;
-  }, [isValidation, uiError.details]);
-
-  const serverEmailErrors = fieldErrors["email"] ?? [];
-  const serverPasswordErrors = fieldErrors["password"] ?? [];
-
-  // Local validations shown only after blur (touched) or on submit
-  const showEmailValidation = (touchedEmail || wasSubmitted) && email.length > 0;
-  const showPwdValidation = (touchedPassword || wasSubmitted) && password.length > 0;
-  const showConfirmValidation = (touchedConfirm || wasSubmitted) && confirmPassword.length > 0;
-
-  const emailLocalError =
-    showEmailValidation && !isValidEmail(email) ? "Invalid email format." : null;
-  const pwdLocalErr = showPwdValidation ? passwordError(password) : null;
-  const confirmPwdLocalErr =
-    showConfirmValidation && password !== confirmPassword ? "Passwords do not match." : null;
-
-  // Submit enablement
-  const emailOk = isValidEmail(email);
   const pwdOk = passwordError(password) === null;
+
+  const showEmailVal = (wasSubmitted || touchedEmail) && email.length > 0;
+  const showPwdVal = (wasSubmitted || touchedPwd || pwdFocused) && password.length > 0;
+  const showConfirmVal =
+    (wasSubmitted || touchedConfirm || confirmFocused) && confirmPassword.length > 0;
+
+  const emailLocalErr =
+    showEmailVal && !isValidEmail(email) ? "Invalid email format" : null;
+  const pwdLocalErr = showPwdVal ? passwordError(password) : null;
+  const confirmLocalErr =
+    showConfirmVal && password !== confirmPassword ? "Passwords do not match" : null;
+
+  const serverEmailErrs = fieldErrors["email"] ?? [];
+  const serverPwdErrs = fieldErrors["password"] ?? [];
+
+  const emailAllErrs = [...(emailLocalErr ? [emailLocalErr] : []), ...serverEmailErrs];
+  const pwdAllErrs = [...(pwdLocalErr ? [pwdLocalErr] : []), ...serverPwdErrs];
+  const confirmAllErrs = [...(confirmLocalErr ? [confirmLocalErr] : [])];
+
+  const emailOk = isValidEmail(email);
   const confirmOk = confirmPassword.length > 0 && password === confirmPassword;
   const canSubmit = emailOk && pwdOk && confirmOk;
 
@@ -89,11 +71,16 @@ export function RegisterPage() {
     e.preventDefault();
     setWasSubmitted(true);
     setTouchedEmail(true);
-    setTouchedPassword(true);
+    setTouchedPwd(true);
     setTouchedConfirm(true);
     setError(null);
 
-    if (!canSubmit) return;
+    if (!canSubmit) {
+      if (!emailOk) emailRef.current?.focus();
+      else if (!pwdOk) pwdRef.current?.focus();
+      else if (!confirmOk) confirmRef.current?.focus();
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -101,6 +88,10 @@ export function RegisterPage() {
       navigate("/me", { replace: true });
     } catch (err) {
       setError(err);
+      setTimeout(() => {
+        if ((fieldErrors["email"]?.length ?? 0) > 0) emailRef.current?.focus();
+        else if ((fieldErrors["password"]?.length ?? 0) > 0) pwdRef.current?.focus();
+      }, 0);
     } finally {
       setSubmitting(false);
     }
@@ -109,22 +100,11 @@ export function RegisterPage() {
   const hasApiError = error !== null && Boolean(uiError.title);
   const alertId = hasApiError ? "register-alert" : undefined;
 
-  // Compose field messages
-  const emailAllErrors: string[] = [
-    ...(emailLocalError ? [emailLocalError] : []),
-    ...serverEmailErrors,
-  ];
-  const passwordAllErrors: string[] = [
-    ...(pwdLocalErr ? [pwdLocalErr] : []),
-    ...serverPasswordErrors,
-  ];
-  const confirmAllErrors: string[] = confirmPwdLocalErr ? [confirmPwdLocalErr] : [];
-
   return (
     <main className="mx-auto w-full max-w-sm p-6">
       <Card title="Create account" className="w-full">
         {hasApiError && (
-          <div id={alertId} role="alert" className="mb-4">
+          <div id={alertId} role="alert" aria-live="polite" className="mb-4">
             <p className="font-medium">{uiError.title}</p>
             {uiError.message && <p className="text-sm mt-1">{uiError.message}</p>}
           </div>
@@ -134,6 +114,7 @@ export function RegisterPage() {
           <div>
             <Label htmlFor="email" size="md" requiredMark>Email</Label>
             <Input
+              ref={emailRef}
               id="email"
               type="email"
               required
@@ -142,52 +123,72 @@ export function RegisterPage() {
               onBlur={() => setTouchedEmail(true)}
               autoComplete="email"
               className="mt-1"
-              invalid={emailAllErrors.length > 0}
-              errorId={emailAllErrors.length ? "email-error" : undefined}
+              invalid={emailAllErrs.length > 0}
+              errorId={emailAllErrs.length ? "email-error" : undefined}
             />
-            {emailAllErrors.length ? (
-              <FormErrorText id="email-error">{emailAllErrors.join(" ")}</FormErrorText>
+            {emailAllErrs.length ? (
+              <FormErrorText id="email-error" aria-live="polite">
+                {emailAllErrs.join(" ")}
+              </FormErrorText>
             ) : null}
           </div>
 
           <div>
             <Label htmlFor="password" size="md" requiredMark>Password</Label>
             <Input
+              ref={pwdRef}
               id="password"
               type={showPasswords ? "text" : "password"}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onBlur={() => setTouchedPassword(true)}
+              onFocus={() => setPwdFocused(true)}
+              onBlur={() => {
+                setPwdFocused(false);
+                setTouchedPwd(true);
+              }}
               autoComplete="new-password"
               className="mt-1"
-              invalid={passwordAllErrors.length > 0}
-              errorId={passwordAllErrors.length ? "password-error" : undefined}
+              invalid={pwdAllErrs.length > 0}
+              errorId={pwdAllErrs.length ? "password-error" : undefined}
             />
-            {passwordAllErrors.length ? (
-              <FormErrorText id="password-error">{passwordAllErrors.join(" ")}</FormErrorText>
+            {pwdAllErrs.length ? (
+              <FormErrorText id="password-error" aria-live="polite">
+                {pwdAllErrs.join(" ")}
+              </FormErrorText>
             ) : null}
           </div>
 
-          <div>
+          <div aria-disabled={!pwdOk}>
             <Label htmlFor="confirmPassword" size="md" requiredMark>
               Confirm Password
             </Label>
             <Input
+              ref={confirmRef}
               id="confirmPassword"
               type={showPasswords ? "text" : "password"}
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              onBlur={() => setTouchedConfirm(true)}
+              onFocus={() => setConfirmFocused(true)}
+              onBlur={() => {
+                setConfirmFocused(false);
+                setTouchedConfirm(true);
+              }}
               autoComplete="new-password"
               className="mt-1"
-              invalid={confirmAllErrors.length > 0}
-              errorId={confirmAllErrors.length ? "confirm-password-error" : undefined}
+              invalid={confirmAllErrs.length > 0}
+              errorId={confirmAllErrs.length ? "confirm-password-error" : undefined}
+              disabled={!pwdOk}
+              aria-disabled={!pwdOk}
+              readOnly={!pwdOk}
+              tabIndex={pwdOk ? 0 : -1}
             />
-            {confirmAllErrors.length ? (
-              <FormErrorText id="confirm-password-error">
-                {confirmAllErrors.join(" ")}
+            {!pwdOk ? (
+              <p className="text-sm opacity-80 mt-1"></p>
+            ) : confirmAllErrs.length ? (
+              <FormErrorText id="confirm-password-error" aria-live="polite">
+                {confirmAllErrs.join(" ")}
               </FormErrorText>
             ) : null}
           </div>
@@ -198,9 +199,7 @@ export function RegisterPage() {
               checked={showPasswords}
               onChange={(e) => setShowPasswords(e.currentTarget.checked)}
             />
-            <Label htmlFor="showPasswords" size="sm">
-              Show passwords
-            </Label>
+            <Label htmlFor="showPasswords" size="sm">Show passwords</Label>
           </div>
 
           <Button

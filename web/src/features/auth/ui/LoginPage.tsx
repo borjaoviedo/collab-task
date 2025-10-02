@@ -1,128 +1,165 @@
-import { useState, useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Navigate, Link, useNavigate } from "react-router-dom";
 import { login } from "@features/auth/application/auth.usecases";
 import { useAuthStore } from "@shared/store/auth.store";
 import { useApiError } from "@shared/hooks/useApiError";
-
 import { Card } from "@shared/ui/Card";
 import { Label } from "@shared/ui/Label";
 import { Input } from "@shared/ui/Input";
 import { Button } from "@shared/ui/Button";
 import { FormErrorText } from "@shared/ui/FormErrorText";
+import { Checkbox } from "@shared/ui/Checkbox";
+import {
+  isValidEmail,
+  passwordError,
+  normalizeServerFieldErrors,
+} from "@shared/validation/auth";
 
 export function LoginPage() {
   const isAuth = useAuthStore((s) => s.isAuthenticated);
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [wasSubmitted, setWasSubmitted] = useState(false);
+  const [pwdFocused, setPwdFocused] = useState(false);
+  const [touchedEmail, setTouchedEmail] = useState(false);
+  const [touchedPwd, setTouchedPwd] = useState(false);
+
+  const emailRef = useRef<HTMLInputElement | null>(null);
+  const pwdRef = useRef<HTMLInputElement | null>(null);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const uiError = useApiError(error);
 
-  const isValidation =
-    uiError.status === 422 &&
-    typeof uiError.details === "object" &&
-    uiError.details !== null;
+  const fieldErrors = useMemo(() => normalizeServerFieldErrors(uiError), [uiError]);
 
-  const fieldErrors = useMemo(() => {
-    if (!isValidation) return {} as Record<string, string[]>;
-    const raw = uiError.details as Record<string, string[] | string>;
-    const norm: Record<string, string[]> = {};
-    for (const [k, v] of Object.entries(raw)) {
-      norm[k.toLowerCase()] = Array.isArray(v) ? v : [String(v)];
-    }
-    return norm;
-  }, [isValidation, uiError.details]);
+  const showEmailVal = (wasSubmitted || touchedEmail) && email.length > 0;
+  const showPwdVal = (wasSubmitted || touchedPwd || pwdFocused) && password.length > 0;
 
-  const emailErrors = fieldErrors["email"] ?? [];
-  const passwordErrors = fieldErrors["password"] ?? [];
+  const emailLocalErr = showEmailVal && !isValidEmail(email) ? "Invalid email format" : null;
+  const pwdLocalErr = showPwdVal ? passwordError(password) : null;
+
+  const serverEmailErrs = fieldErrors["email"] ?? [];
+  const serverPwdErrs = fieldErrors["password"] ?? [];
+
+  const emailAllErrs = [...(emailLocalErr ? [emailLocalErr] : []), ...serverEmailErrs];
+  const pwdAllErrs = [...(pwdLocalErr ? [pwdLocalErr] : []), ...serverPwdErrs];
+
+  const emailOk = isValidEmail(email);
+  const pwdOk = passwordError(password) === null;
+  const canSubmit = emailOk && pwdOk;
 
   if (isAuth) return <Navigate to="/me" replace />;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setWasSubmitted(true);
+    setTouchedEmail(true);
+    setTouchedPwd(true);
     setError(null);
+
+    if (!canSubmit) {
+      if (!emailOk) emailRef.current?.focus();
+      else if (!pwdOk) pwdRef.current?.focus();
+      return;
+    }
+
     setSubmitting(true);
     try {
       await login({ email, password });
       navigate("/me", { replace: true });
     } catch (err) {
       setError(err);
+      setTimeout(() => {
+        if ((fieldErrors["email"]?.length ?? 0) > 0) emailRef.current?.focus();
+        else if ((fieldErrors["password"]?.length ?? 0) > 0) pwdRef.current?.focus();
+      }, 0);
     } finally {
       setSubmitting(false);
     }
   }
 
-  const hasError = error !== null;
-  const alertId = hasError ? "login-alert" : undefined;
+  const hasApiError = error !== null && Boolean(uiError.title);
+  const alertId = hasApiError ? "login-alert" : undefined;
 
   return (
     <main className="mx-auto w-full max-w-sm p-6">
       <Card title="Sign in" className="w-full">
-        {hasError && uiError.title && (
-          <div id={alertId} role="alert" className="mb-4">
+        {hasApiError && (
+          <div id={alertId} role="alert" aria-live="polite" className="mb-4">
             <p className="font-medium">{uiError.title}</p>
-            {uiError.message && (
-              <p className="text-sm mt-1">{uiError.message}</p>
-            )}
+            {uiError.message && <p className="text-sm mt-1">{uiError.message}</p>}
           </div>
         )}
 
-        <form
-          onSubmit={onSubmit}
-          className="space-y-4"
-          noValidate
-          aria-describedby={alertId}
-        >
+        <form onSubmit={onSubmit} className="space-y-4" noValidate aria-describedby={alertId}>
           <div>
-            <Label htmlFor="email" size="md" requiredMark>
-              Email
-            </Label>
+            <Label htmlFor="email" size="md" requiredMark>Email</Label>
             <Input
+              ref={emailRef}
               id="email"
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setTouchedEmail(true)}
               autoComplete="email"
               className="mt-1"
-              invalid={emailErrors.length > 0}
-              errorId={emailErrors.length ? "email-error" : undefined}
+              invalid={emailAllErrs.length > 0}
+              errorId={emailAllErrs.length ? "email-error" : undefined}
             />
-            {emailErrors.length ? (
-              <FormErrorText id="email-error">
-                {emailErrors.join(" ")}
+            {emailAllErrs.length ? (
+              <FormErrorText id="email-error" aria-live="polite">
+                {emailAllErrs.join(" ")}
               </FormErrorText>
             ) : null}
           </div>
 
           <div>
-            <Label htmlFor="password" size="md" requiredMark>
-              Password
-            </Label>
+            <Label htmlFor="password" size="md" requiredMark>Password</Label>
             <Input
+              ref={pwdRef}
               id="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onFocus={() => setPwdFocused(true)}
+              onBlur={() => {
+                setPwdFocused(false);
+                setTouchedPwd(true);
+              }}
               autoComplete="current-password"
               className="mt-1"
-              invalid={passwordErrors.length > 0}
-              errorId={passwordErrors.length ? "password-error" : undefined}
+              invalid={pwdAllErrs.length > 0}
+              errorId={pwdAllErrs.length ? "password-error" : undefined}
             />
-            {passwordErrors.length ? (
-              <FormErrorText id="password-error">
-                {passwordErrors.join(" ")}
+            {pwdAllErrs.length ? (
+              <FormErrorText id="password-error" aria-live="polite">
+                {pwdAllErrs.join(" ")}
               </FormErrorText>
             ) : null}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="showPassword"
+              checked={showPassword}
+              onChange={(e) => setShowPassword(e.currentTarget.checked)}
+            />
+            <Label htmlFor="showPassword" size="sm">Show password</Label>
           </div>
 
           <Button
             type="submit"
             className="w-full"
             isLoading={submitting}
-            disabled={submitting}
+            disabled={!canSubmit || submitting}
+            aria-disabled={!canSubmit || submitting}
           >
             {submitting ? <span className="spinner" aria-hidden="true" /> : null}
             {submitting ? "Signing in…" : "Sign in"}
@@ -130,10 +167,7 @@ export function LoginPage() {
         </form>
 
         <p className="mt-4 text-sm">
-          No account?{" "}
-          <Link to="/register" className="underline">
-            Register
-          </Link>
+          No account? <Link to="/register" className="underline">Register</Link>
         </p>
       </Card>
     </main>
