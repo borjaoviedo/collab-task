@@ -31,7 +31,7 @@ export function HomePage() {
                   <Link to="/projects">Open projects</Link>
                 </Button>
                 {typeof logout === "function" && (
-                  <Button asChild onClick={logout} aria-label="Sign out">
+                  <Button aria-label="Sign out" onClick={logout}>
                     Sign out
                   </Button>
                 )}
