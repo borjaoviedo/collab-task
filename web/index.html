@@ -3,6 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      try {
+        const p = localStorage.getItem("ct_palette") || "neutral";
+        const m = localStorage.getItem("ct_mode") || "light";
+        const r = document.documentElement;
+        r.dataset.palette = p;
+        if (m === "dark") r.dataset.theme = "dark";
+      } catch {}
+    </script>
     <title>CollabTask</title>
   </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="src/app/main.tsx"></script>
+  </body>
 </html>

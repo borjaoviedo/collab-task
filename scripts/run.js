@@ -7,7 +7,8 @@ const MAP = {
   prod: { dir: "dev", base: "prod" },
   "test:unit": { dir: "test", base: "test.unit" },
   "test:infra": { dir: "test", base: "test.infra" },
-  "test:all": ["test:unit", "test:infra"]
+  "test:web": { dir: "test", base: "test.web" },
+  "test:all": ["test:unit", "test:infra", "test:web"]
 };
 
 function runFile(dir, base, extraArgs) {

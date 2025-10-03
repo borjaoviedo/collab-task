@@ -3,11 +3,17 @@ param(
   [ValidateSet('up','down','rebuild','logs','health')]
   [string]$cmd,
   [string]$ProjectName = 'collabtask',
-  [int]$ApiPort = 8080  # used only in demo mode
+  [int]$ApiPort = 8080,  # used only in demo mode
+  [string]$EnvFile
 )
 
 # Resolve Compose files (base + prod overlay)
 $Infra = (Resolve-Path (Join-Path $PSScriptRoot '..\..\infra')).Path
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+
+if (-not $EnvFile) { $EnvFile = (Join-Path $RepoRoot '.env.prod') }
+if (-not (Test-Path $EnvFile)) { throw "Env file not found: $EnvFile" }
+
 $files = @(
   '--project-directory', $Infra,
   '-f', (Join-Path $Infra 'compose.yaml'),
@@ -15,6 +21,7 @@ $files = @(
 )
 $profiles = @('--profile','prod')
 $project  = @('--project-name', $ProjectName)
+$envargs  = @('--env-file', $EnvFile)
 
 function Cleanup-ComposeLeftovers {
   param([string]$Name)
@@ -30,7 +37,7 @@ function Wait-Health {
   # Prefer Docker health status to avoid requiring a public port
   $svc = "api"
   for ($i = 1; $i -le $Retries; $i++) {
-    $cid = docker compose $files $project ps -q $svc
+    $cid = docker compose $files $project $envargs ps -q $svc
     if (-not $cid) { Start-Sleep -Seconds $DelaySec; continue }
     $status = docker inspect --format='{{json .State.Health.Status}}' $cid 2>$null
     if ($status -and $status -match 'healthy') { return $true }
@@ -47,21 +54,21 @@ function Wait-Health {
 switch ($cmd) {
   'up' {
     # Start stack in background and wait for readiness
-    docker compose $files $profiles $project up -d
+    docker compose $files $profiles $project $envargs up -d
     Wait-Health | Out-Null
   }
   'down' {
     # Stop and remove all resources from the project
-    docker compose $files $project down -v --remove-orphans
+    docker compose $files $project $envargs down -v --remove-orphans
     Cleanup-ComposeLeftovers -Name $ProjectName
   }
   'rebuild' {
     # Force a clean rebuild of the API image
-    docker compose $files $project build --no-cache api
+    docker compose $files $project $envargs build --no-cache api
   }
   'logs' {
     # Stream API logs
-    docker compose $files $project logs -f api
+    docker compose $files $project $envargs logs -f api
   }
   'health' {
     # Report current health via Docker or HTTP fallback

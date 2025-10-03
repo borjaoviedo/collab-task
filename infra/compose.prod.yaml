@@ -3,22 +3,24 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       DOTNET_ENVIRONMENT: Production
-      Jwt__Key: "${JWT_KEY:-change_me_with_real_32_bytes}"
+      Jwt__Key: "${JWT_KEY}"
       Jwt__Issuer: "collabtask"
       Jwt__Audience: "collabtask"
-    # For demo deployments we expose directly on port 8080 (host:container).
-    # In real production scenarios, a reverse proxy (80/443) is recommended.
-    ports:
-      - "8080:8080"
+    # Demo: expose API directly on host 8080. In real prod use a reverse proxy (80/443)
+    ports: ["8080:8080"]
     profiles: ["prod"]
 
   web:
-    # Demo deployments expose Web directly on host 8081.
-    # In real production, serve Web via a reverse proxy on 80/443.
-    ports:
-      - "8081:8080"
+    # Build React (Vite) and serve with Nginx as defined in web.dockerfile
+    build:
+      args:
+        BUILD_MODE: production
+        # Vite env injected at build time
+        VITE_API_BASE_URL: "http://localhost:8080"
+    # Host 8081 -> container 8080 (Nginx in the image)
+    ports: ["8081:8080"]
     profiles: ["prod"]
 
   sql:
-    # Database is not exposed in prod; only accessible through the internal Docker network.
+    # Database is not exposed in prod; only accessible through the internal Docker network
     profiles: ["prod"]
