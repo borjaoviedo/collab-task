@@ -48,13 +48,18 @@ export function HomePage() {
                   </Link>
                 </li>
                 <li>
-                  <Link className="underline underline-offset-4" to="/todos?filter=overdue">
-                    Overdue
+                  <Link className="underline underline-offset-4" to="/me">
+                    Profile
                   </Link>
                 </li>
                 <li>
                   <Link className="underline underline-offset-4" to="/settings">
                     Settings
+                  </Link>
+                </li>
+                <li>
+                  <Link className="underline underline-offset-4" onClick={logout} to="/">
+                    Sign out
                   </Link>
                 </li>
               </ul>
