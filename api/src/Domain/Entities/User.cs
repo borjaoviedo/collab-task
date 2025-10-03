@@ -9,6 +9,7 @@ namespace Domain.Entities
     {
         public Guid Id { get; set; }
         public required Email Email { get; set; }
+        public required UserName Name { get; set; }
         public byte[] PasswordHash { get; set; } = default!;
         public byte[] PasswordSalt { get; set; } = default!;
         public UserRole Role { get; set; } = UserRole.User;
