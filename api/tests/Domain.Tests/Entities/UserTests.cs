@@ -16,6 +16,7 @@ namespace Domain.Tests.Entities
             {
                 Id = Guid.NewGuid(),
                 Email = Email.Create("user@demo.com"),
+                Name = UserName.Create("Demo User"),
                 PasswordHash = Bytes(32),
                 PasswordSalt = Bytes(16),
                 CreatedAt = DateTimeOffset.UtcNow,
@@ -32,6 +33,7 @@ namespace Domain.Tests.Entities
         {
             var id = Guid.NewGuid();
             var email = Email.Create("dev@demo.com");
+            var name = UserName.Create("Demo Dev");
             var hash = Bytes(64);
             var salt = Bytes(32);
             var created = DateTimeOffset.UtcNow.AddMinutes(-5);
@@ -41,6 +43,7 @@ namespace Domain.Tests.Entities
             {
                 Id = id,
                 Email = email,
+                Name = name,
                 PasswordHash = hash,
                 PasswordSalt = salt,
                 CreatedAt = created,
@@ -49,6 +52,7 @@ namespace Domain.Tests.Entities
 
             u.Id.Should().Be(id);
             u.Email.Should().Be(email);
+            u.Name.Should().Be(name);
             u.PasswordHash.Should().BeSameAs(hash);
             u.PasswordSalt.Should().BeSameAs(salt);
             u.CreatedAt.Should().Be(created);
@@ -62,6 +66,7 @@ namespace Domain.Tests.Entities
             {
                 Id = Guid.NewGuid(),
                 Email = Email.Create("owner@demo.com"),
+                Name = UserName.Create("Demo Owner"),
                 PasswordHash = Bytes(32),
                 PasswordSalt = Bytes(16),
                 CreatedAt = DateTimeOffset.UtcNow,
@@ -83,6 +88,7 @@ namespace Domain.Tests.Entities
             {
                 Id = userId,
                 Email = Email.Create("m@demo.com"),
+                Name = UserName.Create("Demo Member"),
                 PasswordHash = Bytes(32),
                 PasswordSalt = Bytes(16),
                 CreatedAt = DateTimeOffset.UtcNow,
@@ -115,6 +121,7 @@ namespace Domain.Tests.Entities
             {
                 Id = Guid.NewGuid(),
                 Email = Email.Create("v@demo.com"),
+                Name = UserName.Create("Demo RowVersion"),
                 PasswordHash = Bytes(32),
                 PasswordSalt = Bytes(16),
                 CreatedAt = DateTimeOffset.UtcNow,
@@ -135,6 +142,7 @@ namespace Domain.Tests.Entities
             {
                 Id = Guid.NewGuid(),
                 Email = Email.Create("t@demo.com"),
+                Name = UserName.Create("Demo Time"),
                 PasswordHash = Bytes(32),
                 PasswordSalt = Bytes(16),
                 CreatedAt = created,

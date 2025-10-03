@@ -57,6 +57,7 @@ namespace Domain.Tests.Entities
             {
                 Id = Guid.NewGuid(),
                 Email = Email.Create("member@demo.com"),
+                Name = UserName.Create("Project Member"),
                 PasswordHash = Bytes(32),
                 PasswordSalt = Bytes(16),
                 CreatedAt = DateTimeOffset.UtcNow.AddDays(-10),
