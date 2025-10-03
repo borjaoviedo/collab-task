@@ -1,66 +1,121 @@
 # collab-task
 
-Collaborative real-time task management app built with **ASP.NET Core** (backend) and **React** (frontend).
+Collaborative real-time task management app built with **ASP.NET Core** (backend) and **React + TypeScript + Tailwind** (frontend).
+
+---
+
+## Features (v0.1.0)
+
+- User authentication with registration, login, and profile retrieval.  
+- Secure password hashing (PBKDF2) and JWT-based authentication.  
+- Backend and frontend served via Docker (dev + prod).  
+- Feature-based frontend architecture with protected routes.  
+- Minimal UI: landing, login, register, and `/me` profile page.  
+- Session management with token persistence and auto-logout on 401.  
+- API client generated from OpenAPI contract.  
+- Continuous Integration with build, type-check, contract validation, and tests.  
+- Test coverage ≥60% across backend and frontend.
+
+---
+
+## Project Structure
+
+```
+/.github    -> GitHub Actions workflows
+/api        -> ASP.NET Core backend
+/infra      -> Docker Compose definitions and infra configs
+/scripts    -> Unified scripts (dev, prod, test, openapi)
+/web        -> Vite + React + TypeScript + Tailwind frontend
+```
+
+---
+
+## Local Development
+
+**Requirements**: .NET 8 SDK, Node.js 20+, Docker Desktop.
+
+### Commands
+
+```
+npm run dev [args]    # development environment
+npm run prod [args]   # production profile
+```
+
+### Arguments
+
+The optional [args] can be used to control the behavior:
+
+```
+- rebuild   -> Rebuild images before starting
+- up        -> Start containers
+- down      -> Stop containers
+- health    -> Check containers health status
+- logs      -> Show container logs
+```
+
+Examples:
+
+```
+npm run dev rebuild   # rebuild dev containers
+npm run dev up        # start dev environment
+npm run prod down     # stop prod containers
+npm run prod health   # check health of prod containers
+npm run prod logs     # view logs for prod environment
+```
+
+- Backend API available at http://localhost:8080 (dev).  
+- Frontend available at http://localhost:8081 (dev/prod).  
 
 ---
 
 ## Testing
 
-The solution includes two levels of automated tests:
-
-- **Unit tests (fast, no external infra)**  
-  Cover **Domain**, **Application**, and **API** surface (minimal endpoints, filters, problem details) using in-memory doubles and test host.  
-  No database or external services are required.
-
-- **Integration tests (with infrastructure)**  
-  Validate the **Infrastructure** layer using [Testcontainers for .NET](https://github.com/testcontainers/testcontainers-dotnet) with SQL Server to exercise EF Core persistence, migrations, idempotent seeding, and concurrency.
-  
-### Run tests
+### Backend
+- **Unit tests**: Domain, Application, API.  
+- **Integration tests**: Infrastructure with SQL Server Testcontainers.  
 
 ```
-npm run test:unit     # run unit tests only (Domain, Application, API)
-npm run test:infra    # run infrastructure tests with Testcontainers
-npm run test:all      # run full test suite (unit + integration)
+npm run test:unit     # backend unit tests
+npm run test:infra    # backend infra tests
 ```
 
-### Notes
+### Frontend
+- Component tests and login flow tests.  
 
-- Integration tests require Docker running locally.
-- Each infrastructure test suite spins up an ephemeral SQL Server container.
-- Tests are isolated and leave no state behind.
-- Test coverage thresholds are configured in `Directory.Build.props`.
+```
+npm run test:web   # frontend tests
+```
+
+### Combined
+```
+npm run test:all   # backend + frontend tests
+```
+
+**Notes**  
+- Integration tests require Docker running locally.  
+- Coverage thresholds (≥60%) are enforced via CI.  
 
 ---
 
-### Continuous Integration
-
-- CI is configured via GitHub Actions (`.github/workflows/ci.yml`).
-- On every push or pull request:
-  - Build against .NET 8.
-  - Run unit and integration tests (with Docker on hosted runners).
-- The workflow fails if any test fails or coverage drops below the configured threshold.
- 
----
-
-### Local Development
-
-- Requires **.NET 8 SDK**, **Node.js 20+**, and **Docker Desktop** (for integration tests).
-```
-npm run dev   # docker-compose up for development
-npm run prod  # docker-compose up for production profile
-```
-- Backend and frontend can be run independently or together via the `infra/` compose files.
-
----
-
-### Developer utilities
+## Developer Utilities
 
 ```
 npm run gen:api         # generate TypeScript types from OpenAPI (web/src/shared/api/types.ts)
-npm run check:contract  # validate OpenAPI contract vs expected invariants
+npm run check:contract  # validate OpenAPI contract consistency
 ```
 
 ---
-### License
+
+## Continuous Integration
+
+- GitHub Actions workflow (`ci.yml`) runs on push/PR:  
+  - Build backend and frontend.  
+  - Run all tests (unit, infra, web).  
+  - Validate OpenAPI contract.  
+  - Enforce coverage threshold.  
+
+---
+
+## License
 
 This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
