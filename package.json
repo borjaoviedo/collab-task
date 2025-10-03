@@ -8,6 +8,7 @@
     "prod": "node scripts/run.js prod",
     "test:unit": "node scripts/run.js test:unit",
     "test:infra": "node scripts/run.js test:infra",
+    "test:web": "node scripts/run.js test:web",
     "test:all": "node scripts/run.js test:all",
     "gen:api": "openapi-typescript contracts/openapi.json -o web/src/shared/api/types.ts",
     "check:contract": "node scripts/tools/check-openapi.js"
