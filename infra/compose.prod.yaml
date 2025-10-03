@@ -3,7 +3,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       DOTNET_ENVIRONMENT: Production
-      Jwt__Key: "${JWT_KEY:-change_me_with_real_32_bytes}"
+      Jwt__Key: "${JWT_KEY}"
       Jwt__Issuer: "collabtask"
       Jwt__Audience: "collabtask"
     # Demo: expose API directly on host 8080. In real prod use a reverse proxy (80/443)
@@ -13,8 +13,6 @@ services:
   web:
     # Build React (Vite) and serve with Nginx as defined in web.dockerfile
     build:
-      context: ../web 
-      dockerfile: web.dockerfile
       args:
         BUILD_MODE: production
         # Vite env injected at build time
