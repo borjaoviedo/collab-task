@@ -19,7 +19,8 @@ export function MePage() {
   const uiError = useApiError(error);
 
   const hasCachedProfile = Boolean(cached?.id);
-  const loading = isAuth && !hasCachedProfile && !data;
+  // Do not show loading if an error exists
+  const loading = isAuth && !hasCachedProfile && !data && !error;
 
   // Guard to avoid duplicate fetch in React StrictMode dev
   const requestedRef = useRef(false);
@@ -28,6 +29,9 @@ export function MePage() {
     let active = true;
     if (!isAuth || hasCachedProfile) return;
     if (requestedRef.current) return;
+
+    requestedRef.current = true;
+    setError(null);
 
     (async () => {
       try {
@@ -39,19 +43,21 @@ export function MePage() {
       }
     })();
 
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [isAuth, hasCachedProfile]);
 
   if (loading) return <p aria-busy="true">Loading profile…</p>;
 
   if (isAuth && uiError) {
-  return (
-    <section role="alert" aria-live="polite">
-      <h2 className="text-lg font-semibold">{uiError.title}</h2>
-      {uiError.message && <p className="mt-2 whitespace-pre-wrap">{uiError.message}</p>}
-    </section>
-  );
-}
+    return (
+      <section role="alert" aria-live="polite">
+        <h2 className="text-lg font-semibold">{uiError.title}</h2>
+        {uiError.message && <p className="mt-2 whitespace-pre-wrap">{uiError.message}</p>}
+      </section>
+    );
+  }
 
   const p = data ?? cached ?? null;
 
