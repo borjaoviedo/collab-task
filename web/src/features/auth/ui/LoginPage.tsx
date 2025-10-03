@@ -14,6 +14,7 @@ import {
   passwordError,
   normalizeServerFieldErrors,
 } from "@shared/validation/auth";
+import { ApiError } from "@shared/api/client";
 
 export function LoginPage() {
   const isAuth = useAuthStore((s) => s.isAuthenticated);
@@ -35,6 +36,9 @@ export function LoginPage() {
   const [error, setError] = useState<unknown>(null);
   const uiError = useApiError(error);
 
+  // Local flag to convert 401 on /auth/login into field-level error, not a global alert
+  const [invalidCreds, setInvalidCreds] = useState(false);
+
   const fieldErrors = useMemo(() => normalizeServerFieldErrors(uiError), [uiError]);
 
   const showEmailVal = (wasSubmitted || touchedEmail) && email.length > 0;
@@ -44,7 +48,12 @@ export function LoginPage() {
   const pwdLocalErr = showPwdVal ? passwordError(password) : null;
 
   const serverEmailErrs = fieldErrors["email"] ?? [];
-  const serverPwdErrs = fieldErrors["password"] ?? [];
+  let serverPwdErrs = fieldErrors["password"] ?? [];
+
+  // Inject field-level error for invalid credentials
+  if (invalidCreds) {
+    serverPwdErrs = [...serverPwdErrs, "Email or password is incorrect."];
+  }
 
   const emailAllErrs = [...(emailLocalErr ? [emailLocalErr] : []), ...serverEmailErrs];
   const pwdAllErrs = [...(pwdLocalErr ? [pwdLocalErr] : []), ...serverPwdErrs];
@@ -60,6 +69,7 @@ export function LoginPage() {
     setWasSubmitted(true);
     setTouchedEmail(true);
     setTouchedPwd(true);
+    setInvalidCreds(false);
     setError(null);
 
     if (!canSubmit) {
@@ -73,25 +83,35 @@ export function LoginPage() {
       await login({ email, password });
       navigate("/me", { replace: true });
     } catch (err) {
-      setError(err);
-      setTimeout(() => {
-        if ((fieldErrors["email"]?.length ?? 0) > 0) emailRef.current?.focus();
-        else if ((fieldErrors["password"]?.length ?? 0) > 0) pwdRef.current?.focus();
-      }, 0);
+      // Convert 401 from /auth/login into field-level error, not global alert
+      if (err instanceof ApiError && err.status === 401) {
+        setInvalidCreds(true);
+        // Avoid showing the global alert area for this case
+        setError(null);
+        // Focus on password field after paint
+        setTimeout(() => pwdRef.current?.focus(), 0);
+      } else {
+        setError(err);
+        setTimeout(() => {
+          if ((fieldErrors["email"]?.length ?? 0) > 0) emailRef.current?.focus();
+          else if ((fieldErrors["password"]?.length ?? 0) > 0) pwdRef.current?.focus();
+        }, 0);
+      }
     } finally {
       setSubmitting(false);
     }
   }
 
-  const hasApiError = uiError != null;
+  // Show alert only when there is an API error that is NOT invalid credentials on login
+  const hasApiError = uiError != null && !invalidCreds;
   const alertId = hasApiError ? "login-alert" : undefined;
 
   return (
     <main className="mx-auto w-full max-w-sm p-6">
       <Card title="Sign in" className="w-full">
         {hasApiError && (
-          <div id={alertId} role="alert" aria-live="polite" className="mb-4">
-            <p className="font-medium">{uiError?.title}</p>
+          <div id={alertId} role="alert" aria-live="assertive" className="mb-4">
+            {uiError?.title && <p className="font-medium">{uiError.title}</p>}
             {uiError?.message && <p className="text-sm mt-1">{uiError.message}</p>}
           </div>
         )}
