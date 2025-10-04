@@ -1,4 +1,4 @@
-using Api.Auth;
+using Api.Auth.Services;
 using Api.Errors;
 using Application.Common.Abstractions.Auth;
 using Infrastructure;
@@ -17,6 +17,7 @@ namespace Api.Extensions
                 .AddInfrastructure(connectionString)
                 .AddSwaggerWithJwt()
                 .AddJwtAuth(config)
+                .AddProjectAuthorization()
                 .AddHttpContextAccessor()
                 .AddScoped<ICurrentUserService, CurrentUserService>()
                 .AddAppValidation()
