@@ -95,13 +95,7 @@ namespace Domain.Tests.Entities
                 UpdatedAt = DateTimeOffset.UtcNow
             };
 
-            var member = new ProjectMember
-            {
-                ProjectId = projId,
-                UserId = userId,
-                Role = ProjectRole.Owner,
-                JoinedAt = DateTimeOffset.UtcNow
-            };
+            var member = new ProjectMember(projId, userId, ProjectRole.Owner, DateTimeOffset.UtcNow);
 
             u.ProjectMemberships.Add(member);
 
