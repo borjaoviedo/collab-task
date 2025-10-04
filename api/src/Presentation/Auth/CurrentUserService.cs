@@ -1,4 +1,5 @@
 using Application.Common.Abstractions.Auth;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace Api.Auth
@@ -17,12 +18,14 @@ namespace Api.Auth
         {
             get
             {
-                var id = Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var id = Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
                 return Guid.TryParse(id, out var guid) ? guid : null;
             }
         }
 
-        public string? Email => Principal?.FindFirst(ClaimTypes.Email)?.Value;
+        public string? Email => Principal?.FindFirst(ClaimTypes.Email)?.Value
+            ?? Principal?.FindFirst(JwtRegisteredClaimNames.Email)?.Value;
         public string? Name => Principal?.FindFirst(ClaimTypes.Name)?.Value;
 
         public string? Role => Principal?.FindFirst(ClaimTypes.Role)?.Value;
