@@ -44,32 +44,12 @@ namespace Infrastructure.Data.Seeders
 
             context.Users.AddRange(user1, user2);
 
+            var utcNow = DateTimeOffset.UtcNow;
             // Demo project
-            var project = new Project
-            {
-                Id = Guid.NewGuid(),
-                Name = ProjectName.Create("Demo Project"),
-                Slug = ProjectSlug.Create("demo-project"),
-            };
+            var project = Project.Create(user1.Id, ProjectName.Create("Demo Project"), utcNow);
+            project.AddMember(user2.Id, ProjectRole.Member, utcNow);
 
             context.Projects.Add(project);
-
-            // Demo memberships
-            context.ProjectMembers.Add(new ProjectMember
-            {
-                ProjectId = project.Id,
-                UserId = user1.Id,
-                Role = ProjectRole.Owner,
-                JoinedAt = DateTimeOffset.UtcNow,
-            });
-
-            context.ProjectMembers.Add(new ProjectMember
-            {
-                ProjectId = project.Id,
-                UserId = user2.Id,
-                Role = ProjectRole.Member,
-                JoinedAt = DateTimeOffset.UtcNow,
-            });
 
             await context.SaveChangesAsync(ct);
         }
