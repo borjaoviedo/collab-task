@@ -1,5 +1,5 @@
 
-namespace Domain.Common
+namespace Domain.Common.Abstractions
 {
     public interface IAuditable
     {
