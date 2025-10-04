@@ -1,4 +1,3 @@
-using Api.Auth;
 using Api.Auth.Authorization;
 using Domain.Enums;
 using Infrastructure.Security;
