@@ -1,4 +1,4 @@
-namespace Api.Auth
+namespace Api.Auth.Authorization
 {
     public static class Policies
     {
