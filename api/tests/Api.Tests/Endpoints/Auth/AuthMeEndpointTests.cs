@@ -25,12 +25,13 @@ namespace Api.Tests.Endpoints.Auth
             using var client = app.CreateClient();
 
             var email = $"me+{Guid.NewGuid():N}@demo.com";
+            var name = "User Name";
             var password = "Str0ngP@ss!";
 
-            (await client.PostAsJsonAsync("/auth/register", new { email, password }))
+            (await client.PostAsJsonAsync("/auth/register", new { email, name, password }))
                 .EnsureSuccessStatusCode();
 
-            var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
+            var login = await client.PostAsJsonAsync("/auth/login", new { email, name, password });
             login.StatusCode.Should().Be(HttpStatusCode.OK);
             var auth = await login.Content.ReadFromJsonAsync<AuthTokenReadDto>(Json);
 
@@ -42,6 +43,7 @@ namespace Api.Tests.Endpoints.Auth
             var dto = await resp.Content.ReadFromJsonAsync<UserReadDto>(Json);
             dto.Should().NotBeNull();
             dto.Email.Should().Be(email.ToLowerInvariant());
+            dto.Name.Should().Be(name);
             dto.Role.Should().NotBeNullOrWhiteSpace();
         }
 
@@ -69,7 +71,7 @@ namespace Api.Tests.Endpoints.Auth
             var jwt = scope.ServiceProvider.GetRequiredService<IJwtTokenService>();
 
             var randomUserId = Guid.NewGuid(); // not in DB
-            var (token, _) = jwt.CreateToken(randomUserId, "ghost@demo.com", "User");
+            var (token, _) = jwt.CreateToken(randomUserId, "ghost@demo.com", "Ghost Name", "User");
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -142,6 +144,7 @@ namespace Api.Tests.Endpoints.Auth
     {
         public Guid Id { get; set; }
         public string Email { get; set; } = null!;
+        public string Name { get; set; } = null!;
         public string Role { get; set; } = null!;
     }
 }
