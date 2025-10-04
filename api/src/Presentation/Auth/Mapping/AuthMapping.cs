@@ -1,6 +1,7 @@
+using Api.Auth.DTOs;
 using Domain.Entities;
 
-namespace Api.Auth
+namespace Api.Auth.Mapping
 {
     public static class AuthMapping
     {

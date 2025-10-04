@@ -2,7 +2,7 @@ using Application.Common.Abstractions.Auth;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
-namespace Api.Auth
+namespace Api.Auth.Services
 {
     public sealed class CurrentUserService : ICurrentUserService
     {

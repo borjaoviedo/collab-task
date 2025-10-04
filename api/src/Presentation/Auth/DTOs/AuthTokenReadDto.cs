@@ -1,4 +1,4 @@
-namespace Api.Auth
+namespace Api.Auth.DTOs
 {
     public sealed class AuthTokenReadDto
     {
