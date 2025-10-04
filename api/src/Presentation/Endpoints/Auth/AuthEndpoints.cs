@@ -38,6 +38,9 @@ namespace Api.Endpoints.Auth
                 if (await users.ExistsByEmailAsync(dto.Email, ct))
                     throw new DuplicateEntityException("Could not complete registration.");
 
+                if (await users.ExistsByNameAsync(dto.Name, ct))
+                    throw new DuplicateEntityException("Could not complete registration.");
+
                 var (hash, salt) = hasher.Hash(dto.Password);
                 var user = UserMapping.ToEntity(dto, hash, salt);
 
@@ -48,11 +51,11 @@ namespace Api.Endpoints.Auth
                 }
                 catch (DbUpdateException ex) when (ex.IsUniqueViolation())
                 {
-                    log.LogInformation(ex, "Duplicate email on register.");
+                    log.LogInformation(ex, "Duplicate email or user name on register.");
                     throw new DuplicateEntityException("Could not complete registration.");
                 }
 
-                var (accessToken, expiresAtUtc) = jwt.CreateToken(user.Id, user.Email.Value, user.Role.ToString());
+                var (accessToken, expiresAtUtc) = jwt.CreateToken(user.Id, user.Email.Value, user.Name.Value, user.Role.ToString());
                 var payload = user.ToReadDto(accessToken, expiresAtUtc);
                 return Results.Ok(payload);
             })
@@ -96,7 +99,7 @@ namespace Api.Endpoints.Auth
 
                 log.LogInformation("Login success userId={UserId}", user!.Id);
 
-                var (accessToken, expiresAtUtc) = jwt.CreateToken(user!.Id, user.Email.Value, user.Role.ToString());
+                var (accessToken, expiresAtUtc) = jwt.CreateToken(user!.Id, user.Email.Value, user.Name.Value, user.Role.ToString());
                 var payload = user.ToReadDto(accessToken, expiresAtUtc);
 
                 return Results.Ok(payload);
