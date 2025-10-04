@@ -17,6 +17,7 @@ namespace Application.Tests.Users.Mappers
             {
                 Id = Guid.NewGuid(),
                 Email = Email.Create("user@demo.com"),
+                Name = UserName.Create("Demo User"),
                 Role = UserRole.User,
                 CreatedAt = DateTimeOffset.UtcNow.AddDays(-1),
                 UpdatedAt = DateTimeOffset.UtcNow,
@@ -28,6 +29,7 @@ namespace Application.Tests.Users.Mappers
 
             Assert.Equal(u.Id, dto.Id);
             Assert.Equal((string)u.Email, dto.Email);
+            Assert.Equal((string)u.Name, dto.Name);
             Assert.Equal(u.Role, dto.Role);
             Assert.Equal(u.CreatedAt, dto.CreatedAt);
             Assert.Equal(u.UpdatedAt, dto.UpdatedAt);
@@ -35,15 +37,16 @@ namespace Application.Tests.Users.Mappers
         }
 
         [Fact]
-        public void ToEntity_FromCreateDto_Sets_Email_Role_User_And_Hash_Salt()
+        public void ToEntity_FromCreateDto_Sets_Email_Name_Role_User_And_Hash_Salt()
         {
-            var create = new UserCreateDto { Email = "user@demo.com", Password = "GoodPwd1!" };
+            var create = new UserCreateDto { Email = "user@demo.com", Name = "User Name", Password = "GoodPwd1!" };
             var hash = Bytes(32);
             var salt = Bytes(16);
 
             var entity = create.ToEntity(hash, salt);
 
             Assert.Equal(Email.Create("user@demo.com"), entity.Email);
+            Assert.Equal(UserName.Create("User Name"), entity.Name);
             Assert.Equal(UserRole.User, entity.Role);
             Assert.Same(hash, entity.PasswordHash);
             Assert.Same(salt, entity.PasswordSalt);
@@ -56,6 +59,7 @@ namespace Application.Tests.Users.Mappers
             {
                 Id = Guid.NewGuid(),
                 Email = Email.Create("user@demo.com"),
+                Name = UserName.Create("Demo User"),
                 Role = UserRole.User,
                 RowVersion = Bytes(8)
             };
