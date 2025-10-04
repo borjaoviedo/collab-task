@@ -18,9 +18,10 @@ namespace Api.Tests.Endpoints.Auth
             using var client = app.CreateClient();
 
             var email = $"ok+{Guid.NewGuid():N}@demo.com";
+            var name = "User Name";
             var password = "Str0ngP@ss!";
 
-            (await client.PostAsJsonAsync("/auth/register", new { email, password })).EnsureSuccessStatusCode();
+            (await client.PostAsJsonAsync("/auth/register", new { email, name, password })).EnsureSuccessStatusCode();
 
             var resp = await client.PostAsJsonAsync("/auth/login", new { email, password });
             resp.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -33,6 +34,7 @@ namespace Api.Tests.Endpoints.Auth
             dto.ExpiresAtUtc.Kind.Should().Be(DateTimeKind.Utc);
 
             dto.Email.Should().Be(email.ToLowerInvariant());
+            dto.Name.Should().Be(name);
             dto.Role.Should().NotBeNullOrWhiteSpace();
         }
 
@@ -43,9 +45,10 @@ namespace Api.Tests.Endpoints.Auth
             using var client = app.CreateClient();
 
             var email = $"exp+{Guid.NewGuid():N}@demo.com";
+            var name = "User Name";
             var password = "Str0ngP@ss!";
 
-            (await client.PostAsJsonAsync("/auth/register", new { email, password })).EnsureSuccessStatusCode();
+            (await client.PostAsJsonAsync("/auth/register", new { email, name, password })).EnsureSuccessStatusCode();
 
             var t0 = DateTime.UtcNow;
             var resp = await client.PostAsJsonAsync("/auth/login", new { email, password });
@@ -90,9 +93,10 @@ namespace Api.Tests.Endpoints.Auth
             using var client = app.CreateClient();
 
             var email = $"badpwd+{Guid.NewGuid():N}@demo.com";
+            var name = "User Name";
             var password = "Str0ngP@ss!";
 
-            (await client.PostAsJsonAsync("/auth/register", new { email, password }))
+            (await client.PostAsJsonAsync("/auth/register", new { email, name, password }))
                 .EnsureSuccessStatusCode();
 
             var resp = await client.PostAsJsonAsync("/auth/login", new { email, password = "wrongP@ss1" });
@@ -128,9 +132,10 @@ namespace Api.Tests.Endpoints.Auth
             using var client = app.CreateClient();
 
             var email = $"cache+{Guid.NewGuid():N}@demo.com";
+            var name = "User Name";
             var password = "Str0ngP@ss!";
 
-            (await client.PostAsJsonAsync("/auth/register", new { email, password }))
+            (await client.PostAsJsonAsync("/auth/register", new { email, name, password }))
                 .EnsureSuccessStatusCode();
 
             var resp = await client.PostAsJsonAsync("/auth/login", new { email, password });
@@ -149,6 +154,7 @@ namespace Api.Tests.Endpoints.Auth
         public DateTime ExpiresAtUtc { get; set; }
         public Guid UserId { get; set; }
         public string Email { get; set; } = null!;
+        public string Name { get; set; } = null!;
         public string Role { get; set; } = null!;
     }
 
