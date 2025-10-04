@@ -1,4 +1,5 @@
-using Api.Auth;
+using Api.Auth.DTOs;
+using Api.Auth.Mapping;
 using Api.Extensions;
 using Application.Common.Abstractions.Persistence;
 using Application.Common.Abstractions.Security;
