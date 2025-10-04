@@ -42,7 +42,7 @@ namespace Infrastructure.Tests.Projects
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var u = new User { Id = Guid.NewGuid(), Email = Email.Create("m@demo.com"), PasswordHash = new byte[32], PasswordSalt = new byte[16] };
+            var u = new User { Id = Guid.NewGuid(), Name = UserName.Create("Project user"), Email = Email.Create("m@demo.com"), PasswordHash = new byte[32], PasswordSalt = new byte[16] };
             var p = new Project { Id = Guid.NewGuid(), Name = ProjectName.Create("Beta"), Slug = ProjectSlug.Create("beta") };
             db.AddRange(u, p);
             await db.SaveChangesAsync();

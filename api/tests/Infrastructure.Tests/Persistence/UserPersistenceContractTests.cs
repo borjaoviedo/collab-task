@@ -28,13 +28,14 @@ namespace Infrastructure.Tests.Persistence
         [Fact]
         public async Task Add_And_GetByEmail_Works()
         {
-            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
             var u = new User
             {
                 Id = Guid.NewGuid(),
                 Email = Email.Create("repo@demo.com"),
+                Name = UserName.Create("Repo User"),
                 PasswordHash = [7],
                 PasswordSalt = [9],
                 Role = UserRole.User
@@ -58,6 +59,7 @@ namespace Infrastructure.Tests.Persistence
             {
                 Id = Guid.NewGuid(),
                 Email = Email.Create("concurrency@demo.com"),
+                Name = UserName.Create("Concurrency User"),
                 PasswordHash = [1],
                 PasswordSalt = [1],
                 Role = UserRole.User

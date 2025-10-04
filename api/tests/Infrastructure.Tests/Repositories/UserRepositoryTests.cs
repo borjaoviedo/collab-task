@@ -32,19 +32,20 @@ namespace Infrastructure.Tests.Repositories
             return (db, uow, repo);
         }
 
-        private static User NewUser(string email, UserRole role = UserRole.User)
+        private static User NewUser(string email, string name, UserRole role = UserRole.User)
             => new()
             {
                 Id = Guid.NewGuid(),
+                Name = UserName.Create(name),
                 Email = Email.Create(email),
                 PasswordHash = [1, 2, 3],
                 PasswordSalt = [7, 8, 9],
                 Role = role
             };
 
-        private static async Task<(User user, byte[] rowVersion)> InsertAsync(AppDbContext db, IUnitOfWork uow, string email, UserRole role = UserRole.User)
+        private static async Task<(User user, byte[] rowVersion)> InsertAsync(AppDbContext db, IUnitOfWork uow, string email, string name = "User Name", UserRole role = UserRole.User)
         {
-            var u = NewUser(email, role);
+            var u = NewUser(email, name, role);
             db.Users.Add(u);
             await uow.SaveChangesAsync();
             var rv = (byte[])db.Entry(u).Property(nameof(User.RowVersion)).CurrentValue!;
@@ -56,7 +57,7 @@ namespace Infrastructure.Tests.Repositories
         {
             var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
 
-            var u = NewUser("a@b.com");
+            var u = NewUser("a@b.com", "User Name");
             var id = await repo.CreateAsync(u);
             var changes = await uow.SaveChangesAsync();
 
@@ -122,11 +123,11 @@ namespace Infrastructure.Tests.Repositories
             (await repo.AnyAdminAsync()).Should().BeFalse();
             (await repo.CountAdminsAsync()).Should().Be(0);
 
-            await InsertAsync(db, uow, "admin1@ex.com", UserRole.Admin);
+            await InsertAsync(db, uow, "admin1@ex.com", "Admin Name", UserRole.Admin);
             (await repo.AnyAdminAsync()).Should().BeTrue();
             (await repo.CountAdminsAsync()).Should().Be(1);
 
-            await InsertAsync(db, uow, "user4@ex.com", UserRole.User);
+            await InsertAsync(db, uow, "user4@ex.com", role: UserRole.User);
             (await repo.CountAdminsAsync()).Should().Be(1);
         }
 
@@ -134,7 +135,7 @@ namespace Infrastructure.Tests.Repositories
         public async Task SetRoleAsync_Updates_Role_When_RowVersion_Matches()
         {
             var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
-            var (u, rv) = await InsertAsync(db, uow, "user5@ex.com", UserRole.User);
+            var (u, rv) = await InsertAsync(db, uow, "user5@ex.com", role: UserRole.User);
 
             var updated = await repo.SetRoleAsync(u.Id, UserRole.Admin, rv);
             await uow.SaveChangesAsync();
@@ -147,7 +148,7 @@ namespace Infrastructure.Tests.Repositories
         public async Task SetRoleAsync_Returns_Null_On_Concurrency_Mismatch()
         {
             var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
-            var (u, _) = await InsertAsync(db, uow, "user6@ex.com", UserRole.User);
+            var (u, _) = await InsertAsync(db, uow, "user6@ex.com", role: UserRole.User);
 
             var updated = await repo.SetRoleAsync(u.Id, UserRole.Admin, [1, 2, 3, 4]);
 
@@ -158,7 +159,7 @@ namespace Infrastructure.Tests.Repositories
         public async Task SetRoleAsync_NoOp_When_Role_Already_Set()
         {
             var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
-            var (u, rv) = await InsertAsync(db, uow, "user7@ex.com", UserRole.Admin);
+            var (u, rv) = await InsertAsync(db, uow, "user7@ex.com", role: UserRole.Admin);
 
             var updated = await repo.SetRoleAsync(u.Id, UserRole.Admin, rv);
 
@@ -211,7 +212,7 @@ namespace Infrastructure.Tests.Repositories
             var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
             await InsertAsync(db, uow, "dup@ex.com");
 
-            await repo.CreateAsync(NewUser("dup@ex.com"));
+            await repo.CreateAsync(NewUser("dup@ex.com", "Not Default User Name"));
 
             await FluentActions.Invoking(() => uow.SaveChangesAsync())
                 .Should().ThrowAsync<DbUpdateException>();

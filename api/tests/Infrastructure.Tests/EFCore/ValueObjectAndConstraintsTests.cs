@@ -28,12 +28,13 @@ namespace Infrastructure.Tests.EFCore
         [Fact]
         public async Task Email_ValueObject_RoundTrip_Works()
         {
-            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
             var user = new User
             {
                 Id = Guid.NewGuid(),
+                Name = UserName.Create("Value Object"),
                 Email = Email.Create("vo@demo.com"),
                 PasswordHash = new byte[] { 1, 2, 3 },
                 PasswordSalt = new byte[] { 4, 5, 6 },
@@ -51,7 +52,7 @@ namespace Infrastructure.Tests.EFCore
         [Fact]
         public async Task Project_Slug_Is_Unique()
         {
-            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
             var p1 = new Project { Id = Guid.NewGuid(), Name = ProjectName.Create("A"), Slug = ProjectSlug.Create("unique") };
@@ -69,12 +70,12 @@ namespace Infrastructure.Tests.EFCore
         [Fact]
         public async Task ProjectMember_RemovedAt_Can_Be_Null_And_CheckConstraint_Enforced()
         {
-            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
             var p = new Project { Id = Guid.NewGuid(), Name = ProjectName.Create("P"), Slug = ProjectSlug.Create("p") };
-            var u1 = new User { Id = Guid.NewGuid(), Email = Email.Create("pm1@demo.com"), PasswordHash = new byte[] { 1 }, PasswordSalt = new byte[] { 1 }, Role = UserRole.User };
-            var u2 = new User { Id = Guid.NewGuid(), Email = Email.Create("pm2@demo.com"), PasswordHash = new byte[] { 2 }, PasswordSalt = new byte[] { 2 }, Role = UserRole.User };
+            var u1 = new User { Id = Guid.NewGuid(), Name = UserName.Create("First user"), Email = Email.Create("pm1@demo.com"), PasswordHash = new byte[] { 1 }, PasswordSalt = new byte[] { 1 }, Role = UserRole.User };
+            var u2 = new User { Id = Guid.NewGuid(), Name = UserName.Create("Second user"), Email = Email.Create("pm2@demo.com"), PasswordHash = new byte[] { 2 }, PasswordSalt = new byte[] { 2 }, Role = UserRole.User };
             db.AddRange(p, u1, u2);
             await db.SaveChangesAsync();
 
