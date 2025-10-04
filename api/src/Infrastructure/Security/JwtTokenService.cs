@@ -20,7 +20,7 @@ namespace Infrastructure.Security
             _options = options.Value;
         }
 
-        public (string Token, DateTime ExpiresAtUtc) CreateToken(Guid userId, string email, string role)
+        public (string Token, DateTime ExpiresAtUtc) CreateToken(Guid userId, string email, string name, string role)
         {
             var key = GetSigningKey(_options.Key);
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -29,6 +29,7 @@ namespace Infrastructure.Security
             {
                 new(JwtRegisteredClaimNames.Sub, userId.ToString()),
                 new(JwtRegisteredClaimNames.Email, email),
+                new(ClaimTypes.Name, name),
                 new(ClaimTypes.Role, role),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
@@ -78,7 +79,9 @@ namespace Infrastructure.Security
                 IssuerSigningKey = GetSigningKey(opts.Key),
                 RequireExpirationTime = true,
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
+                ClockSkew = TimeSpan.Zero,
+                NameClaimType = ClaimTypes.Name,
+                RoleClaimType = ClaimTypes.Role
             };
         }
 
