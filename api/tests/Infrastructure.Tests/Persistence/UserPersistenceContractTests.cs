@@ -50,6 +50,30 @@ namespace Infrastructure.Tests.Persistence
         }
 
         [Fact]
+        public async Task GetByName_Works()
+        {
+            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            await db.Database.MigrateAsync();
+
+            var u = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = Email.Create("repo@demo.com"),
+                Name = UserName.Create("Repo User"),
+                PasswordHash = [7],
+                PasswordSalt = [9],
+                Role = UserRole.User
+            };
+            db.Users.Add(u);
+            await db.SaveChangesAsync();
+
+            db.ChangeTracker.Clear();
+            var found = await db.Users.SingleOrDefaultAsync(x => x.Name == UserName.Create("Repo User"));
+            found.Should().NotBeNull();
+            found.Name.Should().Be(u.Name);
+        }
+
+        [Fact]
         public async Task Update_Role_With_Concurrency_Token()
         {
             var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");

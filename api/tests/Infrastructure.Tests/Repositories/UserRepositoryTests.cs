@@ -92,6 +92,28 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
+        public async Task GetByNameAsync_Returns_User_When_Exists()
+        {
+            var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
+            var (u, _) = await InsertAsync(db, uow, "user1@example.com", name: "User Name");
+
+            var found = await repo.GetByNameAsync("User Name");
+
+            found.Should().NotBeNull();
+            found!.Id.Should().Be(u.Id);
+        }
+
+        [Fact]
+        public async Task GetByNameAsync_Returns_Null_When_Not_Found()
+        {
+            var (_, _, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
+
+            var found = await repo.GetByNameAsync("Not Found User Name");
+
+            found.Should().BeNull();
+        }
+
+        [Fact]
         public async Task GetByIdAsync_Returns_User_When_Exists_Null_Otherwise()
         {
             var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
@@ -114,6 +136,16 @@ namespace Infrastructure.Tests.Repositories
 
             (await repo.ExistsByEmailAsync("user3@example.com")).Should().BeTrue();
             (await repo.ExistsByEmailAsync("nope@example.com")).Should().BeFalse();
+        }
+
+        [Fact]
+        public async Task ExistsByNameAsync_True_When_Exists_False_Otherwise()
+        {
+            var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
+            await InsertAsync(db, uow, "user3@example.com", name: "User Name");
+
+            (await repo.ExistsByNameAsync("User Name")).Should().BeTrue();
+            (await repo.ExistsByNameAsync("Diff User Name")).Should().BeFalse();
         }
 
         [Fact]
@@ -219,12 +251,36 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
+        public async Task Unique_Name_Is_Enforced()
+        {
+            var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
+            await InsertAsync(db, uow, "first@ex.com", name: "Dup Name");
+
+            await repo.CreateAsync(NewUser("second@ex.com", "Dup Name"));
+
+            await FluentActions.Invoking(() => uow.SaveChangesAsync())
+                .Should().ThrowAsync<DbUpdateException>();
+        }
+
+        [Fact]
         public async Task Email_Normalization_Allows_MixedCase_Lookup()
         {
             var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
             var (u, _) = await InsertAsync(db, uow, "MiXeD@Example.COM");
 
             var found = await repo.GetByEmailAsync("mixed@example.com");
+
+            found.Should().NotBeNull();
+            found!.Id.Should().Be(u.Id);
+        }
+
+        [Fact]
+        public async Task Name_Normalization_Allows_MixedCase_Lookup()
+        {
+            var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
+            var (u, _) = await InsertAsync(db, uow, "mixed@example.com", name: "MiXeD uSeR NaMe");
+
+            var found = await repo.GetByNameAsync("mixed user name");
 
             found.Should().NotBeNull();
             found!.Id.Should().Be(u.Id);
