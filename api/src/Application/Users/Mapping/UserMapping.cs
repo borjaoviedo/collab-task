@@ -12,6 +12,7 @@ namespace Application.Users.Mapping
             {
                 Id = item.Id,
                 Email = item.Email.Value,
+                Name = item.Name.Value,
                 Role = item.Role,
                 CreatedAt = item.CreatedAt,
                 UpdatedAt = item.UpdatedAt,
@@ -22,6 +23,7 @@ namespace Application.Users.Mapping
             => new()
             {
                 Email = Email.Create(item.Email),
+                Name = UserName.Create(item.Name),
                 Role = UserRole.User,
                 PasswordHash = hash,
                 PasswordSalt = salt
