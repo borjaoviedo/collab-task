@@ -17,5 +17,20 @@ namespace Domain.Entities
         public DateTimeOffset UpdatedAt { get; set; }
         [Timestamp] public byte[] RowVersion { get; set; } = default!;
         public ICollection<ProjectMember> ProjectMemberships { get; private set; } = [];
+
+        private User() { }
+
+        public static User Create(Email email, UserName name, byte[] hash, byte[] salt, UserRole role = UserRole.User)
+        {
+            return new User
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                Name = name,
+                PasswordHash = hash,
+                PasswordSalt = salt,
+                Role = role
+            };
+        }
     }
 }
