@@ -23,6 +23,7 @@ namespace Api.Auth
         }
 
         public string? Email => Principal?.FindFirst(ClaimTypes.Email)?.Value;
+        public string? Name => Principal?.FindFirst(ClaimTypes.Name)?.Value;
 
         public string? Role => Principal?.FindFirst(ClaimTypes.Role)?.Value;
     }
