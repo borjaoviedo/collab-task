@@ -1,5 +1,5 @@
 using Application.Common.Abstractions.Time;
-using Domain.Common;
+using Domain.Common.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 

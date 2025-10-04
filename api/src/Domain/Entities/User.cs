@@ -1,4 +1,4 @@
-using Domain.Common;
+using Domain.Common.Abstractions;
 using Domain.Enums;
 using Domain.ValueObjects;
 using System.ComponentModel.DataAnnotations;
