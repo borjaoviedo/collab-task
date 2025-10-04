@@ -22,6 +22,11 @@ namespace Infrastructure.Data.Repositories
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Email == Email.Create(email), ct);
 
+        public async Task<User?> GetByNameAsync(string name, CancellationToken ct = default)
+            => await _db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Name == UserName.Create(name), ct);
+
         public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
             => await _db.Users
             .AsNoTracking()
@@ -54,6 +59,11 @@ namespace Infrastructure.Data.Repositories
             => await _db.Users
                 .AsNoTracking()
                 .AnyAsync(u => u.Email == Email.Create(email), ct);
+
+        public async Task<bool> ExistsByNameAsync(string name, CancellationToken ct = default)
+            => await _db.Users
+                .AsNoTracking()
+                .AnyAsync(u => u.Name == UserName.Create(name), ct);
 
         public async Task<bool> AnyAdminAsync(CancellationToken ct = default)
             => await _db.Users
