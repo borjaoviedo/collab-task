@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Moq;
 using System.Security.Claims;
 
-namespace Api.Tests.Auth
+namespace Api.Tests.Auth.Services
 {
     public class CurrentUserService_Tests
     {
