@@ -34,5 +34,19 @@ namespace Application.Common.Validation.Extensions
                 .Matches("[0-9]").WithMessage("Password must contain at least one number.")
                 .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
         }
+
+        public static IRuleBuilderOptions<T, string> ProjectNameRules<T>(this IRuleBuilder<T, string> ruleBuilder)
+        {
+            return ruleBuilder
+                .NotEmpty().WithMessage("Project name is required.")
+                .Must(s => !string.IsNullOrWhiteSpace(s)).WithMessage("Project name cannot be whitespace.")
+                .MaximumLength(100).WithMessage("Project name length must be at most 100 characters.")
+                .Must(name => !Regex.IsMatch(name, @"\s{2,}"))
+                    .WithMessage("Project name cannot contain consecutive spaces.")
+                .Must(s => s.All(c => !char.IsControl(c)))
+                    .WithMessage("Project name contains invalid characters.");
+
+        }
+
     }
 }
