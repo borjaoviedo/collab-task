@@ -2,7 +2,7 @@ using Application.Projects.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
-namespace Api.Auth
+namespace Api.Auth.Authorization
 {
     public sealed class ProjectRoleAuthorizationHandler : AuthorizationHandler<ProjectRoleRequirement>
     {
