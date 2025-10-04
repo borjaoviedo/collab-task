@@ -44,7 +44,7 @@ namespace Infrastructure.Tests.Security
             using var sp = BuildProvider(clock);
             var svc = sp.GetRequiredService<IJwtTokenService>();
 
-            var (token, expiresAtUtc) = svc.CreateToken(Guid.NewGuid(), "user@demo.com", "User");
+            var (token, expiresAtUtc) = svc.CreateToken(Guid.NewGuid(), "user@demo.com", "User Name", "User");
 
             token.Should().NotBeNullOrWhiteSpace();
             expiresAtUtc.Kind.Should().Be(DateTimeKind.Utc);
@@ -61,7 +61,7 @@ namespace Infrastructure.Tests.Security
             var svc = sp.GetRequiredService<IJwtTokenService>();
 
             var userId = Guid.NewGuid();
-            var (token, _) = svc.CreateToken(userId, "claims@demo.com", "Admin");
+            var (token, _) = svc.CreateToken(userId, "claims@demo.com", "User Name", "Admin");
 
             var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
 
@@ -70,14 +70,16 @@ namespace Infrastructure.Tests.Security
 
             jwt.Claims.Select(c => c.Type).Should().Contain(new[]
             {
-            JwtRegisteredClaimNames.Sub,
-            JwtRegisteredClaimNames.Email,
-            JwtRegisteredClaimNames.Jti,
-            ClaimTypes.Role
-        });
+                JwtRegisteredClaimNames.Sub,
+                JwtRegisteredClaimNames.Email,
+                JwtRegisteredClaimNames.Jti,
+                ClaimTypes.Name,
+                ClaimTypes.Role
+            });
 
             jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.Sub).Value.Should().Be(userId.ToString());
             jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.Email).Value.Should().Be("claims@demo.com");
+            jwt.Claims.First(c => c.Type == ClaimTypes.Name).Value.Should().Be("User Name");
             jwt.Claims.First(c => c.Type == ClaimTypes.Role).Value.Should().Be("Admin");
 
             // nbf == now, exp == now + 60m (approx)
@@ -92,7 +94,7 @@ namespace Infrastructure.Tests.Security
             using var sp = BuildProvider(clock);
             var svc = sp.GetRequiredService<IJwtTokenService>();
 
-            var (token, expiresAtUtc) = svc.CreateToken(Guid.NewGuid(), "exp@demo.com", "User");
+            var (token, expiresAtUtc) = svc.CreateToken(Guid.NewGuid(), "exp@demo.com", "Exp Name" , "User");
             var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
 
             jwt.ValidTo.Should().BeCloseTo(expiresAtUtc, TimeSpan.FromSeconds(1));
@@ -105,7 +107,7 @@ namespace Infrastructure.Tests.Security
             using var sp = BuildProvider(clock);
             var svc = sp.GetRequiredService<IJwtTokenService>();
 
-            var (token, _) = svc.CreateToken(Guid.NewGuid(), "t@demo.com", "User");
+            var (token, _) = svc.CreateToken(Guid.NewGuid(), "t@demo.com", "User T Name", "User");
             var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
 
             var exp = jwt.ValidTo; // UTC
@@ -122,8 +124,8 @@ namespace Infrastructure.Tests.Security
             using var sp = BuildProvider(clock);
             var svc = sp.GetRequiredService<IJwtTokenService>();
 
-            var (t1, _) = svc.CreateToken(Guid.NewGuid(), "a@demo.com", "User");
-            var (t2, _) = svc.CreateToken(Guid.NewGuid(), "b@demo.com", "User");
+            var (t1, _) = svc.CreateToken(Guid.NewGuid(), "a@demo.com", "User A", "User");
+            var (t2, _) = svc.CreateToken(Guid.NewGuid(), "b@demo.com", "User B", "User");
 
             var j1 = new JwtSecurityTokenHandler().ReadJwtToken(t1).Claims.First(c => c.Type == JwtRegisteredClaimNames.Jti).Value;
             var j2 = new JwtSecurityTokenHandler().ReadJwtToken(t2).Claims.First(c => c.Type == JwtRegisteredClaimNames.Jti).Value;
