@@ -9,6 +9,7 @@ namespace Application.Users.Validation
         public UserCreateDtoValidator()
         {
             RuleFor(u => u.Email).UserEmailRules();
+            RuleFor(u => u.Name).UserNameRules();
             RuleFor(u => u.Password).UserPasswordRules();
         }
     }
