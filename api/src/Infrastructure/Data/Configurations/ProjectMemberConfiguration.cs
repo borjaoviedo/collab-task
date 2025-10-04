@@ -23,12 +23,13 @@ namespace Infrastructure.Data.Configurations
             e.HasIndex(pm => new { pm.ProjectId, pm.Role });
             e.HasIndex(pm => new { pm.ProjectId, pm.RemovedAt });
 
+            e.HasIndex(pm => pm.ProjectId)
+                 .HasFilter("[Role] = 0 AND [RemovedAt] IS NULL")
+                 .IsUnique();
+
             e.Property(pm => pm.Role).IsRequired();
 
-            e.Property(pm => pm.JoinedAt)
-                .HasColumnType("datetimeoffset")
-                .HasDefaultValueSql("SYSUTCDATETIME()")
-                .ValueGeneratedOnAdd();
+            e.Property(pm => pm.JoinedAt).HasColumnType("datetimeoffset");
 
             e.Property(pm => pm.InvitedAt)
                 .HasColumnType("datetimeoffset")
