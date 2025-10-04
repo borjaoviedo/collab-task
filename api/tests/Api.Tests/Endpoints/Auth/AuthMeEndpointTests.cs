@@ -31,7 +31,7 @@ namespace Api.Tests.Endpoints.Auth
             (await client.PostAsJsonAsync("/auth/register", new { email, name, password }))
                 .EnsureSuccessStatusCode();
 
-            var login = await client.PostAsJsonAsync("/auth/login", new { email, name, password });
+            var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
             login.StatusCode.Should().Be(HttpStatusCode.OK);
             var auth = await login.Content.ReadFromJsonAsync<AuthTokenReadDto>(Json);
 
