@@ -13,17 +13,22 @@ namespace Application.Tests.Users.Mappers
         [Fact]
         public void ToReadDto_Maps_All_Fields_And_ProjectMembershipsCount()
         {
+            var projectId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var projectRole = ProjectRole.Member;
+            var utcNow = DateTimeOffset.UtcNow;
+
             var u = new User
             {
-                Id = Guid.NewGuid(),
+                Id = userId,
                 Email = Email.Create("user@demo.com"),
                 Name = UserName.Create("Demo User"),
                 Role = UserRole.User,
-                CreatedAt = DateTimeOffset.UtcNow.AddDays(-1),
-                UpdatedAt = DateTimeOffset.UtcNow,
+                CreatedAt = utcNow.AddDays(-1),
+                UpdatedAt = utcNow,
             };
-            u.ProjectMemberships.Add(new ProjectMember());
-            u.ProjectMemberships.Add(new ProjectMember());
+            u.ProjectMemberships.Add(new ProjectMember(projectId, userId, projectRole, utcNow));
+            u.ProjectMemberships.Add(new ProjectMember(projectId, userId, projectRole, utcNow));
 
             var dto = u.ToReadDto();
 
