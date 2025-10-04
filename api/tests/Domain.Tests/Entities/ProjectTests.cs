@@ -7,104 +7,58 @@ namespace Domain.Tests.Entities
 {
     public class ProjectTests
     {
-        private static byte[] Bytes(int n) => Enumerable.Repeat((byte)0xEF, n).ToArray();
 
         [Fact]
         public void Defaults_Members_Initialized()
         {
-            var p = new Project
-            {
-                Id = Guid.NewGuid(),
-                Name = ProjectName.Create("project a"),
-                Slug = ProjectSlug.Create("project-a"),
-                CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow,
-                RowVersion = Bytes(8)
-            };
+            var ownerId = Guid.NewGuid();
+            var utcNow = DateTimeOffset.UtcNow;
+            var projectName = ProjectName.Create("A Project");
+            var p = Project.Create(ownerId, projectName, utcNow);
 
             p.Members.Should().NotBeNull();
-            p.Members.Should().BeEmpty();
+            p.Members.Count.Should().Be(1);
+            p.Members.Single().UserId.Should().Be(ownerId);
         }
 
         [Fact]
         public void Set_All_Core_Properties_Assigns_Correctly()
         {
-            var id = Guid.NewGuid();
+            var utcNow = DateTimeOffset.UtcNow;
+            var ownerId = Guid.NewGuid();
             var name = ProjectName.Create("kanban board");
-            var slug = ProjectSlug.Create("kanban-board");
-            var created = DateTimeOffset.UtcNow.AddHours(-6);
-            var updated = DateTimeOffset.UtcNow.AddHours(-1);
-            var rv = Bytes(16);
+            var slug = ProjectSlug.Create(name);
 
-            var p = new Project
-            {
-                Id = id,
-                Name = name,
-                Slug = slug,
-                CreatedAt = created,
-                UpdatedAt = updated,
-                RowVersion = rv
-            };
+            var p = Project.Create(ownerId, name, utcNow);
 
-            p.Id.Should().Be(id);
+            p.Id.Should().NotBeEmpty();
+            p.OwnerId.Should().Be(ownerId);
             p.Name.Should().Be(name);
             p.Slug.Should().Be(slug);
-            p.CreatedAt.Should().Be(created);
-            p.UpdatedAt.Should().Be(updated);
-            p.RowVersion.Should().BeSameAs(rv);
         }
 
         [Fact]
         public void UpdatedAt_Not_Before_CreatedAt()
         {
-            var created = DateTimeOffset.UtcNow.AddDays(-1);
-            var updated = created.AddMinutes(5);
-
-            var p = new Project
-            {
-                Id = Guid.NewGuid(),
-                Name = ProjectName.Create("p"),
-                Slug = ProjectSlug.Create("p"),
-                CreatedAt = created,
-                UpdatedAt = updated,
-                RowVersion = Bytes(8)
-            };
+            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"), DateTimeOffset.UtcNow);
 
             (p.UpdatedAt >= p.CreatedAt).Should().BeTrue();
         }
 
         [Fact]
-        public void Members_Add_And_Remove_Work_And_Ids_Align()
+        public void AddMember_Works_And_Ids_Align()
         {
-            var projectId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
+            var utcNow = DateTimeOffset.UtcNow;
+            var ownerId = Guid.NewGuid();
 
-            var p = new Project
-            {
-                Id = projectId,
-                Name = ProjectName.Create("proj"),
-                Slug = ProjectSlug.Create("proj"),
-                CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow,
-                RowVersion = Bytes(8)
-            };
-
-            var m = new ProjectMember
-            {
-                ProjectId = projectId,
-                UserId = userId,
-                Role = ProjectRole.Owner,
-                JoinedAt = DateTimeOffset.UtcNow
-            };
-
-            p.Members.Add(m);
-
+            var p = Project.Create(ownerId, ProjectName.Create("Project Name"), utcNow);
             p.Members.Should().HaveCount(1);
-            p.Members.Single().Should().BeSameAs(m);
-            p.Members.Single().ProjectId.Should().Be(projectId);
+            p.Members.Single().UserId.Should().Be(ownerId);
 
-            p.Members.Remove(m);
-            p.Members.Should().BeEmpty();
+            var newMemberId = Guid.NewGuid();
+            p.AddMember(newMemberId, ProjectRole.Reader, utcNow.AddHours(1));
+            p.Members.Should().HaveCount(2);
+            p.Members.ElementAt(1).UserId.Should().Be(newMemberId);
         }
     }
 }
