@@ -42,5 +42,49 @@ namespace Domain.Entities
 
             Members.Add(new ProjectMember(Id, userId, role, joinedAtUtc));
         }
+
+        public void RemoveMember(Guid userId, DateTimeOffset removedAtUtc)
+        {
+            var m = Members.FirstOrDefault(x => x.UserId == userId && x.RemovedAt == null)
+                ?? throw new EntityNotFoundException("Member not found.");
+
+            if (m.Role == ProjectRole.Owner)
+                throw new DomainRuleViolationException("Transfer ownership before removing the owner.");
+
+            m.Remove(removedAtUtc);
+        }
+
+        public void ChangeMemberRole(Guid userId, ProjectRole newRole)
+        {
+            var m = Members.FirstOrDefault(x => x.UserId == userId && x.RemovedAt == null)
+                ?? throw new EntityNotFoundException("Member not found.");
+
+            if (newRole == ProjectRole.Owner)
+            {
+                if (Members.Any(x => x.Role == ProjectRole.Owner && x.RemovedAt == null))
+                    throw new DomainRuleViolationException("Project already has an owner.");
+                OwnerId = userId;
+            }
+            else if (m.Role == ProjectRole.Owner && newRole != ProjectRole.Owner)
+            {
+                throw new DomainRuleViolationException("Cannot demote current owner. Transfer first.");
+            }
+
+            m.Role = newRole;
+        }
+
+        public void TransferOwnership(Guid newOwnerId)
+        {
+            if (OwnerId == newOwnerId) return;
+
+            var target = Members.FirstOrDefault(x => x.UserId == newOwnerId && x.RemovedAt == null)
+                ?? throw new DomainRuleViolationException("New owner must be an active member.");
+
+            var current = Members.First(x => x.Role == ProjectRole.Owner && x.RemovedAt == null);
+
+            current.Role = ProjectRole.Admin;
+            target.Role = ProjectRole.Owner;
+            OwnerId = newOwnerId;
+        }
     }
 }
