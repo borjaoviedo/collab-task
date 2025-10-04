@@ -7,6 +7,7 @@ using Application.Common.Exceptions;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
+using Domain.Common.Exceptions;
 using FluentValidation;
 using Infrastructure.Data.Extensions;
 using Microsoft.AspNetCore.Mvc;
