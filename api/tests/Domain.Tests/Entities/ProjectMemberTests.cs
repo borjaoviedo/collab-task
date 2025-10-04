@@ -14,7 +14,7 @@ namespace Domain.Tests.Entities
         {
             var projectId = Guid.NewGuid();
             var userId = Guid.NewGuid();
-            var role = ProjectRole.Editor;
+            var role = ProjectRole.Member;
             var joinedAt = DateTimeOffset.UtcNow.AddDays(-2);
             var invitedAt = DateTime.UtcNow.AddDays(-3);
             var removedAt = DateTimeOffset.UtcNow.AddDays(-1);
@@ -110,8 +110,8 @@ namespace Domain.Tests.Entities
             };
 
             pm.Role.Should().Be(ProjectRole.Reader);
-            pm.Role = ProjectRole.Editor;
-            pm.Role.Should().Be(ProjectRole.Editor);
+            pm.Role = ProjectRole.Member;
+            pm.Role.Should().Be(ProjectRole.Member);
         }
     }
 }

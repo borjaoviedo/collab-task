@@ -107,7 +107,7 @@ namespace Infrastructure.Tests.EFCore
             {
                 ProjectId = p.Id,
                 UserId = u1.Id,
-                Role = ProjectRole.Editor,
+                Role = ProjectRole.Member,
                 JoinedAt = DateTimeOffset.UtcNow,
                 RemovedAt = null
             };
@@ -118,7 +118,7 @@ namespace Infrastructure.Tests.EFCore
             {
                 ProjectId = p.Id,
                 UserId = u2.Id,
-                Role = ProjectRole.Editor,
+                Role = ProjectRole.Member,
                 JoinedAt = DateTimeOffset.UtcNow,
                 RemovedAt = DateTimeOffset.UtcNow.AddMinutes(-5) // earlier than JoinedAt should violate CHECK
             };

@@ -65,7 +65,7 @@ namespace Infrastructure.Tests.Projects
             {
                 ProjectId = p.Id,
                 UserId = u.Id,
-                Role = ProjectRole.Editor,
+                Role = ProjectRole.Member,
                 JoinedAt = DateTimeOffset.UtcNow
             };
             db2.ProjectMembers.Add(pmDup);
