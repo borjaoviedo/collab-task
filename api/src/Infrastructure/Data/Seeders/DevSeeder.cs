@@ -67,7 +67,7 @@ namespace Infrastructure.Data.Seeders
             {
                 ProjectId = project.Id,
                 UserId = user2.Id,
-                Role = ProjectRole.Editor,
+                Role = ProjectRole.Member,
                 JoinedAt = DateTimeOffset.UtcNow,
             });
 
