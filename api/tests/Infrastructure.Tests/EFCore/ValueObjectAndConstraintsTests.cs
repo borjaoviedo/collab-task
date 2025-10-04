@@ -50,6 +50,30 @@ namespace Infrastructure.Tests.EFCore
         }
 
         [Fact]
+        public async Task UserName_ValueObject_RoundTrip_Works()
+        {
+            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            await db.Database.MigrateAsync();
+
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Name = UserName.Create("Value Object Name"),
+                Email = Email.Create("vo_name@demo.com"),
+                PasswordHash = new byte[] { 1, 2, 3 },
+                PasswordSalt = new byte[] { 4, 5, 6 },
+                Role = UserRole.User
+            };
+
+            db.Users.Add(user);
+            await db.SaveChangesAsync();
+
+            db.ChangeTracker.Clear();
+            var fromDb = await db.Users.SingleAsync(u => u.Id == user.Id);
+            fromDb.Name.Value.Should().Be("Value Object Name");
+        }
+
+        [Fact]
         public async Task Project_Slug_Is_Unique()
         {
             var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
