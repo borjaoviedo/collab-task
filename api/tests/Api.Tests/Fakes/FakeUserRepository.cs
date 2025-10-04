@@ -11,6 +11,9 @@ namespace Api.Tests.Fakes
         // Email -> User (case-insensitive)
         private readonly ConcurrentDictionary<string, User> _byEmail = new(StringComparer.OrdinalIgnoreCase);
 
+        // Name -> User (case-insensitive)
+        private readonly ConcurrentDictionary<string, User> _byName = new(StringComparer.OrdinalIgnoreCase);
+
         // Id -> Email
         private readonly ConcurrentDictionary<Guid, string> _byId = new();
 
@@ -25,6 +28,11 @@ namespace Api.Tests.Fakes
             if (!_byEmail.TryAdd(email, PrepareForInsert(item)))
                 throw new DuplicateEntityException("Could not complete registration.");
 
+            var name = item.Name.Value;
+
+            if (!_byName.TryAdd(name, PrepareForInsert(item)))
+                throw new DuplicateEntityException("Could not complete registration.");
+
             _byId[item.Id] = email;
             return Task.FromResult(item.Id);
         }
@@ -32,6 +40,14 @@ namespace Api.Tests.Fakes
         public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
         {
             if (_byEmail.TryGetValue(email, out var u))
+                return Task.FromResult<User?>(Clone(u));
+
+            return Task.FromResult<User?>(null);
+        }
+
+        public Task<User?> GetByNameAsync(string name, CancellationToken ct = default)
+        {
+            if (_byName.TryGetValue(name, out var u))
                 return Task.FromResult<User?>(Clone(u));
 
             return Task.FromResult<User?>(null);
@@ -82,12 +98,16 @@ namespace Api.Tests.Fakes
                 return Task.FromResult(false);
 
             var removed = _byEmail.TryRemove(email, out _);
+            _byName.TryRemove(current.Name.Value, out _);
             _byId.TryRemove(id, out _);
             return Task.FromResult(removed);
         }
 
         public Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default)
             => Task.FromResult(_byEmail.ContainsKey(email));
+
+        public Task<bool> ExistsByNameAsync(string name, CancellationToken ct = default)
+            => Task.FromResult(_byName.ContainsKey(name));
 
         public Task<bool> AnyAdminAsync(CancellationToken ct = default)
             => Task.FromResult(_byEmail.Values.Any(u => u.Role == UserRole.Admin));
@@ -116,6 +136,7 @@ namespace Api.Tests.Fakes
             {
                 Id = u.Id,
                 Email = u.Email,
+                Name = u.Name,
                 Role = u.Role,
                 CreatedAt = u.CreatedAt,
                 UpdatedAt = u.UpdatedAt,
