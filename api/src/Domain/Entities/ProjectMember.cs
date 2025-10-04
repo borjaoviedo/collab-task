@@ -13,5 +13,17 @@ namespace Domain.Entities
         public byte[] RowVersion { get; set; } = default!;
         public Project Project { get; set; } = null!;
         public User User { get; set; } = null!;
+
+        private ProjectMember() { }
+
+        public ProjectMember(Guid projectId, Guid userId, ProjectRole role, DateTimeOffset joinedAtUtc)
+        {
+            ProjectId = projectId;
+            UserId = userId;
+            Role = role;
+            JoinedAt = joinedAtUtc;
+        }
+
+        public void Remove(DateTimeOffset removedAtUtc) => RemovedAt = removedAtUtc;
     }
 }
