@@ -16,16 +16,12 @@ namespace Domain.Tests.Entities
             var userId = Guid.NewGuid();
             var role = ProjectRole.Member;
             var joinedAt = DateTimeOffset.UtcNow.AddDays(-2);
-            var invitedAt = DateTime.UtcNow.AddDays(-3);
+            var invitedAt = DateTimeOffset.UtcNow.AddDays(-3);
             var removedAt = DateTimeOffset.UtcNow.AddDays(-1);
             var rv = Bytes(8);
 
-            var pm = new ProjectMember
+            var pm = new ProjectMember(projectId, userId, role, joinedAt)
             {
-                ProjectId = projectId,
-                UserId = userId,
-                Role = role,
-                JoinedAt = joinedAt,
                 InvitedAt = invitedAt,
                 RemovedAt = removedAt,
                 RowVersion = rv
@@ -43,15 +39,7 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Navigation_Properties_Assignable()
         {
-            var project = new Project
-            {
-                Id = Guid.NewGuid(),
-                Name = ProjectName.Create("proj"),
-                Slug = ProjectSlug.Create("proj"),
-                CreatedAt = DateTimeOffset.UtcNow.AddDays(-5),
-                UpdatedAt = DateTimeOffset.UtcNow.AddDays(-4),
-                RowVersion = Bytes(4)
-            };
+            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("A Project Name"), DateTimeOffset.UtcNow.AddDays(-5));
 
             var user = new User
             {
@@ -64,35 +52,27 @@ namespace Domain.Tests.Entities
                 UpdatedAt = DateTimeOffset.UtcNow.AddDays(-9)
             };
 
-            var pm = new ProjectMember
+            var pm = new ProjectMember(p.Id, user.Id, ProjectRole.Reader, DateTimeOffset.UtcNow)
             {
-                ProjectId = project.Id,
-                UserId = user.Id,
-                Role = ProjectRole.Reader,
-                JoinedAt = DateTimeOffset.UtcNow,
-                Project = project,
+                Project = p,
                 User = user
             };
 
-            pm.Project.Should().BeSameAs(project);
+            pm.Project.Should().BeSameAs(p);
             pm.User.Should().BeSameAs(user);
-            pm.ProjectId.Should().Be(project.Id);
+            pm.ProjectId.Should().Be(p.Id);
             pm.UserId.Should().Be(user.Id);
         }
 
         [Fact]
         public void RemovedAt_After_JoinedAt_When_Assigned()
         {
-            var joined = DateTimeOffset.UtcNow.AddHours(-2);
-            var removed = joined.AddMinutes(30);
+            var joinedAt = DateTimeOffset.UtcNow.AddHours(-2);
+            var removedAt = joinedAt.AddMinutes(30);
 
-            var pm = new ProjectMember
+            var pm = new ProjectMember(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Member, joinedAt)
             {
-                ProjectId = Guid.NewGuid(),
-                UserId = Guid.NewGuid(),
-                Role = ProjectRole.Owner,
-                JoinedAt = joined,
-                RemovedAt = removed
+                RemovedAt = removedAt
             };
 
             (pm.RemovedAt >= pm.JoinedAt).Should().BeTrue();
@@ -101,17 +81,13 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Role_Can_Change()
         {
-            var pm = new ProjectMember
-            {
-                ProjectId = Guid.NewGuid(),
-                UserId = Guid.NewGuid(),
-                Role = ProjectRole.Reader,
-                JoinedAt = DateTimeOffset.UtcNow
-            };
+            var pm = new ProjectMember(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Reader, DateTimeOffset.UtcNow);
 
             pm.Role.Should().Be(ProjectRole.Reader);
             pm.Role = ProjectRole.Member;
             pm.Role.Should().Be(ProjectRole.Member);
+            pm.Role = ProjectRole.Admin;
+            pm.Role.Should().Be(ProjectRole.Admin);
         }
     }
 }
