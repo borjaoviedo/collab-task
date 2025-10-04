@@ -18,15 +18,7 @@ namespace Application.Tests.Users.Mappers
             var projectRole = ProjectRole.Member;
             var utcNow = DateTimeOffset.UtcNow;
 
-            var u = new User
-            {
-                Id = userId,
-                Email = Email.Create("user@demo.com"),
-                Name = UserName.Create("Demo User"),
-                Role = UserRole.User,
-                CreatedAt = utcNow.AddDays(-1),
-                UpdatedAt = utcNow,
-            };
+            var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Demo User"), Bytes(32), Bytes(16));
             u.ProjectMemberships.Add(new ProjectMember(projectId, userId, projectRole, utcNow));
             u.ProjectMemberships.Add(new ProjectMember(projectId, userId, projectRole, utcNow));
 
@@ -60,14 +52,7 @@ namespace Application.Tests.Users.Mappers
         [Fact]
         public void ApplyRoleChange_Updates_Role_And_RowVersion()
         {
-            var entity = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = Email.Create("user@demo.com"),
-                Name = UserName.Create("Demo User"),
-                Role = UserRole.User,
-                RowVersion = Bytes(8)
-            };
+            var entity = User.Create(Email.Create("user@demo.com"), UserName.Create("Demo User"), Bytes(32), Bytes(16));
             var newRv = Bytes(8);
             var dto = new UserSetRoleDto { Role = UserRole.Admin, RowVersion = newRv };
 

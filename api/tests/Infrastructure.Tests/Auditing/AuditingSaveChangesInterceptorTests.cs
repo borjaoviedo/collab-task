@@ -32,12 +32,7 @@ namespace Infrastructure.Tests.Auditing
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             await db.Database.MigrateAsync();
 
-            var p = new Project
-            {
-                Id = Guid.NewGuid(),
-                Name = ProjectName.Create("Audit Test"),
-                Slug = ProjectSlug.Create("audit-test")
-            };
+            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Audit Test"), DateTimeOffset.UtcNow);
 
             db.Projects.Add(p);
             await db.SaveChangesAsync();
@@ -55,12 +50,7 @@ namespace Infrastructure.Tests.Auditing
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             await db.Database.MigrateAsync();
 
-            var p = new Project
-            {
-                Id = Guid.NewGuid(),
-                Name = ProjectName.Create("Audit Test 2"),
-                Slug = ProjectSlug.Create("audit-test-2")
-            };
+            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Audit Test 2"), DateTimeOffset.UtcNow);
             db.Projects.Add(p);
             await db.SaveChangesAsync();
 

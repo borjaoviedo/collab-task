@@ -1,6 +1,5 @@
 using Application.Users.DTOs;
 using Domain.Entities;
-using Domain.Enums;
 using Domain.ValueObjects;
 
 namespace Application.Users.Mapping
@@ -20,14 +19,7 @@ namespace Application.Users.Mapping
             };
 
         public static User ToEntity(this UserCreateDto item, byte[] hash, byte[] salt)
-            => new()
-            {
-                Email = Email.Create(item.Email),
-                Name = UserName.Create(item.Name),
-                Role = UserRole.User,
-                PasswordHash = hash,
-                PasswordSalt = salt
-            };
+            => User.Create(Email.Create(item.Email), UserName.Create(item.Name), hash, salt);
 
         public static void ApplyRoleChange(this User entity, UserSetRoleDto dto)
         {

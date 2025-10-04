@@ -22,15 +22,7 @@ namespace Infrastructure.Tests.Users
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var u = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = Email.Create("john@demo.com"),
-                Name = UserName.Create("John Doe"),
-                PasswordHash = new byte[32],
-                PasswordSalt = new byte[16],
-                Role = UserRole.User
-            };
+            var u = User.Create(Email.Create("john@demo.com"), UserName.Create("John Doe"), [32], [16]);
 
             db.Users.Add(u);
             await db.SaveChangesAsync();
@@ -52,8 +44,8 @@ namespace Infrastructure.Tests.Users
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var u1 = new User { Id = Guid.NewGuid(), Name = UserName.Create("First user"), Email = Email.Create("dup@demo.com"), PasswordHash = new byte[32], PasswordSalt = new byte[16] };
-            var u2 = new User { Id = Guid.NewGuid(), Name = UserName.Create("Second user"), Email = Email.Create("dup@demo.com"), PasswordHash = new byte[32], PasswordSalt = new byte[16] };
+            var u1 = User.Create(Email.Create("dup@demo.com"), UserName.Create("First user"), [32], [16]);
+            var u2 = User.Create(Email.Create("dup@demo.com"), UserName.Create("Second user"), [32], [16]);
 
             db.Users.Add(u1);
             await db.SaveChangesAsync();
@@ -68,8 +60,8 @@ namespace Infrastructure.Tests.Users
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var u1 = new User { Id = Guid.NewGuid(), Name = UserName.Create("User"), Email = Email.Create("user1@demo.com"), PasswordHash = new byte[32], PasswordSalt = new byte[16] };
-            var u2 = new User { Id = Guid.NewGuid(), Name = UserName.Create("User"), Email = Email.Create("user2@demo.com"), PasswordHash = new byte[32], PasswordSalt = new byte[16] };
+            var u1 = User.Create(Email.Create("user1@demo.com"), UserName.Create("User"), [32], [16]);
+            var u2 = User.Create(Email.Create("user2@demo.com"), UserName.Create("User"), [32], [16]);
 
             db.Users.Add(u1);
             await db.SaveChangesAsync();
@@ -84,7 +76,7 @@ namespace Infrastructure.Tests.Users
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var u = new User { Id = Guid.NewGuid(), Name = UserName.Create("John"), Email = Email.Create("tick@demo.com"), PasswordHash = new byte[32], PasswordSalt = new byte[16] };
+            var u = User.Create(Email.Create("tick@demo.com"), UserName.Create("John"), [32], [16]);
             db.Users.Add(u);
             await db.SaveChangesAsync();
 
@@ -110,7 +102,7 @@ namespace Infrastructure.Tests.Users
             await using (var s = _fx.Services.CreateAsyncScope())
             {
                 var d = s.ServiceProvider.GetRequiredService<AppDbContext>();
-                d.Users.Add(new User { Id = id, Email = Email.Create("race@demo.com"), Name = UserName.Create("R Name"), PasswordHash = new byte[32], PasswordSalt = new byte[16] });
+                d.Users.Add(User.Create(Email.Create("race@demo.com"), UserName.Create("R Name"), [32], [16]));
                 await d.SaveChangesAsync();
             }
 
@@ -126,7 +118,7 @@ namespace Infrastructure.Tests.Users
             aTracked.Role = UserRole.Admin;
             await dbA.SaveChangesAsync();
 
-            var stub = new User { Id = id, Email = Email.Create("race@demo.com"), Name = UserName.Create("R Name") };
+            var stub = User.Create(Email.Create("race@demo.com"), UserName.Create("R Name"), [32], [16]);
             dbB.Attach(stub);
             dbB.Entry(stub).Property(x => x.RowVersion).OriginalValue = staleVersion;
             dbB.Entry(stub).Property(x => x.Role).CurrentValue = UserRole.User;

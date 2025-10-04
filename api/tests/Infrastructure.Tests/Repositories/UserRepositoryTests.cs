@@ -33,16 +33,7 @@ namespace Infrastructure.Tests.Repositories
         }
 
         private static User NewUser(string email, string name, UserRole role = UserRole.User)
-            => new()
-            {
-                Id = Guid.NewGuid(),
-                Name = UserName.Create(name),
-                Email = Email.Create(email),
-                PasswordHash = [1, 2, 3],
-                PasswordSalt = [7, 8, 9],
-                Role = role
-            };
-
+            => User.Create(Email.Create(email), UserName.Create(name), [1, 2, 3], [7, 8, 9], role);
         private static async Task<(User user, byte[] rowVersion)> InsertAsync(AppDbContext db, IUnitOfWork uow, string email, string name = "User Name", UserRole role = UserRole.User)
         {
             var u = NewUser(email, name, role);

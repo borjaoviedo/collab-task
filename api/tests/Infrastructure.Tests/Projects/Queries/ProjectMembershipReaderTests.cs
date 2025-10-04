@@ -34,38 +34,19 @@ namespace Infrastructure.Tests.Projects.Queries
             await db.Database.MigrateAsync();
 
             var userId = Guid.NewGuid();
-            var projectId = Guid.NewGuid();
 
-            db.Users.Add(new User
-            {
-                Id = userId,
-                Email = Email.Create($"m{Guid.NewGuid():N}@demo.com"),
-                Name = UserName.Create("Member User"),
-                PasswordHash = new byte[] { 1 },
-                PasswordSalt = new byte[] { 2 },
-                Role = UserRole.User
-            });
+            db.Users.Add(User.Create(Email.Create($"m{Guid.NewGuid():N}@demo.com"), UserName.Create("Member User"), [1], [2]));
 
-            db.Projects.Add(new Project
-            {
-                Id = projectId,
-                Name = ProjectName.Create("Test Project"),
-                Slug = ProjectSlug.Create("test-project")
-            });
-
-            db.ProjectMembers.Add(new ProjectMember
-            {
-                ProjectId = projectId,
-                UserId = userId,
-                Role = ProjectRole.Member
-            });
+            var utcNow = DateTimeOffset.UtcNow;
+            var p = Project.Create(userId, ProjectName.Create("Test Project"), utcNow);
+            db.Projects.Add(p);
 
             await db.SaveChangesAsync();
 
             // SUT
             var reader = new ProjectMembershipReader(db);
 
-            var role = await reader.GetRoleAsync(projectId, userId);
+            var role = await reader.GetRoleAsync(p.Id, userId);
 
             role.Should().NotBeNull();
             role!.Value.Should().Be(ProjectRole.Member);
@@ -81,22 +62,9 @@ namespace Infrastructure.Tests.Projects.Queries
             var userId = Guid.NewGuid();
             var projectId = Guid.NewGuid();
 
-            db.Users.Add(new User
-            {
-                Id = userId,
-                Email = Email.Create($"x{Guid.NewGuid():N}@demo.com"),
-                Name = UserName.Create("Lonely User"),
-                PasswordHash = new byte[] { 1 },
-                PasswordSalt = new byte[] { 2 },
-                Role = UserRole.User
-            });
+            db.Users.Add(User.Create(Email.Create($"x{Guid.NewGuid():N}@demo.com"), UserName.Create("Lonely User"), [1], [2]));
 
-            db.Projects.Add(new Project
-            {
-                Id = projectId,
-                Name = ProjectName.Create("Solo Project"),
-                Slug = ProjectSlug.Create("solo-project")
-            });
+            db.Projects.Add(Project.Create(Guid.NewGuid(), ProjectName.Create("Solo Project"), DateTimeOffset.UtcNow));
 
             await db.SaveChangesAsync();
 

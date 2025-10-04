@@ -31,15 +31,7 @@ namespace Infrastructure.Tests.EFCore
             var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Name = UserName.Create("Value Object"),
-                Email = Email.Create("vo@demo.com"),
-                PasswordHash = new byte[] { 1, 2, 3 },
-                PasswordSalt = new byte[] { 4, 5, 6 },
-                Role = UserRole.User
-            };
+            var user = User.Create(Email.Create("vo@demo.com"), UserName.Create("Value Object"), [1, 2, 3], [4, 5, 6]);
 
             db.Users.Add(user);
             await db.SaveChangesAsync();
@@ -55,15 +47,7 @@ namespace Infrastructure.Tests.EFCore
             var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Name = UserName.Create("Value Object Name"),
-                Email = Email.Create("vo_name@demo.com"),
-                PasswordHash = new byte[] { 1, 2, 3 },
-                PasswordSalt = new byte[] { 4, 5, 6 },
-                Role = UserRole.User
-            };
+            var user = User.Create(Email.Create("vo@demo.com"), UserName.Create("Value Object Name"), [1, 2, 3], [4, 5, 6]);
 
             db.Users.Add(user);
             await db.SaveChangesAsync();
@@ -79,8 +63,10 @@ namespace Infrastructure.Tests.EFCore
             var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
-            var p1 = new Project { Id = Guid.NewGuid(), Name = ProjectName.Create("A"), Slug = ProjectSlug.Create("unique") };
-            var p2 = new Project { Id = Guid.NewGuid(), Name = ProjectName.Create("B"), Slug = ProjectSlug.Create("unique") };
+            var p1 = Project.Create(Guid.NewGuid(), ProjectName.Create("Unique Slug 1"), DateTimeOffset.UtcNow);
+            p1.Slug = ProjectSlug.Create("unique");
+            var p2 = Project.Create(Guid.NewGuid(), ProjectName.Create("Unique Slug 2"), DateTimeOffset.UtcNow);
+            p2.Slug = ProjectSlug.Create("unique");
 
             db.Projects.Add(p1);
             await db.SaveChangesAsync();
@@ -97,30 +83,20 @@ namespace Infrastructure.Tests.EFCore
             var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
-            var p = new Project { Id = Guid.NewGuid(), Name = ProjectName.Create("P"), Slug = ProjectSlug.Create("p") };
-            var u1 = new User { Id = Guid.NewGuid(), Name = UserName.Create("First user"), Email = Email.Create("pm1@demo.com"), PasswordHash = new byte[] { 1 }, PasswordSalt = new byte[] { 1 }, Role = UserRole.User };
-            var u2 = new User { Id = Guid.NewGuid(), Name = UserName.Create("Second user"), Email = Email.Create("pm2@demo.com"), PasswordHash = new byte[] { 2 }, PasswordSalt = new byte[] { 2 }, Role = UserRole.User };
+            var u1 = User.Create(Email.Create("pm1@demo.com"), UserName.Create("First user"), [1], [1]);
+            var p = Project.Create(u1.Id, ProjectName.Create("Project Name"), DateTimeOffset.UtcNow);
+            var u2 = User.Create(Email.Create("pm2@demo.com"), UserName.Create("Second user"), [2], [2]);
             db.AddRange(p, u1, u2);
             await db.SaveChangesAsync();
 
-            var pmOk = new ProjectMember
-            {
-                ProjectId = p.Id,
-                UserId = u1.Id,
-                Role = ProjectRole.Member,
-                JoinedAt = DateTimeOffset.UtcNow,
-                RemovedAt = null
-            };
+            var utcNow = DateTimeOffset.UtcNow;
+            var pmOk = new ProjectMember(p.Id, u1.Id, ProjectRole.Member, utcNow);
             db.ProjectMembers.Add(pmOk);
             await db.SaveChangesAsync(); // should succeed
 
-            var pmBad = new ProjectMember
+            var pmBad = new ProjectMember(p.Id, u2.Id, ProjectRole.Member, utcNow)
             {
-                ProjectId = p.Id,
-                UserId = u2.Id,
-                Role = ProjectRole.Member,
-                JoinedAt = DateTimeOffset.UtcNow,
-                RemovedAt = DateTimeOffset.UtcNow.AddMinutes(-5) // earlier than JoinedAt should violate CHECK
+                RemovedAt = utcNow.AddMinutes(-5)
             };
             db.ProjectMembers.Add(pmBad);
 

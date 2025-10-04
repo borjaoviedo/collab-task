@@ -21,30 +21,15 @@ namespace Infrastructure.Data.Seeders
 
             // Demo users
             var (adminHash, adminSalt) = hasher.Hash("Admin123!");
-            var user1 = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = Email.Create("admin@demo.com"),
-                Name = UserName.Create("Admin User"),
-                PasswordHash = adminHash,
-                PasswordSalt = adminSalt,
-                Role = UserRole.Admin,
-            };
+            var user1 = User.Create(Email.Create("admin@demo.com"), UserName.Create("Admin User"), adminHash, adminSalt, UserRole.Admin);
 
             var (userHash, userSalt) = hasher.Hash("User123!");
-            var user2 = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = Email.Create("user@demo.com"),
-                Name = UserName.Create("Normal User"),
-                PasswordHash = userHash,
-                PasswordSalt = userSalt,
-                Role = UserRole.User,
-            };
+            var user2 = User.Create(Email.Create("user@demo.com"), UserName.Create("Normal User"), userHash, userSalt, UserRole.User);
 
             context.Users.AddRange(user1, user2);
 
             var utcNow = DateTimeOffset.UtcNow;
+
             // Demo project
             var project = Project.Create(user1.Id, ProjectName.Create("Demo Project"), utcNow);
             project.AddMember(user2.Id, ProjectRole.Member, utcNow);

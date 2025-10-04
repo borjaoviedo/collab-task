@@ -22,13 +22,7 @@ namespace Infrastructure.Tests.Projects
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var p = new Project
-            {
-                
-                Id = Guid.NewGuid(),
-                Name = ProjectName.Create("Alpha Board"),
-                Slug = ProjectSlug.Create("Alpha Board"),
-            };
+            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Alpha Board"), DateTimeOffset.UtcNow);
             db.Projects.Add(p);
             await db.SaveChangesAsync();
 
@@ -42,42 +36,23 @@ namespace Infrastructure.Tests.Projects
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var u = new User { Id = Guid.NewGuid(), Name = UserName.Create("Project user"), Email = Email.Create("m@demo.com"), PasswordHash = new byte[32], PasswordSalt = new byte[16] };
-            var p = new Project { Id = Guid.NewGuid(), Name = ProjectName.Create("Beta"), Slug = ProjectSlug.Create("beta") };
+            var utcNow = DateTimeOffset.UtcNow;
+            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Project user"), [32], [16]);
+            var p = Project.Create(u.Id, ProjectName.Create("Beta"), utcNow);
             db.AddRange(u, p);
-            await db.SaveChangesAsync();
-
-            var pm1 = new ProjectMember
-            {
-                ProjectId = p.Id,
-                UserId = u.Id,
-                Role = ProjectRole.Owner,
-                JoinedAt = DateTimeOffset.UtcNow
-            };
-            db.ProjectMembers.Add(pm1);
             await db.SaveChangesAsync();
 
             await using var scope2 = _fx.Services.CreateAsyncScope();
             var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
 
             // duplicate composite key
-            var pmDup = new ProjectMember
-            {
-                ProjectId = p.Id,
-                UserId = u.Id,
-                Role = ProjectRole.Member,
-                JoinedAt = DateTimeOffset.UtcNow
-            };
+            var pmDup = new ProjectMember(p.Id, u.Id, ProjectRole.Member, utcNow);
             db2.ProjectMembers.Add(pmDup);
             await Assert.ThrowsAsync<DbUpdateException>(() => db2.SaveChangesAsync());
 
             // RemovedAt before JoinedAt -> check constraint
-            var pmBad = new ProjectMember
+            var pmBad = new ProjectMember(p.Id, Guid.NewGuid(), ProjectRole.Reader, utcNow)
             {
-                ProjectId = p.Id,
-                UserId = Guid.NewGuid(),
-                Role = ProjectRole.Reader,
-                JoinedAt = DateTimeOffset.UtcNow,
                 RemovedAt = DateTimeOffset.UtcNow.AddMinutes(-10)
             };
             db2.ProjectMembers.Add(pmBad);

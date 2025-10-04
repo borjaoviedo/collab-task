@@ -31,15 +31,7 @@ namespace Infrastructure.Tests.Persistence
             var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
-            var u = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = Email.Create("repo@demo.com"),
-                Name = UserName.Create("Repo User"),
-                PasswordHash = [7],
-                PasswordSalt = [9],
-                Role = UserRole.User
-            };
+            var u = User.Create(Email.Create("repo@demo.com"), UserName.Create("Repo User"), [7], [9]);
             db.Users.Add(u);
             await db.SaveChangesAsync();
 
@@ -55,15 +47,7 @@ namespace Infrastructure.Tests.Persistence
             var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
-            var u = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = Email.Create("repo@demo.com"),
-                Name = UserName.Create("Repo User"),
-                PasswordHash = [7],
-                PasswordSalt = [9],
-                Role = UserRole.User
-            };
+            var u = User.Create(Email.Create("repo@demo.com"), UserName.Create("Repo User"), [7], [9]);
             db.Users.Add(u);
             await db.SaveChangesAsync();
 
@@ -79,15 +63,7 @@ namespace Infrastructure.Tests.Persistence
             var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
-            var u = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = Email.Create("concurrency@demo.com"),
-                Name = UserName.Create("Concurrency User"),
-                PasswordHash = [1],
-                PasswordSalt = [1],
-                Role = UserRole.User
-            };
+            var u = User.Create(Email.Create("concurrency@demo.com"), UserName.Create("Concurrency User"), [1], [1]);
             db.Users.Add(u);
             await db.SaveChangesAsync();
 

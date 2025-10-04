@@ -132,18 +132,12 @@ namespace Api.Tests.Fakes
 
         private static User Clone(User u)
         {
-            return new User
-            {
-                Id = u.Id,
-                Email = u.Email,
-                Name = u.Name,
-                Role = u.Role,
-                CreatedAt = u.CreatedAt,
-                UpdatedAt = u.UpdatedAt,
-                RowVersion = u.RowVersion is null ? Array.Empty<byte>() : u.RowVersion.ToArray(),
-                PasswordHash = u.PasswordHash,
-                PasswordSalt = u.PasswordSalt
-            };
+            var clone = User.Create(u.Email, u.Name, u.PasswordHash.ToArray(), u.PasswordSalt.ToArray(), u.Role);
+            clone.Id = u.Id;
+            clone.CreatedAt = u.CreatedAt;
+            clone.UpdatedAt = u.UpdatedAt;
+            clone.RowVersion = (u.RowVersion is null) ? Array.Empty<byte>() : u.RowVersion.ToArray();
+            return clone;
         }
     }
 }

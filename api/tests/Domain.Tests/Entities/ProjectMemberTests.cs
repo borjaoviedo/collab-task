@@ -39,18 +39,8 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Navigation_Properties_Assignable()
         {
-            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("A Project Name"), DateTimeOffset.UtcNow.AddDays(-5));
-
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = Email.Create("member@demo.com"),
-                Name = UserName.Create("Project Member"),
-                PasswordHash = Bytes(32),
-                PasswordSalt = Bytes(16),
-                CreatedAt = DateTimeOffset.UtcNow.AddDays(-10),
-                UpdatedAt = DateTimeOffset.UtcNow.AddDays(-9)
-            };
+            var user = User.Create(Email.Create("member@demo.com"), UserName.Create("Project Member"), Bytes(32), Bytes(16));
+            var p = Project.Create(user.Id, ProjectName.Create("A Project Name"), DateTimeOffset.UtcNow.AddDays(-5));
 
             var pm = new ProjectMember(p.Id, user.Id, ProjectRole.Reader, DateTimeOffset.UtcNow)
             {
