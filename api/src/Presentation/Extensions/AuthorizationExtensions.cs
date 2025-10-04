@@ -1,5 +1,9 @@
+using Api.Auth;
+using Api.Auth.Authorization;
+using Domain.Enums;
 using Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
@@ -30,7 +34,29 @@ namespace Api.Extensions
                 };
             });
 
-            services.AddAuthorization();
+            return services;
+        }
+
+        public static IServiceCollection AddProjectAuthorization(this IServiceCollection services)
+        {
+            services.AddHttpContextAccessor();
+            services.AddSingleton<IAuthorizationHandler, ProjectRoleAuthorizationHandler>();
+
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy(Policies.ProjectReader,
+                    p => p.AddRequirements(new ProjectRoleRequirement(ProjectRole.Reader)));
+
+                options.AddPolicy(Policies.ProjectMember,
+                    p => p.AddRequirements(new ProjectRoleRequirement(ProjectRole.Member)));
+
+                options.AddPolicy(Policies.ProjectAdmin,
+                    p => p.AddRequirements(new ProjectRoleRequirement(ProjectRole.Admin)));
+
+                options.AddPolicy(Policies.ProjectOwner,
+                    p => p.AddRequirements(new ProjectRoleRequirement(ProjectRole.Owner)));
+            });
+
             return services;
         }
     }
