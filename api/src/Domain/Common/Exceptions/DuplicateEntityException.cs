@@ -1,7 +1,7 @@
 
-namespace Application.Common.Exceptions
+namespace Domain.Common.Exceptions
 {
-    public sealed class DuplicateEntityException : BaseAppException
+    public sealed class DuplicateEntityException : DomainException
     {
         public DuplicateEntityException(
             string message,

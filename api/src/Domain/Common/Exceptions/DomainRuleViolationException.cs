@@ -1,7 +1,7 @@
 
-namespace Application.Common.Exceptions
+namespace Domain.Common.Exceptions
 {
-    public sealed class DomainRuleViolationException : BaseAppException
+    public sealed class DomainRuleViolationException : DomainException
     {
         public DomainRuleViolationException(
             string message,
