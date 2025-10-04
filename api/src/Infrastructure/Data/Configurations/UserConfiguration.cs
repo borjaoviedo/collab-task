@@ -17,6 +17,9 @@ namespace Infrastructure.Data.Configurations
             e.HasIndex(u => u.Email)
                 .IsUnique();
 
+            e.HasIndex(u => u.Name)
+                .IsUnique();
+
             e.Property(u => u.Id)
                 .ValueGeneratedOnAdd()
                 .HasDefaultValueSql("NEWSEQUENTIALID()");
@@ -28,6 +31,15 @@ namespace Infrastructure.Data.Configurations
             e.Property(u => u.Email)
                 .HasConversion(emailConversion)
                 .HasMaxLength(256)
+                .IsRequired();
+
+            var nameConversion = new ValueConverter<UserName, string>(
+                toDb => toDb.Value,
+                fromDb => UserName.Create(fromDb));
+
+            e.Property(u => u.Name)
+                .HasConversion(nameConversion)
+                .HasMaxLength(100)
                 .IsRequired();
 
             e.Property(u => u.PasswordHash)
