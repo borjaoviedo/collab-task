@@ -25,6 +25,7 @@ namespace Infrastructure.Data.Seeders
             {
                 Id = Guid.NewGuid(),
                 Email = Email.Create("admin@demo.com"),
+                Name = UserName.Create("Admin User"),
                 PasswordHash = adminHash,
                 PasswordSalt = adminSalt,
                 Role = UserRole.Admin,
@@ -35,6 +36,7 @@ namespace Infrastructure.Data.Seeders
             {
                 Id = Guid.NewGuid(),
                 Email = Email.Create("user@demo.com"),
+                Name = UserName.Create("Normal User"),
                 PasswordHash = userHash,
                 PasswordSalt = userSalt,
                 Role = UserRole.User,
