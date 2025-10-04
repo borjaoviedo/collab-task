@@ -1,5 +1,5 @@
-using Application.Common.Exceptions;
 using Application.Users.Abstractions;
+using Domain.Common.Exceptions;
 using Domain.Entities;
 using Domain.Enums;
 using System.Collections.Concurrent;
