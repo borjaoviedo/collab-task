@@ -13,8 +13,6 @@ namespace Infrastructure.Data.Configurations
                 t.HasCheckConstraint("CK_ProjectMembers_Role", "[Role] IN (0,1,2,3)");
                 t.HasCheckConstraint("CK_ProjectMembers_RemovedAt_After_JoinedAt",
                     "[RemovedAt] IS NULL OR [RemovedAt] >= [JoinedAt]");
-                t.HasCheckConstraint("CK_ProjectMembers_InvitedAt_Before_JoinedAt",
-                    "[InvitedAt] IS NULL OR [InvitedAt] <= [JoinedAt]");
             });
 
             e.HasKey(pm => new { pm.ProjectId, pm.UserId });
@@ -29,11 +27,9 @@ namespace Infrastructure.Data.Configurations
 
             e.Property(pm => pm.Role).IsRequired();
 
-            e.Property(pm => pm.JoinedAt).HasColumnType("datetimeoffset");
-
-            e.Property(pm => pm.InvitedAt)
+            e.Property(pm => pm.JoinedAt)
                 .HasColumnType("datetimeoffset")
-                .IsRequired(false);
+                .IsRequired();
 
             e.Property(pm => pm.RemovedAt)
                 .HasColumnType("datetimeoffset")
