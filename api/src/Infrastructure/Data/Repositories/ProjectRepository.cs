@@ -23,12 +23,12 @@ namespace Infrastructure.Data.Repositories
                 .AsNoTracking()
                 .AsSplitQuery()
                 .Include(p => p.Members.Where(m => includeRemoved || m.RemovedAt == null))
-                .Where(p => p.Members.Any(m => m.UserId == userId && (includeRemoved || m.RemovedAt == null)));
+                .Where(p => p.OwnerId == userId || p.Members.Any(m => m.UserId == userId && (includeRemoved || m.RemovedAt == null)));
 
             if (!string.IsNullOrWhiteSpace(filter.NameContains))
             {
                 var term = filter.NameContains.Trim();
-                q = q.Where(p => p.Name.Value.Contains(term));
+                q = q.Where(p => EF.Functions.Like(p.Name, $"%{term}%"));
             }
 
             if (filter.Role is not null)
@@ -40,12 +40,12 @@ namespace Infrastructure.Data.Repositories
             // Ordering
             q = filter.OrderBy?.ToLowerInvariant() switch
             {
-                "name" => q.OrderBy(p => p.Name.Value),
-                "name_desc" => q.OrderByDescending(p => p.Name.Value),
-                "createdat" => q.OrderBy(p => p.CreatedAt),
-                "createdat_desc" => q.OrderByDescending(p => p.CreatedAt),
-                "updatedat" => q.OrderBy(p => p.UpdatedAt),
-                _ => q.OrderByDescending(p => p.UpdatedAt) // default
+                "name" => q.OrderBy(p => p.Name).ThenBy(p => p.Id),
+                "name_desc" => q.OrderByDescending(p => p.Name).ThenBy(p => p.Id),
+                "createdat" => q.OrderBy(p => p.CreatedAt).ThenBy(p => p.Name),
+                "createdat_desc" => q.OrderByDescending(p => p.CreatedAt).ThenBy(p => p.Name),
+                "updatedat" => q.OrderBy(p => p.UpdatedAt).ThenBy(p => p.Name),
+                _ => q.OrderByDescending(p => p.UpdatedAt).ThenBy(p => p.Name) // default
             };
 
             // Paging
