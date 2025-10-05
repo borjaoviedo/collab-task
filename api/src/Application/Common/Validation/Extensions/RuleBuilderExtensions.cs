@@ -48,5 +48,12 @@ namespace Application.Common.Validation.Extensions
 
         }
 
+        public static IRuleBuilderOptions<T, byte[]> ConcurrencyTokenRules<T>(this IRuleBuilder<T, byte[]> ruleBuilder)
+        {
+            return ruleBuilder
+                .NotNull().WithMessage("RowVersion is required.")
+                .Must(v => v.Length > 0).WithMessage("RowVersion cannot be empty.");
+        }
+
     }
 }
