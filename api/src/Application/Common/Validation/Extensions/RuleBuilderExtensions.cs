@@ -1,3 +1,4 @@
+using Domain.Enums;
 using FluentValidation;
 using System.Text.RegularExpressions;
 
@@ -45,7 +46,6 @@ namespace Application.Common.Validation.Extensions
                     .WithMessage("Project name cannot contain consecutive spaces.")
                 .Must(s => s.All(c => !char.IsControl(c)))
                     .WithMessage("Project name contains invalid characters.");
-
         }
 
         public static IRuleBuilderOptions<T, byte[]> ConcurrencyTokenRules<T>(this IRuleBuilder<T, byte[]> ruleBuilder)
@@ -55,5 +55,24 @@ namespace Application.Common.Validation.Extensions
                 .Must(v => v.Length > 0).WithMessage("RowVersion cannot be empty.");
         }
 
+        public static IRuleBuilderOptions<T, Guid> RequiredGuid<T>(this IRuleBuilder<T, Guid> ruleBuilder)
+        => ruleBuilder
+            .NotEmpty().WithMessage("Id is required.");
+
+        public static IRuleBuilderOptions<T, ProjectRole> ProjectRoleRules<T>(this IRuleBuilder<T, ProjectRole> ruleBuilder)
+            => ruleBuilder
+                .Must(r => Enum.IsDefined(typeof(ProjectRole), r))
+                    .WithMessage("Invalid project role value.");
+
+        public static IRuleBuilderOptions<T, DateTimeOffset> JoinedAtRules<T>(this IRuleBuilder<T, DateTimeOffset> ruleBuilder)
+            => ruleBuilder
+                .Must(d => d.Offset == TimeSpan.Zero).WithMessage("JoinedAt must be in UTC.")
+                .LessThanOrEqualTo(_ => DateTimeOffset.UtcNow).WithMessage("JoinedAt cannot be in the future.")
+                .GreaterThan(new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero)).WithMessage("JoinedAt is too old.");
+
+        public static IRuleBuilderOptions<T, DateTimeOffset?> RemovedAtRules<T>(this IRuleBuilder<T, DateTimeOffset?> ruleBuilder)
+            => ruleBuilder
+                .Must(d => d is null || ((DateTimeOffset)d).Offset == TimeSpan.Zero).WithMessage("RemovedAt must be in UTC.")
+                .Must(d => d is null || ((DateTimeOffset)d) <= DateTimeOffset.UtcNow).WithMessage("RemovedAt cannot be in the future.");
     }
 }
