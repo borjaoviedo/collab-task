@@ -15,6 +15,7 @@ namespace Infrastructure.Tests.Users
     {
         private readonly MsSqlContainerFixture _fx;
         public UserPersistenceTests(MsSqlContainerFixture fx) => _fx = fx;
+        public static byte[] Bytes(int n, byte fill = 0x5A) => Enumerable.Repeat(fill, n).ToArray();
 
         [Fact]
         public async Task Create_And_GetById_Email_And_Name()
@@ -22,7 +23,7 @@ namespace Infrastructure.Tests.Users
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var u = User.Create(Email.Create("john@demo.com"), UserName.Create("John Doe"), [32], [16]);
+            var u = User.Create(Email.Create("john@demo.com"), UserName.Create("John Doe"), Bytes(32), Bytes(16));
 
             db.Users.Add(u);
             await db.SaveChangesAsync();
@@ -44,8 +45,8 @@ namespace Infrastructure.Tests.Users
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var u1 = User.Create(Email.Create("dup@demo.com"), UserName.Create("First user"), [32], [16]);
-            var u2 = User.Create(Email.Create("dup@demo.com"), UserName.Create("Second user"), [32], [16]);
+            var u1 = User.Create(Email.Create("dup@demo.com"), UserName.Create("First user"), Bytes(32), Bytes(16));
+            var u2 = User.Create(Email.Create("dup@demo.com"), UserName.Create("Second user"), Bytes(32), Bytes(16));
 
             db.Users.Add(u1);
             await db.SaveChangesAsync();
@@ -60,8 +61,8 @@ namespace Infrastructure.Tests.Users
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var u1 = User.Create(Email.Create("user1@demo.com"), UserName.Create("User"), [32], [16]);
-            var u2 = User.Create(Email.Create("user2@demo.com"), UserName.Create("User"), [32], [16]);
+            var u1 = User.Create(Email.Create("user1@demo.com"), UserName.Create("User"), Bytes(32), Bytes(16));
+            var u2 = User.Create(Email.Create("user2@demo.com"), UserName.Create("User"), Bytes(32), Bytes(16));
 
             db.Users.Add(u1);
             await db.SaveChangesAsync();
@@ -76,7 +77,7 @@ namespace Infrastructure.Tests.Users
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var u = User.Create(Email.Create("tick@demo.com"), UserName.Create("John"), [32], [16]);
+            var u = User.Create(Email.Create("tick@demo.com"), UserName.Create("John"), Bytes(32), Bytes(16));
             db.Users.Add(u);
             await db.SaveChangesAsync();
 
@@ -96,33 +97,38 @@ namespace Infrastructure.Tests.Users
         [Fact]
         public async Task Concurrency_RowVersion_Conflicts_On_Parallel_Update()
         {
-            var id = Guid.NewGuid();
-
-            // Seed
+            // Seed and capture the real Id
+            Guid userId;
             await using (var s = _fx.Services.CreateAsyncScope())
             {
                 var d = s.ServiceProvider.GetRequiredService<AppDbContext>();
-                d.Users.Add(User.Create(Email.Create("race@demo.com"), UserName.Create("R Name"), [32], [16]));
+                var u = User.Create(Email.Create("race@demo.com"), UserName.Create("R Name"), Bytes(32), Bytes(16));
+                d.Users.Add(u);
                 await d.SaveChangesAsync();
+                userId = u.Id;
             }
 
             await using var sA = _fx.Services.CreateAsyncScope();
             await using var sB = _fx.Services.CreateAsyncScope();
             var dbA = sA.ServiceProvider.GetRequiredService<AppDbContext>();
             var dbB = sB.ServiceProvider.GetRequiredService<AppDbContext>();
-    
-            var b = await dbB.Users.AsNoTracking().SingleAsync(x => x.Id == id);
+
+            // Read stale copy (no tracking) to get old RowVersion
+            var b = await dbB.Users.AsNoTracking().SingleAsync(x => x.Id == userId);
             var staleVersion = b.RowVersion;
 
-            var aTracked = await dbA.Users.SingleAsync(x => x.Id == id);
+            // Competing update in A
+            var aTracked = await dbA.Users.SingleAsync(x => x.Id == userId);
             aTracked.Role = UserRole.Admin;
             await dbA.SaveChangesAsync();
 
-            var stub = User.Create(Email.Create("race@demo.com"), UserName.Create("R Name"), [32], [16]);
-            dbB.Attach(stub);
+            // Stub attach with correct key and stale RowVersion
+            var stub = User.Create(Email.Create("x@x.com"), UserName.Create("XX"), Bytes(32), Bytes(16));
+            stub.Id = userId;                         // ensure key matches existing row
+            dbB.Attach(stub);                         // state = Unchanged
             dbB.Entry(stub).Property(x => x.RowVersion).OriginalValue = staleVersion;
             dbB.Entry(stub).Property(x => x.Role).CurrentValue = UserRole.User;
-            dbB.Entry(stub).Property(x => x.Role).IsModified = true;
+            dbB.Entry(stub).Property(x => x.Role).IsModified = true; // only update Role
 
             await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => dbB.SaveChangesAsync());
         }

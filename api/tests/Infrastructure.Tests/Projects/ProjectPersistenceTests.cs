@@ -16,18 +16,22 @@ namespace Infrastructure.Tests.Projects
         private readonly MsSqlContainerFixture _fx;
         public ProjectPersistenceTests(MsSqlContainerFixture fx) => _fx = fx;
 
+        public static byte[] Bytes(int n, byte fill = 0x5A) => Enumerable.Repeat(fill, n).ToArray();
         [Fact]
         public async Task Create_Project_And_GetBySlug()
         {
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var pName = "Alpha Board";
 
-            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Alpha Board"), DateTimeOffset.UtcNow);
-            db.Projects.Add(p);
+            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Project user"), Bytes(32), Bytes(16));
+            var p = Project.Create(u.Id, ProjectName.Create(pName), DateTimeOffset.UtcNow);
+            db.AddRange(u, p);
             await db.SaveChangesAsync();
+            var projectId = p.Id;
 
-            var bySlug = await db.Projects.SingleAsync(x => x.Slug == ProjectSlug.Create("Alpha Board"));
-            bySlug.Id.Should().Be(p.Id);
+            var bySlug = await db.Projects.SingleAsync(x => x.Slug == ProjectSlug.Create(pName));
+            bySlug.Id.Should().Be(projectId);
         }
 
         [Fact]
@@ -37,7 +41,7 @@ namespace Infrastructure.Tests.Projects
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var utcNow = DateTimeOffset.UtcNow;
-            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Project user"), [32], [16]);
+            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Project user"), Bytes(32), Bytes(16));
             var p = Project.Create(u.Id, ProjectName.Create("Beta"), utcNow);
             db.AddRange(u, p);
             await db.SaveChangesAsync();

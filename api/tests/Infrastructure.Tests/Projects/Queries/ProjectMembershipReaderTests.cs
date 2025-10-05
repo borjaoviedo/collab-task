@@ -16,6 +16,8 @@ namespace Infrastructure.Tests.Projects.Queries
         private readonly string _baseCs;
         public ProjectMembershipReaderTests(MsSqlContainerFixture fx) => _baseCs = fx.ContainerConnectionString;
 
+        public static byte[] Bytes(int n, byte fill = 0x5A) => Enumerable.Repeat(fill, n).ToArray();
+
         private (ServiceProvider sp, AppDbContext db) BuildDb(string name)
         {
             var cs = $"{_baseCs};Database={name}";
@@ -27,29 +29,24 @@ namespace Infrastructure.Tests.Projects.Queries
         }
 
         [Fact]
-        public async Task GetRoleAsync_Returns_Member_Role_When_User_Is_Member()
+        public async Task GetRoleAsync_Returns_Owner_Role_When_User_Creates_Project()
         {
             var dbName = $"ct_{Guid.NewGuid():N}";
             var (_, db) = BuildDb(dbName);
             await db.Database.MigrateAsync();
 
-            var userId = Guid.NewGuid();
-
-            db.Users.Add(User.Create(Email.Create($"m{Guid.NewGuid():N}@demo.com"), UserName.Create("Member User"), [1], [2]));
-
-            var utcNow = DateTimeOffset.UtcNow;
-            var p = Project.Create(userId, ProjectName.Create("Test Project"), utcNow);
-            db.Projects.Add(p);
-
+            var u = User.Create(Email.Create($"x{Guid.NewGuid():N}@demo.com"), UserName.Create("Member User"), Bytes(32), Bytes(16));
+            var p = Project.Create(u.Id, ProjectName.Create("Test Project"), DateTimeOffset.UtcNow);
+            db.AddRange(u, p);
             await db.SaveChangesAsync();
 
             // SUT
             var reader = new ProjectMembershipReader(db);
 
-            var role = await reader.GetRoleAsync(p.Id, userId);
+            var role = await reader.GetRoleAsync(p.Id, u.Id);
 
             role.Should().NotBeNull();
-            role!.Value.Should().Be(ProjectRole.Member);
+            role!.Value.Should().Be(ProjectRole.Owner);
         }
 
         [Fact]
@@ -59,18 +56,14 @@ namespace Infrastructure.Tests.Projects.Queries
             var (_, db) = BuildDb(dbName);
             await db.Database.MigrateAsync();
 
-            var userId = Guid.NewGuid();
-            var projectId = Guid.NewGuid();
-
-            db.Users.Add(User.Create(Email.Create($"x{Guid.NewGuid():N}@demo.com"), UserName.Create("Lonely User"), [1], [2]));
-
-            db.Projects.Add(Project.Create(Guid.NewGuid(), ProjectName.Create("Solo Project"), DateTimeOffset.UtcNow));
-
+            var u = User.Create(Email.Create($"x{Guid.NewGuid():N}@demo.com"), UserName.Create("Lonely User"), Bytes(32), Bytes(16));
+            var p = Project.Create(u.Id, ProjectName.Create("Solo Project"), DateTimeOffset.UtcNow);
+            db.AddRange(u, p);
             await db.SaveChangesAsync();
 
             var reader = new ProjectMembershipReader(db);
 
-            var role = await reader.GetRoleAsync(projectId, userId);
+            var role = await reader.GetRoleAsync(p.Id, Guid.NewGuid());
 
             role.Should().BeNull();
         }

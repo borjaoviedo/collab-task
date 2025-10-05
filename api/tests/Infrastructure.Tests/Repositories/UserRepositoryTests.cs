@@ -17,6 +17,8 @@ namespace Infrastructure.Tests.Repositories
         private readonly string _baseCs;
         public UserRepositoryTests(MsSqlContainerFixture fx) => _baseCs = fx.ContainerConnectionString;
 
+        public static byte[] Bytes(int n, byte fill = 0x5A) => Enumerable.Repeat(fill, n).ToArray();
+
         private (AppDbContext db, IUnitOfWork uow, UserRepository repo) BuildSut(string name)
         {
             var cs = $"{_baseCs};Database={name}";
@@ -33,14 +35,13 @@ namespace Infrastructure.Tests.Repositories
         }
 
         private static User NewUser(string email, string name, UserRole role = UserRole.User)
-            => User.Create(Email.Create(email), UserName.Create(name), [1, 2, 3], [7, 8, 9], role);
+            => User.Create(Email.Create(email), UserName.Create(name), Bytes(32), Bytes(16), role);
         private static async Task<(User user, byte[] rowVersion)> InsertAsync(AppDbContext db, IUnitOfWork uow, string email, string name = "User Name", UserRole role = UserRole.User)
         {
             var u = NewUser(email, name, role);
             db.Users.Add(u);
             await uow.SaveChangesAsync();
-            var rv = (byte[])db.Entry(u).Property(nameof(User.RowVersion)).CurrentValue!;
-            return (u, rv);
+            return (u, u.RowVersion.ToArray());
         }
 
         [Fact]

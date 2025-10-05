@@ -15,6 +15,7 @@ namespace Infrastructure.Tests.Persistence
         private readonly string _baseCs;
         public UserPersistenceContractTests(MsSqlContainerFixture fx) => _baseCs = fx.ContainerConnectionString;
 
+        public static byte[] Bytes(int n, byte fill = 0x5A) => Enumerable.Repeat(fill, n).ToArray();
         private (ServiceProvider sp, AppDbContext db) BuildDb(string name)
         {
             var cs = $"{_baseCs};Database={name}";
@@ -31,7 +32,7 @@ namespace Infrastructure.Tests.Persistence
             var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
-            var u = User.Create(Email.Create("repo@demo.com"), UserName.Create("Repo User"), [7], [9]);
+            var u = User.Create(Email.Create("repo@demo.com"), UserName.Create("Repo User"), Bytes(32), Bytes(16));
             db.Users.Add(u);
             await db.SaveChangesAsync();
 
@@ -47,7 +48,7 @@ namespace Infrastructure.Tests.Persistence
             var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
-            var u = User.Create(Email.Create("repo@demo.com"), UserName.Create("Repo User"), [7], [9]);
+            var u = User.Create(Email.Create("repo@demo.com"), UserName.Create("Repo User"), Bytes(32), Bytes(16));
             db.Users.Add(u);
             await db.SaveChangesAsync();
 
@@ -63,7 +64,7 @@ namespace Infrastructure.Tests.Persistence
             var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
-            var u = User.Create(Email.Create("concurrency@demo.com"), UserName.Create("Concurrency User"), [1], [1]);
+            var u = User.Create(Email.Create("concurrency@demo.com"), UserName.Create("Concurrency User"), Bytes(32), Bytes(16));
             db.Users.Add(u);
             await db.SaveChangesAsync();
 

@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Infrastructure.Data;
 using Infrastructure.Tests.Containers;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Tests.Database
