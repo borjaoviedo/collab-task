@@ -22,16 +22,20 @@ namespace Infrastructure.Tests.Projects
         {
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var pName = "Alpha Board";
 
-            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Project user"), Bytes(32), Bytes(16));
+            static string Suffix(int n) => new(Enumerable.Range(0, n).Select(_ => (char)('a' + Random.Shared.Next(26))).ToArray());
+
+            var pName = "Alpha Board";
+            var sfx = Suffix(8);
+
+            var u = User.Create(Email.Create($"{sfx}@demo.com"), UserName.Create($"Project user {sfx}"), Bytes(32), Bytes(16));
             var p = Project.Create(u.Id, ProjectName.Create(pName), DateTimeOffset.UtcNow);
+
             db.AddRange(u, p);
             await db.SaveChangesAsync();
-            var projectId = p.Id;
 
             var bySlug = await db.Projects.SingleAsync(x => x.Slug == ProjectSlug.Create(pName));
-            bySlug.Id.Should().Be(projectId);
+            bySlug.Id.Should().Be(p.Id);
         }
 
         [Fact]
