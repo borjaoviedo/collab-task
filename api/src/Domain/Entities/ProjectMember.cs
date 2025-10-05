@@ -8,7 +8,6 @@ namespace Domain.Entities
         public Guid UserId { get; set; }
         public ProjectRole Role { get; set; }
         public DateTimeOffset JoinedAt { get; set; }
-        public DateTimeOffset? InvitedAt { get; set; }
         public DateTimeOffset? RemovedAt { get; set; }
         public byte[] RowVersion { get; set; } = default!;
         public Project Project { get; set; } = null!;
@@ -24,6 +23,7 @@ namespace Domain.Entities
             JoinedAt = joinedAtUtc;
         }
 
+        public void ChangeRole(ProjectRole newRole) => Role = newRole;
         public void Remove(DateTimeOffset removedAtUtc) => RemovedAt = removedAtUtc;
     }
 }
