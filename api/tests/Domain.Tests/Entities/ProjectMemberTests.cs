@@ -16,13 +16,11 @@ namespace Domain.Tests.Entities
             var userId = Guid.NewGuid();
             var role = ProjectRole.Member;
             var joinedAt = DateTimeOffset.UtcNow.AddDays(-2);
-            var invitedAt = DateTimeOffset.UtcNow.AddDays(-3);
             var removedAt = DateTimeOffset.UtcNow.AddDays(-1);
             var rv = Bytes(8);
 
             var pm = new ProjectMember(projectId, userId, role, joinedAt)
             {
-                InvitedAt = invitedAt,
                 RemovedAt = removedAt,
                 RowVersion = rv
             };
@@ -31,7 +29,6 @@ namespace Domain.Tests.Entities
             pm.UserId.Should().Be(userId);
             pm.Role.Should().Be(role);
             pm.JoinedAt.Should().Be(joinedAt);
-            pm.InvitedAt.Should().Be(invitedAt);
             pm.RemovedAt.Should().Be(removedAt);
             pm.RowVersion.Should().BeSameAs(rv);
         }
@@ -74,10 +71,12 @@ namespace Domain.Tests.Entities
             var pm = new ProjectMember(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Reader, DateTimeOffset.UtcNow);
 
             pm.Role.Should().Be(ProjectRole.Reader);
-            pm.Role = ProjectRole.Member;
+            pm.ChangeRole(ProjectRole.Member);
             pm.Role.Should().Be(ProjectRole.Member);
-            pm.Role = ProjectRole.Admin;
+            pm.ChangeRole(ProjectRole.Admin);
             pm.Role.Should().Be(ProjectRole.Admin);
+            pm.ChangeRole(ProjectRole.Owner);
+            pm.Role.Should().Be(ProjectRole.Owner);
         }
     }
 }
