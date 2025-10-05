@@ -83,10 +83,10 @@ namespace Infrastructure.Tests.Repositories
             await db.SaveChangesAsync();
 
             var listUser1 = await repo.GetByUserAsync(u1.Id);
-            listUser1.Select(x => x.Name.Value).Should().BeEquivalentTo(new[] { "Alpha Board", "Beta Board" });
+            listUser1.Select(x => x.Name.Value).Should().BeEquivalentTo("Alpha Board", "Beta Board");
 
             var listUser2 = await repo.GetByUserAsync(u2.Id);
-            listUser2.Select(x => x.Name.Value).Should().BeEquivalentTo(new[] { "Beta Board" });
+            listUser2.Select(x => x.Name.Value).Should().BeEquivalentTo("Beta Board");
         }
 
         [Fact]
