@@ -12,7 +12,7 @@ namespace Domain.ValueObjects
             if (string.IsNullOrWhiteSpace(value))
                 throw new ArgumentException("Project name cannot be empty", nameof(value));
 
-            value = value.Trim().ToLowerInvariant();
+            value = value.Trim();
 
             if (value.Length > 100)
                 throw new ArgumentException("Project name too long", nameof(value));
@@ -23,11 +23,11 @@ namespace Domain.ValueObjects
         public override string ToString() => Value;
 
         public bool Equals(ProjectName? other) =>
-            other is not null && StringComparer.Ordinal.Equals(Value, other.Value);
+            other is not null && StringComparer.OrdinalIgnoreCase.Equals(Value, other.Value);
 
         public override bool Equals(object? obj) => obj is ProjectName o && Equals(o);
 
-        public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Value);
+        public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(Value);
 
         public static bool operator ==(ProjectName? a, ProjectName? b) => Equals(a, b);
 
