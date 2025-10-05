@@ -8,7 +8,7 @@ using Infrastructure.Tests.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Infrastructure.Tests.Users
+namespace Infrastructure.Tests.Persistence
 {
     [Collection(nameof(DbCollection))]
     public class UserPersistenceTests

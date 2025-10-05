@@ -7,7 +7,7 @@ using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Infrastructure.Tests.Persistence
+namespace Infrastructure.Tests.Persistence.Contracts
 {
     [Collection("SqlServerContainer")]
     public sealed class UserPersistenceContractTests : IClassFixture<MsSqlContainerFixture>
