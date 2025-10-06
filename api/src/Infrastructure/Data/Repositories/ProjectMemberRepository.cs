@@ -16,10 +16,11 @@ namespace Infrastructure.Data.Repositories
             .FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
 
         public async Task<IReadOnlyList<ProjectMember>> GetByProjectAsync(Guid projectId, bool includeRemoved = false, CancellationToken ct = default)
-            => await _db.ProjectMembers
-            .AsNoTracking()
-            .Where(pm => pm.ProjectId == projectId && (includeRemoved || pm.RemovedAt == null))
-            .ToListAsync(ct);
+        {
+            var q = _db.ProjectMembers.AsNoTracking().Where(pm => pm.ProjectId == projectId);
+            if (!includeRemoved) q = q.Where(pm => pm.RemovedAt == null);
+            return await q.ToListAsync(ct);
+        }
 
         public async Task<bool> ExistsAsync(Guid projectId, Guid userId, CancellationToken ct = default)
             => await _db.ProjectMembers
@@ -29,7 +30,7 @@ namespace Infrastructure.Data.Repositories
         public async Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
             => await _db.ProjectMembers
             .AsNoTracking()
-            .Where(pm => pm.UserId == userId && pm.ProjectId == projectId)
+            .Where(pm => pm.UserId == userId && pm.ProjectId == projectId && pm.RemovedAt == null)
             .Select(pm => (ProjectRole?)pm.Role)
             .SingleOrDefaultAsync(ct);
 
