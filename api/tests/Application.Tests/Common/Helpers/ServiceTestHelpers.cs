@@ -3,7 +3,7 @@ using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Application.Tests.Common
+namespace Application.Tests.Common.Helpers
 {
     public static class ServiceTestHelpers
     {

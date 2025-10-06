@@ -1,6 +1,5 @@
 using Application.Common.Results;
 using Application.Projects.Abstractions;
-using Application.Tests.Common;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -8,6 +7,7 @@ using Infrastructure.Tests.Containers;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using Application.Tests.Common.Helpers;
 
 namespace Application.Tests.Projects.Services
 {

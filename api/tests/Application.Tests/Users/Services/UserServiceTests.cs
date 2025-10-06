@@ -1,5 +1,5 @@
 using Application.Common.Results;
-using Application.Tests.Common;
+using Application.Tests.Common.Helpers;
 using Application.Users.Abstractions;
 using Domain.Entities;
 using Domain.Enums;
