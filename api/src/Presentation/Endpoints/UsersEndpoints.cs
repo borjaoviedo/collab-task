@@ -1,6 +1,7 @@
 using Api.Common;
 using Application.Users.Abstractions;
 using Domain.Enums;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
 {
@@ -14,19 +15,31 @@ namespace Api.Endpoints
         {
             var g = app.MapGroup("/users/{id:guid}").WithTags("Users");
 
-            g.MapPatch("/name", async (Guid id, RenameUserDto dto, IUserService svc, CancellationToken ct) =>
+            g.MapPatch("/name", async (
+                [FromRoute] Guid id,
+                [FromBody] RenameUserDto dto,
+                [FromServices] IUserService svc,
+                CancellationToken ct = default) =>
             {
                 var res = await svc.RenameAsync(id, dto.Name, dto.RowVersion, ct);
                 return res.ToHttp();
             });
 
-            g.MapPatch("/role", async (Guid id, ChangeRoleDto dto, IUserService svc, CancellationToken ct) =>
+            g.MapPatch("/role", async (
+                [FromRoute] Guid id,
+                [FromBody] ChangeRoleDto dto,
+                [FromServices] IUserService svc,
+                CancellationToken ct = default) =>
             {
                 var res = await svc.ChangeRoleAsync(id, dto.Role, dto.RowVersion, ct);
                 return res.ToHttp();
             });
 
-            g.MapDelete("/", async (Guid id, DeleteUserDto dto, IUserService svc, CancellationToken ct) =>
+            g.MapDelete("/", async (
+                [FromRoute] Guid id,
+                [FromBody] DeleteUserDto dto,
+                [FromServices] IUserService svc,
+                CancellationToken ct = default) =>
             {
                 var res = await svc.DeleteAsync(id, dto.RowVersion, ct);
                 return res.ToHttp();
