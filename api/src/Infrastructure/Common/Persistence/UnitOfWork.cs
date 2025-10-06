@@ -16,9 +16,9 @@ namespace Infrastructure.Common.Persistence
             {
                 return await _db.SaveChangesAsync(ct);
             }
-            catch (DbUpdateConcurrencyException ex)
+            catch (DbUpdateConcurrencyException)
             {
-                throw new ConcurrencyException("Optimistic concurrency conflict.", ex);
+                throw new ConcurrencyException("Optimistic concurrency conflict.");
             }
         }
     }
