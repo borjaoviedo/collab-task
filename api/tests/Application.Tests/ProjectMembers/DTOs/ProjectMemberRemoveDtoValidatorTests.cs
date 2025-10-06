@@ -1,5 +1,6 @@
 using Application.ProjectMembers.DTOs;
 using Application.ProjectMembers.Validation;
+using Application.Tests.Common.Helpers;
 using FluentValidation.TestHelper;
 
 namespace Application.Tests.ProjectMembers.DTOs
@@ -18,7 +19,7 @@ namespace Application.Tests.ProjectMembers.DTOs
         [Fact]
         public void RemovedAt_NotUtc_Fails()
         {
-            _validator.TestValidate(new ProjectMemberRemoveDto { RemovedAt = DateTimeOffset.Now, RowVersion = [1] })
+            _validator.TestValidate(new ProjectMemberRemoveDto { RemovedAt = DateTimes.NonUtcInstant(), RowVersion = [1] })
                 .ShouldHaveValidationErrorFor(x => x.RemovedAt);
         }
 
