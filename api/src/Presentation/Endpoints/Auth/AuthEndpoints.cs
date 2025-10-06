@@ -1,7 +1,6 @@
 using Api.Auth.DTOs;
 using Api.Auth.Mapping;
 using Api.Extensions;
-using Application.Common.Abstractions.Persistence;
 using Application.Common.Abstractions.Security;
 using Application.Common.Exceptions;
 using Application.Users.Abstractions;
@@ -28,19 +27,16 @@ namespace Api.Endpoints.Auth
             // POST /auth/register
             group.MapPost("/register", async (
                 [FromServices] IUserRepository users,
+                [FromServices] IUserService userService,
                 [FromServices] IPasswordHasher hasher,
                 [FromServices] IJwtTokenService jwt,
-                [FromServices] IUnitOfWork uow,
                 [FromServices] ILoggerFactory loggerFactory,
                 [FromBody] UserCreateDto dto,
                 CancellationToken ct = default) =>
             {
                 var log = loggerFactory.CreateLogger("Auth.Register");
 
-                if (await users.ExistsByEmailAsync(dto.Email, ct))
-                    throw new DuplicateEntityException("Could not complete registration.");
-
-                if (await users.ExistsByNameAsync(dto.Name, ct))
+                if (await users.ExistsByEmailAsync(dto.Email, ct) || await users.ExistsByNameAsync(dto.Name, ct))
                     throw new DuplicateEntityException("Could not complete registration.");
 
                 var (hash, salt) = hasher.Hash(dto.Password);
@@ -48,18 +44,15 @@ namespace Api.Endpoints.Auth
 
                 try
                 {
-                    await users.AddAsync(user, ct);
-                    await uow.SaveChangesAsync(ct);
+                    await userService.CreateAsync(user, ct);
+                    var (accessToken, expiresAtUtc) = jwt.CreateToken(user.Id, user.Email.Value, user.Name.Value, user.Role.ToString());
+                    return Results.Ok(user.ToReadDto(accessToken, expiresAtUtc));
                 }
                 catch (DbUpdateException ex) when (ex.IsUniqueViolation())
                 {
                     log.LogInformation(ex, "Duplicate email or user name on register.");
                     throw new DuplicateEntityException("Could not complete registration.");
                 }
-
-                var (accessToken, expiresAtUtc) = jwt.CreateToken(user.Id, user.Email.Value, user.Name.Value, user.Role.ToString());
-                var payload = user.ToReadDto(accessToken, expiresAtUtc);
-                return Results.Ok(payload);
             })
             .AllowAnonymous()
             .RequireValidation<UserCreateDto>()
@@ -75,17 +68,16 @@ namespace Api.Endpoints.Auth
                 [FromServices] IUserRepository users,
                 [FromServices] IPasswordHasher hasher,
                 [FromServices] IJwtTokenService jwt,
-                [FromServices] IUnitOfWork uow,
                 [FromServices] ILoggerFactory loggerFactory,
                 [FromBody] UserLoginDto dto,
                 CancellationToken ct = default) =>
             {
                 var log = loggerFactory.CreateLogger("Auth.Login");
 
-                await Task.Delay(Random.Shared.Next(10, 30), ct); // jitter
+                // small jitter to reduce timing attacks
+                await Task.Delay(Random.Shared.Next(10, 30), ct);
 
                 var user = await users.GetByEmailAsync(dto.Email, ct);
-
                 var valid = user is not null &&
                             hasher.Verify(dto.Password, user.PasswordSalt, user.PasswordHash);
 
