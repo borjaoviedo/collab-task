@@ -13,6 +13,7 @@ namespace Infrastructure.Data.Repositories
         public async Task<Project?> GetByIdAsync(Guid id, CancellationToken ct = default)
             => await _db.Projects
             .AsNoTracking()
+            .Include(p => p.Members.Where(m => m.RemovedAt == null))
             .FirstOrDefaultAsync(p => p.Id == id, ct);
 
         public async Task<IReadOnlyList<Project>> GetByUserAsync(Guid userId, ProjectFilter? filter = null, CancellationToken ct = default)
