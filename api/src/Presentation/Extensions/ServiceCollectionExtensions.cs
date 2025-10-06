@@ -1,5 +1,6 @@
 using Api.Errors;
 using Infrastructure;
+using Application;
 
 namespace Api.Extensions
 {
@@ -15,6 +16,7 @@ namespace Api.Extensions
                 .AddInfrastructure(connectionString)
                 .AddSwaggerWithJwt()
                 .AddJwtAuthAndPolicies(config)
+                .AddApplication()
                 .AddAppValidation()
                 .AddProblemDetailsAndExceptionMapping();
 
