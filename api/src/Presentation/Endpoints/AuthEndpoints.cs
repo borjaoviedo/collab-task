@@ -16,7 +16,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Api.Endpoints.Auth
+namespace Api.Endpoints
 {
     public static class AuthEndpoints
     {
@@ -40,7 +40,7 @@ namespace Api.Endpoints.Auth
                     throw new DuplicateEntityException("Could not complete registration.");
 
                 var (hash, salt) = hasher.Hash(dto.Password);
-                var user = UserMapping.ToEntity(dto, hash, salt);
+                var user = dto.ToEntity(hash, salt);
 
                 try
                 {

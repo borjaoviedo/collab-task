@@ -1,5 +1,4 @@
-using Api.Endpoints.Auth;
-using Api.Endpoints.Health;
+using Api.Endpoints;
 using Api.Errors;
 
 namespace Api.Extensions
