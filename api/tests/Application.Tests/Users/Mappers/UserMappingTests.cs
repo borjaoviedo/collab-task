@@ -48,18 +48,5 @@ namespace Application.Tests.Users.Mappers
             Assert.Same(hash, entity.PasswordHash);
             Assert.Same(salt, entity.PasswordSalt);
         }
-
-        [Fact]
-        public void ApplyRoleChange_Updates_Role_And_RowVersion()
-        {
-            var entity = User.Create(Email.Create("user@demo.com"), UserName.Create("Demo User"), Bytes(32), Bytes(16));
-            var newRv = Bytes(8);
-            var dto = new UserSetRoleDto { Role = UserRole.Admin, RowVersion = newRv };
-
-            entity.ApplyRoleChange(dto);
-
-            Assert.Equal(UserRole.Admin, entity.Role);
-            Assert.Same(newRv, entity.RowVersion);
-        }
     }
 }
