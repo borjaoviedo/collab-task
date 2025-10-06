@@ -15,16 +15,11 @@ namespace Application.Users.Mapping
                 Role = item.Role,
                 CreatedAt = item.CreatedAt,
                 UpdatedAt = item.UpdatedAt,
-                ProjectMembershipsCount = item.ProjectMemberships?.Count ?? 0
+                ProjectMembershipsCount = item.ProjectMemberships?.Count ?? 0,
+                RowVersion = item.RowVersion
             };
 
         public static User ToEntity(this UserCreateDto item, byte[] hash, byte[] salt)
             => User.Create(Email.Create(item.Email), UserName.Create(item.Name), hash, salt);
-
-        public static void ApplyRoleChange(this User entity, UserSetRoleDto dto)
-        {
-            entity.Role = dto.Role;
-            entity.RowVersion = dto.RowVersion;
-        }
     }
 }
