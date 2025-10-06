@@ -58,16 +58,13 @@ namespace Infrastructure.Data.Repositories
         public async Task<DomainMutation> SetRemovedAsync(Guid projectId, Guid userId, DateTimeOffset? removedAt, byte[] rowVersion, CancellationToken ct = default)
         {
             var existing = await _db.ProjectMembers.FirstOrDefaultAsync(pm => pm.ProjectId == projectId && pm.UserId == userId, ct);
+            if (existing is null) return DomainMutation.NotFound;
 
-            if (existing is null || existing.RemovedAt is not null)
-                return DomainMutation.NotFound;
-
-            if (!removedAt.HasValue)
-                return DomainMutation.NoOp;
+            if (existing.RemovedAt == removedAt) return DomainMutation.NoOp;
 
             _db.Entry(existing).Property(pm => pm.RowVersion).OriginalValue = rowVersion;
 
-            existing.Remove(removedAt.Value);
+            existing.Remove(removedAt);
             _db.Entry(existing).Property(pm => pm.RemovedAt).IsModified = true;
 
             return DomainMutation.Updated;
