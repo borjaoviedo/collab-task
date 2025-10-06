@@ -27,6 +27,6 @@ namespace Domain.Entities
         }
 
         public void ChangeRole(ProjectRole newRole) => Role = newRole;
-        public void Remove(DateTimeOffset removedAtUtc) => RemovedAt = removedAtUtc;
+        public void Remove(DateTimeOffset? removedAtUtc) => RemovedAt = removedAtUtc;
     }
 }
