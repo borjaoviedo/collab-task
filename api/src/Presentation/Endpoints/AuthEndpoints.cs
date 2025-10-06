@@ -3,6 +3,7 @@ using Api.Auth.Mapping;
 using Api.Extensions;
 using Application.Common.Abstractions.Security;
 using Application.Common.Exceptions;
+using Application.Projects.Abstractions;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
@@ -110,6 +111,7 @@ namespace Api.Endpoints
             group.MapGet("/me", async (
                 HttpContext http,
                 [FromServices] IUserRepository users,
+                [FromServices] IProjectMembershipReader membership,
                 [FromServices] ILoggerFactory loggerFactory,
                 CancellationToken ct = default) =>
             {
@@ -132,7 +134,10 @@ namespace Api.Endpoints
                     throw new InvalidCredentialsException("User not found or token invalid.");
                 }
 
-                return Results.Ok(user.ToReadDto());
+                var dto = user.ToReadDto();
+                dto.ProjectMembershipsCount = await membership.CountActiveAsync(userId, ct);
+
+                return Results.Ok(dto);
             })
             .RequireAuthorization()
             .Produces<UserReadDto>(StatusCodes.Status200OK)
