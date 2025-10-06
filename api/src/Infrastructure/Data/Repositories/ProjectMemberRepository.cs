@@ -18,8 +18,11 @@ namespace Infrastructure.Data.Repositories
         public async Task<IReadOnlyList<ProjectMember>> GetByProjectAsync(Guid projectId, bool includeRemoved = false, CancellationToken ct = default)
         {
             var q = _db.ProjectMembers.AsNoTracking().Where(pm => pm.ProjectId == projectId);
-            if (!includeRemoved) q = q.Where(pm => pm.RemovedAt == null);
-            return await q.ToListAsync(ct);
+
+            if (!includeRemoved)
+                q = q.Where(pm => pm.RemovedAt == null);
+
+            return await q.Include(pm => pm.User).ToListAsync(ct);
         }
 
         public async Task<bool> ExistsAsync(Guid projectId, Guid userId, CancellationToken ct = default)
