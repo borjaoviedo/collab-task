@@ -15,5 +15,13 @@ namespace Infrastructure.Projects.Queries
                 .Where(pm => pm.ProjectId == projectId && pm.UserId == userId)
                 .Select(pm => (ProjectRole?)pm.Role)
                 .FirstOrDefaultAsync(ct);
+
+        public async Task<int> CountActiveAsync(Guid userId, CancellationToken ct = default)
+        => await _db.ProjectMembers
+            .AsNoTracking()
+            .Where(pm => pm.UserId == userId && pm.RemovedAt == null)
+            .Select(pm => pm.ProjectId)
+            .Distinct()
+            .CountAsync(ct);
     }
 }
