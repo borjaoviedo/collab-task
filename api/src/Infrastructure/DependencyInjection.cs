@@ -1,6 +1,7 @@
 using Application.Common.Abstractions.Persistence;
 using Application.Common.Abstractions.Security;
 using Application.Common.Abstractions.Time;
+using Application.ProjectMembers.Abstractions;
 using Application.Projects.Abstractions;
 using Application.Users.Abstractions;
 using Infrastructure.Common.Persistence;
@@ -42,6 +43,8 @@ namespace Infrastructure
 
             // Repositories
             services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IProjectRepository, ProjectRepository>();
+            services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
 
             // Readers / queries (used by authorization handlers to check project membership)
             services.AddScoped<IProjectMembershipReader, ProjectMembershipReader>();
