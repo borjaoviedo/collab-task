@@ -1,5 +1,6 @@
 using Application.Projects.Abstractions;
 using Domain.Entities;
+using Domain.Enums;
 using Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 
@@ -59,22 +60,30 @@ namespace Infrastructure.Data.Repositories
         public async Task AddAsync(Project project, CancellationToken ct = default)
             => await _db.Projects.AddAsync(project, ct);
 
-        public Task UpdateAsync(Project project, CancellationToken ct = default)
+        public async Task<DomainMutation> RenameAsync(Guid id, string newName, byte[] rowVersion, CancellationToken ct = default)
         {
-            if (_db.Entry(project).State == EntityState.Detached)
-                _db.Projects.Attach(project);
+            var proj = await _db.Projects.FirstOrDefaultAsync(p => p.Id == id, ct);
+            if (proj is null) return DomainMutation.NotFound;
+            if (proj.Name == newName) return DomainMutation.NoOp;
 
-            _db.Entry(project).State = EntityState.Modified;
-            return Task.CompletedTask;
+            _db.Entry(proj).Property(p => p.RowVersion).OriginalValue = rowVersion;
+
+            proj.Rename(ProjectName.Create(newName));
+            _db.Entry(proj).Property(p => p.Name).IsModified = true;
+            _db.Entry(proj).Property(p => p.Slug).IsModified = true;
+
+            return DomainMutation.Updated;
         }
 
-        public Task DeleteAsync(Project project, CancellationToken ct = default)
+        public async Task<DomainMutation> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default)
         {
-            if (_db.Entry(project).State == EntityState.Detached)
-                _db.Projects.Attach(project);
+            var proj = await _db.Projects.FirstOrDefaultAsync(p => p.Id == id, ct);
+            if (proj is null) return DomainMutation.NotFound;
 
-            _db.Projects.Remove(project);
-            return Task.CompletedTask;
+            _db.Entry(proj).Property(p => p.RowVersion).OriginalValue = rowVersion;
+            _db.Projects.Remove(proj);
+
+            return DomainMutation.Deleted;
         }
 
         public async Task<bool> ExistsByNameAsync(Guid ownerId, ProjectName name, CancellationToken ct = default)
