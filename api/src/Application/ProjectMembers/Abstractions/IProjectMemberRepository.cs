@@ -11,8 +11,8 @@ namespace Application.ProjectMembers.Abstractions
         Task<bool> ExistsAsync(Guid projectId, Guid userId, CancellationToken ct = default);
         Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default);
         Task AddAsync(ProjectMember member, CancellationToken ct = default);
-        Task<WriteResult> UpdateRoleAsync(Guid projectId, Guid userId, ProjectRole newRole, byte[] rowVersion, CancellationToken ct = default);
-        Task<WriteResult> SetRemovedAsync(Guid projectId, Guid userId, DateTimeOffset? removedAt, byte[] rowVersion, CancellationToken ct = default);
+        Task<DomainMutation> UpdateRoleAsync(Guid projectId, Guid userId, ProjectRole newRole, byte[] rowVersion, CancellationToken ct = default);
+        Task<DomainMutation> SetRemovedAsync(Guid projectId, Guid userId, DateTimeOffset? removedAt, byte[] rowVersion, CancellationToken ct = default);
 
     }
 }
