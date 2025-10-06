@@ -32,6 +32,12 @@ namespace Domain.Entities
             return p;
         }
 
+        public void Rename(ProjectName newName)
+        {
+            Name = newName;
+            Slug = ProjectSlug.Create(newName);
+        }
+
         public void AddMember(Guid userId, ProjectRole role, DateTimeOffset joinedAtUtc)
         {
             if (Members.Any(m => m.UserId == userId && m.RemovedAt == null))
