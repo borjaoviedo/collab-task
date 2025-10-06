@@ -27,13 +27,6 @@ namespace Infrastructure.Data.Repositories
             .AsNoTracking()
             .AnyAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
 
-        public async Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
-            => await _db.ProjectMembers
-            .AsNoTracking()
-            .Where(pm => pm.UserId == userId && pm.ProjectId == projectId && pm.RemovedAt == null)
-            .Select(pm => (ProjectRole?)pm.Role)
-            .SingleOrDefaultAsync(ct);
-
         public async Task AddAsync(ProjectMember member, CancellationToken ct = default)
             => await _db.ProjectMembers.AddAsync(member, ct);
 
