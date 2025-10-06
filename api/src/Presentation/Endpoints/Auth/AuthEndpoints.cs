@@ -48,7 +48,7 @@ namespace Api.Endpoints.Auth
 
                 try
                 {
-                    await users.CreateAsync(user, ct);
+                    await users.AddAsync(user, ct);
                     await uow.SaveChangesAsync(ct);
                 }
                 catch (DbUpdateException ex) when (ex.IsUniqueViolation())
