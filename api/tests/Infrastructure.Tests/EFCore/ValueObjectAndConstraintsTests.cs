@@ -98,10 +98,9 @@ namespace Infrastructure.Tests.EFCore
 
             var utcNow = DateTimeOffset.UtcNow;
 
-            var pmBad = new ProjectMember(p.Id, u2.Id, ProjectRole.Member, DateTimeOffset.UtcNow)
-            {
-                RemovedAt = utcNow.AddMinutes(-5)
-            };
+            var pmBad = ProjectMember.Create(p.Id, u2.Id, ProjectRole.Member, DateTimeOffset.UtcNow);
+            pmBad.RemovedAt = utcNow.AddMinutes(-5);
+
             db.ProjectMembers.Add(pmBad);
 
             await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
