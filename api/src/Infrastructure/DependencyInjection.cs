@@ -1,7 +1,6 @@
 using Application.Common.Abstractions.Persistence;
 using Application.Common.Abstractions.Security;
 using Application.Common.Abstractions.Time;
-using Application.ProjectMembers.Abstractions;
 using Application.Projects.Abstractions;
 using Application.Users.Abstractions;
 using Infrastructure.Common.Persistence;
@@ -10,7 +9,6 @@ using Infrastructure.Data;
 using Infrastructure.Data.Interceptors;
 using Infrastructure.Data.Repositories;
 using Infrastructure.Initialization;
-using Infrastructure.ProjectMembers.Services;
 using Infrastructure.Projects.Queries;
 using Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
@@ -47,8 +45,6 @@ namespace Infrastructure
 
             // Readers / queries (used by authorization handlers to check project membership)
             services.AddScoped<IProjectMembershipReader, ProjectMembershipReader>();
-
-            services.AddScoped<IProjectMemberService, ProjectMemberService>();
 
             // DB init as hosted service
             services.AddHostedService<DbInitHostedService>();
