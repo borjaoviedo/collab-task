@@ -22,6 +22,10 @@ namespace Api.Extensions
         {
             endpoints.MapHealth();
             endpoints.MapAuth();
+            endpoints.MapUsers();
+            endpoints.MapProjects();
+            endpoints.MapProjectMembers();
+
             return endpoints;
         }
     }
