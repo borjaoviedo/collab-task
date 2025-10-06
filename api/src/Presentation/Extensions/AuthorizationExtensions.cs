@@ -20,6 +20,7 @@ namespace Api.Extensions
             services.AddHttpContextAccessor()
                 .AddScoped<ICurrentUserService, CurrentUserService>()
                 .AddProjectAuthorization()
+                .AddSystemAuthorization()
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o =>
                 {
                     var jwt = cfg.GetSection(JwtOptions.SectionName).Get<JwtOptions>()!;
@@ -49,6 +50,15 @@ namespace Api.Extensions
                 .AddPolicy(Policies.ProjectMember, p => p.AddRequirements(new ProjectRoleRequirement(ProjectRole.Member)))
                 .AddPolicy(Policies.ProjectAdmin, p => p.AddRequirements(new ProjectRoleRequirement(ProjectRole.Admin)))
                 .AddPolicy(Policies.ProjectOwner, p => p.AddRequirements(new ProjectRoleRequirement(ProjectRole.Owner)));
+
+            return services;
+        }
+
+        private static IServiceCollection AddSystemAuthorization(this IServiceCollection services)
+        {
+            services.AddScoped<IAuthorizationHandler, UserRoleAuthorizationHandler>()
+                .AddAuthorizationBuilder()
+                .AddPolicy(Policies.SystemAdmin, u => u.AddRequirements(new UserRoleRequirement(UserRole.Admin)));
 
             return services;
         }
