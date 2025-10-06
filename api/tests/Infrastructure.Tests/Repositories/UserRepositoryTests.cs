@@ -1,4 +1,5 @@
 using Application.Common.Abstractions.Persistence;
+using Application.Common.Exceptions;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -204,7 +205,7 @@ namespace Infrastructure.Tests.Repositories
 
             updated.Should().Be(DomainMutation.Updated);
             await FluentActions.Invoking(() => uow.SaveChangesAsync())
-                .Should().ThrowAsync<DbUpdateConcurrencyException>();
+                .Should().ThrowAsync<ConcurrencyException>();
         }
 
         [Fact]
@@ -256,7 +257,7 @@ namespace Infrastructure.Tests.Repositories
 
             result.Should().Be(DomainMutation.Deleted);
             await FluentActions.Invoking(() => uow.SaveChangesAsync())
-                .Should().ThrowAsync<DbUpdateConcurrencyException>();
+                .Should().ThrowAsync<ConcurrencyException>();
         }
 
         [Fact]
