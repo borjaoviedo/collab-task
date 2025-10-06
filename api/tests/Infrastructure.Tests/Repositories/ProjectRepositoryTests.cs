@@ -131,7 +131,7 @@ namespace Infrastructure.Tests.Repositories
             var filter = new ProjectFilter { IncludeRemoved = true };
             var list = await repo.GetByUserAsync(u1.Id, filter);
 
-            list.Select(x => x.Name.Value).Should().BeEquivalentTo(["Visible", "Removed"]);
+            list.Select(x => x.Name.Value).Should().BeEquivalentTo("Visible", "Removed");
         }
 
         [Fact]
@@ -264,53 +264,6 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task UpdateAsync_Marks_Modified_When_Detached()
-        {
-            var (_, db, repo) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
-
-            var now = DateTimeOffset.UtcNow;
-            var (owner, p) = NewProject("Before", "John", now);
-            var (user2, _) = NewProject("aux", "Doe", now);
-
-            db.AddRange(owner, user2, p);
-            await db.SaveChangesAsync();
-
-            db.ChangeTracker.Clear();
-
-            // Load detached instance and change through domain method
-            var detached = await db.Projects.AsNoTracking().SingleAsync(x => x.Id == p.Id);
-            detached.AddMember(user2.Id, ProjectRole.Member, now.AddMinutes(1));
-
-            await repo.UpdateAsync(detached);
-            await db.SaveChangesAsync();
-
-            var fromDb = await db.Projects
-                .Include(x => x.Members)
-                .SingleAsync(x => x.Id == p.Id);
-
-            fromDb.Members.Any(m => m.UserId == user2.Id && m.Role == ProjectRole.Member).Should().BeTrue();
-        }
-
-        [Fact]
-        public async Task DeleteAsync_Removes_Project()
-        {
-            var (_, db, repo) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
-
-            var now = DateTimeOffset.UtcNow;
-            var (owner, p) = NewProject("ToDelete", "John", now);
-            db.AddRange(owner, p);
-            await db.SaveChangesAsync();
-
-            await repo.DeleteAsync(p);
-            await db.SaveChangesAsync();
-
-            var exists = await db.Projects.AnyAsync(x => x.Id == p.Id);
-            exists.Should().BeFalse();
-        }
-
-        [Fact]
         public async Task ExistsByNameAsync_Is_True_For_Same_Owner_And_Name()
         {
             var (_, db, repo) = BuildDb($"ct_{Guid.NewGuid():N}");
@@ -340,6 +293,81 @@ namespace Infrastructure.Tests.Repositories
 
             (await repo.ExistsByNameAsync(owner1.Id, ProjectName.Create("Other Name"))).Should().BeFalse();
             (await repo.ExistsByNameAsync(owner2.Id, ProjectName.Create("Same Name"))).Should().BeFalse();
+        }
+
+        [Fact]
+        public async Task RenameAsync_NoOp_When_Name_Unchanged()
+        {
+            var (_, db, repo) = BuildDb($"ct_{Guid.NewGuid():N}");
+            await db.Database.MigrateAsync();
+
+            var now = DateTimeOffset.UtcNow;
+            var (owner, p) = NewProject("Alpha", "User", now);
+            db.AddRange(owner, p);
+            await db.SaveChangesAsync();
+            var rv = p.RowVersion.ToArray();
+
+            var res = await repo.RenameAsync(p.Id, "Alpha", rv);
+
+            res.Should().Be(DomainMutation.NoOp);
+            (await db.SaveChangesAsync()).Should().Be(0);
+        }
+
+        [Fact]
+        public async Task RenameAsync_Updated_And_Slug_Is_Recomputed()
+        {
+            var (_, db, repo) = BuildDb($"ct_{Guid.NewGuid():N}");
+            await db.Database.MigrateAsync();
+
+            var now = DateTimeOffset.UtcNow;
+            var (owner, p) = NewProject("Old Name", "User", now);
+            db.AddRange(owner, p);
+            await db.SaveChangesAsync();
+            var rv = p.RowVersion.ToArray();
+
+            var res = await repo.RenameAsync(p.Id, "New Name", rv);
+            res.Should().Be(DomainMutation.Updated);
+
+            await db.SaveChangesAsync();
+            var fromDb = await db.Projects.AsNoTracking().SingleAsync(x => x.Id == p.Id);
+            fromDb.Name.Value.Should().Be("New Name");
+            fromDb.Slug.Value.Should().Be("new-name");
+        }
+
+        [Fact]
+        public async Task RenameAsync_Updated_But_SaveChanges_Throws_On_RowVersion_Mismatch()
+        {
+            var (_, db, repo) = BuildDb($"ct_{Guid.NewGuid():N}");
+            await db.Database.MigrateAsync();
+
+            var now = DateTimeOffset.UtcNow;
+            var (owner, p) = NewProject("Alpha", "User", now);
+            db.AddRange(owner, p);
+            await db.SaveChangesAsync();
+
+            var res = await repo.RenameAsync(p.Id, "Beta", new byte[] { 1, 2, 3, 4 });
+            res.Should().Be(DomainMutation.Updated);
+
+            await FluentActions.Invoking(() => db.SaveChangesAsync())
+                .Should().ThrowAsync<DbUpdateConcurrencyException>();
+        }
+
+        [Fact]
+        public async Task DeleteAsync_Deleted_But_SaveChanges_Throws_On_RowVersion_Mismatch()
+        {
+            var (_, db, repo) = BuildDb($"ct_{Guid.NewGuid():N}");
+            await db.Database.MigrateAsync();
+
+            var now = DateTimeOffset.UtcNow;
+            var (owner, p) = NewProject("ToDelete", "User", now);
+            db.AddRange(owner, p);
+            await db.SaveChangesAsync();
+
+            var res = await repo.DeleteAsync(p.Id, new byte[] { 9, 9, 9 });
+            res.Should().Be(DomainMutation.Deleted);
+
+            await FluentActions.Invoking(() => db.SaveChangesAsync())
+                .Should().ThrowAsync<DbUpdateConcurrencyException>();
         }
     }
 }
