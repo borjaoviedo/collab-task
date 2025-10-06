@@ -19,8 +19,8 @@ namespace Application.Tests.Users.Mappers
             var utcNow = DateTimeOffset.UtcNow;
 
             var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Demo User"), Bytes(32), Bytes(16));
-            u.ProjectMemberships.Add(new ProjectMember(projectId, userId, projectRole, utcNow));
-            u.ProjectMemberships.Add(new ProjectMember(projectId, userId, projectRole, utcNow));
+            u.ProjectMemberships.Add(ProjectMember.Create(projectId, userId, projectRole, utcNow));
+            u.ProjectMemberships.Add(ProjectMember.Create(projectId, userId, projectRole, utcNow));
 
             var dto = u.ToReadDto();
 
