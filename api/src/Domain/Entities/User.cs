@@ -32,5 +32,9 @@ namespace Domain.Entities
                 Role = role
             };
         }
+
+        public void Rename(UserName newName) => Name = newName;
+
+        public void ChangeRole(UserRole newRole) => Role = newRole;
     }
 }

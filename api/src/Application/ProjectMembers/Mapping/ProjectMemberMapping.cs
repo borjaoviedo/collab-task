@@ -18,7 +18,7 @@ namespace Application.ProjectMembers.Mapping
             };
 
         public static ProjectMember ToEntity(this ProjectMemberCreateDto dto, Guid projectId)
-            => new(projectId, dto.UserId, dto.Role, dto.JoinedAt.ToUniversalTime());
+            => ProjectMember.Create(projectId, dto.UserId, dto.Role, dto.JoinedAt.ToUniversalTime());
 
         public static void ApplyRoleUpdate(this ProjectMember m, ProjectMemberUpdateRoleDto dto)
             => m.ChangeRole(dto.Role);

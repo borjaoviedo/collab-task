@@ -1,4 +1,4 @@
-namespace Api.Endpoints.Health
+namespace Api.Endpoints
 {
     public static class HealthEndpoints
     {

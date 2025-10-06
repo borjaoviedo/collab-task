@@ -1,4 +1,5 @@
 using Application.Common.Abstractions.Persistence;
+using Application.Common.Exceptions;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -50,8 +51,9 @@ namespace Infrastructure.Tests.Repositories
             var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
 
             var u = NewUser("a@b.com", "User Name");
-            var id = await repo.CreateAsync(u);
+            await repo.AddAsync(u);
             var changes = await uow.SaveChangesAsync();
+            var id = u.Id;
 
             changes.Should().Be(1);
             id.Should().Be(u.Id);
@@ -156,38 +158,65 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task SetRoleAsync_Updates_Role_When_RowVersion_Matches()
+        public async Task RenameAsync_NoOp_When_Name_Unchanged()
+        {
+            var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
+            var (u, rv) = await InsertAsync(db, uow, "user10@ex.com", name: "Same Name");
+
+            var res = await repo.RenameAsync(u.Id, "Same Name", rv);
+
+            res.Should().Be(DomainMutation.NoOp);
+            (await uow.SaveChangesAsync()).Should().Be(0);
+        }
+
+        [Fact]
+        public async Task RenameAsync_Updated_When_Name_Changes()
+        {
+            var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
+            var (u, rv) = await InsertAsync(db, uow, "user11@ex.com", name: "Old");
+
+            var res = await repo.RenameAsync(u.Id, "New", rv);
+            res.Should().Be(DomainMutation.Updated);
+
+            await uow.SaveChangesAsync();
+            var fromDb = await db.Users.AsNoTracking().SingleAsync(x => x.Id == u.Id);
+            fromDb.Name.Value.Should().Be("New");
+        }
+
+        [Fact]
+        public async Task ChangeRoleAsync_Updates_Role_When_RowVersion_Matches()
         {
             var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
             var (u, rv) = await InsertAsync(db, uow, "user5@ex.com", role: UserRole.User);
 
-            var updated = await repo.SetRoleAsync(u.Id, UserRole.Admin, rv);
+            var updated = await repo.ChangeRoleAsync(u.Id, UserRole.Admin, rv);
             await uow.SaveChangesAsync();
 
-            updated.Should().NotBeNull();
-            updated!.Role.Should().Be(UserRole.Admin);
+            updated.Should().Be(DomainMutation.Updated);
         }
 
         [Fact]
-        public async Task SetRoleAsync_Returns_Null_On_Concurrency_Mismatch()
+        public async Task ChangeRoleAsync_Updated_But_SaveChanges_Throws_On_RowVersion_Mismatch()
         {
             var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
             var (u, _) = await InsertAsync(db, uow, "user6@ex.com", role: UserRole.User);
 
-            var updated = await repo.SetRoleAsync(u.Id, UserRole.Admin, [1, 2, 3, 4]);
+            var updated = await repo.ChangeRoleAsync(u.Id, UserRole.Admin, new byte[] { 1, 2, 3, 4 });
 
-            updated.Should().BeNull();
+            updated.Should().Be(DomainMutation.Updated);
+            await FluentActions.Invoking(() => uow.SaveChangesAsync())
+                .Should().ThrowAsync<ConcurrencyException>();
         }
 
         [Fact]
-        public async Task SetRoleAsync_NoOp_When_Role_Already_Set()
+        public async Task ChangeRoleAsync_NoOp_When_Role_Already_Set()
         {
             var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
             var (u, rv) = await InsertAsync(db, uow, "user7@ex.com", role: UserRole.Admin);
 
-            var updated = await repo.SetRoleAsync(u.Id, UserRole.Admin, rv);
+            var updated = await repo.ChangeRoleAsync(u.Id, UserRole.Admin, rv);
 
-            updated.Should().BeNull();
+            updated.Should().Be(DomainMutation.NoOp);
 
             var changes = await uow.SaveChangesAsync();
             changes.Should().Be(0);
@@ -200,7 +229,7 @@ namespace Infrastructure.Tests.Repositories
             var (u, rv) = await InsertAsync(db, uow, "user8@ex.com");
 
             var ok = await repo.DeleteAsync(u.Id, rv);
-            ok.Should().BeTrue();
+            ok.Should().Be(DomainMutation.Deleted);
 
             await uow.SaveChangesAsync();
 
@@ -209,25 +238,26 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task DeleteAsync_Returns_False_When_Id_Not_Found()
+        public async Task DeleteAsync_Returns_NotFound_When_Id_Not_Found()
         {
             var (_, _, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
 
             var ok = await repo.DeleteAsync(Guid.NewGuid(), [9, 9, 9]);
 
-            ok.Should().BeFalse();
+            ok.Should().Be(DomainMutation.NotFound);
         }
 
         [Fact]
-        public async Task DeleteAsync_Returns_False_On_RowVersion_Mismatch()
+        public async Task DeleteAsync_Deleted_But_SaveChanges_Throws_On_RowVersion_Mismatch()
         {
             var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
             var (u, _) = await InsertAsync(db, uow, "user9@ex.com");
 
-            var ok = await repo.DeleteAsync(u.Id, [5, 5, 5]);
+            var result = await repo.DeleteAsync(u.Id, new byte[] { 5, 5, 5 });
 
-            ok.Should().BeFalse();
-            (await uow.SaveChangesAsync()).Should().Be(0);
+            result.Should().Be(DomainMutation.Deleted);
+            await FluentActions.Invoking(() => uow.SaveChangesAsync())
+                .Should().ThrowAsync<ConcurrencyException>();
         }
 
         [Fact]
@@ -236,7 +266,7 @@ namespace Infrastructure.Tests.Repositories
             var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
             await InsertAsync(db, uow, "dup@ex.com");
 
-            await repo.CreateAsync(NewUser("dup@ex.com", "Not Default User Name"));
+            await repo.AddAsync(NewUser("dup@ex.com", "Not Default User Name"));
 
             await FluentActions.Invoking(() => uow.SaveChangesAsync())
                 .Should().ThrowAsync<DbUpdateException>();
@@ -248,7 +278,7 @@ namespace Infrastructure.Tests.Repositories
             var (db, uow, repo) = BuildSut($"ct_{Guid.NewGuid():N}");
             await InsertAsync(db, uow, "first@ex.com", name: "Dup Name");
 
-            await repo.CreateAsync(NewUser("second@ex.com", "Dup Name"));
+            await repo.AddAsync(NewUser("second@ex.com", "Dup Name"));
 
             await FluentActions.Invoking(() => uow.SaveChangesAsync())
                 .Should().ThrowAsync<DbUpdateException>();

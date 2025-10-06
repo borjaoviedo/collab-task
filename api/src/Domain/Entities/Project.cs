@@ -32,6 +32,12 @@ namespace Domain.Entities
             return p;
         }
 
+        public void Rename(ProjectName newName)
+        {
+            Name = newName;
+            Slug = ProjectSlug.Create(newName);
+        }
+
         public void AddMember(Guid userId, ProjectRole role, DateTimeOffset joinedAtUtc)
         {
             if (Members.Any(m => m.UserId == userId && m.RemovedAt == null))
@@ -40,7 +46,7 @@ namespace Domain.Entities
             if (role == ProjectRole.Owner && Members.Any(m => m.Role == ProjectRole.Owner && m.RemovedAt == null))
                 throw new DomainRuleViolationException("Project already has an owner.");
 
-            Members.Add(new ProjectMember(Id, userId, role, joinedAtUtc));
+            Members.Add(ProjectMember.Create(Id, userId, role, joinedAtUtc));
         }
 
         public void RemoveMember(Guid userId, DateTimeOffset removedAtUtc)

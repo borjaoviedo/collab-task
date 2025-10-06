@@ -17,7 +17,7 @@ namespace Application.Tests.ProjectMembers.Mappers
             var userId = Guid.NewGuid();
             var role = ProjectRole.Member;
             var joinedAt = DateTimeOffset.UtcNow.AddDays(-1);
-            var projectMember = new ProjectMember(projectId, userId, role, joinedAt);
+            var projectMember = ProjectMember.Create(projectId, userId, role, joinedAt);
 
             var dto = projectMember.ToReadDto();
 
@@ -33,10 +33,8 @@ namespace Application.Tests.ProjectMembers.Mappers
         [Fact]
         public void ToReadDto_Maps_UserName_When_User_Is_Present()
         {
-            var projectMember = new ProjectMember(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Admin, DateTimeOffset.UtcNow)
-            {
-                User = User.Create(Email.Create("test@demo.com"), UserName.Create("Test User"), Bytes(32), Bytes(16), UserRole.User)
-            };
+            var projectMember = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Admin, DateTimeOffset.UtcNow);
+            projectMember.User = User.Create(Email.Create("test@demo.com"), UserName.Create("Test User"), Bytes(32), Bytes(16), UserRole.User);
 
             var dto = projectMember.ToReadDto();
 
@@ -46,7 +44,7 @@ namespace Application.Tests.ProjectMembers.Mappers
         [Fact]
         public void ToReadDto_Maps_RemovedAt_When_ProjectMember_Is_Removed()
         {
-            var projectMember = new ProjectMember(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Reader, DateTimeOffset.UtcNow.AddDays(-3));
+            var projectMember = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Reader, DateTimeOffset.UtcNow.AddDays(-3));
             var removedAt = DateTimeOffset.UtcNow;
             projectMember.Remove(removedAt);
             var dto = projectMember.ToReadDto();
@@ -88,7 +86,7 @@ namespace Application.Tests.ProjectMembers.Mappers
         [Fact]
         public void ApplyRoleUpdate_Changes_Role()
         {
-            var projectMember = new ProjectMember(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Reader, DateTimeOffset.UtcNow);
+            var projectMember = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Reader, DateTimeOffset.UtcNow);
             var dto = new ProjectMemberUpdateRoleDto
             {
                 Role = ProjectRole.Admin
@@ -100,7 +98,7 @@ namespace Application.Tests.ProjectMembers.Mappers
         [Fact]
         public void ApplyRemoval_Sets_RemovedAt()
         {
-            var projectMember = new ProjectMember(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Member, DateTimeOffset.UtcNow.AddDays(-5));
+            var projectMember = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Member, DateTimeOffset.UtcNow.AddDays(-5));
             var dto = new ProjectMemberRemoveDto
             {
                 RemovedAt = DateTimeOffset.UtcNow.AddDays(-1)
@@ -113,7 +111,7 @@ namespace Application.Tests.ProjectMembers.Mappers
         [Fact]
         public void ApplyRemoval_Sets_RemovedAt_To_Now_When_Dto_RemovedAt_Is_Null()
         {
-            var projectMember = new ProjectMember(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Member, DateTimeOffset.UtcNow.AddDays(-5));
+            var projectMember = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Member, DateTimeOffset.UtcNow.AddDays(-5));
             var dto = new ProjectMemberRemoveDto
             {
                 RemovedAt = null
@@ -126,7 +124,7 @@ namespace Application.Tests.ProjectMembers.Mappers
         [Fact]
         public void ApplyRemoval_Throws_When_RemovedAt_Is_Not_Utc()
         {
-            var projectMember = new ProjectMember(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Member, DateTimeOffset.UtcNow.AddDays(-5));
+            var projectMember = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Member, DateTimeOffset.UtcNow.AddDays(-5));
             var dto = new ProjectMemberRemoveDto
             {
                 RemovedAt = DateTimeOffset.Now // Not UTC

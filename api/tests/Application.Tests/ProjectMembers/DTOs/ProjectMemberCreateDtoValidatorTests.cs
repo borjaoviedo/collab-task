@@ -1,5 +1,6 @@
 using Application.ProjectMembers.DTOs;
 using Application.ProjectMembers.Validation;
+using Application.Tests.Common.Helpers;
 using Domain.Enums;
 using FluentValidation.TestHelper;
 
@@ -80,7 +81,7 @@ namespace Application.Tests.ProjectMembers.DTOs
             {
                 UserId = Guid.NewGuid(),
                 Role = ProjectRole.Member,
-                JoinedAt = DateTimeOffset.Now
+                JoinedAt = DateTimes.NonUtcInstant()
             })
             .ShouldHaveValidationErrorFor(x => x.JoinedAt);
         }

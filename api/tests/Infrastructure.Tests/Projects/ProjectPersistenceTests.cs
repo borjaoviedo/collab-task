@@ -54,15 +54,14 @@ namespace Infrastructure.Tests.Projects
             var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
 
             // duplicate composite key
-            var pmDup = new ProjectMember(p.Id, u.Id, ProjectRole.Member, utcNow);
+            var pmDup = ProjectMember.Create(p.Id, u.Id, ProjectRole.Member, utcNow);
             db2.ProjectMembers.Add(pmDup);
             await Assert.ThrowsAsync<DbUpdateException>(() => db2.SaveChangesAsync());
 
             // RemovedAt before JoinedAt -> check constraint
-            var pmBad = new ProjectMember(p.Id, Guid.NewGuid(), ProjectRole.Reader, utcNow)
-            {
-                RemovedAt = DateTimeOffset.UtcNow.AddMinutes(-10)
-            };
+            var pmBad = ProjectMember.Create(p.Id, Guid.NewGuid(), ProjectRole.Reader, utcNow);
+            pmBad.RemovedAt = DateTimeOffset.UtcNow.AddMinutes(-10);
+
             db2.ProjectMembers.Add(pmBad);
             await Assert.ThrowsAsync<DbUpdateException>(() => db2.SaveChangesAsync());
         }

@@ -1,5 +1,4 @@
-using Api.Endpoints.Auth;
-using Api.Endpoints.Health;
+using Api.Endpoints;
 using Api.Errors;
 
 namespace Api.Extensions
@@ -23,6 +22,10 @@ namespace Api.Extensions
         {
             endpoints.MapHealth();
             endpoints.MapAuth();
+            endpoints.MapUsers();
+            endpoints.MapProjects();
+            endpoints.MapProjectMembers();
+
             return endpoints;
         }
     }

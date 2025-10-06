@@ -15,15 +15,18 @@ namespace Domain.Entities
 
         private ProjectMember() { }
 
-        public ProjectMember(Guid projectId, Guid userId, ProjectRole role, DateTimeOffset joinedAtUtc)
+        public static ProjectMember Create(Guid projectId, Guid userId, ProjectRole role, DateTimeOffset joinedAtUtc)
         {
-            ProjectId = projectId;
-            UserId = userId;
-            Role = role;
-            JoinedAt = joinedAtUtc;
+            return new ProjectMember
+            {
+                ProjectId = projectId,
+                UserId = userId,
+                Role = role,
+                JoinedAt = joinedAtUtc
+            };
         }
 
         public void ChangeRole(ProjectRole newRole) => Role = newRole;
-        public void Remove(DateTimeOffset removedAtUtc) => RemovedAt = removedAtUtc;
+        public void Remove(DateTimeOffset? removedAtUtc) => RemovedAt = removedAtUtc;
     }
 }

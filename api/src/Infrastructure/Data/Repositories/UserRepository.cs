@@ -11,11 +11,8 @@ namespace Infrastructure.Data.Repositories
         private readonly AppDbContext _db;
         public UserRepository(AppDbContext db) => _db = db;
 
-        public async Task<Guid> CreateAsync(User item, CancellationToken ct = default)
-        {
-            await _db.Users.AddAsync(item, ct);
-            return item.Id;
-        }
+        public async Task AddAsync(User item, CancellationToken ct = default)
+            => await _db.Users.AddAsync(item, ct);
 
         public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
             => await _db.Users
@@ -32,27 +29,43 @@ namespace Infrastructure.Data.Repositories
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == id, ct);
 
-        public async Task<User?> SetRoleAsync(Guid id, UserRole role, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> RenameAsync(Guid id, string newName, byte[] rowVersion, CancellationToken ct = default)
         {
-            var updated = await _db.Users
-                .Where(u => u.Id == id && u.RowVersion == rowVersion && u.Role != role)
-                .ExecuteUpdateAsync(s => s.SetProperty(u => u.Role, role), ct);
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
+            if (user is null) return DomainMutation.NotFound;
+            if (user.Name == newName) return DomainMutation.NoOp;
 
-            return updated == 0 ? null
-                : await _db.Users
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(u => u.Id == id, ct);
+            _db.Entry(user).Property(u => u.RowVersion).OriginalValue = rowVersion;
+
+            user.Rename(UserName.Create(newName));
+            _db.Entry(user).Property(u => u.Name).IsModified = true;
+
+            return DomainMutation.Updated;
         }
 
-        public async Task<bool> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> ChangeRoleAsync(Guid id, UserRole role, byte[] rowVersion, CancellationToken ct = default)
         {
-            if (rowVersion is null || rowVersion.Length == 0) return false;
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
+            if (user is null) return DomainMutation.NotFound;
+            if (user.Role == role) return DomainMutation.NoOp;
 
-            var affected = await _db.Users
-                .Where(u => u.Id == id && u.RowVersion == rowVersion)
-                .ExecuteDeleteAsync(ct);
+            _db.Entry(user).Property(u => u.RowVersion).OriginalValue = rowVersion;
 
-            return affected > 0;
+            user.ChangeRole(role);
+            _db.Entry(user).Property(u => u.Role).IsModified = true;
+
+            return DomainMutation.Updated;
+        }
+
+        public async Task<DomainMutation> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default)
+        {
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
+            if (user is null) return DomainMutation.NotFound;
+
+            _db.Entry(user).Property(u => u.RowVersion).OriginalValue = rowVersion;
+            _db.Users.Remove(user);
+
+            return DomainMutation.Deleted;
         }
 
         public async Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default)
@@ -74,6 +87,5 @@ namespace Infrastructure.Data.Repositories
             => await _db.Users
                 .AsNoTracking()
                 .CountAsync(u => u.Role == UserRole.Admin, ct);
-
     }
 }
