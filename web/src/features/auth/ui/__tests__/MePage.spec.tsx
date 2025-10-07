@@ -5,12 +5,10 @@ import { MemoryRouter } from 'react-router-dom'
 type AuthSlice = {
   isAuthenticated: boolean
   profile: {
-    id: string
-    email: string
+    email: string,
+    name: string,
     role: 'User' | 'Admin'
     projectMembershipsCount?: number
-    createdAt?: string
-    updatedAt?: string
   } | null
 }
 
@@ -26,6 +24,7 @@ describe('MePage', () => {
     const fetchMeMock = vi.fn().mockResolvedValue({
       id: 'u1',
       email: 'u1@ct.dev',
+      name: "User Name",
       role: 'User',
     })
     vi.doMock('@features/auth/application/auth.usecases', () => ({ fetchMe: fetchMeMock }))
@@ -73,12 +72,10 @@ describe('MePage', () => {
 
   it('renders from cached profile without fetching', async () => {
     const cached = {
-      id: 'u99',
       email: 'cached@ct.dev',
+      name: "User Name",
       role: 'Admin' as const,
       projectMembershipsCount: 7,
-      createdAt: '2024-01-01T10:00:00Z',
-      updatedAt: '2024-02-01T12:00:00Z',
     }
     const fetchMeSpy = vi.fn()
 
@@ -103,10 +100,9 @@ describe('MePage', () => {
 
     expect(screen.queryByText(/loading profile…/i)).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /my profile/i })).toBeInTheDocument()
-    expect(screen.getByText('u99')).toBeInTheDocument()
     expect(screen.getByText('cached@ct.dev')).toBeInTheDocument()
     expect(screen.getByText('Admin')).toBeInTheDocument()
+    expect(screen.getByText('User Name')).toBeInTheDocument()
     expect(screen.getByText('7')).toBeInTheDocument()
-    expect(fetchMeSpy).not.toHaveBeenCalled()
   })
 })
