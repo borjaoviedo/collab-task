@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace Api.Tests.Endpoints.Health
+namespace Api.Tests.Endpoints
 {
     public class HealthEndpointsTests
     {
