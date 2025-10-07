@@ -134,13 +134,13 @@ namespace Api.Endpoints
                     throw new InvalidCredentialsException("User not found or token invalid.");
                 }
 
-                var dto = user.ToReadDto();
+                var dto = user.ToMeReadDto();
                 dto.ProjectMembershipsCount = await membership.CountActiveAsync(userId, ct);
 
                 return Results.Ok(dto);
             })
             .RequireAuthorization()
-            .Produces<UserReadDto>(StatusCodes.Status200OK)
+            .Produces<MeReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithName("Auth_GetMe")
             .WithSummary("Returns the authenticated user's profile")
