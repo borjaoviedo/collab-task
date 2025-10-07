@@ -5,7 +5,7 @@ using System.Net.Http.Json;
 using Api.Tests.Testing;
 using System.Security.Claims;
 
-namespace Api.Tests.Endpoints.Auth
+namespace Api.Tests.Endpoints
 {
     public sealed class AuthRegisterEndpointTests
     {

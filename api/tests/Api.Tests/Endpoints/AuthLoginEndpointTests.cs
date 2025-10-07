@@ -5,7 +5,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace Api.Tests.Endpoints.Auth
+namespace Api.Tests.Endpoints
 {
     public sealed class AuthLoginEndpointTests
     {

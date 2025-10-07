@@ -13,7 +13,7 @@ using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
 
-namespace Api.Tests.Endpoints.Auth
+namespace Api.Tests.Endpoints
 {
     public sealed class AuthMeEndpointTests
     {
