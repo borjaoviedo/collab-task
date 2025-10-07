@@ -45,6 +45,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -53,6 +57,12 @@ jobs:
       - name: Install root deps
         run: npm ci
 
+      - name: Restore API dependencies
+        run: dotnet restore api/CollabTask.sln --nologo
+
+      - name: Build API (Release)
+        run: dotnet build api/CollabTask.sln --configuration Release --no-restore --nologo
+        
       - name: Generate OpenAPI spec and types
         run: npm run gen:all
 
