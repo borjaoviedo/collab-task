@@ -18,7 +18,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "Starting API via dotnet run..."
-dotnet run --project "$PROJECT_PATH" --no-build --configuration Release --urls "http://localhost:8080" &
+dotnet run --project "$PROJECT_PATH" --no-build --configuration Release --no-launch-profile --urls "http://localhost:8080" &
 PID=$!
 
 cleanup(){ if kill -0 "$PID" 2>/dev/null; then kill "$PID" 2>/dev/null || true; fi; }

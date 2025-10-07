@@ -31,7 +31,7 @@ function Wait-Http200([string]$u, [int]$timeoutMs, [int]$intervalMs = 1000) {
 }
 
 Write-Host "Starting API via dotnet run..."
-$proc = Start-Process dotnet -ArgumentList "run --project `"$ProjectPath`" --no-build --configuration Release --urls http://localhost:8080" -WindowStyle Hidden -PassThru
+$proc = Start-Process dotnet -ArgumentList "run --project `"$ProjectPath`" --no-build --configuration Release --no-launch-profile --urls http://localhost:8080" -WindowStyle Hidden -PassThru
 
 try {
   Wait-Http200 -u $Url -timeoutMs $TimeoutMs

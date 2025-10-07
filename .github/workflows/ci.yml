@@ -42,6 +42,7 @@ jobs:
     env:
       ASPNETCORE_URLS: "http://localhost:8080"
       ASPNETCORE_ENVIRONMENT: "Development"
+      DISABLE_DB_INIT: "true"
       OPENAPI_URL: "http://localhost:8080/swagger/v1/swagger.json"
       OPENAPI_TIMEOUT_MS: "120000"
     steps:
