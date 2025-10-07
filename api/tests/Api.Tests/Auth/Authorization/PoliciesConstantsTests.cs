@@ -12,6 +12,7 @@ namespace Api.Tests.Auth.Authorization
             Policies.ProjectMember.Should().Be("Member");
             Policies.ProjectAdmin.Should().Be("Admin");
             Policies.ProjectOwner.Should().Be("Owner");
+            Policies.SystemAdmin.Should().Be("SystemAdmin");
         }
     }
 }
