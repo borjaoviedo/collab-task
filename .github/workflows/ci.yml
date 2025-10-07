@@ -50,8 +50,8 @@ jobs:
       - name: Install root deps
         run: npm ci
 
-      - name: Generate OpenAPI types
-        run: npm run gen:api
+      - name: Generate OpenAPI spec and types
+        run: npm run gen:all
 
       - name: Check OpenAPI contract
         run: npm run check:contract
