@@ -1,3 +1,4 @@
+using Api.Auth.DTOs;
 using Api.Tests.Testing;
 using Application.Common.Abstractions.Security;
 using FluentAssertions;
@@ -40,11 +41,11 @@ namespace Api.Tests.Endpoints.Auth
             var resp = await client.GetAsync("/auth/me");
             resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var dto = await resp.Content.ReadFromJsonAsync<UserReadDto>(Json);
+            var dto = await resp.Content.ReadFromJsonAsync<MeReadDto>(Json);
             dto.Should().NotBeNull();
             dto.Email.Should().Be(email.ToLowerInvariant());
             dto.Name.Should().Be(name);
-            dto.Role.Should().NotBeNullOrWhiteSpace();
+            dto.Role.ToString().Should().NotBeNullOrWhiteSpace();
         }
 
         // ---------- 401: no token ----------
