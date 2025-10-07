@@ -1,4 +1,4 @@
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { ThemeControls } from "@features/theme/ui/ThemeControls";
 import { useAuthStore } from "@shared/store/auth.store";
 
@@ -7,18 +7,7 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-dvh flex flex-col text-[color:var(--color-foreground)] bg-app-gradient">
-      <header className="flex w-full items-center justify-between px-6 py-4">
-        <Link to="/" className="text-xl font-semibold">CollabTask</Link>
-        <nav className="flex items-center gap-4">
-          {isAuth ? (
-            <>
-            <Link to="/me" className="underline">Profile</Link>
-            <Link to="/settings" className="underline">Settings</Link>
-            </>
-          ) : null}
-          <ThemeControls />
-        </nav>
-      </header>
+      <Header isAuth={isAuth} />
 
       <main className="flex-1 w-full grid place-items-center min-h-0">
         <Outlet />
@@ -28,5 +17,40 @@ export default function MainLayout() {
         © CollabTask
       </footer>
     </div>
+  );
+}
+
+
+export function Header({ isAuth }: { isAuth: boolean }) {
+  const { pathname } = useLocation();
+
+  return (
+    <header className="flex w-full items-center justify-between px-6 py-4">
+      <Link to="/" className="text-xl font-semibold">
+        CollabTask
+      </Link>
+      <nav className="flex items-center gap-4">
+        {isAuth && (
+          <>
+            {pathname !== "/projects" && (
+              <Link to="/projects" className="underline">
+                Projects
+              </Link>
+            )}
+            {pathname !== "/me" && (
+              <Link to="/me" className="underline">
+                Profile
+              </Link>
+            )}
+            {pathname !== "/settings" && (
+              <Link to="/settings" className="underline">
+                Settings
+              </Link>
+            )}
+          </>
+        )}
+        <ThemeControls />
+      </nav>
+    </header>
   );
 }
