@@ -21,53 +21,20 @@ namespace Infrastructure.Data.Seeders
 
             // Demo users
             var (adminHash, adminSalt) = hasher.Hash("Admin123!");
-            var user1 = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = Email.Create("admin@demo.com"),
-                PasswordHash = adminHash,
-                PasswordSalt = adminSalt,
-                Role = UserRole.Admin,
-            };
+            var user1 = User.Create(Email.Create("admin@demo.com"), UserName.Create("Admin User"), adminHash, adminSalt, UserRole.Admin);
 
             var (userHash, userSalt) = hasher.Hash("User123!");
-            var user2 = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = Email.Create("user@demo.com"),
-                PasswordHash = userHash,
-                PasswordSalt = userSalt,
-                Role = UserRole.User,
-            };
+            var user2 = User.Create(Email.Create("user@demo.com"), UserName.Create("Normal User"), userHash, userSalt, UserRole.User);
 
             context.Users.AddRange(user1, user2);
 
+            var utcNow = DateTimeOffset.UtcNow;
+
             // Demo project
-            var project = new Project
-            {
-                Id = Guid.NewGuid(),
-                Name = ProjectName.Create("Demo Project"),
-                Slug = ProjectSlug.Create("demo-project"),
-            };
+            var project = Project.Create(user1.Id, ProjectName.Create("Demo Project"), utcNow);
+            project.AddMember(user2.Id, ProjectRole.Member, utcNow);
 
             context.Projects.Add(project);
-
-            // Demo memberships
-            context.ProjectMembers.Add(new ProjectMember
-            {
-                ProjectId = project.Id,
-                UserId = user1.Id,
-                Role = ProjectRole.Owner,
-                JoinedAt = DateTimeOffset.UtcNow,
-            });
-
-            context.ProjectMembers.Add(new ProjectMember
-            {
-                ProjectId = project.Id,
-                UserId = user2.Id,
-                Role = ProjectRole.Editor,
-                JoinedAt = DateTimeOffset.UtcNow,
-            });
 
             await context.SaveChangesAsync(ct);
         }

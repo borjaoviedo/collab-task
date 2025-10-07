@@ -4,6 +4,45 @@ Collaborative real-time task management app built with **ASP.NET Core** (backend
 
 ---
 
+## Features (in progress for v0.2.0)
+
+- Everything from v0.1.0, plus:
+  - Project management with CRUD endpoints.
+  - Membership system linking users to projects.
+  - Role hierarchy: Owner, Admin, Member, Reader.
+  - Authorization policies applied to project endpoints.
+  - Consistent repository/service layer (refactor integrated).
+  - Comprehensive backend tests (unit, integration, policy).
+  - DomainMutation result type for repository operations.
+- Frontend integration with these features pending.
+
+---
+
+## Backend Overview
+
+**Domain**
+- Entities: `User`, `Project`, `ProjectMember`.
+- Enums: `UserRole`, `ProjectRole`.
+- Value Objects for data integrity.
+- Domain rules (unique project name per user, creator = Owner).
+
+**Application**
+- Services for users, auth, and project membership.
+- Interfaces: `IProjectMemberService`, `IProjectMembershipReader`.
+- Authorization handlers enforcing minimum role access.
+
+**Infrastructure**
+- EF Core repositories and configuration.
+- SQL Server migrations and testcontainers for integration tests.
+- Dependency injection configured via `AddInfrastructure()`.
+
+**API**
+- Endpoints for project and membership operations.
+- Policies registered through `AddProjectAuthorization()`.
+- Middleware configured for JWT authentication + role-based access.
+
+---
+
 ## Features (v0.1.0)
 
 - User authentication with registration, login, and profile retrieval.  

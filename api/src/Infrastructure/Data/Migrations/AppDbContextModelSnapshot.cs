@@ -25,19 +25,18 @@ namespace Infrastructure.Data.Migrations
             modelBuilder.Entity("Domain.Entities.Project", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetimeoffset")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -51,12 +50,11 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Slug")
+                    b.HasIndex("OwnerId", "Slug")
                         .IsUnique();
 
                     b.ToTable("Projects", null, t =>
@@ -83,13 +81,8 @@ namespace Infrastructure.Data.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTimeOffset?>("InvitedAt")
-                        .HasColumnType("datetimeoffset");
-
                     b.Property<DateTimeOffset>("JoinedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetimeoffset")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<DateTimeOffset?>("RemovedAt")
                         .HasColumnType("datetimeoffset");
@@ -105,6 +98,10 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("ProjectId", "UserId");
 
+                    b.HasIndex("ProjectId")
+                        .IsUnique()
+                        .HasFilter("[Role] = 0 AND [RemovedAt] IS NULL");
+
                     b.HasIndex("UserId");
 
                     b.HasIndex("ProjectId", "RemovedAt");
@@ -113,8 +110,6 @@ namespace Infrastructure.Data.Migrations
 
                     b.ToTable("ProjectMembers", null, t =>
                         {
-                            t.HasCheckConstraint("CK_ProjectMembers_InvitedAt_Before_JoinedAt", "[InvitedAt] IS NULL OR [InvitedAt] <= [JoinedAt]");
-
                             t.HasCheckConstraint("CK_ProjectMembers_RemovedAt_After_JoinedAt", "[RemovedAt] IS NULL OR [RemovedAt] >= [JoinedAt]");
 
                             t.HasCheckConstraint("CK_ProjectMembers_Role", "[Role] IN (0,1,2,3)");
@@ -124,19 +119,20 @@ namespace Infrastructure.Data.Migrations
             modelBuilder.Entity("Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetimeoffset")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<byte[]>("PasswordHash")
                         .IsRequired()
@@ -158,7 +154,6 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("rowversion");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
@@ -166,7 +161,28 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Users", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Users_Email_NotEmpty", "[Email] <> ''");
+
+                            t.HasCheckConstraint("CK_Users_Name_NotEmpty", "[Name] <> ''");
+
+                            t.HasCheckConstraint("CK_Users_PasswordHash_Length", "DATALENGTH([PasswordHash]) = 32");
+
+                            t.HasCheckConstraint("CK_Users_PasswordSalt_Length", "DATALENGTH([PasswordSalt]) = 16");
+                        });
+                });
+
+            modelBuilder.Entity("Domain.Entities.Project", b =>
+                {
+                    b.HasOne("Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Entities.ProjectMember", b =>

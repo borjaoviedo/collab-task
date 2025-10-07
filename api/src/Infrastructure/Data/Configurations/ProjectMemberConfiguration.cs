@@ -13,8 +13,6 @@ namespace Infrastructure.Data.Configurations
                 t.HasCheckConstraint("CK_ProjectMembers_Role", "[Role] IN (0,1,2,3)");
                 t.HasCheckConstraint("CK_ProjectMembers_RemovedAt_After_JoinedAt",
                     "[RemovedAt] IS NULL OR [RemovedAt] >= [JoinedAt]");
-                t.HasCheckConstraint("CK_ProjectMembers_InvitedAt_Before_JoinedAt",
-                    "[InvitedAt] IS NULL OR [InvitedAt] <= [JoinedAt]");
             });
 
             e.HasKey(pm => new { pm.ProjectId, pm.UserId });
@@ -23,16 +21,15 @@ namespace Infrastructure.Data.Configurations
             e.HasIndex(pm => new { pm.ProjectId, pm.Role });
             e.HasIndex(pm => new { pm.ProjectId, pm.RemovedAt });
 
+            e.HasIndex(pm => pm.ProjectId)
+                 .HasFilter("[Role] = 0 AND [RemovedAt] IS NULL")
+                 .IsUnique();
+
             e.Property(pm => pm.Role).IsRequired();
 
             e.Property(pm => pm.JoinedAt)
                 .HasColumnType("datetimeoffset")
-                .HasDefaultValueSql("SYSUTCDATETIME()")
-                .ValueGeneratedOnAdd();
-
-            e.Property(pm => pm.InvitedAt)
-                .HasColumnType("datetimeoffset")
-                .IsRequired(false);
+                .IsRequired();
 
             e.Property(pm => pm.RemovedAt)
                 .HasColumnType("datetimeoffset")

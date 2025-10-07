@@ -16,23 +16,25 @@ namespace Infrastructure.Tests.Projects
         private readonly MsSqlContainerFixture _fx;
         public ProjectPersistenceTests(MsSqlContainerFixture fx) => _fx = fx;
 
+        public static byte[] Bytes(int n, byte fill = 0x5A) => Enumerable.Repeat(fill, n).ToArray();
         [Fact]
         public async Task Create_Project_And_GetBySlug()
         {
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var p = new Project
-            {
-                
-                Id = Guid.NewGuid(),
-                Name = ProjectName.Create("Alpha Board"),
-                Slug = ProjectSlug.Create("Alpha Board"),
-            };
-            db.Projects.Add(p);
+            static string Suffix(int n) => new(Enumerable.Range(0, n).Select(_ => (char)('a' + Random.Shared.Next(26))).ToArray());
+
+            var pName = "Alpha Board";
+            var sfx = Suffix(8);
+
+            var u = User.Create(Email.Create($"{sfx}@demo.com"), UserName.Create($"Project user {sfx}"), Bytes(32), Bytes(16));
+            var p = Project.Create(u.Id, ProjectName.Create(pName), DateTimeOffset.UtcNow);
+
+            db.AddRange(u, p);
             await db.SaveChangesAsync();
 
-            var bySlug = await db.Projects.SingleAsync(x => x.Slug == ProjectSlug.Create("Alpha Board"));
+            var bySlug = await db.Projects.SingleAsync(x => x.Slug == ProjectSlug.Create(pName));
             bySlug.Id.Should().Be(p.Id);
         }
 
@@ -42,44 +44,24 @@ namespace Infrastructure.Tests.Projects
             using var scope = _fx.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var u = new User { Id = Guid.NewGuid(), Email = Email.Create("m@demo.com"), PasswordHash = new byte[32], PasswordSalt = new byte[16] };
-            var p = new Project { Id = Guid.NewGuid(), Name = ProjectName.Create("Beta"), Slug = ProjectSlug.Create("beta") };
+            var utcNow = DateTimeOffset.UtcNow;
+            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Project user"), Bytes(32), Bytes(16));
+            var p = Project.Create(u.Id, ProjectName.Create("Beta"), utcNow);
             db.AddRange(u, p);
-            await db.SaveChangesAsync();
-
-            var pm1 = new ProjectMember
-            {
-                ProjectId = p.Id,
-                UserId = u.Id,
-                Role = ProjectRole.Owner,
-                JoinedAt = DateTimeOffset.UtcNow
-            };
-            db.ProjectMembers.Add(pm1);
             await db.SaveChangesAsync();
 
             await using var scope2 = _fx.Services.CreateAsyncScope();
             var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
 
             // duplicate composite key
-            var pmDup = new ProjectMember
-            {
-                ProjectId = p.Id,
-                UserId = u.Id,
-                Role = ProjectRole.Editor,
-                JoinedAt = DateTimeOffset.UtcNow
-            };
+            var pmDup = ProjectMember.Create(p.Id, u.Id, ProjectRole.Member, utcNow);
             db2.ProjectMembers.Add(pmDup);
             await Assert.ThrowsAsync<DbUpdateException>(() => db2.SaveChangesAsync());
 
             // RemovedAt before JoinedAt -> check constraint
-            var pmBad = new ProjectMember
-            {
-                ProjectId = p.Id,
-                UserId = Guid.NewGuid(),
-                Role = ProjectRole.Reader,
-                JoinedAt = DateTimeOffset.UtcNow,
-                RemovedAt = DateTimeOffset.UtcNow.AddMinutes(-10)
-            };
+            var pmBad = ProjectMember.Create(p.Id, Guid.NewGuid(), ProjectRole.Reader, utcNow);
+            pmBad.RemovedAt = DateTimeOffset.UtcNow.AddMinutes(-10);
+
             db2.ProjectMembers.Add(pmBad);
             await Assert.ThrowsAsync<DbUpdateException>(() => db2.SaveChangesAsync());
         }

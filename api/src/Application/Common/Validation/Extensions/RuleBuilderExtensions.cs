@@ -1,4 +1,6 @@
+using Domain.Enums;
 using FluentValidation;
+using System.Text.RegularExpressions;
 
 namespace Application.Common.Validation.Extensions
 {
@@ -12,6 +14,17 @@ namespace Application.Common.Validation.Extensions
                 .MaximumLength(256).WithMessage("Email length must be less than 256 characters.");
         }
 
+        public static IRuleBuilderOptions<T, string> UserNameRules<T>(this IRuleBuilder<T, string> ruleBuilder)
+        {
+            return ruleBuilder
+                .NotEmpty().WithMessage("User name is required.")
+                .MinimumLength(2).WithMessage("User name must be at least 2 characters long.")
+                .MaximumLength(100).WithMessage("User name must not exceed 100 characters.")
+                .Matches(@"^[a-zA-Z\s]+$").WithMessage("User name must contain only letters.")
+                .Must(name => !Regex.IsMatch(name, @"\s{2,}"))
+                    .WithMessage("User name cannot contain consecutive spaces.");
+        }
+
         public static IRuleBuilderOptions<T, string> UserPasswordRules<T>(this IRuleBuilder<T, string> ruleBuilder)
         {
             return ruleBuilder
@@ -22,5 +35,44 @@ namespace Application.Common.Validation.Extensions
                 .Matches("[0-9]").WithMessage("Password must contain at least one number.")
                 .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
         }
+
+        public static IRuleBuilderOptions<T, string> ProjectNameRules<T>(this IRuleBuilder<T, string> ruleBuilder)
+        {
+            return ruleBuilder
+                .NotEmpty().WithMessage("Project name is required.")
+                .Must(s => !string.IsNullOrWhiteSpace(s)).WithMessage("Project name cannot be whitespace.")
+                .MaximumLength(100).WithMessage("Project name length must be at most 100 characters.")
+                .Must(name => !Regex.IsMatch(name, @"\s{2,}"))
+                    .WithMessage("Project name cannot contain consecutive spaces.")
+                .Must(s => s.All(c => !char.IsControl(c)))
+                    .WithMessage("Project name contains invalid characters.");
+        }
+
+        public static IRuleBuilderOptions<T, byte[]> ConcurrencyTokenRules<T>(this IRuleBuilder<T, byte[]> ruleBuilder)
+        {
+            return ruleBuilder
+                .NotNull().WithMessage("RowVersion is required.")
+                .Must(v => v.Length > 0).WithMessage("RowVersion cannot be empty.");
+        }
+
+        public static IRuleBuilderOptions<T, Guid> RequiredGuid<T>(this IRuleBuilder<T, Guid> ruleBuilder)
+        => ruleBuilder
+            .NotEmpty().WithMessage("Id is required.");
+
+        public static IRuleBuilderOptions<T, ProjectRole> ProjectRoleRules<T>(this IRuleBuilder<T, ProjectRole> ruleBuilder)
+            => ruleBuilder
+                .Must(r => Enum.IsDefined(typeof(ProjectRole), r))
+                    .WithMessage("Invalid project role value.");
+
+        public static IRuleBuilderOptions<T, DateTimeOffset> JoinedAtRules<T>(this IRuleBuilder<T, DateTimeOffset> ruleBuilder)
+            => ruleBuilder
+                .Must(d => d.Offset == TimeSpan.Zero).WithMessage("JoinedAt must be in UTC.")
+                .LessThanOrEqualTo(_ => DateTimeOffset.UtcNow).WithMessage("JoinedAt cannot be in the future.")
+                .GreaterThan(new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero)).WithMessage("JoinedAt is too old.");
+
+        public static IRuleBuilderOptions<T, DateTimeOffset?> RemovedAtRules<T>(this IRuleBuilder<T, DateTimeOffset?> ruleBuilder)
+            => ruleBuilder
+                .Must(d => d is null || ((DateTimeOffset)d).Offset == TimeSpan.Zero).WithMessage("RemovedAt must be in UTC.")
+                .Must(d => d is null || ((DateTimeOffset)d) <= DateTimeOffset.UtcNow).WithMessage("RemovedAt cannot be in the future.");
     }
 }

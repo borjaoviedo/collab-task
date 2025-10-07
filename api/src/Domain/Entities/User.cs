@@ -1,4 +1,4 @@
-using Domain.Common;
+using Domain.Common.Abstractions;
 using Domain.Enums;
 using Domain.ValueObjects;
 using System.ComponentModel.DataAnnotations;
@@ -9,6 +9,7 @@ namespace Domain.Entities
     {
         public Guid Id { get; set; }
         public required Email Email { get; set; }
+        public required UserName Name { get; set; }
         public byte[] PasswordHash { get; set; } = default!;
         public byte[] PasswordSalt { get; set; } = default!;
         public UserRole Role { get; set; } = UserRole.User;
@@ -16,5 +17,24 @@ namespace Domain.Entities
         public DateTimeOffset UpdatedAt { get; set; }
         [Timestamp] public byte[] RowVersion { get; set; } = default!;
         public ICollection<ProjectMember> ProjectMemberships { get; private set; } = [];
+
+        private User() { }
+
+        public static User Create(Email email, UserName name, byte[] hash, byte[] salt, UserRole role = UserRole.User)
+        {
+            return new User
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                Name = name,
+                PasswordHash = hash,
+                PasswordSalt = salt,
+                Role = role
+            };
+        }
+
+        public void Rename(UserName newName) => Name = newName;
+
+        public void ChangeRole(UserRole newRole) => Role = newRole;
     }
 }

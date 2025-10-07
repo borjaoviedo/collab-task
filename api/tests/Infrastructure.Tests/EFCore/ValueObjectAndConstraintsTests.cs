@@ -15,6 +15,7 @@ namespace Infrastructure.Tests.EFCore
         private readonly string _baseCs;
         public ValueObjectAndConstraintsTests(MsSqlContainerFixture fx) => _baseCs = fx.ContainerConnectionString;
 
+        public static byte[] Bytes(int n, byte fill = 0x5A) => Enumerable.Repeat(fill, n).ToArray();
         private (ServiceProvider sp, AppDbContext db) BuildDb(string name)
         {
             var cs = $"{_baseCs};Database={name}";
@@ -28,17 +29,10 @@ namespace Infrastructure.Tests.EFCore
         [Fact]
         public async Task Email_ValueObject_RoundTrip_Works()
         {
-            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = Email.Create("vo@demo.com"),
-                PasswordHash = new byte[] { 1, 2, 3 },
-                PasswordSalt = new byte[] { 4, 5, 6 },
-                Role = UserRole.User
-            };
+            var user = User.Create(Email.Create("vo@demo.com"), UserName.Create("Value Object"), Bytes(32), Bytes(16));
 
             db.Users.Add(user);
             await db.SaveChangesAsync();
@@ -49,58 +43,67 @@ namespace Infrastructure.Tests.EFCore
         }
 
         [Fact]
-        public async Task Project_Slug_Is_Unique()
+        public async Task UserName_ValueObject_RoundTrip_Works()
         {
-            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
-            var p1 = new Project { Id = Guid.NewGuid(), Name = ProjectName.Create("A"), Slug = ProjectSlug.Create("unique") };
-            var p2 = new Project { Id = Guid.NewGuid(), Name = ProjectName.Create("B"), Slug = ProjectSlug.Create("unique") };
+            var user = User.Create(Email.Create("vo@demo.com"), UserName.Create("Value Object Name"), Bytes(32), Bytes(16));
+
+            db.Users.Add(user);
+            await db.SaveChangesAsync();
+
+            db.ChangeTracker.Clear();
+            var fromDb = await db.Users.SingleAsync(u => u.Id == user.Id);
+            fromDb.Name.Value.Should().Be("Value Object Name");
+        }
+
+        [Fact]
+        public async Task Project_Slug_Is_Unique()
+        {
+            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            await db.Database.MigrateAsync();
+
+            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Project user"), Bytes(32), Bytes(16));
+            db.Users.Add(u);
+            await db.SaveChangesAsync();
+
+            var p1 = Project.Create(u.Id, ProjectName.Create("Unique Slug 1"), DateTimeOffset.UtcNow);
+            p1.Slug = ProjectSlug.Create("unique");
 
             db.Projects.Add(p1);
             await db.SaveChangesAsync();
 
-            db.Projects.Add(p2);
-            Func<Task> act = async () => await db.SaveChangesAsync();
+            var p2 = Project.Create(u.Id, ProjectName.Create("Unique Slug 2"), DateTimeOffset.UtcNow);
+            p2.Slug = ProjectSlug.Create("unique");
 
-            await act.Should().ThrowAsync<DbUpdateException>();
+            db.Projects.Add(p2);
+            await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
         }
 
         [Fact]
         public async Task ProjectMember_RemovedAt_Can_Be_Null_And_CheckConstraint_Enforced()
         {
-            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
             await db.Database.MigrateAsync();
 
-            var p = new Project { Id = Guid.NewGuid(), Name = ProjectName.Create("P"), Slug = ProjectSlug.Create("p") };
-            var u1 = new User { Id = Guid.NewGuid(), Email = Email.Create("pm1@demo.com"), PasswordHash = new byte[] { 1 }, PasswordSalt = new byte[] { 1 }, Role = UserRole.User };
-            var u2 = new User { Id = Guid.NewGuid(), Email = Email.Create("pm2@demo.com"), PasswordHash = new byte[] { 2 }, PasswordSalt = new byte[] { 2 }, Role = UserRole.User };
-            db.AddRange(p, u1, u2);
+            var u1 = User.Create(Email.Create("pm1@demo.com"), UserName.Create("First user"), Bytes(32), Bytes(16));
+            var p = Project.Create(u1.Id, ProjectName.Create("Project Name"), DateTimeOffset.UtcNow);
+            db.AddRange(u1, p);
             await db.SaveChangesAsync();
 
-            var pmOk = new ProjectMember
-            {
-                ProjectId = p.Id,
-                UserId = u1.Id,
-                Role = ProjectRole.Editor,
-                JoinedAt = DateTimeOffset.UtcNow,
-                RemovedAt = null
-            };
-            db.ProjectMembers.Add(pmOk);
-            await db.SaveChangesAsync(); // should succeed
+            var u2 = User.Create(Email.Create("pm2@demo.com"), UserName.Create("Second user"), Bytes(32), Bytes(16));
+            db.Users.Add(u2);
+            await db.SaveChangesAsync();
 
-            var pmBad = new ProjectMember
-            {
-                ProjectId = p.Id,
-                UserId = u2.Id,
-                Role = ProjectRole.Editor,
-                JoinedAt = DateTimeOffset.UtcNow,
-                RemovedAt = DateTimeOffset.UtcNow.AddMinutes(-5) // earlier than JoinedAt should violate CHECK
-            };
+            var utcNow = DateTimeOffset.UtcNow;
+
+            var pmBad = ProjectMember.Create(p.Id, u2.Id, ProjectRole.Member, DateTimeOffset.UtcNow);
+            pmBad.RemovedAt = utcNow.AddMinutes(-5);
+
             db.ProjectMembers.Add(pmBad);
 
-            Func<Task> act = async () => await db.SaveChangesAsync();
-            await act.Should().ThrowAsync<DbUpdateException>();
+            await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
         }
     }
 }

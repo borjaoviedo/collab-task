@@ -1,7 +1,6 @@
-using Api.Auth;
 using Api.Errors;
-using Application.Common.Abstractions.Auth;
 using Infrastructure;
+using Application;
 
 namespace Api.Extensions
 {
@@ -16,9 +15,8 @@ namespace Api.Extensions
                 .AddCorsPolicies(config)
                 .AddInfrastructure(connectionString)
                 .AddSwaggerWithJwt()
-                .AddJwtAuth(config)
-                .AddHttpContextAccessor()
-                .AddScoped<ICurrentUserService, CurrentUserService>()
+                .AddJwtAuthAndPolicies(config)
+                .AddApplication()
                 .AddAppValidation()
                 .AddProblemDetailsAndExceptionMapping();
 

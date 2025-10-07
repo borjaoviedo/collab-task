@@ -9,6 +9,7 @@ namespace Application.Tests.Common.Validation.Extensions
         private sealed class Dto
         {
             public string Email { get; set; } = "";
+            public string Name { get; set; } = "";
             public string Password { get; set; } = "";
         }
 
@@ -18,6 +19,7 @@ namespace Application.Tests.Common.Validation.Extensions
             {
                 RuleFor(x => x.Email).UserEmailRules();
                 RuleFor(x => x.Password).UserPasswordRules();
+                RuleFor(x => x.Name).UserNameRules();
             }
         }
 
@@ -43,6 +45,47 @@ namespace Application.Tests.Common.Validation.Extensions
             _validator.TestValidate(dto)
                 .ShouldHaveValidationErrorFor(x => x.Email)
                 .WithErrorMessage("Email length must be less than 256 characters.");
+        }
+
+        [Fact]
+        public void Name_Empty_Fails()
+            => _validator.TestValidate(new Dto { Name = "" })
+                .ShouldHaveValidationErrorFor(x => x.Name)
+                .WithErrorMessage("User name is required.");
+
+        [Fact]
+        public void Name_TooShort_Fails()
+        {
+            var dto = new Dto { Name = "z" };
+            _validator.TestValidate(dto)
+                .ShouldHaveValidationErrorFor(x => x.Name)
+                .WithErrorMessage("User name must be at least 2 characters long.");
+        }
+
+        [Fact]
+        public void Name_TooLong_Fails()
+        {
+            var dto = new Dto { Name = new string('a', 101) };
+            _validator.TestValidate(dto)
+                .ShouldHaveValidationErrorFor(x => x.Name)
+                .WithErrorMessage("User name must not exceed 100 characters.");
+        }
+
+        [Theory]
+        [InlineData("John D.")]
+        [InlineData("John D0e")]
+        public void Name_InvalidFormat_Fails(string input)
+            => _validator.TestValidate(new Dto { Name = input })
+                .ShouldHaveValidationErrorFor(x => x.Name)
+                .WithErrorMessage("User name must contain only letters.");
+
+        [Fact]
+        public void Name_With_Two_Consecutive_Spaces_Fails()
+        {
+            var dto = new Dto { Name = "John  Doe" };
+            _validator.TestValidate(dto)
+                .ShouldHaveValidationErrorFor(x => x.Name)
+                .WithErrorMessage("User name cannot contain consecutive spaces.");
         }
 
         [Theory]

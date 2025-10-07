@@ -1,4 +1,4 @@
-using Application.Users.Validation;
+using Application;
 using FluentValidation;
 
 namespace Api.Extensions
@@ -7,8 +7,7 @@ namespace Api.Extensions
     {
         public static IServiceCollection AddAppValidation(this IServiceCollection services)
         {
-            services.AddValidatorsFromAssembly(typeof(UserCreateDtoValidator).Assembly);
-            services.AddValidatorsFromAssembly(typeof(UserLoginDtoValidator).Assembly);
+            services.AddValidatorsFromAssembly(typeof(ApplicationValidationMarker).Assembly);
             return services;
         }
     }

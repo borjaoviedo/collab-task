@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using FluentValidation;
+using Domain.Common.Exceptions;
 
 namespace Api.Errors
 {

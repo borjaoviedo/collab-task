@@ -3,7 +3,7 @@ namespace Domain.Enums
     public enum ProjectRole
     {
         Reader,
-        Editor,
+        Member,
         Admin,
         Owner
     }

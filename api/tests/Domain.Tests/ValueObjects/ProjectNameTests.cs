@@ -57,18 +57,18 @@ namespace Domain.Tests.ValueObjects
         [InlineData("Under_Scored_Project_Name")]
         [InlineData("Dotted.Project.Name")]
         public void Create_Allows_Common_LocalChars(string input)
-            => ProjectName.Create(input).Value.Should().Be(input.ToLowerInvariant());
+            => ProjectName.Create(input).Value.Should().Be(input);
 
         [Theory]
-        [InlineData("Proyéctó Ñame", "proyéctó ñame")]
-        [InlineData("NAÏVE NAME", "naïve name")]
-        public void Create_Preserves_Unicode_ToLowerInvariant(string input, string expected)
+        [InlineData("Proyéctó Ñame", "Proyéctó Ñame")]
+        [InlineData("NAÏVE NAME", "NAÏVE NAME")]
+        public void Create_Preserves_Unicode(string input, string expected)
             => ProjectName.Create(input).Value.Should().Be(expected);
 
         [Theory]
-        [InlineData("PROJECT NAME", "project name")]
-        [InlineData("  Mixed Case  ", "mixed case")]
-        public void Create_Normalizes_ToLower_And_Trim(string input, string expected)
+        [InlineData("PROJECT NAME", "PROJECT NAME")]
+        [InlineData("  Mixed Case  ", "Mixed Case")]
+        public void Create_Normalizes_Trim_And_Maintains_Cases(string input, string expected)
             => ProjectName.Create(input).Value.Should().Be(expected);
 
         [Theory]

@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Domain.ValueObjects;
 
-
 namespace Infrastructure.Tests.Auditing
 {
     [Collection("SqlServerContainer")]
@@ -15,6 +14,8 @@ namespace Infrastructure.Tests.Auditing
         private readonly string _baseConnectionString;
 
         public AuditingSaveChangesInterceptorTests(MsSqlContainerFixture fx) => _baseConnectionString = fx.ContainerConnectionString;
+
+        public static byte[] Bytes(int n, byte fill = 0x5A) => Enumerable.Repeat(fill, n).ToArray();
 
         private ServiceProvider BuildProvider(string dbName)
         {
@@ -32,14 +33,10 @@ namespace Infrastructure.Tests.Auditing
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             await db.Database.MigrateAsync();
 
-            var p = new Project
-            {
-                Id = Guid.NewGuid(),
-                Name = ProjectName.Create("Audit Test"),
-                Slug = ProjectSlug.Create("audit-test")
-            };
+            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Project user"), Bytes(32), Bytes(16));
+            var p = Project.Create(u.Id, ProjectName.Create("Audit Test"), DateTimeOffset.UtcNow);
 
-            db.Projects.Add(p);
+            db.AddRange(u, p);
             await db.SaveChangesAsync();
 
             p.CreatedAt.Should().NotBe(default);
@@ -55,13 +52,10 @@ namespace Infrastructure.Tests.Auditing
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             await db.Database.MigrateAsync();
 
-            var p = new Project
-            {
-                Id = Guid.NewGuid(),
-                Name = ProjectName.Create("Audit Test 2"),
-                Slug = ProjectSlug.Create("audit-test-2")
-            };
-            db.Projects.Add(p);
+            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Project user"), Bytes(32), Bytes(16));
+            var p = Project.Create(u.Id, ProjectName.Create("Audit Test 2"), DateTimeOffset.UtcNow);
+
+            db.AddRange(u, p);
             await db.SaveChangesAsync();
 
             var createdAt = p.CreatedAt;

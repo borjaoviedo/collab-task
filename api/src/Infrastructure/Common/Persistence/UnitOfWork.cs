@@ -1,11 +1,25 @@
 using Application.Common.Abstractions.Persistence;
+using Application.Common.Exceptions;
 using Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Common.Persistence
 {
-    public sealed class UnitOfWork(AppDbContext db) : IUnitOfWork
+    public sealed class UnitOfWork : IUnitOfWork
     {
-        public Task<int> SaveChangesAsync(CancellationToken ct = default)
-            => db.SaveChangesAsync(ct);
+        private readonly AppDbContext _db;
+        public UnitOfWork(AppDbContext db) => _db = db;
+
+        public async Task<int> SaveChangesAsync(CancellationToken ct = default)
+        {
+            try
+            {
+                return await _db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                throw new ConcurrencyException("Optimistic concurrency conflict.");
+            }
+        }
     }
 }
