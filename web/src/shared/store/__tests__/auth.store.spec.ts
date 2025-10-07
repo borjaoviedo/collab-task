@@ -7,16 +7,15 @@ type TokenLike = {
   expiresAtUtc: string
   userId: string
   email: string
-  role: 'User' | 'Admin'
+  role?: 'User' | 'Admin'
 }
 
 type ProfileLike = {
   id: string
   email: string
-  role: 'User' | 'Admin'
-  createdAt: string
-  updatedAt: string
+  role: 0 | 1
   projectMembershipsCount: number
+  name?: string | null
 }
 
 beforeEach(() => {
@@ -32,7 +31,7 @@ describe('auth.store', () => {
       expiresAtUtc: '2099-01-01T00:00:00Z',
       userId: 'u1',
       email: 'a@b.com',
-      role: 'User',
+      role: 'User'
     }
     useAuthStore.getState().setToken(token)
     const s = useAuthStore.getState()
@@ -44,9 +43,7 @@ describe('auth.store', () => {
     const profile: ProfileLike = {
       id: 'u1',
       email: 'a@b.com',
-      role: 'User',
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z',
+      role: 0, // User
       projectMembershipsCount: 0,
     }
     useAuthStore.getState().setProfile(profile)
@@ -60,14 +57,12 @@ describe('auth.store', () => {
       expiresAtUtc: '2099-01-01T00:00:00Z',
       userId: 'u1',
       email: 'x@x.com',
-      role: 'User',
+      role: 'User'
     }
     const profile: ProfileLike = {
       id: 'u1',
       email: 'x@x.com',
-      role: 'User',
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z',
+      role: 0,
       projectMembershipsCount: 3,
     }
 

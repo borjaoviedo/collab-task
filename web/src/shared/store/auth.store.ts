@@ -27,8 +27,12 @@ function getExpiryUtcSeconds(t: AuthToken | null): number | null {
     const ms = typeof explicit === "number" ? explicit : new Date(explicit).getTime();
     return Number.isFinite(ms) ? Math.floor(ms / 1000) : null;
   }
+
+  const token = (t as unknown as { accessToken?: string | null })?.accessToken ?? null;
+  if (!token) return null;
+
   try {
-    const parts = t.accessToken.split(".");
+    const parts = token.split(".");
     if (parts.length !== 3) return null;
     const payload = JSON.parse(atob(parts[1]));
     const exp = typeof payload.exp === "number" ? payload.exp : null;
@@ -66,7 +70,18 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   isAuthenticated: false,
 
   setToken: (t) => {
-    localStorage.setItem(TOKEN_KEY, t.accessToken);
+    const accessToken = (t as unknown as { accessToken?: string | null })?.accessToken ?? null;
+
+    if (!accessToken) {
+      // No token provided. Force clear.
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.setItem(TOKEN_FULL_KEY, JSON.stringify(t));
+      set({ token: null, isAuthenticated: false });
+      scheduleAutoLogout(() => get().clear(), null);
+      return;
+    }
+
+    localStorage.setItem(TOKEN_KEY, accessToken);
     localStorage.setItem(TOKEN_FULL_KEY, JSON.stringify(t));
 
     const expired = isExpired(t);
