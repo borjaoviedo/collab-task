@@ -42,10 +42,17 @@ namespace Api.Tests.Auth.Authorization
 
         private sealed class FakeMembershipReader : IProjectMembershipReader
         {
-            private readonly Func<Guid, Guid, ProjectRole?> _func;
-            public FakeMembershipReader(Func<Guid, Guid, ProjectRole?> func) => _func = func;
+            private readonly ProjectRole? _role;
+            private readonly Func<Guid, Guid, ProjectRole?>? _selector;
+
+            public FakeMembershipReader(ProjectRole? role) => _role = role;
+            public FakeMembershipReader(Func<Guid, Guid, ProjectRole?> selector) => _selector = selector;
+
             public Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
-                => Task.FromResult(_func(projectId, userId));
+                => Task.FromResult(_selector is null ? _role : _selector(projectId, userId));
+
+            public Task<int> CountActiveAsync(Guid userId, CancellationToken ct = default)
+                => Task.FromResult(1);
         }
 
         [Fact]

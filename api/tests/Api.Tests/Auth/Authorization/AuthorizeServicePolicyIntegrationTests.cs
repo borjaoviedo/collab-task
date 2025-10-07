@@ -73,6 +73,8 @@ namespace Api.Tests.Auth.Authorization
             public StubReader(ProjectRole role) => _role = role;
             public Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
                 => Task.FromResult<ProjectRole?>(_role);
+            public Task<int> CountActiveAsync(Guid userId, CancellationToken ct = default)
+                => Task.FromResult(1);
         }
     }
 }
