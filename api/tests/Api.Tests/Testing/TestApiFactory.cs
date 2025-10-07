@@ -1,4 +1,7 @@
 using Api.Tests.Fakes;
+using Application.Common.Abstractions.Persistence;
+using Application.Projects.Abstractions;
+using Application.Users.Abstractions;
 using Infrastructure.Security;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -6,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Application.Common.Abstractions.Persistence;
 
 namespace Api.Tests.Testing
 {
@@ -32,11 +34,14 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(DbContextOptions<>));
                 services.RemoveAll(typeof(DbContext));
 
-                services.RemoveAll(typeof(Application.Users.Abstractions.IUserRepository));
-                services.AddSingleton<Application.Users.Abstractions.IUserRepository, FakeUserRepository>();
+                services.RemoveAll(typeof(IUserRepository));
+                services.AddSingleton<IUserRepository, FakeUserRepository>();
 
                 services.RemoveAll(typeof(IUnitOfWork));
                 services.AddSingleton<IUnitOfWork, FakeUnitOfWork>();
+
+                services.RemoveAll(typeof(IProjectMembershipReader));
+                services.AddSingleton<IProjectMembershipReader, FakeMembershipReader>();
 
                 services.PostConfigure<JwtOptions>(o =>
                 {
