@@ -1,7 +1,7 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
+using Api.Tests.Fakes;
 using Application.Projects.Abstractions;
-using Domain.Enums;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
@@ -27,7 +27,7 @@ namespace Api.Tests.Auth.Authorization
                 .Build();
 
             // Fake membership reader so DI is satisfied
-            services.AddScoped<IProjectMembershipReader, FakeReader>();
+            services.AddScoped<IProjectMembershipReader, FakeMembershipReader>();
 
             services.AddJwtAuthAndPolicies(cfg);
 
@@ -45,15 +45,7 @@ namespace Api.Tests.Auth.Authorization
             provider.GetPolicyAsync(Policies.ProjectMember).Should().NotBeNull();
             provider.GetPolicyAsync(Policies.ProjectAdmin).Should().NotBeNull();
             provider.GetPolicyAsync(Policies.ProjectOwner).Should().NotBeNull();
-        }
-
-        private sealed class FakeReader : IProjectMembershipReader
-        {
-            public Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
-                => Task.FromResult<ProjectRole?>(ProjectRole.Owner);
-
-            public Task<int> CountActiveAsync(Guid userId, CancellationToken ct = default)
-                => Task.FromResult(1);
+            provider.GetPolicyAsync(Policies.SystemAdmin).Should().NotBeNull();
         }
     }
 }
