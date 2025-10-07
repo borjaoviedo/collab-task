@@ -10,13 +10,13 @@ namespace Api.Auth.Authorization
             AuthorizationHandlerContext context,
             UserRoleRequirement requirement)
         {
-            var roleClaim = context.User.FindFirst(ClaimTypes.Role) ?? context.User.FindFirst("role");
-            if (roleClaim is null) return Task.CompletedTask;
+            var roles = context.User.Claims
+             .Where(c => c.Type == ClaimTypes.Role || c.Type == "role")
+             .Select(c => Enum.TryParse<UserRole>(c.Value, true, out var r) ? (UserRole?)r : null)
+             .Where(r => r.HasValue)
+             .Select(r => r!.Value);
 
-            if (!Enum.TryParse<UserRole>(roleClaim.Value, ignoreCase: true, out var userRole))
-                return Task.CompletedTask;
-
-            if (userRole >= requirement.MinimumRole)
+            if (roles.Any() && roles.Max() >= requirement.MinimumRole)
                 context.Succeed(requirement);
 
             return Task.CompletedTask;
