@@ -10,7 +10,7 @@
     "test:infra": "node scripts/run.js test:infra",
     "test:web": "node scripts/run.js test:web",
     "test:all": "node scripts/run.js test:all",
-    "gen:openapi": "powershell -Command \"Invoke-WebRequest http://localhost:8080/swagger/v1/swagger.json -OutFile contracts/openapi.json\"",
+    "gen:openapi": "node scripts/run.js gen:openapi",
     "gen:api": "openapi-typescript contracts/openapi.json -o web/src/shared/api/types.ts",
     "gen:all": "npm run gen:openapi && npm run gen:api",
     "check:contract": "node scripts/tools/check-openapi.js"
