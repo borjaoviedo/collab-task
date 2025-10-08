@@ -19,8 +19,8 @@ export function CreateProjectForm({ onCreated, className }: Props) {
     e.preventDefault()
     setTouched(true)
     if (!isValid) return
-    const created = await mutateAsync({ name: name.trim() }) // returns Project
-    onCreated(created) // <-- id string
+    const created = await mutateAsync({ name: name.trim() })
+    onCreated(created.id)
   }
 
   return (
@@ -41,9 +41,6 @@ export function CreateProjectForm({ onCreated, className }: Props) {
           <p id="projectNameHelp" className="text-xs text-[color:var(--color-muted-foreground)] mt-1">
             Minimum 3 characters.
           </p>
-          {touched && !isValid && (
-            <FormErrorText id="projectNameError">Please enter at least 3 characters.</FormErrorText>
-          )}
         </div>
 
         <Button type="submit" disabled={!isValid || isPending} aria-live="polite">
