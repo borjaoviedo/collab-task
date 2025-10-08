@@ -2,7 +2,6 @@ import { useQueryClient, useMutation } from "@tanstack/react-query"
 import { apiFetchJson, ApiError } from "@shared/api/client"
 import { qk } from "@shared/api/queryKeys"
 import { handleApiError } from "@shared/api/errors"
-import { toast } from "@shared/ui/toast"
 import type { Project } from "../domain/Project"
 
 type CreateProjectCmd = { name: string }
@@ -35,7 +34,6 @@ export function useCreateProject() {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: qk.projects() })
-      toast.success("Project created.")
     },
     onError: (err) => handleApiError(err),
   })
