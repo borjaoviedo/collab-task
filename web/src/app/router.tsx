@@ -8,7 +8,7 @@ import { RegisterPage } from '@features/auth/ui/RegisterPage';
 import { MePage } from '@features/auth/ui/MePage';
 import ProjectsPage from '@features/projects/ui/ProjectsPage';
 import ProjectBoardPage from '@features/projects/ui/ProjectBoardPage';
-import ProjectMembersPage from '@features/projects/ui/ProjectMembersPage';
+import ProjectMembersPage from '@features/members/ui/ProjectMembersPage';
 
 const router = createBrowserRouter([
   {
