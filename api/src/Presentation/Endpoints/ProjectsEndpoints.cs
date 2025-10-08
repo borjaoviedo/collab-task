@@ -1,6 +1,7 @@
 using Api.Auth.Authorization;
 using Api.Common;
 using Application.Common.Abstractions.Auth;
+using Application.Common.Results;
 using Application.Projects.Abstractions;
 using Application.Projects.DTOs;
 using Application.Projects.Mapping;
@@ -63,10 +64,20 @@ namespace Api.Endpoints
                 [FromBody] ProjectCreateDto dto,
                 [FromServices] ICurrentUserService userSvc,
                 [FromServices] IProjectService svc,
+                [FromServices] IProjectRepository repo,
                 CancellationToken ct = default) =>
             {
-                var res = await svc.CreateAsync((Guid)userSvc.UserId!, dto.Name, DateTimeOffset.UtcNow, ct);
-                return res.ToHttp(location: "/projects");
+                var (result, id) = await svc.CreateAsync((Guid)userSvc.UserId!, dto.Name, DateTimeOffset.UtcNow, ct);
+
+                if (result != WriteResult.Created)
+                    return result.ToHttp();
+
+                var created = await repo.GetByIdAsync(id, ct);
+                if (created is null)
+                    return Results.Problem(statusCode: 500, title: "Could not load created project");
+
+                var body = created.ToReadDto((Guid)userSvc.UserId!);
+                return Results.Created($"/projects/{id}", body);
             })
             .Produces<ProjectReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
