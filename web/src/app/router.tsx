@@ -9,6 +9,7 @@ import { MePage } from '@features/auth/ui/MePage';
 import ProjectsPage from '@features/projects/ui/ProjectsPage';
 import ProjectBoardPage from '@features/projects/ui/ProjectBoardPage';
 import ProjectMembersPage from '@features/members/ui/ProjectMembersPage';
+import ProjectSettingsPage from '@features/projects/ui/ProjectSettingsPage';
 
 const router = createBrowserRouter([
   {
@@ -23,8 +24,9 @@ const router = createBrowserRouter([
         children: [
           { path: 'me', element: <MePage /> },
           { path: 'projects', element: <ProjectsPage/>},
-          { path: "/projects/:id", element: <ProjectBoardPage/>},
-          { path: "/projects/:id/members", element: <ProjectMembersPage/>},
+          { path: "projects/:id", element: <ProjectBoardPage/>},
+          { path: 'projects/:id/settings', element: <ProjectSettingsPage/>},
+          { path: "projects/:id/members", element: <ProjectMembersPage/>},
         ],
       },
     ],
