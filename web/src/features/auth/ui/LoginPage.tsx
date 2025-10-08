@@ -62,7 +62,7 @@ export function LoginPage() {
   const pwdOk = passwordError(password) === null;
   const canSubmit = emailOk && pwdOk;
 
-  if (isAuth) return <Navigate to="/me" replace />;
+  if (isAuth) return <Navigate to="/" replace />;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,7 +81,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       await login({ email, password });
-      navigate("/me", { replace: true });
+      navigate("/", { replace: true });
     } catch (err) {
       // Convert 401 from /auth/login into field-level error, not global alert
       if (err instanceof ApiError && err.status === 401) {
