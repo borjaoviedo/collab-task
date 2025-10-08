@@ -4,17 +4,22 @@ Collaborative real-time task management app built with **ASP.NET Core** (backend
 
 ---
 
-## Features (in progress for v0.2.0)
+## Features (v0.2.0)
 
-- Everything from v0.1.0, plus:
-  - Project management with CRUD endpoints.
-  - Membership system linking users to projects.
-  - Role hierarchy: Owner, Admin, Member, Reader.
-  - Authorization policies applied to project endpoints.
-  - Consistent repository/service layer (refactor integrated).
-  - Comprehensive backend tests (unit, integration, policy).
-  - DomainMutation result type for repository operations.
-- Frontend integration with these features pending.
+- Authentication from v0.1.0 preserved.
+- **Project management** with CRUD endpoints.
+- **Membership system** linking users to projects.
+- **Project role hierarchy**: Owner, Admin, Member, Reader.
+- **Authorization policies** applied to project endpoints.
+- **Consistent repository/service layer** (`DomainMutation`, DI, refactors).
+- **Backend tests**: unit, integration, and policy coverage.
+- **Frontend**:
+  - **ProjectsPage**: main view listing user projects with create/delete actions.
+  - **ProjectBoardPage**: base implementation prepared for future Kanban view integration (columns and tasks not yet developed).
+  - **ProjectMembersPage**: displays project members, their roles, and access rules; project **Admins** and **Owners** can manage membership (add, remove, or change roles).
+  - **ProjectSettingsPage**: allows the project owner to modify project details.
+  - **UsersPage**: lists users in the system for selection or invitation to projects.
+- **Intentional scope**: the frontend is a thin visualization layer to showcase backend capabilities.
 
 ---
 
@@ -33,7 +38,7 @@ Collaborative real-time task management app built with **ASP.NET Core** (backend
 
 **Infrastructure**
 - EF Core repositories and configuration.
-- SQL Server migrations and testcontainers for integration tests.
+- SQL Server migrations and Testcontainers for integration tests.
 - Dependency injection configured via `AddInfrastructure()`.
 
 **API**
@@ -43,17 +48,16 @@ Collaborative real-time task management app built with **ASP.NET Core** (backend
 
 ---
 
-## Features (v0.1.0)
+## Frontend Overview
 
-- User authentication with registration, login, and profile retrieval.  
-- Secure password hashing (PBKDF2) and JWT-based authentication.  
-- Backend and frontend served via Docker (dev + prod).  
-- Feature-based frontend architecture with protected routes.  
-- Minimal UI: landing, login, register, and `/me` profile page.  
-- Session management with token persistence and auto-logout on 401.  
-- API client generated from OpenAPI contract.  
-- Continuous Integration with build, type-check, contract validation, and tests.  
-- Test coverage ≥60% across backend and frontend.
+- Vite + React + TypeScript + Tailwind.
+- **Projects Dashboard**:
+  - List projects for the authenticated user.
+  - Create and delete projects with proper validation and feedback.
+  - Loading, empty, and error states.
+- Auth integration with token persistence and automatic logout on 401.
+- Uses a small set of reusable UI components.
+- **Testing policy**: no frontend tests by design starting in v0.2.0.
 
 ---
 
@@ -114,32 +118,25 @@ npm run prod logs     # view logs for prod environment
 - **Integration tests**: Infrastructure with SQL Server Testcontainers.  
 
 ```
-npm run test:unit     # backend unit tests
-npm run test:infra    # backend infra tests
+npm run test:unit     # unit tests
+npm run test:infra    # infra tests
+npm run test:all      # unit + infra tests
 ```
 
 ### Frontend
-- Component tests and login flow tests.  
+- **No tests by design** starting in v0.2.0. The frontend is a thin visualization layer for the backend.
 
-```
-npm run test:web   # frontend tests
-```
-
-### Combined
-```
-npm run test:all   # backend + frontend tests
-```
-
-**Notes**  
-- Integration tests require Docker running locally.  
-- Coverage thresholds (≥60%) are enforced via CI.  
+### Coverage
+- Coverage threshold (≥60%) enforced **only** for backend modules via CI.
 
 ---
 
 ## Developer Utilities
 
 ```
+npm run gen:openapi     # generate OpenAPI (contracts/openapi.json)
 npm run gen:api         # generate TypeScript types from OpenAPI (web/src/shared/api/types.ts)
+npm run gen:all         # generate OpenAPI + TS types
 npm run check:contract  # validate OpenAPI contract consistency
 ```
 
@@ -147,11 +144,12 @@ npm run check:contract  # validate OpenAPI contract consistency
 
 ## Continuous Integration
 
-- GitHub Actions workflow (`ci.yml`) runs on push/PR:  
+- GitHub Actions workflow runs on push/PR:  
   - Build backend and frontend.  
-  - Run all tests (unit, infra, web).  
+  - Run backend tests (unit + infra).  
   - Validate OpenAPI contract.  
-  - Enforce coverage threshold.  
+  - Enforce backend coverage threshold.  
+- Frontend tests are intentionally **not** executed since v0.2.0.
 
 ---
 
