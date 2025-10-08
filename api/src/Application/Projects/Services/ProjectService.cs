@@ -19,12 +19,12 @@ namespace Application.Projects.Services
             _uow = uow;
         }
 
-        public async Task<WriteResult> CreateAsync(Guid ownerId, string name, DateTimeOffset now, CancellationToken ct)
+        public async Task<(WriteResult Result, Guid Id)> CreateAsync(Guid ownerId, string name, DateTimeOffset now, CancellationToken ct)
         {
             var project = Project.Create(ownerId, ProjectName.Create(name), now);
             await _repo.AddAsync(project, ct);
             await _uow.SaveChangesAsync(ct);
-            return WriteResult.Created;
+            return (WriteResult.Created, project.Id);
         }
 
         public async Task<WriteResult> RenameAsync(Guid id, string newName, byte[] rowVersion, CancellationToken ct)

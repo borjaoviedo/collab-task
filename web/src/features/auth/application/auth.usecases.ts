@@ -3,7 +3,7 @@ import { useAuthStore } from "@shared/store/auth.store";
 import type { AuthToken, UserProfile } from "@shared/types/auth";
 
 type LoginReq = { email: string; password: string };
-type RegisterReq = { email: string; password: string };
+type RegisterReq = { name: string; email: string; password: string };
 
 /** Sign in and persist token */
 export async function login(payload: LoginReq): Promise<void> {

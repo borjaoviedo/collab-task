@@ -1,5 +1,6 @@
 using Api.Auth.Authorization;
 using Api.Common;
+using Application.Projects.Abstractions;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
@@ -16,12 +17,36 @@ namespace Api.Endpoints
 
         public static RouteGroupBuilder MapUsers(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/users/{id:guid}")
+            var group = app.MapGroup("/users")
                 .WithTags("Users")
                 .RequireAuthorization();
 
-            // GET /users/{id}
+            // GET /users
             group.MapGet("/", async (
+                [FromServices] IUserRepository repo,
+                [FromServices] IProjectMembershipReader membership,
+                CancellationToken ct = default) =>
+            {
+                var users = await repo.GetAllAsync(ct);
+                var dto = users.Select(u => u.ToReadDto()).ToList();
+
+                foreach (var d in dto)
+                {
+                    d.ProjectMembershipsCount = await membership.CountActiveAsync(d.Id, ct);
+                }
+
+                return Results.Ok(dto);
+            })
+            .RequireAuthorization(Policies.SystemAdmin)
+            .Produces<IEnumerable<UserReadDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .WithSummary("Get all users")
+            .WithDescription("Returns all users info including RowVersion.")
+            .WithName("Users_Get_All");
+
+            // GET /users/{id}
+            group.MapGet("/{id:guid}", async (
                 [FromRoute] Guid id,
                 [FromServices] IUserRepository repo,
                 CancellationToken ct = default) =>
@@ -40,7 +65,7 @@ namespace Api.Endpoints
             .WithName("Users_Get_ById");
 
             // PATCH /users/{id}/name
-            group.MapPatch("/name", async (
+            group.MapPatch("/{id:guid}/name", async (
                 [FromRoute] Guid id,
                 [FromBody] RenameUserDto dto,
                 [FromServices] IUserService svc,
@@ -60,7 +85,7 @@ namespace Api.Endpoints
             .WithName("Users_Rename");
 
             // PATCH /users/{id}/role
-            group.MapPatch("/role", async (
+            group.MapPatch("/{id:guid}/role", async (
                 [FromRoute] Guid id,
                 [FromBody] ChangeRoleDto dto,
                 [FromServices] IUserService svc,
@@ -81,7 +106,7 @@ namespace Api.Endpoints
             .WithName("Users_Change_Role");
 
             // DELETE /users/{id}
-            group.MapDelete("/", async (
+            group.MapDelete("/{id:guid}", async (
                 [FromRoute] Guid id,
                 [FromBody] DeleteUserDto dto,
                 [FromServices] IUserService svc,

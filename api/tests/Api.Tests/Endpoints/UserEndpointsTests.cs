@@ -56,6 +56,34 @@ namespace Api.Tests.Endpoints
         }
 
         [Fact]
+        public async Task Get_All_Returns200_When_Admin()
+        {
+            using var app = new TestApiFactory();
+            using var client = app.CreateClient();
+
+            var u = await RegisterAndLogin(client);
+            var adminBearer = await MintToken(app, u.UserId, u.Email, u.Name, "Admin");
+
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminBearer);
+
+            var resp = await client.GetAsync($"/users");
+            resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        [Fact]
+        public async Task Get_All_Returns403_When_Not_Admin()
+        {
+            using var app = new TestApiFactory();
+            using var client = app.CreateClient();
+
+            var u = await RegisterAndLogin(client);
+
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", u.AccessToken);
+            var resp = await client.GetAsync($"/users");
+            resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        }
+
+        [Fact]
         public async Task Rename_Self_Returns204_When_Valid_RowVersion()
         {
             using var app = new TestApiFactory();

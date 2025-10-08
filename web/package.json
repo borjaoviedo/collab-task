@@ -1,15 +1,13 @@
 {
   "name": "web",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "test": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",

@@ -22,7 +22,7 @@ namespace Application.Tests.Projects.Services
                 ServiceTestHelpers.Bytes(32), ServiceTestHelpers.Bytes(16), UserRole.User);
 
         [Fact]
-        public async Task CreateAsync_Returns_Created()
+        public async Task CreateAsync_Returns_Created_And_Id()
         {
             var (sp, db) = ServiceTestHelpers.BuildScope($"{_baseCs};Database=ct_{Guid.NewGuid():N}");
             var sut = sp.GetRequiredService<IProjectService>();
@@ -30,10 +30,12 @@ namespace Application.Tests.Projects.Services
             db.Add(owner);
             await db.SaveChangesAsync();
 
-            var res = await sut.CreateAsync(owner.Id, "Alpha Board", DateTimeOffset.UtcNow, default);
+            var (res, id) = await sut.CreateAsync(owner.Id, "Alpha Board", DateTimeOffset.UtcNow, default);
 
             res.Should().Be(WriteResult.Created);
             (await db.Projects.CountAsync()).Should().Be(1);
+
+            id.Should().Be((await db.Projects.SingleAsync()).Id);
         }
 
         [Fact]
@@ -46,12 +48,13 @@ namespace Application.Tests.Projects.Services
             await db.SaveChangesAsync();
 
             // create
-            (await sut.CreateAsync(owner.Id, "Old Name", DateTimeOffset.UtcNow, default)).Should().Be(WriteResult.Created);
+            var (createResponse, pId) = await sut.CreateAsync(owner.Id, "Old Name", DateTimeOffset.UtcNow, default);
+            createResponse.Should().Be(WriteResult.Created);
             var p = await db.Projects.SingleAsync();
             var rv = p.RowVersion.ToArray();
 
             // rename
-            var res = await sut.RenameAsync(p.Id, "New Name", rv, default);
+            var res = await sut.RenameAsync(pId, "New Name", rv, default);
             res.Should().Be(WriteResult.Updated);
 
             var fromDb = await db.Projects.AsNoTracking().SingleAsync();
@@ -68,10 +71,10 @@ namespace Application.Tests.Projects.Services
             db.Add(owner);
             await db.SaveChangesAsync();
 
-            (await sut.CreateAsync(owner.Id, "To Delete", DateTimeOffset.UtcNow, default)).Should().Be(WriteResult.Created);
-            var p = await db.Projects.SingleAsync();
+            var (createResponse, pId) = await sut.CreateAsync(owner.Id, "To Delete", DateTimeOffset.UtcNow, default);
+            createResponse.Should().Be(WriteResult.Created);
 
-            var res = await sut.DeleteAsync(p.Id, new byte[] { 9, 9, 9, 9 }, default);
+            var res = await sut.DeleteAsync(pId, new byte[] { 9, 9, 9, 9 }, default);
 
             res.Should().Be(WriteResult.Conflict);
         }

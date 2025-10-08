@@ -14,6 +14,12 @@ namespace Infrastructure.Data.Repositories
         public async Task AddAsync(User item, CancellationToken ct = default)
             => await _db.Users.AddAsync(item, ct);
 
+        public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct = default)
+            => await _db.Users
+            .AsNoTracking()
+            .OrderBy(u => u.Name)
+            .ToListAsync(ct);
+
         public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
             => await _db.Users
             .AsNoTracking()

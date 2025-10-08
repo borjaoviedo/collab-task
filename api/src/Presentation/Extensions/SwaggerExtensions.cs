@@ -1,4 +1,4 @@
-using Api.Options;
+using Api.Filters;
 using Microsoft.OpenApi.Models;
 
 namespace Api.Extensions
@@ -12,7 +12,8 @@ namespace Api.Extensions
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CollabTask API", Version = "v1" });
 
-                c.AddSecurityDefinition(SwaggerOptions.SchemeName, new OpenApiSecurityScheme
+                const string SchemeId = "bearerAuth";
+                c.AddSecurityDefinition(SchemeId, new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
                     Type = SecuritySchemeType.Http,
@@ -30,11 +31,13 @@ namespace Api.Extensions
                             Reference = new OpenApiReference
                             {
                                 Type = ReferenceType.SecurityScheme,
-                                Id = SwaggerOptions.SchemeName
+                                Id = SchemeId
                             }
                         },
                         Array.Empty<string>() }
                 });
+
+                c.OperationFilter<AuthorizeOperationFilter>();
             });
             return services;
         }

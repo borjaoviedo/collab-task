@@ -7,8 +7,8 @@ const MAP = {
   prod: { dir: "dev", base: "prod" },
   "test:unit": { dir: "test", base: "test.unit" },
   "test:infra": { dir: "test", base: "test.infra" },
-  "test:web": { dir: "test", base: "test.web" },
-  "test:all": ["test:unit", "test:infra", "test:web"]
+  "test:all": ["test:unit", "test:infra"],
+  "gen:openapi": { dir: "tools", base: "export-openapi" }
 };
 
 function runFile(dir, base, extraArgs) {
