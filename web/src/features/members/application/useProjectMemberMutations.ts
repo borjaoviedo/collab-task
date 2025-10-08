@@ -16,7 +16,7 @@ export function useProjectMemberMutations(projectId: string) {
 
   async function add(input: AddMemberRequest) {
     setStatus("pending"); setError(null);
-    try { await addProjectMember(projectId, input); setStatus("success"); }
+    try { await addProjectMember(projectId, { ...input }); setStatus("success"); }
     catch (e: unknown) { const err = e instanceof Error ? e : new Error("Add failed"); setError(err); setStatus("error"); throw err; }
   }
 
@@ -26,15 +26,17 @@ export function useProjectMemberMutations(projectId: string) {
     catch (e: unknown) { const err = e instanceof Error ? e : new Error("Update role failed"); setError(err); setStatus("error"); throw err; }
   }
 
-  async function remove(userId: string) {
+  async function remove(userId: string, rowVersion: string) {
     setStatus("pending"); setError(null);
-    try { await removeProjectMember(projectId, userId); setStatus("success"); }
-    catch (e: unknown) { const err = e instanceof Error ? e : new Error("Remove failed"); setError(err); setStatus("error"); throw err; }
+    try {
+      await removeProjectMember(projectId, userId, { rowVersion, removedAtUtc: new Date().toISOString() });
+      setStatus("success");
+    } catch (e: unknown) { const err = e instanceof Error ? e : new Error("Remove failed"); setError(err); setStatus("error"); throw err; }
   }
 
-  async function restore(userId: string) {
+  async function restore(userId: string, rowVersion: string) {
     setStatus("pending"); setError(null);
-    try { await restoreProjectMember(projectId, userId); setStatus("success"); }
+    try { await restoreProjectMember(projectId, userId, { rowVersion }); setStatus("success"); }
     catch (e: unknown) { const err = e instanceof Error ? e : new Error("Restore failed"); setError(err); setStatus("error"); throw err; }
   }
 

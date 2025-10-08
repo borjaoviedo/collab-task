@@ -6,4 +6,5 @@ export interface ProjectMember {
   email: string;
   role: "Owner" | "Admin" | "Member" | "Reader";
   removedAt: string | null;
+  rowVersion: string;
 }
