@@ -365,6 +365,7 @@ export interface components {
             /** Format: uuid */
             userId?: string;
             userName?: string | null;
+            email?: string | null;
             role?: components["schemas"]["ProjectRole"];
             /** Format: date-time */
             joinedAt?: string;
