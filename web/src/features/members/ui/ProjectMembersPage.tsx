@@ -57,12 +57,12 @@ export default function ProjectMembersPage() {
   const { add, changeRole, remove, restore, status, isPending, error: mError } =
     useProjectMemberMutations(id ?? "");
 
-  const { users, isLoading: usersLoading } = useAllUsers();
-
   // get current user role in this project
   const { data: projectData } = useGetProject(id);
   const canManage = projectData ? isProjectAdmin(projectData.currentUserRole) : false;
   const isOwner = projectData ? isProjectOwner(projectData.currentUserRole) : false;
+
+  const { users, isLoading: usersLoading } = useAllUsers({ enabled: canManage });
 
   const members = useMemo(() => data ?? [], [data]);
 
