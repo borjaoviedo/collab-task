@@ -1,7 +1,6 @@
 using Api.Auth.Authorization;
 using Api.Common;
 using Application.Projects.Abstractions;
-using Application.Projects.DTOs;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
@@ -31,8 +30,10 @@ namespace Api.Endpoints
                 var users = await repo.GetAllAsync(ct);
                 var dto = users.Select(u => u.ToReadDto()).ToList();
 
-                await Task.WhenAll(dto.Select(async d =>
-                    d.ProjectMembershipsCount = await membership.CountActiveAsync(d.Id, ct)));
+                foreach (var d in dto)
+                {
+                    d.ProjectMembershipsCount = await membership.CountActiveAsync(d.Id, ct);
+                }
 
                 return Results.Ok(dto);
             })
