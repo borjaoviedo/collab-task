@@ -16,7 +16,7 @@ export default function ProjectBoardPage() {
     return <div className="w-full max-w-6xl px-6 py-8"><p className="text-red-600">Failed to load project.</p></div>;
   }
 
-  const canManageUsers = isProjectAdmin(data.currentUserRole);
+  const canManage = isProjectAdmin(data.currentUserRole);
 
   return (
     <div className="w-full max-w-6xl px-6 py-8 text-[color:var(--color-foreground)]">
@@ -25,9 +25,12 @@ export default function ProjectBoardPage() {
           <h1 className="text-2xl font-semibold">{data.name}</h1>
         </div>
         <div className="flex items-center gap-2">
-          {canManageUsers && (
-            <Button onClick={() => navigate(`/projects/${data.id}/members`)}>
-              Manage users
+          <Button onClick={() => navigate(`/projects/${data.id}/members`)}>
+              See project members
+            </Button>
+          {canManage && (
+            <Button onClick={() => navigate(`/projects/${data.id}/settings`)}>
+              Project settings
             </Button>
           )}
         </div>
