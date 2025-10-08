@@ -34,7 +34,7 @@ function toDomain(dto: ProjectMemberReadDto): ProjectMember {
   return {
     userId: dto.userId ?? "",
     name: dto.userName ?? "",
-    email: "", // backend DTO does not provide email
+    email: dto.email ?? "",
     role: normalizeRole(dto.role),
     removedAt: dto.removedAt ?? null, // satisfy required field in domain
   };
