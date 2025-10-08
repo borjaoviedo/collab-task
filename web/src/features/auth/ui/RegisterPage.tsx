@@ -96,7 +96,6 @@ export function RegisterPage() {
 
     setSubmitting(true);
     try {
-      // UPDATED: include name in request
       await register({ name: name.trim(), email, password });
       navigate("/me", { replace: true });
     } catch (err) {
