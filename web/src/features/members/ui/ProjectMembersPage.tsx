@@ -3,9 +3,10 @@ import { useParams } from "react-router-dom";
 import { useProjectMembers } from "../application/useProjectMembers";
 import { useProjectMemberMutations } from "../application/useProjectMemberMutations";
 import { useAllUsers } from "@features/users/application/useAllUsers";
-
 import { useGetProject } from "@features/projects/application/useGetProject";
 import { isProjectAdmin, isProjectOwner } from "@features/projects/domain/Project";
+import { isSystemAdmin, normalizeSysRole } from "@features/users/domain/User";
+import { useAuthStore } from "@shared/store/auth.store";
 
 import { Label } from "@shared/ui/Label";
 import { Button } from "@shared/ui/Button";
@@ -60,9 +61,13 @@ export default function ProjectMembersPage() {
   // get current user role in this project
   const { data: projectData } = useGetProject(id);
   const canManage = projectData ? isProjectAdmin(projectData.currentUserRole) : false;
+
+  const sysRoleRaw = useAuthStore((s) => s.profile?.role);
+  const canListUsers = isSystemAdmin(normalizeSysRole(sysRoleRaw)); 
+
   const isOwner = projectData ? isProjectOwner(projectData.currentUserRole) : false;
 
-  const { users, isLoading: usersLoading } = useAllUsers({ enabled: canManage });
+  const { users, isLoading: usersLoading } = useAllUsers({ enabled: canListUsers });
 
   const members = useMemo(() => data ?? [], [data]);
 
