@@ -6,6 +6,7 @@ namespace Application.Users.Abstractions
     public interface IUserRepository
     {
         Task AddAsync(User item, CancellationToken ct = default);
+        Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct = default);
         Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
         Task<User?> GetByNameAsync(string name, CancellationToken ct = default);
         Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default);

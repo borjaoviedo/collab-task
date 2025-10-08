@@ -1,3 +1,4 @@
+using Application.Projects.Abstractions;
 using Application.Users.Abstractions;
 using Domain.Common.Exceptions;
 using Domain.Entities;
@@ -37,6 +38,9 @@ namespace Api.Tests.Fakes
             _byId[item.Id] = email;
             return Task.FromResult(item.Id);
         }
+
+        public Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct = default)
+            => Task.FromResult((IReadOnlyList<User>)_byEmail.Values.Select(Clone).ToList());
 
         public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
         {
