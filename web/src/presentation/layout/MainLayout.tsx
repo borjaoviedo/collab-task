@@ -23,6 +23,7 @@ export default function MainLayout() {
 
 export function Header({ isAuth }: { isAuth: boolean }) {
   const { pathname } = useLocation();
+  const logout = useAuthStore((s) => s.logout);
 
   return (
     <header className="flex w-full items-center justify-between px-6 py-4">
@@ -47,6 +48,11 @@ export function Header({ isAuth }: { isAuth: boolean }) {
                 Settings
               </Link>
             )}
+            {
+              <Link to="/" className="underline" onClick={logout}>
+                Sign out
+              </Link>
+            }
           </>
         )}
         <ThemeControls />

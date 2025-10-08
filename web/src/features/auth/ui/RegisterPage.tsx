@@ -11,26 +11,32 @@ import { FormErrorText } from "@shared/ui/FormErrorText";
 import { Checkbox } from "@shared/ui/Checkbox";
 import {
   isValidEmail,
+  isValidUserName,
   passwordError,
   normalizeServerFieldErrors,
 } from "@shared/validation/auth";
+
 
 export function RegisterPage() {
   const isAuth = useAuthStore((s) => s.isAuthenticated);
   const navigate = useNavigate();
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswords, setShowPasswords] = useState(false);
 
   const [wasSubmitted, setWasSubmitted] = useState(false);
+  const [nameFocused, setNameFocused] = useState(false);
   const [pwdFocused, setPwdFocused] = useState(false);
   const [confirmFocused, setConfirmFocused] = useState(false);
+  const [touchedName, setTouchedName] = useState(false);
   const [touchedEmail, setTouchedEmail] = useState(false);
   const [touchedPwd, setTouchedPwd] = useState(false);
   const [touchedConfirm, setTouchedConfirm] = useState(false);
 
+  const nameRef = useRef<HTMLInputElement | null>(null);
   const emailRef = useRef<HTMLInputElement | null>(null);
   const pwdRef = useRef<HTMLInputElement | null>(null);
   const confirmRef = useRef<HTMLInputElement | null>(null);
@@ -41,42 +47,48 @@ export function RegisterPage() {
 
   const fieldErrors = useMemo(() => normalizeServerFieldErrors(uiError), [uiError]);
 
+  const nameOk = isValidUserName(name) === null;
   const pwdOk = passwordError(password) === null;
+  const emailOk = isValidEmail(email);
+  const confirmOk = confirmPassword.length > 0 && password === confirmPassword;
 
+  const showNameVal = (wasSubmitted || touchedName || nameFocused) && name.length > 0;
   const showEmailVal = (wasSubmitted || touchedEmail) && email.length > 0;
   const showPwdVal = (wasSubmitted || touchedPwd || pwdFocused) && password.length > 0;
   const showConfirmVal =
     (wasSubmitted || touchedConfirm || confirmFocused) && confirmPassword.length > 0;
 
-  const emailLocalErr =
-    showEmailVal && !isValidEmail(email) ? "Invalid email format" : null;
+  const nameLocalErr = showNameVal ? isValidUserName(name) : null;
+  const emailLocalErr = showEmailVal && !isValidEmail(email) ? "Invalid email format" : null;
   const pwdLocalErr = showPwdVal ? passwordError(password) : null;
   const confirmLocalErr =
     showConfirmVal && password !== confirmPassword ? "Passwords do not match" : null;
 
+  const serverNameErrs = fieldErrors["name"] ?? [];
   const serverEmailErrs = fieldErrors["email"] ?? [];
   const serverPwdErrs = fieldErrors["password"] ?? [];
 
+  const nameAllErrs = [...(nameLocalErr ? [nameLocalErr] : []), ...serverNameErrs];
   const emailAllErrs = [...(emailLocalErr ? [emailLocalErr] : []), ...serverEmailErrs];
   const pwdAllErrs = [...(pwdLocalErr ? [pwdLocalErr] : []), ...serverPwdErrs];
   const confirmAllErrs = [...(confirmLocalErr ? [confirmLocalErr] : [])];
 
-  const emailOk = isValidEmail(email);
-  const confirmOk = confirmPassword.length > 0 && password === confirmPassword;
-  const canSubmit = emailOk && pwdOk && confirmOk;
+  const canSubmit = nameOk && emailOk && pwdOk && confirmOk;
 
   if (isAuth) return <Navigate to="/me" replace />;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setWasSubmitted(true);
+    setTouchedName(true);
     setTouchedEmail(true);
     setTouchedPwd(true);
     setTouchedConfirm(true);
     setError(null);
 
     if (!canSubmit) {
-      if (!emailOk) emailRef.current?.focus();
+      if (!nameOk) nameRef.current?.focus();
+      else if (!emailOk) emailRef.current?.focus();
       else if (!pwdOk) pwdRef.current?.focus();
       else if (!confirmOk) confirmRef.current?.focus();
       return;
@@ -84,12 +96,14 @@ export function RegisterPage() {
 
     setSubmitting(true);
     try {
-      await register({ email, password });
+      // UPDATED: include name in request
+      await register({ name: name.trim(), email, password });
       navigate("/me", { replace: true });
     } catch (err) {
       setError(err);
       setTimeout(() => {
-        if ((fieldErrors["email"]?.length ?? 0) > 0) emailRef.current?.focus();
+        if ((fieldErrors["name"]?.length ?? 0) > 0) nameRef.current?.focus();
+        else if ((fieldErrors["email"]?.length ?? 0) > 0) emailRef.current?.focus();
         else if ((fieldErrors["password"]?.length ?? 0) > 0) pwdRef.current?.focus();
       }, 0);
     } finally {
@@ -111,6 +125,32 @@ export function RegisterPage() {
         )}
 
         <form onSubmit={onSubmit} className="space-y-4" noValidate aria-describedby={alertId}>
+          <div>
+            <Label htmlFor="name" size="md" requiredMark>Name</Label>
+            <Input
+              ref={nameRef}
+              id="name"
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onFocus={() => setNameFocused(true)}
+              onBlur={() => {
+                setNameFocused(false);
+                setTouchedName(true);
+              }}
+              autoComplete="name"
+              className="mt-1"
+              invalid={nameAllErrs.length > 0}
+              errorId={nameAllErrs.length ? "name-error" : undefined}
+            />
+            {nameAllErrs.length ? (
+              <FormErrorText id="name-error" aria-live="polite">
+                {nameAllErrs.join(" ")}
+              </FormErrorText>
+            ) : null}
+          </div>
+
           <div>
             <Label htmlFor="email" size="md" requiredMark>Email</Label>
             <Input
