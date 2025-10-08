@@ -1,13 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { changeUserRole, deleteUser, renameUser } from "../infrastructure/users.api";
 import type { components } from "@shared/api/types";
+import { normalizeSysRole } from "../domain/User";
 
 type ChangeRoleDto = components["schemas"]["ChangeRoleDto"];
 
 export function useUserRoleMutation(userId: string, rowVersion: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (role: ChangeRoleDto["role"]) => changeUserRole(userId, role, rowVersion),
+    mutationFn: (role: ChangeRoleDto["role"]) => changeUserRole(userId, normalizeSysRole(role), rowVersion),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users", "all"] }),
   });
 }
