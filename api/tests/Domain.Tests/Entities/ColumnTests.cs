@@ -32,7 +32,7 @@ namespace Domain.Tests.Entities
         }
 
         [Fact]
-        public void Lane_Is_Initialized_When_Null_Order()
+        public void Column_Is_Initialized_When_Null_Order()
         {
             var c = Column.Create(Guid.NewGuid(), Guid.NewGuid(), ColumnName.Create("column"), null);
 
@@ -40,12 +40,38 @@ namespace Domain.Tests.Entities
         }
 
         [Fact]
-        public void Lane_Is_Initialized_With_Order_0_When_Negative_Order()
+        public void Column_Is_Initialized_With_Order_0_When_Negative_Order()
         {
             var c = Column.Create(Guid.NewGuid(), Guid.NewGuid(), ColumnName.Create("column"), -1);
 
             c.Name.Value.Should().Be("column");
             c.Order.Should().Be(0);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData("a")]
+        public void Invalid_ColumnName_Throws(string input)
+        {
+            Action act = () => Column.Create(Guid.NewGuid(), Guid.NewGuid(), ColumnName.Create(input), 1);
+            act.Should().Throw<ArgumentException>();
+        }
+
+        [Fact]
+        public void ProjectId_With_Guid_Empty_Throws()
+        {
+            var projectId = Guid.Empty;
+            Action act = () => Column.Create(projectId, Guid.NewGuid(), ColumnName.Create("column"), 1);
+            act.Should().Throw<ArgumentException>();
+        }
+
+        [Fact]
+        public void LaneId_With_Guid_Empty_Throws()
+        {
+            var laneId = Guid.Empty;
+            Action act = () => Column.Create(Guid.NewGuid(), laneId, ColumnName.Create("column"), 1);
+            act.Should().Throw<ArgumentException>();
         }
 
         [Fact]

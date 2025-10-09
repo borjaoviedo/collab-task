@@ -14,13 +14,17 @@ namespace Domain.Entities
         private Lane() { }
 
         public static Lane Create(Guid projectId, LaneName name, int? order)
-            => new()
+        {
+            if (projectId == Guid.Empty) throw new ArgumentException("ProjectId cannot be empty.", nameof(projectId));
+
+            return new()
             {
                 Id = Guid.NewGuid(),
                 ProjectId = projectId,
                 Name = name,
                 Order = Math.Max(0, order ?? 0)
             };
+        }
 
         public void Rename(LaneName name)
         {

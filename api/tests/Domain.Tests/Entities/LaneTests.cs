@@ -47,6 +47,14 @@ namespace Domain.Tests.Entities
         }
 
         [Fact]
+        public void ProjectId_With_Guid_Empty_Throws()
+        {
+            var projectId = Guid.Empty;
+            Action act = () => Lane.Create(projectId, LaneName.Create("Line"), 1);
+            act.Should().Throw<ArgumentException>();
+        }
+
+        [Fact]
         public void Rename_Changes_Name()
         {
             var l = Lane.Create(Guid.NewGuid(), LaneName.Create("Line"), 1);
