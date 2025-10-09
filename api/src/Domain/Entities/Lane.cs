@@ -34,7 +34,7 @@ namespace Domain.Entities
 
         public void Reorder(int order)
         {
-            if (order < 0) throw new ArgumentOutOfRangeException(nameof(order), "Order must be greater than 0.");
+            if (order < 0) throw new ArgumentOutOfRangeException(nameof(order), "Order must be equal or greater than 0.");
             if (Order == order) return;
             Order = order;
         }
