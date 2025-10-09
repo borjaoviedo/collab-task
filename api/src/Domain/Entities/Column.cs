@@ -1,18 +1,15 @@
-using Domain.Common.Abstractions;
 using Domain.ValueObjects;
 using System.ComponentModel.DataAnnotations;
 
 namespace Domain.Entities
 {
-    public sealed class Column : IAuditable
+    public sealed class Column
     {
         public Guid Id { get; set; }
         public Guid LaneId { get; set; }
         public Guid ProjectId { get; set; }
         public required ColumnName Name { get; set; }
         public int Order { get; set; }
-        public DateTimeOffset CreatedAt { get; set; }
-        public DateTimeOffset UpdatedAt { get; set; }
         [Timestamp] public byte[] RowVersion { get; set; } = default!;
 
         private Column() { }
@@ -40,7 +37,7 @@ namespace Domain.Entities
 
         public void Reorder(int order)
         {
-            if (order < 0) throw new ArgumentOutOfRangeException(nameof(order), "Order must be greater than 0.");
+            if (order < 0) throw new ArgumentOutOfRangeException(nameof(order), "Order must be equal or greater than 0.");
             if (Order == order) return;
             Order = order;
         }
