@@ -10,44 +10,59 @@ namespace Infrastructure.Data.Configurations
         {
             e.ToTable("ProjectMembers", t =>
             {
-                t.HasCheckConstraint("CK_ProjectMembers_Role", "[Role] IN (0,1,2,3)");
-                t.HasCheckConstraint("CK_ProjectMembers_RemovedAt_After_JoinedAt",
+                t.HasCheckConstraint(
+                    "CK_ProjectMembers_RemovedAt_After_JoinedAt",
                     "[RemovedAt] IS NULL OR [RemovedAt] >= [JoinedAt]");
             });
 
-            e.HasKey(pm => new { pm.ProjectId, pm.UserId });
+            // Composite Primary Key
+            e.HasKey(m => new { m.ProjectId, m.UserId });
 
-            e.HasIndex(pm => pm.UserId);
-            e.HasIndex(pm => new { pm.ProjectId, pm.Role });
-            e.HasIndex(pm => new { pm.ProjectId, pm.RemovedAt });
+            // Relationship: 1 Project - N Members
+            e.HasOne(m => m.Project)
+                .WithMany(p => p.Members)
+                .HasForeignKey(m => m.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            e.HasIndex(pm => pm.ProjectId)
-                 .HasFilter("[Role] = 0 AND [RemovedAt] IS NULL")
-                 .IsUnique();
+            // Relationship: 1 User - N ProjectMemberships
+            e.HasOne(m => m.User)
+                .WithMany(u => u.ProjectMemberships)
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            e.Property(pm => pm.Role).IsRequired();
+            // Role
+            e.Property(m => m.Role)
+                .IsRequired()
+                .HasConversion<string>()
+                .HasMaxLength(20);
 
-            e.Property(pm => pm.JoinedAt)
+            // Timestamps
+            e.Property(m => m.JoinedAt)
                 .HasColumnType("datetimeoffset")
                 .IsRequired();
 
-            e.Property(pm => pm.RemovedAt)
+            e.Property(m => m.RemovedAt)
                 .HasColumnType("datetimeoffset")
                 .IsRequired(false);
 
-            e.Property(pm => pm.RowVersion)
-                .IsRowVersion()
-                .IsConcurrencyToken();
+            // Concurrency token
+            e.Property(m => m.RowVersion).IsRowVersion();
 
-            e.HasOne(pm => pm.Project)
-                .WithMany(p => p.Members)
-                .HasForeignKey(pm => pm.ProjectId)
-                .OnDelete(DeleteBehavior.Cascade);
+            // Indexes
+            e.HasIndex(pm => pm.UserId)
+           .HasDatabaseName("IX_ProjectMembers_UserId");
 
-            e.HasOne(pm => pm.User)
-                .WithMany(u => u.ProjectMemberships)
-                .HasForeignKey(pm => pm.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(pm => new { pm.ProjectId, pm.Role })
+                .HasDatabaseName("IX_ProjectMembers_ProjectId_Role");
+
+            e.HasIndex(pm => new { pm.ProjectId, pm.RemovedAt })
+                .HasDatabaseName("IX_ProjectMembers_ProjectId_RemovedAt");
+
+            // Exactly one active Owner per project
+            e.HasIndex(pm => pm.ProjectId)
+                .IsUnique()
+                .HasFilter("[Role] = 'Owner' AND [RemovedAt] IS NULL")
+                .HasDatabaseName("UX_ProjectMembers_ProjectId_ActiveOwner");
         }
     }
 }

@@ -12,19 +12,22 @@ namespace Infrastructure.Data.Configurations
         {
             e.ToTable("Users", t =>
             {
-                t.HasCheckConstraint("CK_Users_Email_NotEmpty", "[Email] <> ''");
-                t.HasCheckConstraint("CK_Users_Name_NotEmpty", "[Name] <> ''");
-                t.HasCheckConstraint("CK_Users_PasswordHash_Length", "DATALENGTH([PasswordHash]) = 32");
-                t.HasCheckConstraint("CK_Users_PasswordSalt_Length", "DATALENGTH([PasswordSalt]) = 16");
+                t.HasCheckConstraint("CK_Users_Email_NotEmpty", "LEN(LTRIM(RTRIM([Email]))) > 0");
+                t.HasCheckConstraint("CK_Users_Name_NotEmpty", "LEN(LTRIM(RTRIM([Name]))) > 0");
+                t.HasCheckConstraint("CK_Users_PasswordHash_Length_32", "DATALENGTH([PasswordHash]) = 32");
+                t.HasCheckConstraint("CK_Users_PasswordSalt_Length_16", "DATALENGTH([PasswordSalt]) = 16");
             });
 
             e.HasKey(u => u.Id);
-
-            e.HasIndex(u => u.Email).IsUnique();
-            e.HasIndex(u => u.Name).IsUnique();
-
             e.Property(u => u.Id).ValueGeneratedNever();
 
+            // Relationship: 1 User - N ProjectMemberships
+            e.HasMany(u => u.ProjectMemberships)
+                .WithOne(pm => pm.User)
+                .HasForeignKey(pm => pm.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // VOs
             var emailConversion = new ValueConverter<Email, string>(
                 toDb => toDb.Value,
                 fromDb => Email.Create(fromDb));
@@ -43,25 +46,36 @@ namespace Infrastructure.Data.Configurations
                 .HasMaxLength(100)
                 .IsRequired();
 
+            // Password
             e.Property(u => u.PasswordHash)
-                .HasMaxLength(32)
+                .HasColumnType("varbinary(32)")
                 .IsRequired();
 
             e.Property(u => u.PasswordSalt)
-                .HasMaxLength(16)
+                .HasColumnType("varbinary(16)")
                 .IsRequired();
 
+            // Role
+            e.Property(u => u.Role)
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .IsRequired();
+
+            // Timestamps
             e.Property(u => u.CreatedAt).HasColumnType("datetimeoffset");
             e.Property(u => u.UpdatedAt).HasColumnType("datetimeoffset");
 
-            e.Property(u => u.RowVersion)
-                .IsRowVersion()
-                .IsConcurrencyToken();
+            // Concurrency token
+            e.Property(u => u.RowVersion).IsRowVersion();
 
-            e.HasMany(u => u.ProjectMemberships)
-                .WithOne(pm => pm.User)
-                .HasForeignKey(pm => pm.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+            // Indexes
+            e.HasIndex(u => u.Email)
+                .IsUnique()
+                .HasDatabaseName("UX_Users_Email");
+
+            e.HasIndex(u => u.Name)
+                .IsUnique()
+                .HasDatabaseName("IX_Users_Name");
         }
     }
 }
