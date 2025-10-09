@@ -20,6 +20,8 @@ namespace Domain.Entities
 
         public static Project Create(Guid ownerId, ProjectName name, DateTimeOffset nowUtc)
         {
+            if (ownerId == Guid.Empty) throw new ArgumentException("OwnerId cannot be empty.", nameof(ownerId));
+
             var p = new Project()
             {
                 Id = Guid.NewGuid(),
@@ -34,6 +36,8 @@ namespace Domain.Entities
 
         public void Rename(ProjectName newName)
         {
+            if (Name.Equals(newName)) return;
+
             Name = newName;
             Slug = ProjectSlug.Create(newName);
         }
