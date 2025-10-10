@@ -10,12 +10,7 @@ namespace Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<TaskItem> e)
         {
-            e.ToTable("Tasks", t =>
-            {
-                t.HasCheckConstraint("CK_Tasks_Title_NotEmpty", "LEN(LTRIM(RTRIM([Title]))) > 0");
-                t.HasCheckConstraint("CK_Tasks_Description_NotEmpty", "LEN(LTRIM(RTRIM([Description]))) > 0");
-                t.HasCheckConstraint("CK_Tasks_SortKey_NonNegative", "[SortKey] >= 0");
-            });
+            e.ToTable("Tasks");
 
             e.HasKey(t => t.Id);
             e.Property(t => t.Id).ValueGeneratedNever();

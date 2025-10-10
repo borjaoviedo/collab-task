@@ -8,12 +8,7 @@ namespace Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<ProjectMember> e)
         {
-            e.ToTable("ProjectMembers", t =>
-            {
-                t.HasCheckConstraint(
-                    "CK_ProjectMembers_RemovedAt_After_JoinedAt",
-                    "[RemovedAt] IS NULL OR [RemovedAt] >= [JoinedAt]");
-            });
+            e.ToTable("ProjectMembers");
 
             // Composite Primary Key
             e.HasKey(m => new { m.ProjectId, m.UserId });

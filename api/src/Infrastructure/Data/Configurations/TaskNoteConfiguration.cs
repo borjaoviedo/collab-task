@@ -10,10 +10,7 @@ namespace Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<TaskNote> e)
         {
-            e.ToTable("Notes", t =>
-            {
-                t.HasCheckConstraint("CK_Notes_Content_NotEmpty", "LEN(LTRIM(RTRIM([Content]))) > 0");
-            });
+            e.ToTable("Notes");
 
             e.HasKey(n => n.Id);
             e.Property(n => n.Id).ValueGeneratedNever();

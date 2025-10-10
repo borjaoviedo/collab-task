@@ -10,11 +10,7 @@ namespace Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<Column> e)
         {
-            e.ToTable("Columns", t =>
-            {
-                t.HasCheckConstraint("CK_Columns_Name_NotEmpty", "LEN(LTRIM(RTRIM([Name]))) > 0");
-                t.HasCheckConstraint("CK_Columns_Order_NonNegative", "[Order] >= 0");
-            });
+            e.ToTable("Columns");
 
             e.HasKey(c => c.Id);
             e.Property(c => c.Id).ValueGeneratedNever();

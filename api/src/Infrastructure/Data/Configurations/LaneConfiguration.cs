@@ -10,11 +10,7 @@ namespace Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<Lane> e)
         {
-            e.ToTable("Lanes", t =>
-            {
-                t.HasCheckConstraint("CK_Lanes_Name_NotEmpty", "LEN(LTRIM(RTRIM([Name]))) > 0");
-                t.HasCheckConstraint("CK_Lanes_Order_NonNegative", "[Order] >= 0");
-            });
+            e.ToTable("Lanes");
 
             e.HasKey(l => l.Id);
             e.Property(l => l.Id).ValueGeneratedNever();

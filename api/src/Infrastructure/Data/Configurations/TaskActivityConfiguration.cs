@@ -10,10 +10,7 @@ namespace Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<TaskActivity> e)
         {
-            e.ToTable("TaskActivities", t =>
-            {
-                t.HasCheckConstraint("CK_TaskActivities_Payload_NotEmpty", "LEN(LTRIM(RTRIM([Payload]))) > 0");
-            });
+            e.ToTable("TaskActivities");
 
             e.HasKey(a => a.Id);
             e.Property(a => a.Id).ValueGeneratedNever();

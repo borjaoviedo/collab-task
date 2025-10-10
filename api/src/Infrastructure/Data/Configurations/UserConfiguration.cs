@@ -10,13 +10,7 @@ namespace Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<User> e)
         {
-            e.ToTable("Users", t =>
-            {
-                t.HasCheckConstraint("CK_Users_Email_NotEmpty", "LEN(LTRIM(RTRIM([Email]))) > 0");
-                t.HasCheckConstraint("CK_Users_Name_NotEmpty", "LEN(LTRIM(RTRIM([Name]))) > 0");
-                t.HasCheckConstraint("CK_Users_PasswordHash_Length_32", "DATALENGTH([PasswordHash]) = 32");
-                t.HasCheckConstraint("CK_Users_PasswordSalt_Length_16", "DATALENGTH([PasswordSalt]) = 16");
-            });
+            e.ToTable("Users");
 
             e.HasKey(u => u.Id);
             e.Property(u => u.Id).ValueGeneratedNever();
