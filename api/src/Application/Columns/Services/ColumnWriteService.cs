@@ -5,7 +5,7 @@ using Domain.ValueObjects;
 
 namespace Application.Columns.Services
 {
-    public sealed class ColumnWriteService(IColumnRepository repo)
+    public sealed class ColumnWriteService(IColumnRepository repo) : IColumnWriteService
     {
         public async Task<(DomainMutation, Column?)> CreateAsync(Guid projectId, Guid laneId, string name, int? order = null, CancellationToken ct = default)
         {

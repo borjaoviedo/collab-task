@@ -5,7 +5,7 @@ using Domain.ValueObjects;
 
 namespace Application.Lanes.Services
 {
-    public sealed class LaneWriteService(ILaneRepository repo)
+    public sealed class LaneWriteService(ILaneRepository repo) : ILaneWriteService
     {
         public async Task<(DomainMutation, Lane?)> CreateAsync(Guid projectId, string name, int? order = null, CancellationToken ct = default)
         {
