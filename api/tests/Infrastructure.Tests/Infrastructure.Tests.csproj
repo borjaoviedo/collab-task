@@ -37,6 +37,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Infrastructure\Infrastructure.csproj" />
+    <ProjectReference Include="..\TestHelpers\TestHelpers.csproj" />
   </ItemGroup>
 
 </Project>
