@@ -236,6 +236,13 @@ namespace Infrastructure.Data
                     .IsConcurrencyToken()
                     .ValueGeneratedOnAddOrUpdate()
                     .HasDefaultValueSql("randomblob(8)");
+
+                var dtoToLong = new ValueConverter<DateTimeOffset, long>(
+                    v => v.ToUnixTimeMilliseconds(),
+                    v => DateTimeOffset.FromUnixTimeMilliseconds(v));
+
+                e.Property(n => n.CreatedAt).HasConversion(dtoToLong);
+                e.Property(n => n.UpdatedAt).HasConversion(dtoToLong);
             });
 
             modelBuilder.Entity<User>(e =>
