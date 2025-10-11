@@ -1,0 +1,12 @@
+using Domain.Entities;
+using Domain.Enums;
+
+namespace Application.TaskNotes.Abstractions
+{
+    public interface ITaskNoteWriteService
+    {
+        Task<(DomainMutation, TaskNote?)> CreateAsync(Guid taskId, Guid authorId, string content, CancellationToken ct = default);
+        Task<DomainMutation> EditAsync(Guid noteId, string content, byte[] rowVersion, CancellationToken ct = default);
+        Task<DomainMutation> DeleteAsync(Guid noteId, byte[] rowVersion, CancellationToken ct = default);
+    }
+}
