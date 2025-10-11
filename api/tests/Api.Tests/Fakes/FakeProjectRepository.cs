@@ -8,9 +8,10 @@ namespace Api.Tests.Fakes
 {
     public sealed class FakeProjectRepository : IProjectRepository
     {
-        // ProjectId -> Project
+        // ProjectId -> tracked Project
         private readonly ConcurrentDictionary<Guid, Project> _byId = new();
-        // (OwnerId, ProjectName.Value) unique index
+
+        // (OwnerId, Name) unique index
         private readonly ConcurrentDictionary<(Guid OwnerId, string Name), byte> _nameIndex = new();
 
         // simple rowversion counter
@@ -24,7 +25,14 @@ namespace Api.Tests.Fakes
             return Task.FromResult<Project?>(null);
         }
 
-        public Task<IReadOnlyList<Project>> GetByUserAsync(Guid userId, ProjectFilter? filter = null, CancellationToken ct = default)
+        public Task<Project?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default)
+        {
+            _byId.TryGetValue(id, out var p);
+            // return tracked instance to simulate EF tracking
+            return Task.FromResult<Project?>(p);
+        }
+
+        public Task<IReadOnlyList<Project>> GetAllByUserAsync(Guid userId, ProjectFilter? filter = null, CancellationToken ct = default)
         {
             filter ??= new ProjectFilter();
             var includeRemoved = filter.IncludeRemoved == true;
@@ -46,7 +54,7 @@ namespace Api.Tests.Fakes
                 q = q.Where(p => p.Members.Any(m => m.UserId == userId && m.Role == role && (includeRemoved || m.RemovedAt is null)));
             }
 
-            q = (filter.OrderBy?.ToLowerInvariant()) switch
+            q = filter.OrderBy?.ToLowerInvariant() switch
             {
                 "name" => q.OrderBy(p => p.Name.Value).ThenBy(p => p.Id),
                 "name_desc" => q.OrderByDescending(p => p.Name.Value).ThenBy(p => p.Id),
@@ -68,7 +76,7 @@ namespace Api.Tests.Fakes
         {
             ArgumentNullException.ThrowIfNull(project);
 
-            // ensure rowversion and slug
+            // ensure rowversion and slug like EF side-effects
             if (project.RowVersion is null || project.RowVersion.Length == 0)
                 project.RowVersion = NextRowVersion();
 
@@ -98,20 +106,18 @@ namespace Api.Tests.Fakes
             if (!RowVersionEquals(current.RowVersion, rowVersion))
                 return Task.FromResult(DomainMutation.Conflict);
 
-            // uniqueness check per owner
+            // uniqueness per owner
             if (_nameIndex.ContainsKey((current.OwnerId, newName)))
                 return Task.FromResult(DomainMutation.Conflict);
 
-            var updated = CloneProject(current, includeRemovedMembers: true);
-            updated.Rename(ProjectName.Create(newName));
-            updated.Slug = ProjectSlug.Create(newName);
-            updated.RowVersion = NextRowVersion();
-
-            _byId[id] = updated;
+            // mutate tracked instance to simulate EF
+            current.Rename(ProjectName.Create(newName));
+            current.Slug = ProjectSlug.Create(newName);
+            current.RowVersion = NextRowVersion();
 
             // update name index
             _nameIndex.TryRemove((current.OwnerId, current.Name.Value), out _);
-            _nameIndex.TryAdd((updated.OwnerId, updated.Name.Value), 0);
+            _nameIndex.TryAdd((current.OwnerId, newName), 0);
 
             return Task.FromResult(DomainMutation.Updated);
         }
@@ -132,14 +138,15 @@ namespace Api.Tests.Fakes
             return Task.FromResult(DomainMutation.Deleted);
         }
 
-        public Task<bool> ExistsByNameAsync(Guid ownerId, ProjectName name, CancellationToken ct = default)
-            => Task.FromResult(_nameIndex.ContainsKey((ownerId, name.Value)));
+        public Task<bool> ExistsByNameAsync(Guid ownerId, string name, CancellationToken ct = default)
+            => Task.FromResult(_nameIndex.ContainsKey((ownerId, name)));
+
+        public Task<int> SaveChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
 
         // ----------------- helpers -----------------
 
-
         private static bool RowVersionEquals(byte[] a, byte[] b)
-            => a.Length == b.Length && a.SequenceEqual(b);
+            => a is not null && b is not null && a.Length == b.Length && a.SequenceEqual(b);
 
         private byte[] NextRowVersion()
             => BitConverter.GetBytes(Interlocked.Increment(ref _rv));
@@ -147,19 +154,20 @@ namespace Api.Tests.Fakes
         private static Project CloneProject(Project p, bool includeRemovedMembers)
         {
             // shallow clone of core fields
-            var clone = Project.Create(p.OwnerId, p.Name, DateTimeOffset.UtcNow);
+            var clone = Project.Create(p.OwnerId, p.Name, p.CreatedAt);
             clone.Id = p.Id;
             clone.CreatedAt = p.CreatedAt;
             clone.UpdatedAt = p.UpdatedAt;
             clone.Slug = p.Slug;
-            clone.RowVersion = (p.RowVersion is null) ? Array.Empty<byte>() : p.RowVersion.ToArray();
+            clone.RowVersion = (p.RowVersion is null) ? [] : p.RowVersion.ToArray();
 
-            // members
             foreach (var m in p.Members)
             {
                 if (!includeRemovedMembers && m.RemovedAt is not null) continue;
+
                 var cm = ProjectMember.Create(m.ProjectId, m.UserId, m.Role, m.JoinedAt);
-                cm.RowVersion = (m.RowVersion is null) ? Array.Empty<byte>() : m.RowVersion.ToArray();
+                cm.RowVersion = (m.RowVersion is null) ? [] : m.RowVersion.ToArray();
+                cm.Remove(m.RemovedAt);
                 clone.Members.Add(cm);
             }
 

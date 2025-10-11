@@ -1,6 +1,4 @@
-using Application.Projects.Abstractions;
 using Application.Users.Abstractions;
-using Domain.Common.Exceptions;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -10,14 +8,10 @@ namespace Api.Tests.Fakes
 {
     public sealed class FakeUserRepository : IUserRepository
     {
-        // Email -> User (case-insensitive)
-        private readonly ConcurrentDictionary<string, User> _byEmail = new(StringComparer.OrdinalIgnoreCase);
-
-        // Name -> User (case-insensitive)
-        private readonly ConcurrentDictionary<string, User> _byName = new(StringComparer.OrdinalIgnoreCase);
-
-        // Id -> Email
-        private readonly ConcurrentDictionary<Guid, string> _byId = new();
+        // Case-insensitive indexes
+        private readonly ConcurrentDictionary<Guid, User> _byId = new();
+        private readonly ConcurrentDictionary<string, Guid> _idByEmail = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, Guid> _idByName = new(StringComparer.OrdinalIgnoreCase);
 
         // simple rowversion counter
         private long _rv = 1;
@@ -25,135 +19,128 @@ namespace Api.Tests.Fakes
         public Task AddAsync(User item, CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(item);
-            var email = item.Email.Value;
 
-            if (!_byEmail.TryAdd(email, PrepareForInsert(item)))
-                throw new DuplicateEntityException("Could not complete registration.");
+            if (item.RowVersion is null || item.RowVersion.Length == 0)
+                item.RowVersion = NextRowVersion();
 
-            var name = item.Name.Value;
+            var copy = Clone(item);
+            _byId[item.Id] = copy;
+            _idByEmail[item.Email.Value] = item.Id;
+            _idByName[item.Name.Value] = item.Id;
 
-            if (!_byName.TryAdd(name, PrepareForInsert(item)))
-                throw new DuplicateEntityException("Could not complete registration.");
-
-            _byId[item.Id] = email;
-            return Task.FromResult(item.Id);
+            return Task.CompletedTask;
         }
 
         public Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct = default)
-            => Task.FromResult((IReadOnlyList<User>)_byEmail.Values.Select(Clone).ToList());
+        {
+            var list = _byId.Values
+                .Select(Clone)
+                .OrderBy(u => u.Name.Value)
+                .ToList()
+                .AsReadOnly();
+
+            return Task.FromResult((IReadOnlyList<User>)list);
+        }
 
         public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
         {
-            if (_byEmail.TryGetValue(email, out var u))
-                return Task.FromResult<User?>(Clone(u));
-
-            return Task.FromResult<User?>(null);
+            if (email is null) return Task.FromResult<User?>(null);
+            return Task.FromResult(TryGetByEmail(email, out var u) ? Clone(u) : null);
         }
 
         public Task<User?> GetByNameAsync(string name, CancellationToken ct = default)
         {
-            if (_byName.TryGetValue(name, out var u))
-                return Task.FromResult<User?>(Clone(u));
-
-            return Task.FromResult<User?>(null);
+            if (name is null) return Task.FromResult<User?>(null);
+            return Task.FromResult(TryGetByName(name, out var u) ? Clone(u) : null);
         }
 
         public Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        {
-            if (_byId.TryGetValue(id, out var email) && _byEmail.TryGetValue(email, out var u))
-                return Task.FromResult<User?>(Clone(u));
+            => Task.FromResult(_byId.TryGetValue(id, out var u) ? Clone(u) : null);
 
-            return Task.FromResult<User?>(null);
-        }
+        public Task<User?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default)
+            => Task.FromResult(_byId.TryGetValue(id, out var u) ? u : null);
 
         public Task<DomainMutation> RenameAsync(Guid id, string newName, byte[] rowVersion, CancellationToken ct = default)
         {
-            if (rowVersion is null || rowVersion.Length == 0)
-                return Task.FromResult(DomainMutation.Conflict);
+            if (rowVersion is null || rowVersion.Length == 0) return Task.FromResult(DomainMutation.Conflict);
+            if (!_byId.TryGetValue(id, out var user)) return Task.FromResult(DomainMutation.NotFound);
 
-            if (!_byId.TryGetValue(id, out var email))
-                return Task.FromResult(DomainMutation.NotFound);
-
-            if (!_byEmail.TryGetValue(email, out var current))
-                return Task.FromResult(DomainMutation.NotFound);
-
-            if (!RowVersionEquals(current.RowVersion, rowVersion) || current.Name == UserName.Create(newName))
+            if (string.Equals(user.Name.Value, newName, StringComparison.Ordinal))
                 return Task.FromResult(DomainMutation.NoOp);
 
-            var updated = Clone(current);
-            updated.Name = UserName.Create(newName);
-            updated.RowVersion = NextRowVersion();
+            if (_idByName.TryGetValue(newName, out var otherId) && otherId != id)
+                return Task.FromResult(DomainMutation.Conflict);
 
-            _byEmail[email] = updated;
+            if (!RowVersionEquals(user.RowVersion, rowVersion))
+                return Task.FromResult(DomainMutation.Conflict);
+
+            _idByName.TryRemove(user.Name.Value, out _);
+            user.Rename(UserName.Create(newName));
+            user.RowVersion = NextRowVersion();
+            _idByName[user.Name.Value] = id;
 
             return Task.FromResult(DomainMutation.Updated);
         }
 
         public Task<DomainMutation> ChangeRoleAsync(Guid id, UserRole role, byte[] rowVersion, CancellationToken ct = default)
         {
-            if (rowVersion is null || rowVersion.Length == 0)
+            if (rowVersion is null || rowVersion.Length == 0) return Task.FromResult(DomainMutation.Conflict);
+            if (!_byId.TryGetValue(id, out var user)) return Task.FromResult(DomainMutation.NotFound);
+
+            if (user.Role == role) return Task.FromResult(DomainMutation.NoOp);
+
+            if (!RowVersionEquals(user.RowVersion, rowVersion))
                 return Task.FromResult(DomainMutation.Conflict);
 
-            if (!_byId.TryGetValue(id, out var email))
-                return Task.FromResult(DomainMutation.NotFound);
+            user.ChangeRole(role);
+            user.RowVersion = NextRowVersion();
 
-            if (!_byEmail.TryGetValue(email, out var current))
-                return Task.FromResult(DomainMutation.NotFound);
-
-            if (!RowVersionEquals(current.RowVersion, rowVersion) || current.Role == role)
-                return Task.FromResult(DomainMutation.NoOp);
-
-            var updated = Clone(current);
-            updated.Role = role;
-            updated.RowVersion = NextRowVersion();
-
-            _byEmail[email] = updated;
             return Task.FromResult(DomainMutation.Updated);
         }
 
         public Task<DomainMutation> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default)
         {
-            if (rowVersion is null || rowVersion.Length == 0)
+            if (rowVersion is null || rowVersion.Length == 0) return Task.FromResult(DomainMutation.Conflict);
+            if (!_byId.TryGetValue(id, out var user)) return Task.FromResult(DomainMutation.NotFound);
+
+            if (!RowVersionEquals(user.RowVersion, rowVersion))
                 return Task.FromResult(DomainMutation.Conflict);
 
-            if (!_byId.TryGetValue(id, out var email))
-                return Task.FromResult(DomainMutation.NotFound);
-
-            if (!_byEmail.TryGetValue(email, out var current))
-                return Task.FromResult(DomainMutation.NotFound);
-
-            if (!RowVersionEquals(current.RowVersion, rowVersion))
-                return Task.FromResult(DomainMutation.Conflict);
-
-            _byEmail.TryRemove(email, out _);
-            _byName.TryRemove(current.Name.Value, out _);
             _byId.TryRemove(id, out _);
+            _idByEmail.TryRemove(user.Email.Value, out _);
+            _idByName.TryRemove(user.Name.Value, out _);
+
             return Task.FromResult(DomainMutation.Deleted);
         }
 
-        public Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default)
-            => Task.FromResult(_byEmail.ContainsKey(email));
-
-        public Task<bool> ExistsByNameAsync(string name, CancellationToken ct = default)
-            => Task.FromResult(_byName.ContainsKey(name));
-
-        public Task<bool> AnyAdminAsync(CancellationToken ct = default)
-            => Task.FromResult(_byEmail.Values.Any(u => u.Role == UserRole.Admin));
-
-        public Task<int> CountAdminsAsync(CancellationToken ct = default)
-            => Task.FromResult(_byEmail.Values.Count(u => u.Role == UserRole.Admin));
-
-        // ----------------- helpers -----------------
-
-        private User PrepareForInsert(User u)
+        public Task<bool> ExistsWithEmailAsync(string email, Guid? excludeUserId = null, CancellationToken ct = default)
         {
-            if (u.RowVersion is null || u.RowVersion.Length == 0)
-                u.RowVersion = NextRowVersion();
-            return Clone(u);
+            if (email is null) return Task.FromResult(false);
+            var exists = _idByEmail.TryGetValue(email, out var id);
+            if (!exists) return Task.FromResult(false);
+            return Task.FromResult(!excludeUserId.HasValue || excludeUserId.Value != id);
         }
 
+        public Task<bool> ExistsWithNameAsync(string name, Guid? excludeUserId = null, CancellationToken ct = default)
+        {
+            if (name is null) return Task.FromResult(false);
+            var exists = _idByName.TryGetValue(name, out var id);
+            if (!exists) return Task.FromResult(false);
+            return Task.FromResult(!excludeUserId.HasValue || excludeUserId.Value != id);
+        }
+
+        public Task<bool> AnyAdminAsync(CancellationToken ct = default)
+            => Task.FromResult(_byId.Values.Any(u => u.Role == UserRole.Admin));
+
+        public Task<int> CountAdminsAsync(CancellationToken ct = default)
+            => Task.FromResult(_byId.Values.Count(u => u.Role == UserRole.Admin));
+
+        public Task<int> SaveChangesAsync(CancellationToken ct = default)
+            => Task.FromResult(0); // No-op
+
+        // ----------------- helpers -----------------
         private static bool RowVersionEquals(byte[] a, byte[] b)
-            => a.Length == b.Length && a.SequenceEqual(b);
+            => a is not null && b is not null && a.Length == b.Length && a.SequenceEqual(b);
 
         private byte[] NextRowVersion()
             => BitConverter.GetBytes(Interlocked.Increment(ref _rv));
@@ -166,6 +153,28 @@ namespace Api.Tests.Fakes
             clone.UpdatedAt = u.UpdatedAt;
             clone.RowVersion = (u.RowVersion is null) ? Array.Empty<byte>() : u.RowVersion.ToArray();
             return clone;
+        }
+
+        private bool TryGetByEmail(string email, out User user)
+        {
+            user = default!;
+            if (_idByEmail.TryGetValue(email, out var id) && _byId.TryGetValue(id, out var found))
+            {
+                user = found;
+                return true;
+            }
+            return false;
+        }
+
+        private bool TryGetByName(string name, out User user)
+        {
+            user = default!;
+            if (_idByName.TryGetValue(name, out var id) && _byId.TryGetValue(id, out var found))
+            {
+                user = found;
+                return true;
+            }
+            return false;
         }
     }
 }
