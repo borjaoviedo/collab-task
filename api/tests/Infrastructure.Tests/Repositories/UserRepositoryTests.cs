@@ -1,4 +1,3 @@
-using Application.Common.Exceptions;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -11,9 +10,8 @@ namespace Infrastructure.Tests.Repositories
 {
     public sealed class UserRepositoryTests
     {
-
         [Fact]
-        public async Task CreateAsync_Persists_User()
+        public async Task AddAsync_Persists_User()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -23,7 +21,6 @@ namespace Infrastructure.Tests.Repositories
             var u = User.Create(Email.Create(email), UserName.Create("User Name"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
 
             await repo.AddAsync(u);
-            await repo.SaveChangesAsync();
 
             var id = u.Id;
             id.Should().Be(u.Id);
@@ -89,24 +86,56 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task GetByIdAsync_Returns_User_When_Exists_Null_Otherwise()
+        public async Task GetTrackedByIdAsync_Returns_User_When_Exists_Null_Otherwise()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
             var u = TestDataFactory.SeedUser(db);
-            var found = await repo.GetByIdAsync(u.Id);
+            var found = await repo.GetTrackedByIdAsync(u.Id);
 
             found.Should().NotBeNull();
             found.Id.Should().Be(u.Id);
 
-            var notFound = await repo.GetByIdAsync(Guid.NewGuid());
+            var notFound = await repo.GetTrackedByIdAsync(Guid.NewGuid());
             notFound.Should().BeNull();
         }
 
         [Fact]
-        public async Task ExistsByEmailAsync_True_When_Exists_False_Otherwise()
+        public async Task GetAllAsync_Returns_All_Users_List()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new UserRepository(db);
+
+            TestDataFactory.SeedUser(db);
+            var list = await repo.GetAllAsync();
+            list.Should().NotBeNull();
+            list.Count.Should().Be(1);
+
+            TestDataFactory.SeedUser(db);
+            list = await repo.GetAllAsync();
+            list.Count.Should().Be(2);
+
+            TestDataFactory.SeedUser(db);
+            list = await repo.GetAllAsync();
+            list.Count.Should().Be(3);
+        }
+
+        [Fact]
+        public async Task GetAllAsync_Returns_Empty_List_When_No_Users()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new UserRepository(db);
+
+            var list = await repo.GetAllAsync();
+            list.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task ExistsWithEmailAsync_True_When_Exists_False_Otherwise()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -120,7 +149,7 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task ExistsByNameAsync_True_When_Exists_False_Otherwise()
+        public async Task ExistsWithNameAsync_True_When_Exists_False_Otherwise()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
