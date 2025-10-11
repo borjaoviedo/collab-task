@@ -23,7 +23,6 @@ namespace Infrastructure.Tests.Repositories
 
             var task = TaskItem.Create(cId, lId, pId, TaskTitle.Create(taskTitle), TaskDescription.Create(taskDescription));
             await repo.AddAsync(task);
-            await repo.SaveChangesAsync();
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync(t => t.Id == task.Id);
             fromDb.Title.Value.Should().Be(taskTitle);

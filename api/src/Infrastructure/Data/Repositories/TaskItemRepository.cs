@@ -32,7 +32,10 @@ namespace Infrastructure.Data.Repositories
                         .ToListAsync(ct);
 
         public async Task AddAsync(TaskItem task, CancellationToken ct = default)
-            => await _db.TaskItems.AddAsync(task, ct);
+        {
+            await _db.TaskItems.AddAsync(task, ct);
+            await SaveChangesAsync(ct);
+        }
 
         public async Task<DomainMutation> EditAsync(Guid taskId, string? newTitle, string? newDescription, DateTimeOffset? newDueDate,
             byte[] rowVersion, CancellationToken ct = default)
