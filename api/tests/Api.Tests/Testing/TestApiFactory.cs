@@ -1,7 +1,10 @@
 using Api.Tests.Fakes;
 using Application.ProjectMembers.Abstractions;
+using Application.ProjectMembers.Services;
 using Application.Projects.Abstractions;
+using Application.Projects.Services;
 using Application.Users.Abstractions;
+using Application.Users.Services;
 using Infrastructure.Security;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -34,17 +37,41 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(DbContextOptions<>));
                 services.RemoveAll(typeof(DbContext));
 
+                // User
                 services.RemoveAll(typeof(IUserRepository));
                 services.AddSingleton<IUserRepository, FakeUserRepository>();
 
+                services.RemoveAll(typeof(IUserReadService));
+                services.AddScoped<IUserReadService>(sp =>
+                    new UserReadService(sp.GetRequiredService<IUserRepository>()));
+
+                services.RemoveAll(typeof(IUserWriteService));
+                services.AddScoped<IUserWriteService>(sp =>
+                    new UserWriteService(sp.GetRequiredService<IUserRepository>()));
+
+                // Project
                 services.RemoveAll(typeof(IProjectRepository));
                 services.AddSingleton<IProjectRepository, FakeProjectRepository>();
 
+                services.RemoveAll(typeof(IProjectReadService));
+                services.AddScoped<IProjectReadService>(sp =>
+                    new ProjectReadService(sp.GetRequiredService<IProjectRepository>()));
+
+                services.RemoveAll(typeof(IProjectWriteService));
+                services.AddScoped<IProjectWriteService>(sp =>
+                    new ProjectWriteService(sp.GetRequiredService<IProjectRepository>()));
+
+                // Project member
                 services.RemoveAll(typeof(IProjectMemberRepository));
                 services.AddSingleton<IProjectMemberRepository, FakeProjectMemberRepository>();
 
                 services.RemoveAll(typeof(IProjectMemberReadService));
-                services.AddSingleton<IProjectMemberReadService, FakeProjectMemberReadService>();
+                services.AddScoped<IProjectMemberReadService>(sp =>
+                    new ProjectMemberReadService(sp.GetRequiredService<IProjectMemberRepository>()));
+
+                services.RemoveAll(typeof(IProjectMemberWriteService));
+                services.AddScoped<IProjectMemberWriteService>(sp =>
+                    new ProjectMemberWriteService(sp.GetRequiredService<IProjectMemberRepository>()));
 
                 services.PostConfigure<JwtOptions>(o =>
                 {
