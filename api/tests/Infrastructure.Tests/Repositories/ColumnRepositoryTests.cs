@@ -11,10 +11,120 @@ namespace Infrastructure.Tests.Repositories
     public sealed class ColumnRepositoryTests
     {
         [Fact]
+        public async Task GetByIdAsync_Returns_Column_When_Exists_Otherwise_Null()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new ColumnRepository(db);
+
+            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
+            var column = TestDataFactory.SeedColumn(db, pId, lId);
+
+            var existing = await repo.GetByIdAsync(column.Id);
+            existing.Should().NotBeNull();
+
+            var notFound = await repo.GetByIdAsync(Guid.NewGuid());
+            notFound.Should().Be(null);
+        }
+
+        [Fact]
+        public async Task GetTrackedByIdAsync_Returns_Column_When_Exists_Otherwise_Null()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new ColumnRepository(db);
+
+            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
+            var column = TestDataFactory.SeedColumn(db, pId, lId);
+
+            var existing = await repo.GetTrackedByIdAsync(column.Id);
+            existing.Should().NotBeNull();
+
+            var notFound = await repo.GetTrackedByIdAsync(Guid.NewGuid());
+            notFound.Should().Be(null);
+        }
+
+        [Fact]
+        public async Task ExistsWithNameAsync_Returns_True_When_Exists_Otherwise_False()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new ColumnRepository(db);
+
+            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
+            var column = TestDataFactory.SeedColumn(db, pId, lId);
+
+            var existing = await repo.ExistsWithNameAsync(lId, column.Name.Value);
+            existing.Should().Be(true);
+
+            var notFound = await repo.ExistsWithNameAsync(lId, "other name");
+            notFound.Should().Be(false);
+        }
+
+        [Fact]
+        public async Task GetMaxOrderAsync_Returns_MaxOrder()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new ColumnRepository(db);
+
+            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
+            TestDataFactory.SeedColumn(db, pId, lId, order: 0);
+
+            var maxOrder = await repo.GetMaxOrderAsync(lId);
+            maxOrder.Should().Be(0);
+
+            TestDataFactory.SeedColumn(db, pId, lId, order: 1);
+            maxOrder = await repo.GetMaxOrderAsync(lId);
+            maxOrder.Should().Be(1);
+
+            TestDataFactory.SeedColumn(db, pId, lId, order: 7);
+            maxOrder = await repo.GetMaxOrderAsync(lId);
+            maxOrder.Should().Be(7);
+
+            TestDataFactory.SeedColumn(db, pId, lId, order: 3);
+            maxOrder = await repo.GetMaxOrderAsync(lId);
+            maxOrder.Should().Be(7);
+        }
+
+        [Fact]
+        public async Task ListByLaneAsync_Returns_List_When_Columns_In_Lane()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new ColumnRepository(db);
+
+            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
+            TestDataFactory.SeedColumn(db, pId, lId, order: 0);
+            var list = await repo.ListByLaneAsync(lId);
+            list.Should().HaveCount(1);
+
+            TestDataFactory.SeedColumn(db, pId, lId, order: 1);
+            list = await repo.ListByLaneAsync(lId);
+            list.Should().HaveCount(2);
+
+            TestDataFactory.SeedColumn(db, pId, lId, order: 2);
+            list = await repo.ListByLaneAsync(lId);
+            list.Should().HaveCount(3);
+        }
+
+        [Fact]
+        public async Task ListByLaneAsync_Returns_Empty_List_When_No_Column_In_Lane()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new ColumnRepository(db);
+
+            var (_, lId) = TestDataFactory.SeedProjectWithLane(db);
+            var list = await repo.ListByLaneAsync(lId);
+            list.Should().BeEmpty();
+        }
+
+        [Fact]
         public async Task AddAsync_Persists_Column()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
 
             var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
@@ -42,7 +152,7 @@ namespace Infrastructure.Tests.Repositories
 
             var newName = "new name";
 
-            var res = await repo.RenameAsync(column.Id, newName, column.RowVersion ?? Array.Empty<byte>());
+            var res = await repo.RenameAsync(column.Id, newName, column.RowVersion ?? []);
             res.Should().Be(DomainMutation.Updated);
             var fromDb = await db.Columns.AsNoTracking().SingleAsync(c => c.Id == column.Id);
             fromDb.Name.Value.Should().Be(newName);
@@ -85,7 +195,7 @@ namespace Infrastructure.Tests.Repositories
         public async Task ReorderAsync_Reindexes_Without_Gaps()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
 
             var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
@@ -134,7 +244,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
 
-            var res = await repo.DeleteAsync(Guid.NewGuid(), Array.Empty<byte>());
+            var res = await repo.DeleteAsync(Guid.NewGuid(), []);
             res.Should().Be(DomainMutation.NotFound);
         }
 
@@ -148,7 +258,7 @@ namespace Infrastructure.Tests.Repositories
             var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
             var column = TestDataFactory.SeedColumn(db, pId, lId);
 
-            var res = await repo.DeleteAsync(column.Id, Array.Empty<byte>());
+            var res = await repo.DeleteAsync(column.Id, []);
             res.Should().Be(DomainMutation.Conflict);
 
             var stillExists = await db.Columns.AnyAsync(c => c.Id == column.Id);
