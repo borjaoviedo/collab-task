@@ -1,5 +1,4 @@
 using Application.Columns.Abstractions;
-using Application.Common.Abstractions.Persistence;
 using Application.Common.Abstractions.Security;
 using Application.Common.Abstractions.Time;
 using Application.Lanes.Abstractions;
@@ -7,7 +6,6 @@ using Application.ProjectMembers.Abstractions;
 using Application.Projects.Abstractions;
 using Application.TaskItems.Abstractions;
 using Application.Users.Abstractions;
-using Infrastructure.Common.Persistence;
 using Infrastructure.Common.Time;
 using Infrastructure.Data;
 using Infrastructure.Data.Interceptors;
@@ -39,9 +37,6 @@ namespace Infrastructure
                 options.UseSqlServer(connectionString);
                 options.AddInterceptors(sp.GetRequiredService<AuditingSaveChangesInterceptor>());
             });
-
-            // UoW
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             // Repositories
             services.AddScoped<IUserRepository, UserRepository>();
