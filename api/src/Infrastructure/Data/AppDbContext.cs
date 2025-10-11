@@ -202,6 +202,12 @@ namespace Infrastructure.Data
                 {
                     t.HasCheckConstraint("CK_TaskActivities_Payload_NotEmpty_sqlite", "length(trim(Payload)) > 0");
                 });
+
+                var dtoToLong = new ValueConverter<DateTimeOffset, long>(
+                    v => v.ToUnixTimeMilliseconds(),
+                    v => DateTimeOffset.FromUnixTimeMilliseconds(v));
+
+                e.Property(n => n.CreatedAt).HasConversion(dtoToLong);
             });
 
             modelBuilder.Entity<TaskItem>(e =>
