@@ -1,21 +1,14 @@
-using Application.Projects.Abstractions;
+using Application.ProjectMembers.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 namespace Api.Auth.Authorization
 {
-    public sealed class ProjectRoleAuthorizationHandler : AuthorizationHandler<ProjectRoleRequirement>
+    public sealed class ProjectRoleAuthorizationHandler(IHttpContextAccessor http, IProjectMemberReadService membership)
+        : AuthorizationHandler<ProjectRoleRequirement>
     {
-        private readonly IHttpContextAccessor _http;
-        private readonly IProjectMembershipReader _membership;
-
-        public ProjectRoleAuthorizationHandler(
-            IHttpContextAccessor http,
-            IProjectMembershipReader membership)
-        {
-            _http = http;
-            _membership = membership;
-        }
+        private readonly IHttpContextAccessor _http = http;
+        private readonly IProjectMemberReadService _membership = membership;
 
         protected override async Task HandleRequirementAsync(
             AuthorizationHandlerContext context,

@@ -1,5 +1,5 @@
 using Api.Auth.Authorization;
-using Application.Projects.Abstractions;
+using Api.Tests.Fakes;
 using Domain.Enums;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
@@ -40,21 +40,6 @@ namespace Api.Tests.Auth.Authorization
             return new ClaimsPrincipal(id);
         }
 
-        private sealed class FakeMembershipReader : IProjectMembershipReader
-        {
-            private readonly ProjectRole? _role;
-            private readonly Func<Guid, Guid, ProjectRole?>? _selector;
-
-            public FakeMembershipReader(ProjectRole? role) => _role = role;
-            public FakeMembershipReader(Func<Guid, Guid, ProjectRole?> selector) => _selector = selector;
-
-            public Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
-                => Task.FromResult(_selector is null ? _role : _selector(projectId, userId));
-
-            public Task<int> CountActiveAsync(Guid userId, CancellationToken ct = default)
-                => Task.FromResult(1);
-        }
-
         [Fact]
         public async Task Succeeds_When_Member_Role_Meets_Minimum()
         {
@@ -63,7 +48,7 @@ namespace Api.Tests.Auth.Authorization
             var (ctx, http) = BuildContext(ProjectRole.Member, BuildUser(userId), projectId);
 
             var accessor = new HttpContextAccessor { HttpContext = http };
-            var reader = new FakeMembershipReader((pid, uid) => ProjectRole.Admin); // >= Member
+            var reader = new FakeProjectMemberReadService((pid, uid) => ProjectRole.Admin); // >= Member
             var handler = new ProjectRoleAuthorizationHandler(accessor, reader);
 
             await handler.HandleAsync(ctx);
@@ -79,7 +64,7 @@ namespace Api.Tests.Auth.Authorization
             var (ctx, http) = BuildContext(ProjectRole.Admin, BuildUser(userId), projectId);
 
             var accessor = new HttpContextAccessor { HttpContext = http };
-            var reader = new FakeMembershipReader((pid, uid) => ProjectRole.Member); // < Admin
+            var reader = new FakeProjectMemberReadService((pid, uid) => ProjectRole.Member); // < Admin
             var handler = new ProjectRoleAuthorizationHandler(accessor, reader);
 
             await handler.HandleAsync(ctx);
@@ -95,7 +80,7 @@ namespace Api.Tests.Auth.Authorization
             var (ctx, http) = BuildContext(ProjectRole.Reader, BuildUser(userId), projectId);
 
             var accessor = new HttpContextAccessor { HttpContext = http };
-            var reader = new FakeMembershipReader((pid, uid) => null); // not in project
+            var reader = new FakeProjectMemberReadService((pid, uid) => null); // not in project
             var handler = new ProjectRoleAuthorizationHandler(accessor, reader);
 
             await handler.HandleAsync(ctx);
@@ -110,7 +95,7 @@ namespace Api.Tests.Auth.Authorization
             var (ctx, http) = BuildContext(ProjectRole.Reader, BuildUser(null), projectId);
 
             var accessor = new HttpContextAccessor { HttpContext = http };
-            var reader = new FakeMembershipReader((pid, uid) => ProjectRole.Owner);
+            var reader = new FakeProjectMemberReadService((pid, uid) => ProjectRole.Owner);
             var handler = new ProjectRoleAuthorizationHandler(accessor, reader);
 
             await handler.HandleAsync(ctx);
@@ -125,7 +110,7 @@ namespace Api.Tests.Auth.Authorization
             var (ctx, http) = BuildContext(ProjectRole.Reader, BuildUser(userId), projectId: null);
 
             var accessor = new HttpContextAccessor { HttpContext = http };
-            var reader = new FakeMembershipReader((pid, uid) => ProjectRole.Owner);
+            var reader = new FakeProjectMemberReadService((pid, uid) => ProjectRole.Owner);
             var handler = new ProjectRoleAuthorizationHandler(accessor, reader);
 
             await handler.HandleAsync(ctx);

@@ -1,6 +1,8 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
+using Application.ProjectMembers.Abstractions;
 using Application.Projects.Abstractions;
+using Domain.Entities;
 using Domain.Enums;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
@@ -34,7 +36,7 @@ namespace Api.Tests.Auth.Authorization
 
             services.AddLogging();
             // Inject fake reader that returns the role for current user
-            services.AddScoped<IProjectMembershipReader>(_ => new StubReader(userRole));
+            services.AddScoped<IProjectMemberReadService>(_ => new StubProjectMemberReadService(userRole));
             services.AddJwtAuthAndPolicies(cfg);
 
             var sp = services.BuildServiceProvider();
@@ -67,12 +69,21 @@ namespace Api.Tests.Auth.Authorization
             result.Succeeded.Should().Be(expected);
         }
 
-        private sealed class StubReader : IProjectMembershipReader
+        private sealed class StubProjectMemberReadService : IProjectMemberReadService
         {
             private readonly ProjectRole _role;
-            public StubReader(ProjectRole role) => _role = role;
+
+            public StubProjectMemberReadService(ProjectRole role) => _role = role;
+
+            public Task<ProjectMember?> GetAsync(Guid projectId, Guid userId, CancellationToken ct = default)
+                => Task.FromResult<ProjectMember?>(null);
+
+            public Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(Guid projectId, bool includeRemoved = false, CancellationToken ct = default)
+                => Task.FromResult<IReadOnlyList<ProjectMember>>(Array.Empty<ProjectMember>());
+
             public Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
                 => Task.FromResult<ProjectRole?>(_role);
+
             public Task<int> CountActiveAsync(Guid userId, CancellationToken ct = default)
                 => Task.FromResult(1);
         }

@@ -1,5 +1,4 @@
 using Api.Tests.Fakes;
-using Application.Common.Abstractions.Persistence;
 using Application.ProjectMembers.Abstractions;
 using Application.Projects.Abstractions;
 using Application.Users.Abstractions;
@@ -44,11 +43,8 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(IProjectMemberRepository));
                 services.AddSingleton<IProjectMemberRepository, FakeProjectMemberRepository>();
 
-                services.RemoveAll(typeof(IUnitOfWork));
-                services.AddSingleton<IUnitOfWork, FakeUnitOfWork>();
-
-                services.RemoveAll(typeof(IProjectMembershipReader));
-                services.AddSingleton<IProjectMembershipReader, FakeMembershipReader>();
+                services.RemoveAll(typeof(IProjectMemberReadService));
+                services.AddSingleton<IProjectMemberReadService, FakeProjectMemberReadService>();
 
                 services.PostConfigure<JwtOptions>(o =>
                 {
