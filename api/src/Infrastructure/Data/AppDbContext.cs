@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.Data
 {
@@ -170,6 +171,13 @@ namespace Infrastructure.Data
                     .IsConcurrencyToken()
                     .ValueGeneratedOnAddOrUpdate()
                     .HasDefaultValueSql("randomblob(8)");
+
+                var dtoToLong = new ValueConverter<DateTimeOffset, long>(
+                    v => v.ToUnixTimeMilliseconds(),
+                    v => DateTimeOffset.FromUnixTimeMilliseconds(v));
+
+                e.Property(p => p.CreatedAt).HasConversion(dtoToLong);
+                e.Property(p => p.UpdatedAt).HasConversion(dtoToLong);
             });
 
             modelBuilder.Entity<ProjectMember>(e =>
@@ -210,6 +218,10 @@ namespace Infrastructure.Data
                     .IsConcurrencyToken()
                     .ValueGeneratedOnAddOrUpdate()
                     .HasDefaultValueSql("randomblob(8)");
+
+                e.Property(t => t.SortKey)
+                    .HasConversion<double>()
+                    .HasColumnType("REAL");
             });
 
             modelBuilder.Entity<TaskNote>(e =>
