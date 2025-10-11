@@ -1,36 +1,26 @@
 using Domain.Entities;
 using Domain.Enums;
 using FluentAssertions;
-using Infrastructure.Data;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using TestHelpers;
 
 namespace Infrastructure.Tests.Persistence.Contracts
 {
     [Collection("SqlServerContainer")]
-    public sealed class TaskAssignmentPersistenceContractTests : IClassFixture<MsSqlContainerFixture>
+    public sealed class TaskAssignmentPersistenceContractTests(MsSqlContainerFixture fx)
     {
-        private readonly string _baseCs;
-        public TaskAssignmentPersistenceContractTests(MsSqlContainerFixture fx) => _baseCs = fx.ContainerConnectionString;
-
-        private (ServiceProvider sp, AppDbContext db) BuildDb(string name)
-        {
-            var cs = $"{_baseCs};Database={name}";
-            var sc = new ServiceCollection();
-            sc.AddInfrastructure(cs);
-            var sp = sc.BuildServiceProvider();
-            return (sp, sp.GetRequiredService<AppDbContext>());
-        }
+        private readonly MsSqlContainerFixture _fx = fx;
+        private readonly string _cs = fx.ConnectionString;
 
         [Fact]
         public async Task Add_And_Get_Works()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (_, userId) = TestHelpers.TestDataFactory.SeedUserWithProject(db);
-            var (_, _, _, taskId) = TestHelpers.TestDataFactory.SeedColumnWithTask(db);
+            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
+            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
 
             var a = TaskAssignment.Create(taskId, userId, TaskRole.Owner);
             db.TaskAssignments.Add(a);
@@ -44,11 +34,11 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task Unique_Index_TaskId_UserId_Is_Enforced()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (_, userId) = TestHelpers.TestDataFactory.SeedUserWithProject(db);
-            var (_, _, _, taskId) = TestHelpers.TestDataFactory.SeedColumnWithTask(db);
+            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
+            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
 
             db.TaskAssignments.Add(TaskAssignment.Create(taskId, userId, TaskRole.Owner));
             await db.SaveChangesAsync();
@@ -62,7 +52,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
             db.Entry(dup).State = EntityState.Detached; // prevent retry
 
             // sanity: a different user is allowed
-            var otherUser = TestHelpers.TestDataFactory.SeedUser(db).Id;
+            var otherUser = TestDataFactory.SeedUser(db).Id;
             db.TaskAssignments.Add(TaskAssignment.Create(taskId, otherUser, TaskRole.CoOwner));
             await db.SaveChangesAsync();
 

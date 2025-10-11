@@ -5,31 +5,23 @@ using Infrastructure.Data;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using TestHelpers;
 
 namespace Infrastructure.Tests.Persistence.Contracts
 {
     [Collection("SqlServerContainer")]
-    public sealed class ColumnPersistenceContractTests : IClassFixture<MsSqlContainerFixture>
+    public sealed class ColumnPersistenceContractTests(MsSqlContainerFixture fx)
     {
-        private readonly string _baseCs;
-        public ColumnPersistenceContractTests(MsSqlContainerFixture fx) => _baseCs = fx.ContainerConnectionString;
-
-        private (ServiceProvider sp, AppDbContext db) BuildDb(string name)
-        {
-            var cs = $"{_baseCs};Database={name}";
-            var sc = new ServiceCollection();
-            sc.AddInfrastructure(cs);
-            var sp = sc.BuildServiceProvider();
-            return (sp, sp.GetRequiredService<AppDbContext>());
-        }
+        private readonly MsSqlContainerFixture _fx = fx;
+        private readonly string _cs = fx.ConnectionString;
 
         [Fact]
         public async Task Add_And_Get_Works()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (pId, lId) = TestHelpers.TestDataFactory.SeedProjectWithLane(db);
+            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
             var c = Column.Create(pId, lId, ColumnName.Create("To Do"), 0);
             db.Columns.Add(c);
             await db.SaveChangesAsync();
@@ -42,10 +34,10 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task Unique_Index_LaneId_Name_Is_Enforced()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (pId, lId) = TestHelpers.TestDataFactory.SeedProjectWithLane(db);
+            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
             var name = ColumnName.Create("Same");
             db.Columns.Add(Column.Create(pId, lId, name, 0));
             await db.SaveChangesAsync();
@@ -56,7 +48,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
             db.Entry(dup).State = EntityState.Detached;
 
             // same name in other lane is allowed
-            var l2 = TestHelpers.TestDataFactory.SeedLane(db, pId, order: 1);
+            var l2 = TestDataFactory.SeedLane(db, pId, order: 1);
             db.Columns.Add(Column.Create(pId, l2.Id, name, 0));
             await db.SaveChangesAsync();
         }
@@ -64,11 +56,11 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task RowVersion_Concurrency_Throws_On_Stale_Rename()
         {
-            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var (pId, lId) = TestHelpers.TestDataFactory.SeedProjectWithLane(db);
-            var c = TestHelpers.TestDataFactory.SeedColumn(db, pId, lId, "column A", 0);
+            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
+            var c = TestDataFactory.SeedColumn(db, pId, lId, "column A", 0);
 
             var stale = c.RowVersion!.ToArray();
 

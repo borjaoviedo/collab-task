@@ -11,26 +11,16 @@ using TestHelpers;
 namespace Infrastructure.Tests.Persistence.Contracts
 {
     [Collection("SqlServerContainer")]
-    public sealed class ProjectMemberPersistenceContractTests : IClassFixture<MsSqlContainerFixture>
+    public sealed class ProjectMemberPersistenceContractTests(MsSqlContainerFixture fx)
     {
-        private readonly string _baseCs;
-        public ProjectMemberPersistenceContractTests(MsSqlContainerFixture fx) => _baseCs = fx.ContainerConnectionString;
-
-        private (ServiceProvider sp, AppDbContext db) BuildDb(string name)
-        {
-            var cs = $"{_baseCs};Database={name}";
-            var sc = new ServiceCollection();
-            sc.AddInfrastructure(cs);
-            var sp = sc.BuildServiceProvider();
-            var db = sp.GetRequiredService<AppDbContext>();
-            return (sp, db);
-        }
+        private readonly MsSqlContainerFixture _fx = fx;
+        private readonly string _cs = fx.ConnectionString;
 
         [Fact]
         public async Task Unique_Index_ProjectId_UserId_Is_Enforced()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
             var now = DateTimeOffset.UtcNow;
             var owner = User.Create(Email.Create("o@demo.com"), UserName.Create("Owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
@@ -69,8 +59,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task RowVersion_Concurrency_Throws_On_Stale_Update()
         {
-            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (sp, db) = DbHelper.BuildDb(_cs);
 
             var now = DateTimeOffset.UtcNow;
             var owner = User.Create(Email.Create("o@demo.com"), UserName.Create("Owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
@@ -108,8 +98,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task RemovedAt_Can_Be_Set_And_Cleared_Persists_Correctly()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
             var now = DateTimeOffset.UtcNow;
             var owner = User.Create(Email.Create("o@demo.com"), UserName.Create("Owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
@@ -147,8 +137,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task RemovedAt_Cannot_Be_Before_JoinedAt_CheckConstraint_Enforced()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
             var owner = User.Create(Email.Create("o@d.com"), UserName.Create("Owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             var u = User.Create(Email.Create("m@d.com"), UserName.Create("Member"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));

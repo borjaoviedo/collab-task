@@ -12,26 +12,16 @@ namespace Infrastructure.Tests.Persistence.Contracts
 {
 
     [Collection("SqlServerContainer")]
-    public sealed class ProjectPersistenceContractTests : IClassFixture<MsSqlContainerFixture>
+    public sealed class ProjectPersistenceContractTests(MsSqlContainerFixture fx)
     {
-        private readonly string _baseCs;
-        public ProjectPersistenceContractTests(MsSqlContainerFixture fx) => _baseCs = fx.ContainerConnectionString;
-
-        private (ServiceProvider sp, AppDbContext db) BuildDb(string name)
-        {
-            var cs = $"{_baseCs};Database={name}";
-            var sc = new ServiceCollection();
-            sc.AddInfrastructure(cs);
-            var sp = sc.BuildServiceProvider();
-            var db = sp.GetRequiredService<AppDbContext>();
-            return (sp, db);
-        }
+        private readonly MsSqlContainerFixture _fx = fx;
+        private readonly string _cs = fx.ConnectionString;
 
         [Fact]
         public async Task Add_And_GetBySlug_Works()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
             var owner = User.Create(Email.Create("owner@demo.com"), UserName.Create("Owner User"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             db.Users.Add(owner);
@@ -53,8 +43,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task Unique_Index_On_OwnerId_And_Name()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
             var owner1 = User.Create(Email.Create("o1@demo.com"), UserName.Create("A Owner"),
                 TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
@@ -91,8 +81,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task Unique_Index_On_OwnerId_And_Slug_Is_Enforced()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
             var owner1 = User.Create(Email.Create("o1@d.com"), UserName.Create("First owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             var owner2 = User.Create(Email.Create("o2@d.com"), UserName.Create("Second owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
@@ -119,8 +109,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task RowVersion_Concurrency_Throws_On_Stale_Update()
         {
-            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (sp, db) = DbHelper.BuildDb(_cs);
 
             var owner = User.Create(Email.Create("c@demo.com"), UserName.Create("User name"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             db.Users.Add(owner);
@@ -148,8 +138,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task Owner_Membership_Is_Persisted_On_Create()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
             var owner = User.Create(Email.Create("m@demo.com"), UserName.Create("User Name"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             db.Users.Add(owner);
@@ -170,8 +160,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task Check_Constraints_For_Slug_And_Dates_Exist()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
             var checks = await db.Database
                 .SqlQueryRaw<string>(

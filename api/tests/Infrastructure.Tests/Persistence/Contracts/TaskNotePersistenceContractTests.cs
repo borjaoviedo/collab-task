@@ -5,31 +5,23 @@ using Infrastructure.Data;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using TestHelpers;
 
 namespace Infrastructure.Tests.Persistence.Contracts
 {
     [Collection("SqlServerContainer")]
-    public sealed class TaskNotePersistenceContractTests : IClassFixture<MsSqlContainerFixture>
+    public sealed class TaskNotePersistenceContractTests(MsSqlContainerFixture fx)
     {
-        private readonly string _baseCs;
-        public TaskNotePersistenceContractTests(MsSqlContainerFixture fx) => _baseCs = fx.ContainerConnectionString;
-
-        private (ServiceProvider sp, AppDbContext db) BuildDb(string name)
-        {
-            var cs = $"{_baseCs};Database={name}";
-            var sc = new ServiceCollection();
-            sc.AddInfrastructure(cs);
-            var sp = sc.BuildServiceProvider();
-            return (sp, sp.GetRequiredService<AppDbContext>());
-        }
+        private readonly MsSqlContainerFixture _fx = fx;
+        private readonly string _cs = fx.ConnectionString;
 
         [Fact]
         public async Task Add_And_Read_Works()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (_, _, _, tId, _, uId) = TestHelpers.TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, tId, _, uId) = TestDataFactory.SeedFullBoard(db);
             var n = TaskNote.Create(tId, uId, NoteContent.Create("Note"));
             db.TaskNotes.Add(n);
             await db.SaveChangesAsync();
@@ -41,10 +33,10 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task RowVersion_Concurrency_Throws_On_Stale_Update_And_Delete()
         {
-            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var (_, _, _, tId, _, uId) = TestHelpers.TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, tId, _, uId) = TestDataFactory.SeedFullBoard(db);
             var n = TaskNote.Create(tId, uId, NoteContent.Create("content A"));
             db.TaskNotes.Add(n);
             await db.SaveChangesAsync();

@@ -2,35 +2,25 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
-using Infrastructure.Data;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using TestHelpers;
 
 namespace Infrastructure.Tests.Persistence.Contracts
 {
     [Collection("SqlServerContainer")]
-    public sealed class TaskActivityPersistenceContractTests : IClassFixture<MsSqlContainerFixture>
+    public sealed class TaskActivityPersistenceContractTests(MsSqlContainerFixture fx)
     {
-        private readonly string _baseCs;
-        public TaskActivityPersistenceContractTests(MsSqlContainerFixture fx) => _baseCs = fx.ContainerConnectionString;
-
-        private (ServiceProvider sp, AppDbContext db) BuildDb(string name)
-        {
-            var cs = $"{_baseCs};Database={name}";
-            var sc = new ServiceCollection();
-            sc.AddInfrastructure(cs);
-            var sp = sc.BuildServiceProvider();
-            return (sp, sp.GetRequiredService<AppDbContext>());
-        }
+        private readonly MsSqlContainerFixture _fx = fx;
+        private readonly string _cs = fx.ConnectionString;
 
         [Fact]
         public async Task Add_And_GetById_Works()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (_, _, _, taskId, _, actorId) = TestHelpers.TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, taskId, _, actorId) = TestDataFactory.SeedFullBoard(db);
             var a = TaskActivity.Create(taskId, actorId, TaskActivityType.TaskCreated, ActivityPayload.Create("{\"e\":\"c\"}"));
             db.TaskActivities.Add(a);
             await db.SaveChangesAsync();
@@ -44,10 +34,10 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task List_By_Task_Ordered_By_CreatedAt()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (_, _, _, taskId, _, actor) = TestHelpers.TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, taskId, _, actor) = TestDataFactory.SeedFullBoard(db);
 
             var a1 = TaskActivity.Create(taskId, actor, TaskActivityType.NoteAdded, ActivityPayload.Create("{\"m\":\"1\"}"));
             var a2 = TaskActivity.Create(taskId, actor, TaskActivityType.NoteEdited, ActivityPayload.Create("{\"m\":\"2\"}"));

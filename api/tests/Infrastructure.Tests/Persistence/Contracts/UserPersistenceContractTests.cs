@@ -11,26 +11,16 @@ using TestHelpers;
 namespace Infrastructure.Tests.Persistence.Contracts
 {
     [Collection("SqlServerContainer")]
-    public sealed class UserPersistenceContractTests : IClassFixture<MsSqlContainerFixture>
+    public sealed class UserPersistenceContractTests(MsSqlContainerFixture fx)
     {
-        private readonly string _baseCs;
-        public UserPersistenceContractTests(MsSqlContainerFixture fx) => _baseCs = fx.ContainerConnectionString;
-
-        private (ServiceProvider sp, AppDbContext db) BuildDb(string name)
-        {
-            var cs = $"{_baseCs};Database={name}";
-            var sc = new ServiceCollection();
-            sc.AddInfrastructure(cs);
-            var sp = sc.BuildServiceProvider();
-            var db = sp.GetRequiredService<AppDbContext>();
-            return (sp, db);
-        }
+        private readonly MsSqlContainerFixture _fx = fx;
+        private readonly string _cs = fx.ConnectionString;
 
         [Fact]
         public async Task Add_And_GetByEmail_Works()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
             var u = User.Create(Email.Create("repo@demo.com"), UserName.Create("Repo User"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             db.Users.Add(u);
@@ -46,8 +36,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task GetByName_Works()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
             var u = User.Create(Email.Create("repo@demo.com"), UserName.Create("Repo User"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             db.Users.Add(u);
@@ -63,8 +53,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task Unique_Index_On_Email()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
             var email = Email.Create("same@demo.com");
             var u1 = User.Create(email, UserName.Create("First"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
@@ -80,8 +70,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task Unique_Index_On_Name()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
             var name = UserName.Create("Same name");
             var u1 = User.Create(Email.Create("u1@demo.com"), name, TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
@@ -97,8 +87,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task Email_Normalization_Allows_MixedCase_Lookup()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
             var mixed = Email.Create("SaMe@e.CoM");
             var u = User.Create(mixed, UserName.Create("User Name"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
@@ -115,8 +105,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task RowVersion_Concurrency_Throws_On_Stale_Update()
         {
-            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (sp, db) = DbHelper.BuildDb(_cs);
 
             var u = User.Create(Email.Create("concurrency@demo.com"), UserName.Create("Concurrency User"), TestDataFactory. Bytes(32), TestDataFactory.Bytes(16));
             db.Users.Add(u);

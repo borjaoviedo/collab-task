@@ -1,71 +1,50 @@
 using Application.Common.Abstractions.Security;
 using Domain.ValueObjects;
 using FluentAssertions;
-using Infrastructure.Data;
 using Infrastructure.Data.Seeders;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using TestHelpers;
 
 namespace Infrastructure.Tests.Seed
 {
     [Collection("SqlServerContainer")]
-    public sealed class DevSeederTests : IClassFixture<MsSqlContainerFixture>
+    public sealed class DevSeederTests(MsSqlContainerFixture fx)
     {
-        private readonly MsSqlContainerFixture _fx;
-        public DevSeederTests(MsSqlContainerFixture fx) => _fx = fx;
+        private readonly MsSqlContainerFixture _fx = fx;
+        private readonly string _cs = fx.ConnectionString;
 
         [Fact]
         public async Task Seed_Creates_Demo_Users_And_Project()
         {
-            var baseCs = _fx.ContainerConnectionString;
-            var dbName = $"CollabTaskTest_{Guid.NewGuid():N}";
-            var cs = $"{baseCs};Database={dbName}";
+            await _fx.ResetAsync();
+            var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var sc = new ServiceCollection();
-            sc.AddInfrastructure(cs);
-            var services = sc.BuildServiceProvider();
+            await DevSeeder.SeedAsync(sp);
 
-            using (var scope = services.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                await db.Database.MigrateAsync();
-            }
-            await DevSeeder.SeedAsync(services);
+            using var s = sp.CreateScope();
+            var provider = s.ServiceProvider;
 
-            using var s2 = services.CreateScope();
-            var sp = s2.ServiceProvider;
-            var db2 = sp.GetRequiredService<AppDbContext>();
+            var emails = await db.Users.AsNoTracking().Select(u => u.Email.Value).ToListAsync();
+            emails.Should().Contain(["admin@demo.com", "user@demo.com"]);
 
-            var users = await db2.Users.AsNoTracking().ToListAsync();
-            users.Select(u => u.Email.Value)
-                 .Should().Contain(["admin@demo.com", "user@demo.com"]);
-
-            var hasher = sp.GetRequiredService<IPasswordHasher>();
-            var admin = users.Single(u => u.Email.Value == "admin@demo.com");
+            var hasher = provider.GetRequiredService<IPasswordHasher>();
+            var admin = await db.Users.AsNoTracking().SingleAsync(u => u.Email == Email.Create("admin@demo.com"));
             hasher.Verify("Admin123!", admin.PasswordSalt, admin.PasswordHash).Should().BeTrue();
 
-            (await db2.Projects.AsNoTracking().CountAsync(p => p.Slug == ProjectSlug.Create("demo-project"))).Should().Be(1);
-            (await db2.ProjectMembers.AsNoTracking().CountAsync()).Should().BeGreaterThan(0);
+            (await db.Projects.AsNoTracking().CountAsync(p => p.Slug == ProjectSlug.Create("demo-project"))).Should().Be(1);
+            (await db.ProjectMembers.AsNoTracking().CountAsync()).Should().BeGreaterThan(0);
         }
 
         [Fact]
         public async Task Seed_Is_Idempotent()
         {
-            var baseCs = _fx.ContainerConnectionString;
-            var dbName = $"CollabTaskTest_{Guid.NewGuid():N}";
-            var cs = $"{baseCs};Database={dbName}";
+            await _fx.ResetAsync();
+            var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var sc = new ServiceCollection().AddInfrastructure(cs).BuildServiceProvider();
-
-            using (var s = sc.CreateScope())
-                await s.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
-
-            await DevSeeder.SeedAsync(sc);
-            await DevSeeder.SeedAsync(sc);
-
-            using var s2 = sc.CreateScope();
-            var db = s2.ServiceProvider.GetRequiredService<AppDbContext>();
+            await DevSeeder.SeedAsync(sp);
+            await DevSeeder.SeedAsync(sp);
 
             (await db.Users.CountAsync(u => u.Email == Email.Create("admin@demo.com"))).Should().Be(1);
             (await db.Users.CountAsync(u => u.Email == Email.Create("user@demo.com"))).Should().Be(1);

@@ -2,34 +2,26 @@ using Domain.Entities;
 using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Data;
-using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using TestHelpers;
+using Infrastructure.Tests.Containers;
 
 namespace Infrastructure.Tests.Persistence.Contracts
 {
     [Collection("SqlServerContainer")]
-    public sealed class LanePersistenceContractTests : IClassFixture<MsSqlContainerFixture>
+    public sealed class LanePersistenceContractTests(MsSqlContainerFixture fx)
     {
-        private readonly string _baseCs;
-        public LanePersistenceContractTests(MsSqlContainerFixture fx) => _baseCs = fx.ContainerConnectionString;
-
-        private (ServiceProvider sp, AppDbContext db) BuildDb(string name)
-        {
-            var cs = $"{_baseCs};Database={name}";
-            var sc = new ServiceCollection();
-            sc.AddInfrastructure(cs);
-            var sp = sc.BuildServiceProvider();
-            return (sp, sp.GetRequiredService<AppDbContext>());
-        }
+        private readonly MsSqlContainerFixture _fx = fx;
+        private readonly string _cs = fx.ConnectionString;
 
         [Fact]
         public async Task Add_And_Get_Works()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (pId, _) = TestHelpers.TestDataFactory.SeedUserWithProject(db);
+            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
             var l = Lane.Create(pId, LaneName.Create("Backlog"), 0);
             db.Lanes.Add(l);
             await db.SaveChangesAsync();
@@ -42,10 +34,10 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task Unique_Index_ProjectId_Name_Is_Enforced()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (pId, _) = TestHelpers.TestDataFactory.SeedProjectWithLane(db, laneName: "Todo");
+            var (pId, _) = TestDataFactory.SeedProjectWithLane(db, laneName: "Todo");
             var dup = Lane.Create(pId, LaneName.Create("Todo"), 1);
             db.Lanes.Add(dup);
             await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
@@ -53,7 +45,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
             db.Entry(dup).State = EntityState.Detached;
 
             // same name in different project allowed
-            var (p2, _) = TestHelpers.TestDataFactory.SeedUserWithProject(db);
+            var (p2, _) = TestDataFactory.SeedUserWithProject(db);
             db.Lanes.Add(Lane.Create(p2, LaneName.Create("Todo"), 0));
             await db.SaveChangesAsync();
         }
@@ -61,11 +53,11 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task RowVersion_Concurrency_Throws_On_Stale_Rename()
         {
-            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var (pId, _) = TestHelpers.TestDataFactory.SeedUserWithProject(db);
-            var l = TestHelpers.TestDataFactory.SeedLane(db, pId, "Lane A", 0);
+            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
+            var l = TestDataFactory.SeedLane(db, pId, "Lane A", 0);
 
             var stale = l.RowVersion!.ToArray();
 
