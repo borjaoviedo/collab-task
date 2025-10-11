@@ -11,6 +11,115 @@ namespace Infrastructure.Tests.Repositories
     public sealed class LaneRepositoryTests
     {
         [Fact]
+        public async Task GetByIdAsync_Returns_Lane_When_Exists_Otherwise_Null()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new LaneRepository(db);
+
+            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
+            var lane = TestDataFactory.SeedLane(db, pId);
+
+            var existing = await repo.GetByIdAsync(lane.Id);
+            existing.Should().NotBeNull();
+
+            var notFound = await repo.GetByIdAsync(Guid.NewGuid());
+            notFound.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task GetTrackedByIdAsync_Returns_Lane_When_Exists_Otherwise_Null()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new LaneRepository(db);
+
+            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
+            var lane = TestDataFactory.SeedLane(db, pId);
+
+            var existing = await repo.GetTrackedByIdAsync(lane.Id);
+            existing.Should().NotBeNull();
+
+            var notFound = await repo.GetTrackedByIdAsync(Guid.NewGuid());
+            notFound.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task ExistsWithNameAsync_Returns_True_When_Exists_Otherwise_False()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new LaneRepository(db);
+
+            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
+            var lane = TestDataFactory.SeedLane(db, pId);
+
+            var existing = await repo.ExistsWithNameAsync(pId, lane.Name);
+            existing.Should().BeTrue();
+
+            var notFound = await repo.ExistsWithNameAsync(pId, "diff");
+            notFound.Should().BeFalse();
+        }
+
+        [Fact]
+        public async Task GetMaxOrderAsync_Returns_MaxOrder()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new LaneRepository(db);
+
+            var (pId, _) = TestDataFactory.SeedProjectWithLane(db);
+
+            var maxOrder = await repo.GetMaxOrderAsync(pId);
+            maxOrder.Should().Be(0);
+
+            TestDataFactory.SeedLane(db, pId, order: 1);
+            maxOrder = await repo.GetMaxOrderAsync(pId);
+            maxOrder.Should().Be(1);
+
+            TestDataFactory.SeedLane(db, pId, order: 7);
+            maxOrder = await repo.GetMaxOrderAsync(pId);
+            maxOrder.Should().Be(7);
+
+            TestDataFactory.SeedLane(db, pId, order: 3);
+            maxOrder = await repo.GetMaxOrderAsync(pId);
+            maxOrder.Should().Be(7);
+        }
+
+        [Fact]
+        public async Task ListByProjectAsync_Returns_List_When_Columns_In_Lane()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new LaneRepository(db);
+
+            var (pId, _) = TestDataFactory.SeedProjectWithLane(db);
+
+            var list = await repo.ListByProjectAsync(pId);
+            list.Should().HaveCount(1);
+
+            TestDataFactory.SeedLane(db, pId, order: 1);
+            list = await repo.ListByProjectAsync(pId);
+            list.Should().HaveCount(2);
+
+            TestDataFactory.SeedLane(db, pId, order: 2);
+            list = await repo.ListByProjectAsync(pId);
+            list.Should().HaveCount(3);
+        }
+
+        [Fact]
+        public async Task ListByProjectAsync_Returns_Empty_List_When_No_Column_In_Lane()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new LaneRepository(db);
+
+            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
+            var list = await repo.ListByProjectAsync(pId);
+            list.Should().BeEmpty();
+        }
+
+        [Fact]
         public async Task AddAsync_Persists_Lane()
         {
             using var dbh = new SqliteTestDb();
