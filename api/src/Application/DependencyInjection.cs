@@ -13,8 +13,8 @@ namespace Application
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
             services.AddScoped<IUserWriteService, UserWriteService>();
-            services.AddScoped<IProjectService, ProjectService>();
-            services.AddScoped<IProjectMemberService, ProjectMemberService>();
+            services.AddScoped<IProjectWriteService, ProjectWriteService>();
+            services.AddScoped<IProjectMemberWriteService, ProjectMemberWriteService>();
             return services;
         }
     }
