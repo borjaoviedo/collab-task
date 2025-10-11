@@ -37,6 +37,31 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
+        public async Task GetTrackedByIdAsync_Returns_ProjectMember_When_Exists()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new ProjectRepository(db);
+
+            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
+            var project = await repo.GetTrackedByIdAsync(pId);
+
+            project.Should().NotBeNull();
+            project.Id.Should().Be(pId);
+        }
+
+        [Fact]
+        public async Task GetTrackedByIdAsync_Returns_Null_When_Not_Found()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new ProjectRepository(db);
+
+            var project = await repo.GetTrackedByIdAsync(Guid.NewGuid());
+            project.Should().BeNull();
+        }
+
+        [Fact]
         public async Task GetAllByUserAsync_Returns_Only_Projects_Where_User_Is_Member()
         {
             using var dbh = new SqliteTestDb();
