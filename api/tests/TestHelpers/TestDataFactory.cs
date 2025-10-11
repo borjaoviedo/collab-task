@@ -128,6 +128,15 @@ namespace TestHelpers
             return note;
         }
 
+        public static TaskAssignment SeedTaskAssignment(AppDbContext db, Guid taskId, Guid userId, TaskRole role = TaskRole.Owner)
+        {
+            var assignment = TaskAssignment.Create(taskId, userId, role);
+
+            db.TaskAssignments.Add(assignment);
+            db.SaveChanges();
+            return assignment;
+        }
+
         // --- Compositions ---
         public static (Guid ProjectId, Guid UserId) SeedUserWithProject(AppDbContext db, string? userEmail = null, string? userName = null, string? projectName = null)
         {
