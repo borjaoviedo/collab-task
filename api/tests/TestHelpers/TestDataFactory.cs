@@ -114,6 +114,20 @@ namespace TestHelpers
             return task;
         }
 
+        public static TaskNote SeedTaskNote(AppDbContext db, Guid taskId, Guid authorId, string? content = null)
+        {
+            content ??= GetRandomString(200);
+
+            var note = TaskNote.Create(
+                taskId,
+                authorId,
+                NoteContent.Create(content));
+
+            db.TaskNotes.Add(note);
+            db.SaveChanges();
+            return note;
+        }
+
         // --- Compositions ---
         public static (Guid ProjectId, Guid UserId) SeedUserWithProject(AppDbContext db, string? userEmail = null, string? userName = null, string? projectName = null)
         {
@@ -130,6 +144,17 @@ namespace TestHelpers
             var lane = SeedLane(db, project.Id, laneName, order);
             return (project.Id, lane.Id);
         }
+        public static (Guid LaneId, Guid ColumnId, Guid TaskId, Guid TaskNoteId) SeedBoardForProject(AppDbContext db, Guid projectId, Guid userId,
+            string? laneName = null, string? columnName = null, string? taskTitle = null, string taskDescription = "Task Description",
+            DateTimeOffset? dueDate = null, decimal sortKey = 0m, int laneOrder = 0, int columnOrder = 0, string? noteContent = null)
+        {
+            var lane = SeedLane(db, projectId, laneName, laneOrder);
+            var column = SeedColumn(db, projectId, lane.Id, columnName, columnOrder);
+            var task = SeedTaskItem(db, projectId, lane.Id, column.Id, taskTitle, taskDescription, dueDate, sortKey);
+            var note = SeedTaskNote(db, task.Id, userId, noteContent);
+
+            return (lane.Id, column.Id, task.Id, note.Id);
+        }
 
         public static (Guid ProjectId, Guid LaneId, Guid ColumnId) SeedLaneWithColumn(AppDbContext db,string? userName = null, string? userEmail = null,
             string? projectName = null, string? laneName = null, string? columnName = null, int laneOrder = 0, int columnOrder = 0)
@@ -138,6 +163,30 @@ namespace TestHelpers
             var column = SeedColumn(db, pId, lId, columnName, columnOrder);
 
             return (pId, lId, column.Id);
+        }
+
+        public static (Guid ProjectId, Guid LaneId, Guid ColumnId, Guid TaskId) SeedColumnWithTask(AppDbContext db, string? userName = null, string? userEmail = null,
+            string? projectName = null, string? laneName = null, string? columnName = null, string? taskTitle = null, string taskDescription = "Task Description",
+            DateTimeOffset? dueDate = null, decimal sortKey = 0m, int laneOrder = 0, int columnOrder = 0)
+        {
+            var (pId, lId, cId) = SeedLaneWithColumn(db, userName, userEmail, projectName, laneName, columnName, laneOrder, columnOrder);
+            var task = SeedTaskItem(db, pId, lId, cId, taskTitle, taskDescription, dueDate, sortKey);
+
+            return (pId, lId, cId, task.Id);
+        }
+
+        public static (Guid ProjectId, Guid LaneId, Guid ColumnId, Guid TaskId, Guid TaskNoteId, Guid UserId) SeedFullBoard(
+            AppDbContext db, string? userName = null, string? userEmail = null, string? projectName = null,
+            string? laneName = null, string? columnName = null, string? taskTitle = null, string taskDescription = "Task Description",
+            DateTimeOffset? dueDate = null, decimal sortKey = 0m, int laneOrder = 0, int columnOrder = 0, string? noteContent = null)
+        {
+            var (projectId, userId) = SeedUserWithProject(db, userEmail, userName, projectName);
+
+            var (laneId, columnId, taskId, taskNoteId) = SeedBoardForProject(
+                db, projectId, userId, laneName, columnName, taskTitle, taskDescription,
+                dueDate, sortKey, laneOrder, columnOrder, noteContent);
+
+            return (projectId, laneId, columnId, taskId, taskNoteId, userId);
         }
     }
 }
