@@ -208,6 +208,7 @@ namespace Infrastructure.Tests.Repositories
             var project = Project.Create(owner.Id, ProjectName.Create(projectName), DateTimeOffset.UtcNow);
 
             await repo.AddAsync(project);
+            await repo.SaveChangesAsync();
 
             var fromDb = await db.Projects.SingleAsync(p => p.Id == project.Id);
             fromDb.Name.Value.Should().Be(projectName);

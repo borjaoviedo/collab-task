@@ -21,6 +21,7 @@ namespace Infrastructure.Tests.Repositories
             var u = User.Create(Email.Create(email), UserName.Create("User Name"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
 
             await repo.AddAsync(u);
+            await repo.SaveChangesAsync();
 
             var id = u.Id;
             id.Should().Be(u.Id);

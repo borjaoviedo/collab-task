@@ -11,10 +11,7 @@ namespace Infrastructure.Data.Repositories
         private readonly AppDbContext _db = db;
 
         public async Task AddAsync(User item, CancellationToken ct = default)
-        {
-            await _db.Users.AddAsync(item, ct);
-            await SaveChangesAsync(ct);
-        }
+            => await _db.Users.AddAsync(item, ct);
 
         public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct = default)
             => await _db.Users

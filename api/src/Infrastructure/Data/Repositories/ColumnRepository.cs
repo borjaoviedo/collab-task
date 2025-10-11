@@ -39,10 +39,7 @@ namespace Infrastructure.Data.Repositories
                         .ToListAsync(ct);
 
         public async Task AddAsync(Column column, CancellationToken ct = default)
-        {
-            await _db.AddAsync(column, ct);
-            await SaveChangesAsync(ct);
-        }
+            => await _db.AddAsync(column, ct);
 
         public async Task<DomainMutation> RenameAsync(Guid columnId, string newName, byte[] rowVersion, CancellationToken ct = default)
         {

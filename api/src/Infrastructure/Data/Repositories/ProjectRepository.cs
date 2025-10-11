@@ -65,10 +65,7 @@ namespace Infrastructure.Data.Repositories
         }
 
         public async Task AddAsync(Project project, CancellationToken ct = default)
-        {
-            await _db.Projects.AddAsync(project, ct);
-            await SaveChangesAsync(ct);
-        }
+            => await _db.Projects.AddAsync(project, ct);
 
         public async Task<DomainMutation> RenameAsync(Guid id, string newName, byte[] rowVersion, CancellationToken ct = default)
         {

@@ -40,10 +40,7 @@ namespace Infrastructure.Data.Repositories
                         .MaxAsync(ct) ?? -1;
 
         public async Task AddAsync(Lane lane, CancellationToken ct = default)
-        {
-            await _db.Lanes.AddAsync(lane, ct);
-            await SaveChangesAsync(ct);
-        }
+            => await _db.Lanes.AddAsync(lane, ct);
 
         public async Task<DomainMutation> RenameAsync(Guid laneId, string newName, byte[] rowVersion, CancellationToken ct = default)
         {
