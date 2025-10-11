@@ -48,7 +48,10 @@ namespace Infrastructure.Data.Repositories
                         .FirstOrDefaultAsync(ct);
 
         public async Task AddAsync(ProjectMember member, CancellationToken ct = default)
-            => await _db.ProjectMembers.AddAsync(member, ct);
+        {
+            await _db.ProjectMembers.AddAsync(member, ct);
+            await SaveChangesAsync(ct);
+        }
 
         public async Task<DomainMutation> UpdateRoleAsync(Guid projectId, Guid userId, ProjectRole newRole, byte[] rowVersion, CancellationToken ct = default)
         {

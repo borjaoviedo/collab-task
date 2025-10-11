@@ -80,7 +80,6 @@ namespace Infrastructure.Tests.Repositories
             var newProjectMember = ProjectMember.Create(pId, newUser.Id, ProjectRole.Member, DateTimeOffset.UtcNow);
 
             await repo.AddAsync(newProjectMember);
-            await db.SaveChangesAsync();
 
             var fromDb = await repo.GetAsync(pId, newUser.Id);
             fromDb!.Role.Should().Be(ProjectRole.Member);
