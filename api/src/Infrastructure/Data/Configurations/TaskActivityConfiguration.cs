@@ -47,11 +47,11 @@ namespace Infrastructure.Data.Configurations
             // Timestamp
             e.Property(a => a.CreatedAt)
                 .HasColumnType("datetimeoffset")
-                .HasDefaultValueSql("SYSDATETIMEOFFSET()");
+                .IsRequired();
 
             // Indexes
             e.HasIndex(a => new { a.TaskId, a.CreatedAt })
-            .HasDatabaseName("IX_TaskActivities_TaskId_CreatedAt");
+                .HasDatabaseName("IX_TaskActivities_TaskId_CreatedAt");
 
             e.HasIndex(a => a.ActorId)
                 .HasDatabaseName("IX_TaskActivities_ActorId");
