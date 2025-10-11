@@ -1,6 +1,5 @@
 using Api.Auth.Authorization;
-using Api.Common;
-using Application.Common.Abstractions.Auth;
+using Api.Extensions;
 using Application.ProjectMembers.Abstractions;
 using Application.ProjectMembers.DTOs;
 using Application.ProjectMembers.Mapping;
@@ -26,11 +25,10 @@ namespace Api.Endpoints
             group.MapGet("/", async (
                 [FromRoute] Guid projectId,
                 [FromQuery] bool includeRemoved,
-                [FromServices] IProjectMemberRepository repo,
-                [FromServices] ICurrentUserService userSvc,
+                [FromServices] IProjectMemberReadService svc,
                 CancellationToken ct = default) =>
             {
-                var members = await repo.GetByProjectAsync(projectId, includeRemoved, ct);
+                var members = await svc.ListByProjectAsync(projectId, includeRemoved, ct);
                 var dto = members.Select(m => m.ToReadDto()).ToList();
                 return Results.Ok(dto);
             })
@@ -47,10 +45,13 @@ namespace Api.Endpoints
             group.MapPost("/", async (
                 [FromRoute] Guid projectId,
                 [FromBody] AddMemberDto dto,
-                [FromServices] IProjectMemberService svc,
+                [FromServices] IProjectMemberWriteService svc,
                 CancellationToken ct = default) =>
             {
-                var res = await svc.AddAsync(projectId, dto.UserId, dto.Role, dto.JoinedAtUtc.ToUniversalTime(), ct);
+                var (res, _) = await svc.CreateAsync(projectId, dto.UserId, dto.Role, dto.JoinedAtUtc.ToUniversalTime(), ct);
+
+                if (res != DomainMutation.Created) return res.ToHttp();
+
                 return res.ToHttp(location: $"/projects/{projectId}/members/{dto.UserId}");
             })
             .RequireAuthorization(Policies.ProjectAdmin)
@@ -69,7 +70,7 @@ namespace Api.Endpoints
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
                 [FromBody] ChangeMemberRoleDto dto,
-                [FromServices] IProjectMemberService svc,
+                [FromServices] IProjectMemberWriteService svc,
                 CancellationToken ct = default) =>
             {
                 var res = await svc.ChangeRoleAsync(projectId, userId, dto.Role, dto.RowVersion, ct);
@@ -91,7 +92,7 @@ namespace Api.Endpoints
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
                 [FromBody] RemoveMemberDto dto,
-                [FromServices] IProjectMemberService svc,
+                [FromServices] IProjectMemberWriteService svc,
                 CancellationToken ct = default) =>
             {
                 var res = await svc.RemoveAsync(projectId, userId, dto.RowVersion, dto.RemovedAtUtc.ToUniversalTime(), ct);
@@ -113,7 +114,7 @@ namespace Api.Endpoints
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
                 [FromBody] RestoreMemberDto dto,
-                [FromServices] IProjectMemberService svc,
+                [FromServices] IProjectMemberWriteService svc,
                 CancellationToken ct = default) =>
             {
                 var res = await svc.RestoreAsync(projectId, userId, dto.RowVersion, ct);

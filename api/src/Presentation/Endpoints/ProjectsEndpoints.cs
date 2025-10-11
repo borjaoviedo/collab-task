@@ -1,10 +1,10 @@
 using Api.Auth.Authorization;
-using Api.Common;
+using Api.Extensions;
 using Application.Common.Abstractions.Auth;
-using Application.Common.Results;
 using Application.Projects.Abstractions;
 using Application.Projects.DTOs;
 using Application.Projects.Mapping;
+using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
@@ -24,11 +24,11 @@ namespace Api.Endpoints
             group.MapGet("/", async (
                 [AsParameters] ProjectFilter filter,
                 [FromServices] ICurrentUserService userSvc,
-                [FromServices] IProjectRepository repo,
+                [FromServices] IProjectReadService projectReadSvc,
                 CancellationToken ct = default) =>
             {
                 var userId = (Guid)userSvc.UserId!;
-                var projects = await repo.GetByUserAsync(userId, filter, ct);
+                var projects = await projectReadSvc.GetAllByUserAsync(userId, filter, ct);
                 var dto = projects.Select(p => p.ToReadDto(userId)).ToList();
                 return Results.Ok(dto);
             })
@@ -63,21 +63,20 @@ namespace Api.Endpoints
             group.MapPost("/", async (
                 [FromBody] ProjectCreateDto dto,
                 [FromServices] ICurrentUserService userSvc,
-                [FromServices] IProjectService svc,
-                [FromServices] IProjectRepository repo,
+                [FromServices] IProjectWriteService projectWriteSvc,
+                [FromServices] IProjectReadService projectReadSvc,
                 CancellationToken ct = default) =>
             {
-                var (result, id) = await svc.CreateAsync((Guid)userSvc.UserId!, dto.Name, DateTimeOffset.UtcNow, ct);
+                var (result, project) = await projectWriteSvc.CreateAsync((Guid)userSvc.UserId!, dto.Name, DateTimeOffset.UtcNow, ct);
 
-                if (result != WriteResult.Created)
-                    return result.ToHttp();
+                if (result != DomainMutation.Created) return result.ToHttp();
 
-                var created = await repo.GetByIdAsync(id, ct);
+                var created = await projectReadSvc.GetAsync(project!.Id, ct);
                 if (created is null)
                     return Results.Problem(statusCode: 500, title: "Could not load created project");
 
                 var body = created.ToReadDto((Guid)userSvc.UserId!);
-                return Results.Created($"/projects/{id}", body);
+                return Results.Created($"/projects/{project.Id}", body);
             })
             .Produces<ProjectReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -91,7 +90,7 @@ namespace Api.Endpoints
             group.MapPatch("/{projectId:guid}/name", async (
                 [FromRoute] Guid projectId,
                 [FromBody] RenameProjectDto dto,
-                [FromServices] IProjectService svc,
+                [FromServices] IProjectWriteService svc,
                 CancellationToken ct = default) =>
             {
                 var res = await svc.RenameAsync(projectId, dto.Name, dto.RowVersion, ct);
@@ -112,7 +111,7 @@ namespace Api.Endpoints
             group.MapDelete("/{projectId:guid}", async (
                 [FromRoute] Guid projectId,
                 [FromBody] DeleteProjectDto dto,
-                [FromServices] IProjectService svc,
+                [FromServices] IProjectWriteService svc,
                 CancellationToken ct = default) =>
             {
                 var res = await svc.DeleteAsync(projectId, dto.RowVersion, ct);

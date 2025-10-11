@@ -1,6 +1,6 @@
 using Api.Auth.Authorization;
-using Api.Common;
-using Application.Projects.Abstractions;
+using Api.Extensions;
+using Application.ProjectMembers.Abstractions;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
@@ -23,16 +23,16 @@ namespace Api.Endpoints
 
             // GET /users
             group.MapGet("/", async (
-                [FromServices] IUserRepository repo,
-                [FromServices] IProjectMembershipReader membership,
+                [FromServices] IUserReadService userReadSvc,
+                [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 CancellationToken ct = default) =>
             {
-                var users = await repo.GetAllAsync(ct);
+                var users = await userReadSvc.ListAsync(ct);
                 var dto = users.Select(u => u.ToReadDto()).ToList();
 
                 foreach (var d in dto)
                 {
-                    d.ProjectMembershipsCount = await membership.CountActiveAsync(d.Id, ct);
+                    d.ProjectMembershipsCount = await projectMemberReadSvc.CountActiveAsync(d.Id, ct);
                 }
 
                 return Results.Ok(dto);
@@ -48,10 +48,10 @@ namespace Api.Endpoints
             // GET /users/{id}
             group.MapGet("/{id:guid}", async (
                 [FromRoute] Guid id,
-                [FromServices] IUserRepository repo,
+                [FromServices] IUserReadService svc,
                 CancellationToken ct = default) =>
             {
-                var u = await repo.GetByIdAsync(id, ct);
+                var u = await svc.GetAsync(id, ct);
                 if (u is null) return Results.NotFound();
                 return Results.Ok(u.ToReadDto());
             })
@@ -68,7 +68,7 @@ namespace Api.Endpoints
             group.MapPatch("/{id:guid}/name", async (
                 [FromRoute] Guid id,
                 [FromBody] RenameUserDto dto,
-                [FromServices] IUserService svc,
+                [FromServices] IUserWriteService svc,
                 CancellationToken ct = default) =>
             {
                 var res = await svc.RenameAsync(id, dto.Name, dto.RowVersion, ct);
@@ -88,7 +88,7 @@ namespace Api.Endpoints
             group.MapPatch("/{id:guid}/role", async (
                 [FromRoute] Guid id,
                 [FromBody] ChangeRoleDto dto,
-                [FromServices] IUserService svc,
+                [FromServices] IUserWriteService svc,
                 CancellationToken ct = default) =>
             {
                 var res = await svc.ChangeRoleAsync(id, dto.Role, dto.RowVersion, ct);
@@ -109,7 +109,7 @@ namespace Api.Endpoints
             group.MapDelete("/{id:guid}", async (
                 [FromRoute] Guid id,
                 [FromBody] DeleteUserDto dto,
-                [FromServices] IUserService svc,
+                [FromServices] IUserWriteService svc,
                 CancellationToken ct = default) =>
             {
                 var res = await svc.DeleteAsync(id, dto.RowVersion, ct);
