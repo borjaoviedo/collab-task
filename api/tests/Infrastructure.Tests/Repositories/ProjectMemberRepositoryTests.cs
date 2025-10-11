@@ -2,7 +2,6 @@ using Domain.Entities;
 using Domain.Enums;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
-using Microsoft.EntityFrameworkCore;
 using TestHelpers;
 
 namespace Infrastructure.Tests.Repositories
@@ -24,6 +23,36 @@ namespace Infrastructure.Tests.Repositories
 
             var missing = await repo.GetAsync(pId, Guid.NewGuid());
             missing.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task GetTrackedByIdAsync_Returns_Member_When_Exists_Else_Null()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new ProjectMemberRepository(db);
+
+            var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
+
+            var found = await repo.GetTrackedByIdAsync(pId, uId);
+            found.Should().NotBeNull();
+            found!.Role.Should().Be(ProjectRole.Owner);
+
+            var missing = await repo.GetTrackedByIdAsync(pId, Guid.NewGuid());
+            missing.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task GetByProjectAsync_Returns_Members_List_When_Exists()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new ProjectMemberRepository(db);
+
+            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
+            var list = await repo.GetByProjectAsync(pId);
+            list.Should().NotBeEmpty();
+            list.Count.Should().Be(1);
         }
 
         [Fact]
@@ -124,6 +153,51 @@ namespace Infrastructure.Tests.Repositories
             // remove
             var removeResult = await repo.SetRemovedAsync(pId, uId, DateTimeOffset.UtcNow.AddMinutes(5), [1, 2, 3]);
             removeResult.Should().Be(DomainMutation.Conflict);
+        }
+
+        [Fact]
+        public async Task CountUserActiveMembershipsAsync_Returns_Only_Active_Memberships_Count()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new ProjectMemberRepository(db);
+
+            var (_, uId) = TestDataFactory.SeedUserWithProject(db);
+
+            var count = await repo.CountUserActiveMembershipsAsync(uId);
+            count.Should().Be(1);
+
+            TestDataFactory.SeedProject(db, uId);
+            count = await repo.CountUserActiveMembershipsAsync(uId);
+            count.Should().Be(2);
+
+            var (otherProjectId, _) = TestDataFactory.SeedUserWithProject(db);
+            var pm = TestDataFactory.SeedProjectMember(db, otherProjectId, uId);
+            count = await repo.CountUserActiveMembershipsAsync(uId);
+            count.Should().Be(3);
+
+            pm.Remove(DateTimeOffset.UtcNow);
+            await db.SaveChangesAsync();
+
+            count = await repo.CountUserActiveMembershipsAsync(uId);
+            count.Should().Be(2);
+        }
+
+        [Fact]
+        public async Task GetRoleAsync_Returns_Role_When_Exists_Otherwise_Null()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new ProjectMemberRepository(db);
+
+            var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
+
+            var role = await repo.GetRoleAsync(pId, uId);
+            role.Should().NotBeNull();
+            role.Should().Be(ProjectRole.Owner);
+
+            var nullRole = await repo.GetRoleAsync(pId, Guid.NewGuid());
+            nullRole.Should().BeNull();
         }
     }
 }
