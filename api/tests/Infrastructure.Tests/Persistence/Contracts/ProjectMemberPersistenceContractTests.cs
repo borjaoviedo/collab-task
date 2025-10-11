@@ -143,5 +143,25 @@ namespace Infrastructure.Tests.Persistence.Contracts
                 .SingleAsync(x => x.ProjectId == p.Id && x.UserId == u.Id);
             restored.RemovedAt.Should().BeNull();
         }
+
+        [Fact]
+        public async Task RemovedAt_Cannot_Be_Before_JoinedAt_CheckConstraint_Enforced()
+        {
+            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            await db.Database.MigrateAsync();
+
+            var owner = User.Create(Email.Create("o@d.com"), UserName.Create("Owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            var u = User.Create(Email.Create("m@d.com"), UserName.Create("Member"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            var now = DateTimeOffset.UtcNow;
+            var p = Project.Create(owner.Id, ProjectName.Create("Alpha"), now);
+            db.AddRange(owner, u, p);
+            await db.SaveChangesAsync();
+
+            var pm = ProjectMember.Create(p.Id, u.Id, ProjectRole.Member, now);
+            pm.RemovedAt = now.AddMinutes(-5);
+            db.ProjectMembers.Add(pm);
+
+            await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        }
     }
 }

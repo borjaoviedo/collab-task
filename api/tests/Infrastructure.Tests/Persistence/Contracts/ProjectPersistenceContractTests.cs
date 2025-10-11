@@ -89,6 +89,34 @@ namespace Infrastructure.Tests.Persistence.Contracts
         }
 
         [Fact]
+        public async Task Unique_Index_On_OwnerId_And_Slug_Is_Enforced()
+        {
+            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            await db.Database.MigrateAsync();
+
+            var owner1 = User.Create(Email.Create("o1@d.com"), UserName.Create("First owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            var owner2 = User.Create(Email.Create("o2@d.com"), UserName.Create("Second owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            db.Users.AddRange(owner1, owner2);
+            await db.SaveChangesAsync();
+
+            var p1 = Project.Create(owner1.Id, ProjectName.Create("P1"), DateTimeOffset.UtcNow);
+            p1.Slug = ProjectSlug.Create("same");
+            db.Projects.Add(p1);
+            await db.SaveChangesAsync();
+
+            var p2 = Project.Create(owner1.Id, ProjectName.Create("P2"), DateTimeOffset.UtcNow);
+            p2.Slug = ProjectSlug.Create("same");
+            db.Projects.Add(p2);
+            await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+            db.Entry(p2).State = EntityState.Detached;
+
+            var p3 = Project.Create(owner2.Id, ProjectName.Create("P3"), DateTimeOffset.UtcNow);
+            p3.Slug = ProjectSlug.Create("same");
+            db.Projects.Add(p3);
+            await db.SaveChangesAsync();
+        }
+
+        [Fact]
         public async Task RowVersion_Concurrency_Throws_On_Stale_Update()
         {
             var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
