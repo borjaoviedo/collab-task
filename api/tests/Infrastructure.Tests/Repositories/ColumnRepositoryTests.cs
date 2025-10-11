@@ -133,7 +133,6 @@ namespace Infrastructure.Tests.Repositories
 
             var column = Column.Create(projectId, laneId, ColumnName.Create(columnName), 0);
             await repo.AddAsync(column);
-            await repo.SaveChangesAsync();
 
             var fromDb = await db.Columns.AsNoTracking().SingleAsync(c => c.Id == column.Id);
             fromDb.Name.Value.Should().Be(columnName);
