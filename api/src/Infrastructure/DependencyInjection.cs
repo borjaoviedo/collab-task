@@ -4,7 +4,9 @@ using Application.Common.Abstractions.Time;
 using Application.Lanes.Abstractions;
 using Application.ProjectMembers.Abstractions;
 using Application.Projects.Abstractions;
+using Application.TaskAssignments.Abstractions;
 using Application.TaskItems.Abstractions;
+using Application.TaskNotes.Abstractions;
 using Application.Users.Abstractions;
 using Infrastructure.Common.Time;
 using Infrastructure.Data;
@@ -45,6 +47,8 @@ namespace Infrastructure
             services.AddScoped<ILaneRepository, LaneRepository>();
             services.AddScoped<IColumnRepository, ColumnRepository>();
             services.AddScoped<ITaskItemRepository, TaskItemRepository>();
+            services.AddScoped<ITaskNoteRepository, TaskNoteRepository>();
+            services.AddScoped<ITaskAssignmentRepository, TaskAssignmentRepository>();
 
             // DB init as hosted service
             services.AddHostedService<DbInitHostedService>();
