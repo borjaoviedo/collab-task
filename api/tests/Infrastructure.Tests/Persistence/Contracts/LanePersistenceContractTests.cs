@@ -1,0 +1,86 @@
+using Domain.Entities;
+using Domain.ValueObjects;
+using FluentAssertions;
+using Infrastructure.Data;
+using Infrastructure.Tests.Containers;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Infrastructure.Tests.Persistence.Contracts
+{
+    [Collection("SqlServerContainer")]
+    public sealed class LanePersistenceContractTests : IClassFixture<MsSqlContainerFixture>
+    {
+        private readonly string _baseCs;
+        public LanePersistenceContractTests(MsSqlContainerFixture fx) => _baseCs = fx.ContainerConnectionString;
+
+        private (ServiceProvider sp, AppDbContext db) BuildDb(string name)
+        {
+            var cs = $"{_baseCs};Database={name}";
+            var sc = new ServiceCollection();
+            sc.AddInfrastructure(cs);
+            var sp = sc.BuildServiceProvider();
+            return (sp, sp.GetRequiredService<AppDbContext>());
+        }
+
+        [Fact]
+        public async Task Add_And_Get_Works()
+        {
+            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            await db.Database.MigrateAsync();
+
+            var (pId, _) = TestHelpers.TestDataFactory.SeedUserWithProject(db);
+            var l = Lane.Create(pId, LaneName.Create("Backlog"), 0);
+            db.Lanes.Add(l);
+            await db.SaveChangesAsync();
+
+            var fromDb = await db.Lanes.AsNoTracking().SingleAsync(x => x.Id == l.Id);
+            fromDb.Name.Value.Should().Be("Backlog");
+            fromDb.Order.Should().Be(0);
+        }
+
+        [Fact]
+        public async Task Unique_Index_ProjectId_Name_Is_Enforced()
+        {
+            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            await db.Database.MigrateAsync();
+
+            var (pId, _) = TestHelpers.TestDataFactory.SeedProjectWithLane(db, laneName: "Todo");
+            var dup = Lane.Create(pId, LaneName.Create("Todo"), 1);
+            db.Lanes.Add(dup);
+            await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+
+            db.Entry(dup).State = EntityState.Detached;
+
+            // same name in different project allowed
+            var (p2, _) = TestHelpers.TestDataFactory.SeedUserWithProject(db);
+            db.Lanes.Add(Lane.Create(p2, LaneName.Create("Todo"), 0));
+            await db.SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task RowVersion_Concurrency_Throws_On_Stale_Rename()
+        {
+            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
+            await db.Database.MigrateAsync();
+
+            var (pId, _) = TestHelpers.TestDataFactory.SeedUserWithProject(db);
+            var l = TestHelpers.TestDataFactory.SeedLane(db, pId, "Lane A", 0);
+
+            var stale = l.RowVersion!.ToArray();
+
+            l.Name = LaneName.Create("Lane B");
+            db.Entry(l).Property(x => x.Name).IsModified = true;
+            await db.SaveChangesAsync();
+
+            using var scope2 = sp.CreateScope();
+            var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
+            var same = await db2.Lanes.SingleAsync(x => x.Id == l.Id);
+            db2.Entry(same).Property(x => x.RowVersion).OriginalValue = stale;
+            same.Name = LaneName.Create("Lane C");
+            db2.Entry(same).Property(x => x.Name).IsModified = true;
+
+            await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => db2.SaveChangesAsync());
+        }
+    }
+}
