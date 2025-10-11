@@ -15,6 +15,7 @@ namespace Application
             services.AddScoped<IUserWriteService, UserWriteService>();
             services.AddScoped<IProjectWriteService, ProjectWriteService>();
             services.AddScoped<IProjectMemberWriteService, ProjectMemberWriteService>();
+            services.AddScoped<IProjectMemberReadService, ProjectMemberReadService>();
             return services;
         }
     }
