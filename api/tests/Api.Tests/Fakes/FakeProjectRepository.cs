@@ -1,3 +1,4 @@
+using Application.ProjectMembers.Abstractions;
 using Application.Projects.Abstractions;
 using Domain.Entities;
 using Domain.Enums;
@@ -16,6 +17,13 @@ namespace Api.Tests.Fakes
 
         // simple rowversion counter
         private long _rv = 1;
+
+        private readonly IProjectMemberRepository _pmRepo;
+
+        public FakeProjectRepository(IProjectMemberRepository pmRepo)
+        {
+            _pmRepo = pmRepo;
+        }
 
         public Task<Project?> GetByIdAsync(Guid id, CancellationToken ct = default)
         {
@@ -88,6 +96,14 @@ namespace Api.Tests.Fakes
 
             if (!_nameIndex.TryAdd((project.OwnerId, project.Name.Value), 0))
                 throw new InvalidOperationException("Duplicate project name for owner.");
+
+            foreach (var m in project.Members)
+            {
+                var cm = ProjectMember.Create(m.ProjectId, m.UserId, m.Role, m.JoinedAt);
+                cm.RowVersion = (m.RowVersion is null) ? Array.Empty<byte>() : m.RowVersion.ToArray();
+                cm.Remove(m.RemovedAt);
+                _ = _pmRepo.AddAsync(cm, ct);
+            }
 
             return Task.CompletedTask;
         }
