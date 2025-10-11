@@ -1,26 +1,31 @@
 using FluentAssertions;
 using Infrastructure.Data;
 using Infrastructure.Tests.Containers;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Tests.Database
 {
-    [CollectionDefinition(nameof(DbCollection), DisableParallelization = true)]
-    public class DbCollection : ICollectionFixture<MsSqlContainerFixture> { }
-
-    [Collection(nameof(DbCollection))]
-    public class DatabaseMigrationTests
+    [Collection("SqlServerContainer")]
+    public sealed class DatabaseMigrationTests(MsSqlContainerFixture fx)
     {
-        private readonly MsSqlContainerFixture _fx;
-        public DatabaseMigrationTests(MsSqlContainerFixture fx) => _fx = fx;
+        private readonly string _cs = fx.ConnectionString;
 
         [Fact]
         public async Task Migrations_Applied_And_Tables_Exist()
         {
-            using var scope = _fx.Services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var canConnect = await db.Database.CanConnectAsync();
-            canConnect.Should().BeTrue();
+            var opts = new DbContextOptionsBuilder<AppDbContext>()
+                .UseSqlServer(_cs)
+                .Options;
+
+            await using var db = new AppDbContext(opts);
+
+            (await db.Database.CanConnectAsync()).Should().BeTrue();
+
+            var tableCount = await db.Database
+                                    .SqlQueryRaw<int>("SELECT CAST(COUNT(*) AS int) AS [Value] FROM sys.tables")
+                                    .SingleAsync();
+
+            tableCount.Should().BeGreaterThan(0);
         }
     }
 }
