@@ -1,4 +1,3 @@
-using Application.Lanes.Abstractions;
 using Application.Lanes.Services;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -16,10 +15,10 @@ namespace Application.Tests.Lanes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext(recreate: true);
-            ILaneRepository repo = new LaneRepository(db);
+            var repo = new LaneRepository(db);
             var svc = new LaneWriteService(repo);
 
-            var pId = TestDataFactory.SeedUserWithProject(db);
+            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
             await svc.CreateAsync(pId, LaneName.Create("First"), null);
             var (created, lane) = await svc.CreateAsync(pId, LaneName.Create("Second"), null);
 
@@ -32,14 +31,15 @@ namespace Application.Tests.Lanes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext(recreate: true);
-            ILaneRepository repo = new LaneRepository(db);
+            var repo = new LaneRepository(db);
             var svc = new LaneWriteService(repo);
 
-            var pId = TestDataFactory.SeedUserWithProject(db);
-            var (m1, _) = await svc.CreateAsync(pId, "Dup");
+            var sameName = "Dup";
+            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
+            var (m1, _) = await svc.CreateAsync(pId, sameName);
             m1.Should().Be(DomainMutation.Created);
 
-            var (m2, lane2) = await svc.CreateAsync(pId, "Dup");
+            var (m2, lane2) = await svc.CreateAsync(pId, sameName);
             m2.Should().Be(DomainMutation.Conflict);
             lane2.Should().BeNull();
         }
@@ -49,14 +49,13 @@ namespace Application.Tests.Lanes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext(recreate: true);
-            ILaneRepository repo = new LaneRepository(db);
+            var repo = new LaneRepository(db);
             var svc = new LaneWriteService(repo);
 
-            var pId = TestDataFactory.SeedUserWithProject(db);
-            var (_, lane) = await svc.CreateAsync(pId, LaneName.Create("Old"), 0);
+            var (_, laneId) = TestDataFactory.SeedProjectWithLane(db);
 
-            var current = await db.Lanes.FirstAsync(x => x.Id == lane!.Id);
-            var result = await svc.RenameAsync(lane!.Id, LaneName.Create("New"), current.RowVersion);
+            var current = await db.Lanes.FirstAsync(l => l.Id == laneId);
+            var result = await svc.RenameAsync(laneId, LaneName.Create("New"), current.RowVersion);
             result.Should().Be(DomainMutation.Updated);
         }
 
@@ -65,25 +64,29 @@ namespace Application.Tests.Lanes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext(recreate: true);
-            ILaneRepository repo = new LaneRepository(db);
+            var repo = new LaneRepository(db);
             var svc = new LaneWriteService(repo);
 
-            var pId = TestDataFactory.SeedUserWithProject(db);
-            await svc.CreateAsync(pId, "Lane A"); // order 0
-            await svc.CreateAsync(pId, "Lane B"); // order 1
-            var (_, laneC) = await svc.CreateAsync(pId, "Lane C"); // order 2
+            var firstLaneName = "Lane A";
+            var secondLaneName = "Lane B";
+            var thirdLaneName = "Lane C";
+            var (pId, _) = TestDataFactory.SeedProjectWithLane(db, laneName: firstLaneName, order: 0);
 
-            var current = await db.Lanes.FirstAsync(x => x.Id == laneC!.Id);
+            TestDataFactory.SeedLane(db, pId, secondLaneName, order: 1);
+            var laneC = TestDataFactory.SeedLane(db, pId, thirdLaneName, order: 2);
+
+            var current = await db.Lanes.FirstAsync(l => l.Id == laneC!.Id);
             var result = await svc.ReorderAsync(laneC!.Id, 1, current.RowVersion!);
             result.Should().Be(DomainMutation.Updated);
 
-            var names = await db.Lanes.AsNoTracking()
-                .Where(l => l.ProjectId == pId)
-                .OrderBy(l => l.Order)
-                .Select(l => l.Name.Value)
-                .ToListAsync();
+            var names = await db.Lanes
+                                .AsNoTracking()
+                                .Where(l => l.ProjectId == pId)
+                                .OrderBy(l => l.Order)
+                                .Select(l => l.Name.Value)
+                                .ToListAsync();
 
-            names.Should().Equal("Lane A", "Lane C", "Lane B");
+            names.Should().Equal(firstLaneName, thirdLaneName, secondLaneName);
         }
 
         [Fact]
@@ -91,14 +94,13 @@ namespace Application.Tests.Lanes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext(recreate: true);
-            ILaneRepository repo = new LaneRepository(db);
+            var repo = new LaneRepository(db);
             var svc = new LaneWriteService(repo);
 
-            var pId = TestDataFactory.SeedUserWithProject(db);
-            var (_, lane) = await svc.CreateAsync(pId, LaneName.Create("Temp"), 0);
+            var (_, laneId) = TestDataFactory.SeedProjectWithLane(db);
 
-            var current = await db.Lanes.FirstAsync(x => x.Id == lane!.Id);
-            var del = await svc.DeleteAsync(lane!.Id, current.RowVersion);
+            var current = await db.Lanes.FirstAsync(x => x.Id == laneId);
+            var del = await svc.DeleteAsync(laneId, current.RowVersion);
             del.Should().Be(DomainMutation.Deleted);
         }
     }

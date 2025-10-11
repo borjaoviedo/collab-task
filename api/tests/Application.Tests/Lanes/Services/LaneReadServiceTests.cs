@@ -1,7 +1,4 @@
-using Application.Lanes.Abstractions;
 using Application.Lanes.Services;
-using Domain.Entities;
-using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
 using TestHelpers;
@@ -15,15 +12,12 @@ namespace Application.Tests.Lanes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext(recreate: true);
-            ILaneRepository repo = new LaneRepository(db);
+            var repo = new LaneRepository(db);
             var svc = new LaneReadService(repo);
 
-            var pId = TestDataFactory.SeedUserWithProject(db);
-            var lane = Lane.Create(pId, LaneName.Create("Read"), 0);
-            db.Lanes.Add(lane);
-            await db.SaveChangesAsync();
+            var (_, lId) = TestDataFactory.SeedProjectWithLane(db);
 
-            var found = await svc.GetAsync(lane.Id);
+            var found = await svc.GetAsync(lId);
             found.Should().NotBeNull();
         }
 
@@ -32,7 +26,7 @@ namespace Application.Tests.Lanes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext(recreate: true);
-            ILaneRepository repo = new LaneRepository(db);
+            var repo = new LaneRepository(db);
             var svc = new LaneReadService(repo);
 
             var found = await svc.GetAsync(Guid.Empty);
@@ -44,17 +38,16 @@ namespace Application.Tests.Lanes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext(recreate: true);
-            ILaneRepository repo = new LaneRepository(db);
+            var repo = new LaneRepository(db);
             var svc = new LaneReadService(repo);
 
-            var pId = TestDataFactory.SeedUserWithProject(db);
-            db.Lanes.AddRange(
-                Lane.Create(pId, LaneName.Create("Lane B"), 1),
-                Lane.Create(pId, LaneName.Create("Lane A"), 0));
-            await db.SaveChangesAsync();
+            var firstLaneName = "Lane A";
+            var secondLaneName = "Lane B";
+            var (pId, _) = TestDataFactory.SeedProjectWithLane(db, laneName: firstLaneName, order: 0);
+            TestDataFactory.SeedLane(db, pId, name: secondLaneName, order: 1);
 
             var list = await svc.ListByProjectAsync(pId);
-            list.Select(x => x.Name.Value).Should().ContainInOrder("Lane A", "Lane B");
+            list.Select(x => x.Name.Value).Should().ContainInOrder(firstLaneName, secondLaneName);
         }
 
         [Fact]
@@ -62,10 +55,10 @@ namespace Application.Tests.Lanes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext(recreate: true);
-            ILaneRepository repo = new LaneRepository(db);
+            var repo = new LaneRepository(db);
             var svc = new LaneReadService(repo);
 
-            var pId = TestDataFactory.SeedUserWithProject(db);
+            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
             var list = await svc.ListByProjectAsync(pId);
             list.Should().BeEmpty();
         }

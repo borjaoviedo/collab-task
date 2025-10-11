@@ -17,7 +17,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext(recreate: true);
             var repo = new ColumnRepository(db);
 
-            var projectId = TestDataFactory.SeedUserWithProject(db);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
             var laneId = TestDataFactory.SeedLane(db, projectId).Id;
             var columnName = "Column name";
 
@@ -57,7 +57,7 @@ namespace Infrastructure.Tests.Repositories
 
             var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
             var sameName = "Same Column Name";
-            var column = TestDataFactory.SeedColumn(db, pId, lId, name: sameName);
+            var column = TestDataFactory.SeedColumn(db, pId, lId, sameName);
 
             var res = await repo.RenameAsync(column.Id, sameName, column.RowVersion!);
             res.Should().Be(DomainMutation.NoOp);
