@@ -130,7 +130,6 @@ namespace Infrastructure.Tests.Repositories
 
             var lane = Lane.Create(pId, LaneName.Create("Backlog"), 0);
             await repo.AddAsync(lane);
-            await repo.SaveChangesAsync();
 
             var fromDb = await db.Lanes.AsNoTracking().SingleAsync(l => l.Id == lane.Id);
             fromDb.Name.Value.Should().Be("Backlog");
