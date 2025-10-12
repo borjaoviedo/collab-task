@@ -8,9 +8,6 @@ namespace Application.TaskItems.Validation
     {
         public TaskItemCreateDtoValidator()
         {
-            RuleFor(t => t.ColumnId).RequiredGuid();
-            RuleFor(t => t.LaneId).RequiredGuid();
-            RuleFor(t => t.ProjectId).RequiredGuid();
             RuleFor(t => t.Title).TaskTitleRules();
             RuleFor(t => t.Description).TaskDescriptionRules();
             RuleFor(t => t.DueDate).DueDateRules();

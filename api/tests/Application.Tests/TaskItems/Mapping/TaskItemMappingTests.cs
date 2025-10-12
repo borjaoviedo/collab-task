@@ -35,11 +35,9 @@ namespace Application.Tests.TaskItems.Mapping
                 TaskTitle.Create("Title"), TaskDescription.Create("Description"), null, 0m);
             var dto = new TaskItemMoveDto
             {
-                Id = e.Id,
                 TargetLaneId = Guid.NewGuid(),
                 TargetColumnId = Guid.NewGuid(),
-                TargetSortKey = 123.45m,
-                RowVersion = [1]
+                TargetSortKey = 123.45m
             };
 
             e.Move(dto.TargetLaneId, dto.TargetColumnId, dto.TargetSortKey);

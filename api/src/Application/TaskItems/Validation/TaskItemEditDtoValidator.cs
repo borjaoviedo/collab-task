@@ -8,14 +8,8 @@ namespace Application.TaskItems.Validation
     {
         public TaskItemEditDtoValidator()
         {
-            RuleFor(t => t.Id).RequiredGuid();
-            RuleFor(t => t.RowVersion).ConcurrencyTokenRules();
-
-            When(t => t.Title is not null, () =>
-                RuleFor(t => t.Title!).TaskTitleRules());
-
-            When(t => t.Description is not null, () =>
-                RuleFor(t => t.Description!).TaskDescriptionRules());
+            When(t => t.Title is not null, () => RuleFor(t => t.Title!).TaskTitleRules());
+            When(t => t.Description is not null, () => RuleFor(t => t.Description!).TaskDescriptionRules());
         }
     }
 }
