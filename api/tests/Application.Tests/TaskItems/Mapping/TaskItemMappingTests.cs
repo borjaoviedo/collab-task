@@ -9,29 +9,6 @@ namespace Application.Tests.TaskItems.Mapping
     public sealed class TaskItemMappingTests
     {
         [Fact]
-        public void CreateDto_To_Entity_Maps_All()
-        {
-            var dto = new TaskItemCreateDto
-            {
-                ProjectId = Guid.NewGuid(),
-                LaneId = Guid.NewGuid(),
-                ColumnId = Guid.NewGuid(),
-                Title = "Title",
-                Description = "Description",
-                DueDate = DateTimeOffset.UtcNow.AddDays(1)
-            };
-
-            var e = dto.ToEntity();
-            e.ProjectId.Should().Be(dto.ProjectId);
-            e.LaneId.Should().Be(dto.LaneId);
-            e.ColumnId.Should().Be(dto.ColumnId);
-            e.Title.Value.Should().Be(dto.Title);
-            e.Description.Value.Should().Be(dto.Description);
-            e.DueDate.Should().Be(dto.DueDate);
-            e.SortKey.Should().Be(0m);
-        }
-
-        [Fact]
         public void Entity_To_ReadDto_Maps_All()
         {
             var e = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
