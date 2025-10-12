@@ -30,6 +30,7 @@ namespace Api.Extensions
             endpoints.MapTaskItems();
             endpoints.MapTaskNotes();
             endpoints.MapTaskAssignments();
+            endpoints.MapTaskActivities();
 
             return endpoints;
         }
