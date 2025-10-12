@@ -86,9 +86,9 @@ namespace Application.Common.Validation.Extensions
               .LessThanOrEqualTo(_ => DateTimeOffset.UtcNow).WithMessage("JoinedAt cannot be in the future.")
               .GreaterThan(new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero)).WithMessage("JoinedAt is too old.");
 
-        public static IRuleBuilderOptions<T, DateTimeOffset?> RemovedAtRules<T>(this IRuleBuilder<T, DateTimeOffset?> rb) =>
-            rb.Must(d => d is null || IsUtc(d.Value)).WithMessage("RemovedAt must be in UTC.")
-              .Must(d => d is null || d <= DateTimeOffset.UtcNow).WithMessage("RemovedAt cannot be in the future.");
+        public static IRuleBuilderOptions<T, DateTimeOffset> RemovedAtRules<T>(this IRuleBuilder<T, DateTimeOffset> rb) =>
+            rb.Must(IsUtc).WithMessage("RemovedAt must be in UTC.")
+              .Must(d => d <= DateTimeOffset.UtcNow).WithMessage("RemovedAt cannot be in the future.");
 
         public static IRuleBuilderOptions<T, DateTimeOffset?> DueDateRules<T>(this IRuleBuilder<T, DateTimeOffset?> rb)
             => rb.Must(BeNullOrFutureUtc).WithMessage("DueDate must be null or a UTC date/time in the future.");

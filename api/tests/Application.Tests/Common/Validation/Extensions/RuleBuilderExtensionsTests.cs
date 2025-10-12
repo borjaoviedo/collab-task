@@ -178,7 +178,7 @@ namespace Application.Tests.Common.Validation.Extensions
         private sealed class DatesDto
         {
             public DateTimeOffset JoinedAt { get; set; }
-            public DateTimeOffset? RemovedAt { get; set; }
+            public DateTimeOffset RemovedAt { get; set; }
             public DateTimeOffset? DueDate { get; set; }
         }
 
@@ -244,8 +244,7 @@ namespace Application.Tests.Common.Validation.Extensions
             var v = new DatesValidator();
             v.TestValidate(new DatesDto
             {
-                JoinedAt = DateTimeOffset.UtcNow.AddDays(-1),
-                RemovedAt = null
+                JoinedAt = DateTimeOffset.UtcNow.AddDays(-1)
             })
             .ShouldNotHaveAnyValidationErrors();
         }
