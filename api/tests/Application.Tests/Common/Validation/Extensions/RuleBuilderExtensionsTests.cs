@@ -2,7 +2,7 @@ using Application.Common.Validation.Extensions;
 using Domain.Enums;
 using FluentValidation;
 using FluentValidation.TestHelper;
-using System.ComponentModel.DataAnnotations;
+using Application.Tests.Common.Helpers;
 using System.Text;
 
 namespace Application.Tests.Common.Validation.Extensions
@@ -224,7 +224,7 @@ namespace Application.Tests.Common.Validation.Extensions
         public void RemovedAt_NotUtc_Fails()
         {
             var v = new DatesValidator();
-            v.TestValidate(new DatesDto { JoinedAt = DateTimeOffset.UtcNow, RemovedAt = DateTimeOffset.Now })
+            v.TestValidate(new DatesDto { JoinedAt = DateTimeOffset.UtcNow, RemovedAt = DateTimes.NonUtcInstant() })
              .ShouldHaveValidationErrorFor(x => x.RemovedAt)
              .WithErrorMessage("RemovedAt must be in UTC.");
         }

@@ -1,5 +1,6 @@
 using Application.ProjectMembers.DTOs;
 using Application.ProjectMembers.Validation;
+using Application.Tests.Common.Helpers;
 using Domain.Enums;
 using FluentValidation.TestHelper;
 
@@ -34,7 +35,7 @@ namespace Application.Tests.ProjectMembers.Validation
             {
                 UserId = Guid.NewGuid(),
                 Role = ProjectRole.Member,
-                JoinedAt = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.FromHours(+2))
+                JoinedAt = DateTimes.NonUtcInstant()
             });
             r1.ShouldHaveValidationErrorFor(x => x.JoinedAt).WithErrorMessage("JoinedAt must be in UTC.");
 
@@ -95,7 +96,7 @@ namespace Application.Tests.ProjectMembers.Validation
             // Not UTC
             var r1 = v.TestValidate(new ProjectMemberRemoveDto
             {
-                RemovedAt = DateTimeOffset.Now, // not UTC
+                RemovedAt = DateTimes.NonUtcInstant(), // not UTC
                 RowVersion = []
             });
             r1.ShouldHaveValidationErrorFor(x => x.RemovedAt).WithErrorMessage("RemovedAt must be in UTC.");
