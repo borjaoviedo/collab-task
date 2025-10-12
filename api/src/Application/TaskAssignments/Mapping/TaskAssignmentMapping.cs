@@ -13,25 +13,5 @@ namespace Application.TaskAssignments.Mapping
                 Role = entity.Role,
                 RowVersion = entity.RowVersion
             };
-
-        public static TaskAssignment ToEntity(this TaskAssignmentCreateDto dto)
-            => TaskAssignment.Create(dto.TaskId, dto.UserId, dto.Role);
-
-        public static TaskAssignmentChangeRoleDto ToChangeRoleDto(this TaskAssignmentReadDto dto)
-            => new()
-            {
-                TaskId = dto.TaskId,
-                UserId = dto.UserId,
-                NewRole = dto.Role,
-                RowVersion = dto.RowVersion
-            };
-
-        public static TaskAssignmentDeleteDto ToDeleteDto(this TaskAssignmentReadDto dto)
-            => new()
-            {
-                TaskId = dto.TaskId,
-                UserId = dto.UserId,
-                RowVersion = dto.RowVersion
-            };
     }
 }
