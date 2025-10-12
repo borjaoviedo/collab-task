@@ -408,5 +408,71 @@ namespace Application.Tests.Common.Validation.Extensions
             v.TestValidate(new ConcurrencyDto { RowVersion = Encoding.UTF8.GetBytes("rv") })
              .ShouldNotHaveValidationErrorFor(x => x.RowVersion);
         }
+
+        private sealed class OrderDto
+        {
+            public int Order { get; set; }
+        }
+
+        private sealed class OrderValidator : AbstractValidator<OrderDto>
+        {
+            public OrderValidator()
+            {
+                RuleFor(x => x.Order).NonNegativeOrder();
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(5)]
+        [InlineData(9999)]
+        public void Order_Valid_Passes(int value)
+        {
+            var v = new OrderValidator();
+            v.TestValidate(new OrderDto { Order = value })
+             .ShouldNotHaveValidationErrorFor(x => x.Order);
+        }
+
+        [Fact]
+        public void Order_Negative_Fails()
+        {
+            var v = new OrderValidator();
+            v.TestValidate(new OrderDto { Order = -1 })
+             .ShouldHaveValidationErrorFor(x => x.Order)
+             .WithErrorMessage("Order must be ≥ 0.");
+        }
+
+        private sealed class SortKeyDto
+        {
+            public decimal SortKey { get; set; }
+        }
+
+        private sealed class SortKeyValidator : AbstractValidator<SortKeyDto>
+        {
+            public SortKeyValidator()
+            {
+                RuleFor(x => x.SortKey).NonNegativeSortKey();
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(0.1)]
+        [InlineData(123.456)]
+        public void SortKey_Valid_Passes(decimal value)
+        {
+            var v = new SortKeyValidator();
+            v.TestValidate(new SortKeyDto { SortKey = value })
+             .ShouldNotHaveValidationErrorFor(x => x.SortKey);
+        }
+
+        [Fact]
+        public void SortKey_Negative_Fails()
+        {
+            var v = new SortKeyValidator();
+            v.TestValidate(new SortKeyDto { SortKey = -0.01m })
+             .ShouldHaveValidationErrorFor(x => x.SortKey)
+             .WithErrorMessage("SortKey must be ≥ 0.");
+        }
     }
 }
