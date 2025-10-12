@@ -46,9 +46,9 @@ namespace Application.TaskItems.Mapping
             => new()
             {
                 Id = dto.Id,
-                ColumnId = dto.ColumnId,
-                LaneId = dto.LaneId,
-                SortKey = dto.SortKey,
+                TargetColumnId = dto.ColumnId,
+                TargetLaneId = dto.LaneId,
+                TargetSortKey = dto.SortKey,
                 RowVersion = dto.RowVersion
             };
 

@@ -9,9 +9,9 @@ namespace Application.TaskItems.Validation
         public TaskItemMoveDtoValidator()
         {
             RuleFor(t => t.Id).RequiredGuid();
-            RuleFor(t => t.ColumnId).RequiredGuid();
-            RuleFor(t => t.LaneId).RequiredGuid();
-            RuleFor(t => t.SortKey).NonNegativeSortKey();
+            RuleFor(t => t.TargetColumnId).RequiredGuid();
+            RuleFor(t => t.TargetLaneId).RequiredGuid();
+            RuleFor(t => t.TargetSortKey).NonNegativeSortKey();
             RuleFor(t => t.RowVersion).ConcurrencyTokenRules();
         }
     }
