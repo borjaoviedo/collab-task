@@ -61,6 +61,24 @@ namespace Api.Endpoints
             .WithDescription("Gets a user by id. Returns summary info.")
             .WithName("Users_Get_ById");
 
+            // GET /users/by-email?email=
+            group.MapGet("/by-email", async (
+                [FromQuery] string email,
+                [FromServices] IUserReadService userReadSvc,
+                CancellationToken ct = default) =>
+            {
+                var user = await userReadSvc.GetByEmailAsync(email, ct);
+                return user is null ? Results.NotFound() : Results.Ok(user.ToReadDto());
+            })
+            .RequireAuthorization(Policies.SystemAdmin)
+            .Produces<UserReadDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get user by email")
+            .WithDescription("Returns a user by email. Returns summary info.")
+            .WithName("Users_Get_ByEmail");
+
             // PATCH /users/{userId}/rename
             group.MapPatch("/{userId:guid}/rename", async (
                 [FromRoute] Guid userId,
@@ -118,15 +136,15 @@ namespace Api.Endpoints
             .WithDescription("Changes a user's role and returns the updated user.")
             .WithName("Users_Change_Role");
 
-            // DELETE /users/{id}
-            group.MapDelete("/{id:guid}", async (
-                [FromRoute] Guid id,
+            // DELETE /users/{userId}
+            group.MapDelete("/{userId:guid}", async (
+                [FromRoute] Guid userId,
                 [FromServices] IUserWriteService svc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
-                var res = await svc.DeleteAsync(id, rowVersion, ct);
+                var res = await svc.DeleteAsync(userId, rowVersion, ct);
                 return res.ToHttp();
             })
             .AddEndpointFilter<IfMatchRowVersionFilter>()
