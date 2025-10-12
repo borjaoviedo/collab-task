@@ -39,6 +39,9 @@ namespace Infrastructure.Data.Configurations
                 .HasFilter("[Role] = 'Owner'")
                 .HasDatabaseName("UX_Assignments_Task_Owner");
 
+            // Concurrency token
+            e.Property(a => a.RowVersion).IsRowVersion();
+
             // Indexes
             e.HasIndex(a => a.TaskId)
                 .HasDatabaseName("IX_Assignments_TaskId");

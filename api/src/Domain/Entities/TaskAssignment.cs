@@ -7,6 +7,7 @@ namespace Domain.Entities
         public Guid TaskId { get; set; }
         public Guid UserId { get; set; }
         public TaskRole Role { get; set; }
+        public byte[] RowVersion { get; set; } = default!;
 
         private TaskAssignment() { }
 

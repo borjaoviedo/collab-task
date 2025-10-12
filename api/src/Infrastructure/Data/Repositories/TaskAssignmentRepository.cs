@@ -79,7 +79,7 @@ namespace Infrastructure.Data.Repositories
             return DomainMutation.Created;
         }
 
-        public async Task<DomainMutation> ChangeRoleAsync(Guid taskId, Guid userId, TaskRole newRole, CancellationToken ct = default)
+        public async Task<DomainMutation> ChangeRoleAsync(Guid taskId, Guid userId, TaskRole newRole, byte[] rowVersion, CancellationToken ct = default)
         {
             var existing = await GetTrackedAsync(taskId, userId, ct);
             if (existing is null) return DomainMutation.NotFound;
@@ -92,6 +92,7 @@ namespace Infrastructure.Data.Repositories
                     .AnyAsync(a => a.TaskId == taskId && a.UserId != userId && a.Role == TaskRole.Owner, ct);
                 if (anotherOwner) return DomainMutation.Conflict;
             }
+            _db.Entry(existing).Property(a => a.RowVersion).OriginalValue = rowVersion;
 
             existing.Role = newRole;
             _db.Entry(existing).Property(a => a.Role).IsModified = true;
@@ -107,11 +108,12 @@ namespace Infrastructure.Data.Repositories
             }
         }
 
-        public async Task<DomainMutation> RemoveAsync(Guid taskId, Guid userId, CancellationToken ct = default)
+        public async Task<DomainMutation> RemoveAsync(Guid taskId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
         {
             var existing = await GetTrackedAsync(taskId, userId, ct);
             if (existing is null) return DomainMutation.NotFound;
 
+            _db.Entry(existing).Property(a => a.RowVersion).OriginalValue = rowVersion;
             _db.TaskAssignments.Remove(existing);
 
             try

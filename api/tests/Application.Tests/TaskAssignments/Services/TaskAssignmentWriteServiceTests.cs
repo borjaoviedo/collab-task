@@ -55,9 +55,9 @@ namespace Application.Tests.TaskAssignments.Services
 
             var (_, userId) = TestDataFactory.SeedUserWithProject(db);
             var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
-            TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.CoOwner);
+            var assignment = TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.CoOwner);
 
-            var res = await svc.ChangeRoleAsync(taskId, userId, TaskRole.Owner);
+            var res = await svc.ChangeRoleAsync(taskId, userId, TaskRole.Owner, assignment.RowVersion);
             res.Should().Be(DomainMutation.Updated);
         }
 
@@ -72,9 +72,9 @@ namespace Application.Tests.TaskAssignments.Services
 
             var (_, userId) = TestDataFactory.SeedUserWithProject(db);
             var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
-            TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.Owner);
+            var assignment = TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.Owner);
 
-            var res = await svc.RemoveAsync(taskId, userId);
+            var res = await svc.RemoveAsync(taskId, userId, assignment.RowVersion);
             res.Should().Be(DomainMutation.Deleted);
         }
     }

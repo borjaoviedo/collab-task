@@ -47,8 +47,6 @@ namespace Infrastructure.Data
                     {
                         t.HasCheckConstraint("CK_Lanes_Name_NotEmpty", "LEN(LTRIM(RTRIM([Name]))) > 0");
                         t.HasCheckConstraint("CK_Lanes_Order_NonNegative", "[Order] >= 0");
-
-
                     });
                 });
 
@@ -95,6 +93,16 @@ namespace Infrastructure.Data
                         t.HasCheckConstraint("CK_Tasks_Title_NotEmpty", "LEN(LTRIM(RTRIM([Title]))) > 0");
                         t.HasCheckConstraint("CK_Tasks_Description_NotEmpty", "LEN(LTRIM(RTRIM([Description]))) > 0");
                         t.HasCheckConstraint("CK_Tasks_SortKey_NonNegative", "[SortKey] >= 0");
+                    });
+                });
+
+                // Assignments (TaskAssignment)
+                modelBuilder.Entity<TaskAssignment>(e =>
+                {
+                    e.ToTable("Assignments", t =>
+                    {
+                        t.HasCheckConstraint("CK_Assignments_Role_NotEmpty", "LEN(LTRIM(RTRIM([Role]))) > 0");
+                        t.HasCheckConstraint("CK_Assignments_Role_Valid", "[Role] IN ('Owner','CoOwner')");
                     });
                 });
 
@@ -249,6 +257,21 @@ namespace Infrastructure.Data
 
                 e.Property(n => n.CreatedAt).HasConversion(dtoToLong);
                 e.Property(n => n.UpdatedAt).HasConversion(dtoToLong);
+            });
+
+            modelBuilder.Entity<TaskAssignment>(e =>
+            {
+                e.ToTable("Assignments", t =>
+                {
+                    t.HasCheckConstraint("CK_Assignments_Role_NotEmpty_sqlite", "length(trim(Role)) > 0");
+                    t.HasCheckConstraint("CK_Assignments_Role_Valid_sqlite", "Role IN ('Owner','CoOwner')");
+                });
+
+                e.Property(a => a.RowVersion)
+                    .IsRequired()
+                    .IsConcurrencyToken()
+                    .ValueGeneratedOnAddOrUpdate()
+                    .HasDefaultValueSql("randomblob(8)");
             });
 
             modelBuilder.Entity<User>(e =>

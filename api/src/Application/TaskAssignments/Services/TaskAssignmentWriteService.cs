@@ -28,10 +28,10 @@ namespace Application.TaskAssignments.Services
         public async Task<DomainMutation> AssignAsync(Guid taskId, Guid userId, TaskRole role, CancellationToken ct = default)
             => await repo.AssignAsync(taskId, userId, role, ct);
 
-        public async Task<DomainMutation> ChangeRoleAsync(Guid taskId, Guid userId, TaskRole newRole, CancellationToken ct = default)
-            => await repo.ChangeRoleAsync(taskId, userId, newRole, ct);
+        public async Task<DomainMutation> ChangeRoleAsync(Guid taskId, Guid userId, TaskRole newRole, byte[] rowVersion, CancellationToken ct = default)
+            => await repo.ChangeRoleAsync(taskId, userId, newRole, rowVersion, ct);
 
-        public async Task<DomainMutation> RemoveAsync(Guid taskId, Guid userId, CancellationToken ct = default)
-            => await repo.RemoveAsync(taskId, userId, ct);
+        public async Task<DomainMutation> RemoveAsync(Guid taskId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
+            => await repo.RemoveAsync(taskId, userId, rowVersion, ct);
     }
 }

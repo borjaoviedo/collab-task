@@ -118,34 +118,51 @@ namespace Infrastructure.Tests.Repositories
             var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
 
             // NotFound
-            var nf = await repo.ChangeRoleAsync(taskId, userA, TaskRole.CoOwner);
+            var nf = await repo.ChangeRoleAsync(taskId, userA, TaskRole.CoOwner, [1, 2]);
             nf.Should().Be(DomainMutation.NotFound);
 
             // Create A Owner
             await repo.AssignAsync(taskId, userA, TaskRole.Owner);
 
             // NoOp
-            var no = await repo.ChangeRoleAsync(taskId, userA, TaskRole.Owner);
+            var no = await repo.ChangeRoleAsync(taskId, userA, TaskRole.Owner, [1, 2]);
             no.Should().Be(DomainMutation.NoOp);
 
             // Create B CoOwner
             await repo.AssignAsync(taskId, userB, TaskRole.CoOwner);
 
             // Conflict promoting B to Owner while A is Owner
-            var cf = await repo.ChangeRoleAsync(taskId, userB, TaskRole.Owner);
-            cf.Should().Be(DomainMutation.Conflict);
+            var cf1 = await repo.ChangeRoleAsync(taskId, userB, TaskRole.Owner, [1, 2]);
+            cf1.Should().Be(DomainMutation.Conflict);
+
+            // Conflict on rowVersion mismatch
+            var cf2 = await repo.ChangeRoleAsync(taskId, userA, TaskRole.CoOwner, [1, 2]);
+            cf2.Should().Be(DomainMutation.Conflict);
+
+            db.ChangeTracker.Clear();
+            var rvUserA = await db.TaskAssignments
+                                    .AsNoTracking()
+                                    .Where(a => a.TaskId == taskId && a.UserId == userA)
+                                    .Select(a => a.RowVersion)
+                                    .SingleAsync();
 
             // Update A → CoOwner
-            var up = await repo.ChangeRoleAsync(taskId, userA, TaskRole.CoOwner);
+            var up = await repo.ChangeRoleAsync(taskId, userA, TaskRole.CoOwner, rvUserA);
             up.Should().Be(DomainMutation.Updated);
 
+            var rvUserB = await db.TaskAssignments
+                                    .AsNoTracking()
+                                    .Where(a => a.TaskId == taskId && a.UserId == userB)
+                                    .Select(a => a.RowVersion)
+                                    .SingleAsync();
+
             // Now promote B → Owner
-            var up2 = await repo.ChangeRoleAsync(taskId, userB, TaskRole.Owner);
+            var up2 = await repo.ChangeRoleAsync(taskId, userB, TaskRole.Owner, rvUserB);
             up2.Should().Be(DomainMutation.Updated);
         }
 
         [Fact]
-        public async Task RemoveAsync_Deletes_Or_NotFound()
+        public async Task RemoveAsync_Deletes_NotFound_Or_Conflict()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext(recreate: true);
@@ -155,12 +172,15 @@ namespace Infrastructure.Tests.Repositories
             var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
 
             // NotFound
-            var nf = await repo.RemoveAsync(taskId, userId);
+            var nf = await repo.RemoveAsync(taskId, userId, [1, 2]);
             nf.Should().Be(DomainMutation.NotFound);
 
-            TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.Owner);
+            var assignment = TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.Owner);
 
-            var del = await repo.RemoveAsync(taskId, userId);
+            var con = await repo.RemoveAsync(taskId, userId, [1, 2]);
+            con.Should().Be(DomainMutation.Conflict);
+
+            var del = await repo.RemoveAsync(taskId, userId, assignment.RowVersion);
             del.Should().Be(DomainMutation.Deleted);
 
             (await repo.ExistsAsync(taskId, userId)).Should().BeFalse();
