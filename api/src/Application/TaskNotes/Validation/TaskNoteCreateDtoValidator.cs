@@ -8,8 +8,6 @@ namespace Application.TaskNotes.Validation
     {
         public TaskNoteCreateDtoValidator()
         {
-            RuleFor(n => n.TaskId).RequiredGuid();
-            RuleFor(n => n.AuthorId).RequiredGuid();
             RuleFor(n => n.Content).NoteContentRules();
         }
     }

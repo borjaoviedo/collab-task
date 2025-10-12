@@ -8,9 +8,7 @@ namespace Application.TaskNotes.Validation
     {
         public TaskNoteEditDtoValidator()
         {
-            RuleFor(n => n.Id).RequiredGuid();
             RuleFor(n => n.Content).NoteContentRules();
-            RuleFor(n => n.RowVersion).ConcurrencyTokenRules();
         }
     }
 }
