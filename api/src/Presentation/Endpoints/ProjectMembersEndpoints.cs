@@ -35,7 +35,63 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get all members of a project")
             .WithDescription("Returns all members of the project.")
-            .WithName("Project_Members_Get_All");
+            .WithName("ProjectMembers_Get_All");
+
+            // GET /projects/{projectId}/members/{userId}
+            group.MapGet("/{userId:guid}", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid userId,
+                [FromServices] IProjectMemberReadService pmReadSvc,
+                CancellationToken ct = default) =>
+            {
+                var pm = await pmReadSvc.GetAsync(projectId, userId, ct);
+                return pm is null ? Results.NotFound() : Results.Ok(pm.ToReadDto());
+            })
+            .Produces<ProjectMemberReadDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get project member")
+            .WithDescription("Returns a project member by project and user id.")
+            .WithName("ProjectMembers_Get");
+
+            // GET /projects/{projectId}/members/{userId}/role
+            group.MapGet("/{userId:guid}/role", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid userId,
+                [FromServices] IProjectMemberReadService pmReadSvc,
+                CancellationToken ct = default) =>
+            {
+                var role = await pmReadSvc.GetRoleAsync(projectId, userId, ct);
+                return role is null ? Results.NotFound() : Results.Ok(new { Role = role });
+            })
+            .Produces<object>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get member role")
+            .WithDescription("Returns the role of a user within a project.")
+            .WithName("ProjectMembers_GetRole");
+
+            // GET /projects/{projectId}/members/{userId}/count?active=true
+            group.MapGet("/{userId:guid}/count", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid userId,
+                [FromServices] IProjectMemberReadService pmReadSvc,
+                [FromQuery] bool active = true,
+                CancellationToken ct = default) =>
+            {
+                var count = await pmReadSvc.CountActiveAsync(userId, ct);
+                return Results.Ok(new { Count = count });
+            })
+            .RequireAuthorization(Policies.ProjectAdmin)
+            .Produces<object>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Count project members")
+            .WithDescription("Returns the number of members in a project. Filter active members with the 'active' flag.")
+            .WithName("ProjectMembers_Count");
 
             // POST /projects/{projectId}/members
             group.MapPost("/", async (
@@ -56,7 +112,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Add new project member")
             .WithDescription("Adds a user to the project as a member.")
-            .WithName("Project_Members_Create");
+            .WithName("ProjectMembers_Create");
 
             // PATCH /projects/{projectId}/members/{userId}/role
             group.MapPatch("/{userId:guid}/role", async (
@@ -86,7 +142,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Change role to a project member")
             .WithDescription("Changes the role of a project member.")
-            .WithName("Project_Members_Change_Role");
+            .WithName("ProjectMembers_Change_Role");
 
             // PATCH /projects/{projectId}/members/{userId}/remove
             group.MapPatch("/{userId:guid}/remove", async (
@@ -116,7 +172,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Remove project member")
             .WithDescription("Soft-removes a project member.")
-            .WithName("Project_Members_Remove");
+            .WithName("ProjectMembers_Remove");
 
             // PATCH /projects/{projectId}/members/{userId}/restore
             group.MapPatch("/{userId:guid}/restore", async (
@@ -145,7 +201,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Restore project member")
             .WithDescription("Restores a previously removed project member.")
-            .WithName("Project_Members_Restore");
+            .WithName("ProjectMembers_Restore");
 
             return group;
         }
