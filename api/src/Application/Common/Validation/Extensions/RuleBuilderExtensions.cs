@@ -27,6 +27,13 @@ namespace Application.Common.Validation.Extensions
             catch (JsonException) { return false; }
         }
 
+        private static bool BeNullOrFutureUtc(DateTimeOffset? due)
+        {
+            if (due is null) return true;
+            if (due.Value.Offset != TimeSpan.Zero) return false;
+            return due.Value >= DateTimeOffset.UtcNow;
+        }
+
         // User
         public static IRuleBuilderOptions<T, string> UserEmailRules<T>(this IRuleBuilder<T, string> rb) =>
             rb.NotEmpty().WithMessage("Email is required.")
@@ -82,6 +89,9 @@ namespace Application.Common.Validation.Extensions
         public static IRuleBuilderOptions<T, DateTimeOffset?> RemovedAtRules<T>(this IRuleBuilder<T, DateTimeOffset?> rb) =>
             rb.Must(d => d is null || IsUtc(d.Value)).WithMessage("RemovedAt must be in UTC.")
               .Must(d => d is null || d <= DateTimeOffset.UtcNow).WithMessage("RemovedAt cannot be in the future.");
+
+        public static IRuleBuilderOptions<T, DateTimeOffset?> DueDateRules<T>(this IRuleBuilder<T, DateTimeOffset?> rb)
+            => rb.Must(BeNullOrFutureUtc).WithMessage("DueDate must be null or a UTC date/time in the future.");
 
         // Board names
         public static IRuleBuilderOptions<T, string> ColumnNameRules<T>(this IRuleBuilder<T, string> rb) =>
