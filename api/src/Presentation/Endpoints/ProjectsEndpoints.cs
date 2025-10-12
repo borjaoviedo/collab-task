@@ -33,7 +33,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("Get all projects")
-            .WithDescription("Returns projects where the authenticated user has at least reader permissions.")
+            .WithDescription("Returns all projects where the authenticated user has at least reader permissions.")
             .WithName("Projects_Get_All");
 
             // GET /projects/{projectId}
@@ -54,7 +54,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get project by id")
-            .WithDescription("Returns the project if the authenticated user has at least reader permissions.")
+            .WithDescription("Returns the specified project if the authenticated user has at least reader permissions.")
             .WithName("Projects_Get_ById");
 
             // POST /projects
@@ -111,7 +111,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Rename project")
-            .WithDescription("Requires at least admin role in the target project.")
+            .WithDescription("Renames an existing project.")
             .WithName("Projects_Rename");
 
             // DELETE /projects/{projectId}
@@ -134,7 +134,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Delete project")
-            .WithDescription("Requires owner role in the target project.")
+            .WithDescription("Deletes the specified project.")
             .WithName("Projects_Delete");
 
             return group;
