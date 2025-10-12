@@ -25,6 +25,7 @@ namespace Api.Extensions
             endpoints.MapUsers();
             endpoints.MapProjects();
             endpoints.MapProjectMembers();
+            endpoints.MapLanes();
 
             return endpoints;
         }
