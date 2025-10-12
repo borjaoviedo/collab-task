@@ -13,12 +13,12 @@ namespace Api.Endpoints
     {
         public static RouteGroupBuilder MapTaskActivities(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/projects/{projectId:guid}/lanes/{laneId:guid}/columns/{columnId:guid}/tasks/{taskId:guid}/activities")
+            var nested = app.MapGroup("/projects/{projectId:guid}/lanes/{laneId:guid}/columns/{columnId:guid}/tasks/{taskId:guid}/activities")
                 .WithTags("Task Activities")
                 .RequireAuthorization(Policies.ProjectReader);
 
             // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities
-            group.MapGet("/", async (
+            nested.MapGet("/", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
@@ -43,7 +43,7 @@ namespace Api.Endpoints
             .WithName("TaskActivities_Get_All");
 
             // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities/{activityId}
-            group.MapGet("/{activityId:guid}", async (
+            nested.MapGet("/{activityId:guid}", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
@@ -66,7 +66,7 @@ namespace Api.Endpoints
             .WithName("TaskActivities_Get_ById");
 
             // POST /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities
-            group.MapPost("/", async (
+            nested.MapPost("/", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
@@ -95,7 +95,29 @@ namespace Api.Endpoints
             .WithDescription("Appends a new activity to the task by the authenticated user.")
             .WithName("TaskActivities_Create");
 
-            return group;
+            var top = app.MapGroup("/activities")
+                .WithTags("Task Activities")
+                .RequireAuthorization(Policies.ProjectReader);
+
+            // GET /activities/me
+            top.MapGet("/me", async (
+                HttpContext http,
+                [FromServices] ITaskActivityReadService activityReadSvc,
+                [FromServices] ICurrentUserService currentUserService,
+                CancellationToken ct = default) =>
+            {
+                var userId = (Guid)currentUserService.UserId!;
+                var items = await activityReadSvc.ListByActorAsync(userId, ct);
+                var dto = items.Select(a => a.ToReadDto()).ToList();
+                return Results.Ok(dto);
+            })
+            .Produces<IEnumerable<TaskActivityReadDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .WithSummary("List my activities")
+            .WithDescription("Lists task activities performed by the authenticated user.")
+            .WithName("TaskActivities_ListMine");
+
+            return top;
         }
     }
 }
