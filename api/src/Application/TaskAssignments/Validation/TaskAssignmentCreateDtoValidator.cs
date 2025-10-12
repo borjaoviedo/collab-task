@@ -8,7 +8,6 @@ namespace Application.TaskAssignments.Validation
     {
         public TaskAssignmentCreateDtoValidator()
         {
-            RuleFor(a => a.TaskId).RequiredGuid();
             RuleFor(a => a.UserId).RequiredGuid();
             RuleFor(a => a.Role).TaskRoleRules();
         }
