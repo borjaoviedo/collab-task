@@ -19,8 +19,16 @@ namespace Application.Users.Services
             var user = User.Create(Email.Create(email), UserName.Create(name), hash, salt, role);
 
             await repo.AddAsync(user, ct);
-            await repo.SaveChangesAsync(ct);
-            return (DomainMutation.Created, user);
+
+            try
+            {
+                await repo.SaveChangesAsync(ct);
+                return (DomainMutation.Created, user);
+            }
+            catch
+            {
+                return (DomainMutation.Conflict, null);
+            }
         }
 
         public async Task<DomainMutation> RenameAsync(Guid id, string newName, byte[] rowVersion, CancellationToken ct = default)
