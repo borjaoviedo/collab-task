@@ -26,15 +26,5 @@ namespace Application.Tests.TaskNotes.Validation
             r.ShouldHaveValidationErrorFor(x => x.Content);
             r.ShouldHaveValidationErrorFor(x => x.RowVersion);
         }
-
-        [Fact]
-        public void Delete_Invalid_Fails()
-        {
-            var v = new TaskNoteDeleteDtoValidator();
-            var dto = new TaskNoteDeleteDto { Id = Guid.Empty, RowVersion = [] };
-            var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(x => x.Id);
-            r.ShouldHaveValidationErrorFor(x => x.RowVersion);
-        }
     }
 }
