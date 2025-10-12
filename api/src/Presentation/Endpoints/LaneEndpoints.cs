@@ -14,7 +14,7 @@ namespace Api.Endpoints
         public static RouteGroupBuilder MapLanes(this IEndpointRouteBuilder app)
         {
             var group = app.MapGroup("/projects/{projectId:guid}/lanes")
-                .WithTags("Project Lanes")
+                .WithTags("Lanes")
                 .RequireAuthorization(Policies.ProjectReader);
 
             // GET /projects/{projectId}/lanes/
@@ -33,6 +33,23 @@ namespace Api.Endpoints
             .WithSummary("Get all lanes")
             .WithDescription("Returns lanes belonging to the specified project.")
             .WithName("Lanes_Get_All");
+
+            // GET /projects/{projectId}/lanes/{laneId}
+            group.MapGet("/{laneId:guid}", async (
+                [FromRoute] Guid laneId,
+                [FromServices] ILaneReadService laneReadSvc,
+                CancellationToken ct = default) =>
+            {
+                var lane = await laneReadSvc.GetAsync(laneId, ct);
+                return lane is null ? Results.NotFound() : Results.Ok(lane.ToReadDto());
+            })
+            .Produces<LaneReadDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get lane")
+            .WithDescription("Returns a lane by id within a project.")
+            .WithName("Lanes_Get");
 
             // POST /projects/{projectId}/lanes/
             group.MapPost("/", async (
@@ -60,6 +77,7 @@ namespace Api.Endpoints
 
             // PUT /projects/{projectId}/lanes/{laneId}/rename
             group.MapPut("/{laneId:guid}/rename", async (
+                [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromBody] LaneRenameDto dto,
                 [FromServices] ILaneWriteService laneWriteSvc,
@@ -90,6 +108,7 @@ namespace Api.Endpoints
 
             // PUT /projects/{projectId}/lanes/{laneId}/reorder
             group.MapPut("/{laneId:guid}/reorder", async (
+                [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromBody] LaneReorderDto dto,
                 [FromServices] ILaneWriteService laneWriteSvc,
@@ -120,6 +139,7 @@ namespace Api.Endpoints
 
             // DELETE /projects/{projectId}/lanes/{laneId}
             group.MapDelete("/{laneId:guid}", async (
+                [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromServices] ILaneWriteService laneWriteSvc,
                 HttpContext http,
