@@ -1,5 +1,6 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
+using Api.Filters;
 using Application.ProjectMembers.Abstractions;
 using Application.ProjectMembers.DTOs;
 using Application.ProjectMembers.Mapping;
@@ -10,11 +11,6 @@ namespace Api.Endpoints
 {
     public static class ProjectMembersEndpoints
     {
-        public sealed record AddMemberDto(Guid UserId, ProjectRole Role, DateTimeOffset JoinedAtUtc);
-        public sealed record ChangeMemberRoleDto(ProjectRole Role, byte[] RowVersion);
-        public sealed record RemoveMemberDto(byte[] RowVersion, DateTimeOffset RemovedAtUtc);
-        public sealed record RestoreMemberDto(byte[] RowVersion);
-
         public static RouteGroupBuilder MapProjectMembers(this IEndpointRouteBuilder app)
         {
             var group = app.MapGroup("/projects/{projectId:guid}/members")
@@ -38,21 +34,18 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get all members of a project")
-            .WithDescription("Requires reader or higher role in the target project.")
+            .WithDescription("Returns all members of the project.")
             .WithName("Project_Members_Get_All");
 
             // POST /projects/{projectId}/members
             group.MapPost("/", async (
                 [FromRoute] Guid projectId,
-                [FromBody] AddMemberDto dto,
+                [FromBody] ProjectMemberCreateDto dto,
                 [FromServices] IProjectMemberWriteService svc,
                 CancellationToken ct = default) =>
             {
-                var (res, _) = await svc.CreateAsync(projectId, dto.UserId, dto.Role, dto.JoinedAtUtc.ToUniversalTime(), ct);
-
-                if (res != DomainMutation.Created) return res.ToHttp();
-
-                return res.ToHttp(location: $"/projects/{projectId}/members/{dto.UserId}");
+                var (result, _) = await svc.CreateAsync(projectId, dto.UserId, dto.Role, dto.JoinedAt, ct);
+                return result.ToHttp();
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .Produces(StatusCodes.Status201Created)
@@ -62,73 +55,96 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Add new project member")
-            .WithDescription("Requires admin role in the target project")
+            .WithDescription("Adds a user to the project as a member.")
             .WithName("Project_Members_Create");
 
             // PATCH /projects/{projectId}/members/{userId}/role
             group.MapPatch("/{userId:guid}/role", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
-                [FromBody] ChangeMemberRoleDto dto,
-                [FromServices] IProjectMemberWriteService svc,
+                [FromBody] ProjectMemberChangeRoleDto dto,
+                [FromServices] IProjectMemberReadService projectMemberReadSvc,
+                [FromServices] IProjectMemberWriteService projectMemberWriteSvc,
+                HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var res = await svc.ChangeRoleAsync(projectId, userId, dto.Role, dto.RowVersion, ct);
-                return res.ToHttp();
+                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var result = await projectMemberWriteSvc.ChangeRoleAsync(projectId, userId, dto.NewRole, rowVersion, ct);
+                if (result != DomainMutation.Updated) return result.ToHttp();
+
+                var updated = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(updated!.RowVersion)}\"";
+                return Results.Ok(updated.ToReadDto());
             })
+            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectOwner)
-            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ProjectMemberReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Change role to a project member")
-            .WithDescription("Requires owner role in the target project")
+            .WithDescription("Changes the role of a project member.")
             .WithName("Project_Members_Change_Role");
 
             // PATCH /projects/{projectId}/members/{userId}/remove
             group.MapPatch("/{userId:guid}/remove", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
-                [FromBody] RemoveMemberDto dto,
-                [FromServices] IProjectMemberWriteService svc,
+                [FromBody] ProjectMemberRemoveDto dto,
+                [FromServices] IProjectMemberReadService projectMemberReadSvc,
+                [FromServices] IProjectMemberWriteService projectMemberWriteSvc,
+                HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var res = await svc.RemoveAsync(projectId, userId, dto.RowVersion, dto.RemovedAtUtc.ToUniversalTime(), ct);
-                return res.ToHttp();
+                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var result = await projectMemberWriteSvc.RemoveAsync(projectId, userId, rowVersion, dto.RemovedAt, ct);
+                if (result != DomainMutation.Updated) return result.ToHttp();
+
+                var removed = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(removed!.RowVersion)}\"";
+                return Results.Ok(removed.ToReadDto());
             })
+            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectAdmin)
-            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ProjectMemberReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Remove project member")
-            .WithDescription("Requires admin role in the target project")
+            .WithDescription("Soft-removes a project member.")
             .WithName("Project_Members_Remove");
 
             // PATCH /projects/{projectId}/members/{userId}/restore
             group.MapPatch("/{userId:guid}/restore", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
-                [FromBody] RestoreMemberDto dto,
-                [FromServices] IProjectMemberWriteService svc,
+                [FromServices] IProjectMemberReadService projectMemberReadSvc,
+                [FromServices] IProjectMemberWriteService projectMemberWriteSvc,
+                HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var res = await svc.RestoreAsync(projectId, userId, dto.RowVersion, ct);
-                return res.ToHttp();
+                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var result = await projectMemberWriteSvc.RestoreAsync(projectId, userId, rowVersion, ct);
+                if (result != DomainMutation.Updated) return result.ToHttp();
+
+                var removed = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(removed!.RowVersion)}\"";
+                return Results.Ok(removed.ToReadDto());
             })
+            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectAdmin)
-            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ProjectMemberReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Restore project member")
-            .WithDescription("Requires admin role in the target project")
+            .WithDescription("Restores a previously removed project member.")
             .WithName("Project_Members_Restore");
 
             return group;
