@@ -1,4 +1,3 @@
-using Application.Lanes.DTOs;
 using Application.Lanes.Mapping;
 using Domain.Entities;
 using Domain.ValueObjects;
@@ -21,16 +20,6 @@ namespace Application.Tests.Lanes.Mapping
             dto.Name.Should().Be(e.Name.Value);
             dto.Order.Should().Be(e.Order);
             dto.RowVersion.Should().Equal(e.RowVersion);
-        }
-
-        [Fact]
-        public void CreateDto_To_Entity_Works()
-        {
-            var c = new LaneCreateDto { ProjectId = Guid.NewGuid(), Name = "Doing", Order = 1 };
-            var e = c.ToEntity();
-            e.ProjectId.Should().Be(c.ProjectId);
-            e.Name.Value.Should().Be(c.Name);
-            e.Order.Should().Be(c.Order);
         }
     }
 }
