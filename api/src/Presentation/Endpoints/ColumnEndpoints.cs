@@ -1,0 +1,151 @@
+using Api.Auth.Authorization;
+using Api.Extensions;
+using Api.Filters;
+using Application.Columns.Abstractions;
+using Application.Columns.DTOs;
+using Application.Columns.Mapping;
+using Domain.Enums;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Api.Endpoints
+{
+    public static class ColumnEndpoints
+    {
+        public static RouteGroupBuilder MapColumns(this IEndpointRouteBuilder app)
+        {
+            var group = app.MapGroup("/projects/{projectId:guid}/lanes/{laneId:guid}/columns")
+                .WithTags("Project Columns")
+                .RequireAuthorization(Policies.ProjectReader);
+
+            // GET /projects/{projectId}/lanes/{laneId}/columns
+            group.MapGet("/", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid laneId,
+                [FromServices] IColumnReadService svc,
+                CancellationToken ct = default) =>
+            {
+                var columns = await svc.ListByLaneAsync(laneId, ct);
+                var dto = columns.Select(c => c.ToReadDto()).ToList();
+                return Results.Ok(dto);
+            })
+            .Produces<IEnumerable<ColumnReadDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get all columns")
+            .WithDescription("Returns columns belonging to the specified lane.")
+            .WithName("Columns_Get_All");
+
+            // POST /projects/{projectId}/lanes/{laneId}/columns
+            group.MapPost("/", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid laneId,
+                [FromBody] ColumnCreateDto dto,
+                [FromServices] IColumnWriteService svc,
+                HttpContext http,
+                CancellationToken ct = default) =>
+            {
+                var (result, column) = await svc.CreateAsync(projectId, laneId, dto.Name, dto.Order, ct);
+                if (result != DomainMutation.Created) return result.ToHttp();
+
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(column!.RowVersion)}\"";
+                return Results.Created($"/projects/{projectId}/lanes/{laneId}/columns/{column.Id}", column.ToReadDto());
+            })
+            .RequireAuthorization(Policies.ProjectMember)
+            .Produces<ColumnReadDto>(StatusCodes.Status201Created)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .WithSummary("Create column")
+            .WithDescription("Creates a column in the lane and returns it.")
+            .WithName("Columns_Create");
+
+            // PUT /projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename
+            group.MapPut("/{columnId:guid}/rename", async (
+                [FromRoute] Guid columnId,
+                [FromBody] ColumnRenameDto dto,
+                [FromServices] IColumnWriteService columnWriteSvc,
+                [FromServices] IColumnReadService columnReadSvc,
+                HttpContext http,
+                CancellationToken ct = default) =>
+            {
+                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var result = await columnWriteSvc.RenameAsync(columnId, dto.Name, rowVersion, ct);
+                if (result != DomainMutation.Updated) return result.ToHttp();
+
+                var renamed = await columnReadSvc.GetAsync(columnId, ct);
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed!.RowVersion)}\"";
+                return Results.Ok(renamed.ToReadDto());
+            })
+            .AddEndpointFilter<IfMatchRowVersionFilter>()
+            .RequireAuthorization(Policies.ProjectMember)
+            .Produces<ColumnReadDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .WithSummary("Rename column")
+            .WithDescription("Renames a column and returns the updated column.")
+            .WithName("Columns_Rename");
+
+            // PUT /projects/{projectId}/lanes/{laneId}/columns/{columnId}/reorder
+            group.MapPut("/{columnId:guid}/reorder", async (
+                [FromRoute] Guid columnId,
+                [FromBody] ColumnReorderDto dto,
+                [FromServices] IColumnWriteService columnWriteSvc,
+                [FromServices] IColumnReadService columnReadSvc,
+                HttpContext http,
+                CancellationToken ct = default) =>
+            {
+                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var result = await columnWriteSvc.ReorderAsync(columnId, dto.NewOrder, rowVersion, ct);
+                if (result != DomainMutation.Updated) return result.ToHttp();
+
+                var reordered = await columnReadSvc.GetAsync(columnId, ct);
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(reordered!.RowVersion)}\"";
+                return Results.Ok(reordered.ToReadDto());
+            })
+            .AddEndpointFilter<IfMatchRowVersionFilter>()
+            .RequireAuthorization(Policies.ProjectMember)
+            .Produces<ColumnReadDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .WithSummary("Reorder column")
+            .WithDescription("Changes column order and returns the updated column.")
+            .WithName("Columns_Reorder");
+
+            // DELETE /projects/{projectId}/lanes/{laneId}/columns/{columnId}
+            group.MapDelete("/{columnId:guid}", async (
+                [FromRoute] Guid columnId,
+                [FromServices] IColumnWriteService svc,
+                HttpContext http,
+                CancellationToken ct = default) =>
+            {
+                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var result = await svc.DeleteAsync(columnId, rowVersion, ct);
+                return result.ToHttp();
+            })
+            .AddEndpointFilter<IfMatchRowVersionFilter>()
+            .RequireAuthorization(Policies.ProjectMember)
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .WithSummary("Delete column")
+            .WithDescription("Deletes a column.")
+            .WithName("Columns_Delete");
+
+            return group;
+        }
+    }
+}
