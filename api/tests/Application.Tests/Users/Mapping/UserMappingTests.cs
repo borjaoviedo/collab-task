@@ -4,7 +4,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 
-namespace Application.Tests.Users.Mappers
+namespace Application.Tests.Users.Mapping
 {
     public sealed class UserMappingTests
     {
