@@ -14,7 +14,7 @@ namespace Api.Endpoints
         public static RouteGroupBuilder MapTaskItems(this IEndpointRouteBuilder app)
         {
             var group = app.MapGroup("/projects/{projectId:guid}/lanes/{laneId:guid}/columns/{columnId:guid}/tasks")
-                .WithTags("Column Tasks")
+                .WithTags("Tasks")
                 .RequireAuthorization(Policies.ProjectReader);
 
             // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks
@@ -36,6 +36,26 @@ namespace Api.Endpoints
             .WithSummary("Get all tasks")
             .WithDescription("Returns tasks belonging to the specified column.")
             .WithName("Tasks_Get_All");
+
+            // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}
+            group.MapGet("/{taskId:guid}", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid laneId,
+                [FromRoute] Guid columnId,
+                [FromRoute] Guid taskId,
+                [FromServices] ITaskItemReadService taskReadSvc,
+                CancellationToken ct = default) =>
+            {
+                var task = await taskReadSvc.GetAsync(taskId, ct);
+                return task is null ? Results.NotFound() : Results.Ok(task.ToReadDto());
+            })
+            .Produces<TaskItemReadDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get task")
+            .WithDescription("Returns a task by id within a column.")
+            .WithName("Tasks_Get");
 
             // POST /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks
             group.MapPost("/", async (
