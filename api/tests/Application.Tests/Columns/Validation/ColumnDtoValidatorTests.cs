@@ -11,10 +11,8 @@ namespace Application.Tests.Columns.Validation
         public void ColumnCreate_Invalid_Fails()
         {
             var v = new ColumnCreateDtoValidator();
-            var dto = new ColumnCreateDto { ProjectId = Guid.Empty, LaneId = Guid.Empty, Name = "", Order = -1 };
+            var dto = new ColumnCreateDto { Name = "", Order = -1 };
             var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(x => x.ProjectId);
-            r.ShouldHaveValidationErrorFor(x => x.LaneId);
             r.ShouldHaveValidationErrorFor(x => x.Name);
             r.ShouldHaveValidationErrorFor(x => x.Order);
         }
@@ -24,7 +22,7 @@ namespace Application.Tests.Columns.Validation
         {
             var cv = new ColumnCreateDtoValidator();
 
-            cv.TestValidate(new ColumnCreateDto { ProjectId = Guid.NewGuid(), LaneId = Guid.NewGuid(), Name = "Todo", Order = 0 })
+            cv.TestValidate(new ColumnCreateDto { Name = "Todo", Order = 0 })
               .ShouldNotHaveAnyValidationErrors();
         }
     }

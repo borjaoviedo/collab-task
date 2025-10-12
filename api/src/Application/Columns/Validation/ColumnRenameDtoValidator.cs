@@ -4,13 +4,11 @@ using FluentValidation;
 
 namespace Application.Columns.Validation
 {
-    public sealed class ColumnRenameDtoValidator : AbstractValidator<ColumnReadDto>
+    public sealed class ColumnRenameDtoValidator : AbstractValidator<ColumnRenameDto>
     {
         public ColumnRenameDtoValidator()
         {
-            RuleFor(c => c.Id).RequiredGuid();
             RuleFor(c => c.Name).ColumnNameRules();
-            RuleFor(c => c.RowVersion).ConcurrencyTokenRules();
         }
     }
 }

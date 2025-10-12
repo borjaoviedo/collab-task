@@ -8,9 +8,7 @@ namespace Application.Columns.Validation
     {
         public ColumnReorderDtoValidator()
         {
-            RuleFor(c => c.Id).RequiredGuid();
             RuleFor(c => c.NewOrder).NonNegativeOrder(field: "Column order");
-            RuleFor(c => c.RowVersion).ConcurrencyTokenRules();
         }
     }
 }

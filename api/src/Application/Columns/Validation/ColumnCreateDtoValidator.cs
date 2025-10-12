@@ -8,8 +8,6 @@ namespace Application.Columns.Validation
     {
         public ColumnCreateDtoValidator()
         {
-            RuleFor(c => c.ProjectId).RequiredGuid();
-            RuleFor(c => c.LaneId).RequiredGuid();
             RuleFor(c => c.Name).ColumnNameRules();
             RuleFor(c => c.Order).NonNegativeOrder(field: "Column order");
         }
