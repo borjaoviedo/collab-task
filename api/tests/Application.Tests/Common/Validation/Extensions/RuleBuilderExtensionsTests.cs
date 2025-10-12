@@ -2,6 +2,7 @@ using Application.Common.Validation.Extensions;
 using Domain.Enums;
 using FluentValidation;
 using FluentValidation.TestHelper;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 
 namespace Application.Tests.Common.Validation.Extensions
@@ -178,6 +179,7 @@ namespace Application.Tests.Common.Validation.Extensions
         {
             public DateTimeOffset JoinedAt { get; set; }
             public DateTimeOffset? RemovedAt { get; set; }
+            public DateTimeOffset? DueDate { get; set; }
         }
 
         private sealed class DatesValidator : AbstractValidator<DatesDto>
@@ -186,6 +188,7 @@ namespace Application.Tests.Common.Validation.Extensions
             {
                 RuleFor(x => x.JoinedAt).JoinedAtRules();
                 RuleFor(x => x.RemovedAt).RemovedAtRules();
+                RuleFor(x => x.DueDate).DueDateRules();
             }
         }
 
@@ -246,6 +249,44 @@ namespace Application.Tests.Common.Validation.Extensions
             })
             .ShouldNotHaveAnyValidationErrors();
         }
+
+        [Theory]
+        [InlineData(null)]
+        public void DueDate_Null_Passes(DateTimeOffset? d)
+        {
+            var v = new DatesValidator();
+            v.TestValidate(new DatesDto { DueDate = d })
+             .ShouldNotHaveValidationErrorFor(x => x.DueDate);
+        }
+
+        [Fact]
+        public void DueDate_Past_Fails()
+        {
+            var v = new DatesValidator();
+            var past = DateTimeOffset.UtcNow.AddDays(-1);
+            v.TestValidate(new DatesDto { DueDate = past })
+             .ShouldHaveValidationErrorFor(x => x.DueDate)
+             .WithErrorMessage("DueDate must be null or a UTC date/time in the future.");
+        }
+
+        [Fact]
+        public void DueDate_NotUtc_Fails()
+        {
+            var v = new DatesValidator();
+            var local = new DateTimeOffset(2025, 10, 12, 12, 0, 0, TimeSpan.FromHours(+2));
+            v.TestValidate(new DatesDto { DueDate = local })
+             .ShouldHaveValidationErrorFor(x => x.DueDate);
+        }
+
+        [Fact]
+        public void DueDate_FutureUtc_Passes()
+        {
+            var v = new DatesValidator();
+            var future = DateTimeOffset.UtcNow.AddDays(1);
+            v.TestValidate(new DatesDto { DueDate = future })
+             .ShouldNotHaveValidationErrorFor(x => x.DueDate);
+        }
+
 
         private sealed class BoardNamesDto
         {
