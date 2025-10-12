@@ -14,7 +14,7 @@ namespace Api.Endpoints
         public static RouteGroupBuilder MapColumns(this IEndpointRouteBuilder app)
         {
             var group = app.MapGroup("/projects/{projectId:guid}/lanes/{laneId:guid}/columns")
-                .WithTags("Project Columns")
+                .WithTags("Columns")
                 .RequireAuthorization(Policies.ProjectReader);
 
             // GET /projects/{projectId}/lanes/{laneId}/columns
@@ -35,6 +35,25 @@ namespace Api.Endpoints
             .WithSummary("Get all columns")
             .WithDescription("Returns columns belonging to the specified lane.")
             .WithName("Columns_Get_All");
+
+            // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}
+            group.MapGet("/{columnId:guid}", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid laneId,
+                [FromRoute] Guid columnId,
+                [FromServices] IColumnReadService svc,
+                CancellationToken ct = default) =>
+            {
+                var column = await svc.GetAsync(columnId, ct);
+                return column is null ? Results.NotFound() : Results.Ok(column.ToReadDto());
+            })
+            .Produces<ColumnReadDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get column")
+            .WithDescription("Returns a column by id within a lane.")
+            .WithName("Columns_Get");
 
             // POST /projects/{projectId}/lanes/{laneId}/columns
             group.MapPost("/", async (
@@ -63,6 +82,8 @@ namespace Api.Endpoints
 
             // PUT /projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename
             group.MapPut("/{columnId:guid}/rename", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
                 [FromBody] ColumnRenameDto dto,
                 [FromServices] IColumnWriteService columnWriteSvc,
@@ -93,6 +114,8 @@ namespace Api.Endpoints
 
             // PUT /projects/{projectId}/lanes/{laneId}/columns/{columnId}/reorder
             group.MapPut("/{columnId:guid}/reorder", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
                 [FromBody] ColumnReorderDto dto,
                 [FromServices] IColumnWriteService columnWriteSvc,
@@ -123,6 +146,8 @@ namespace Api.Endpoints
 
             // DELETE /projects/{projectId}/lanes/{laneId}/columns/{columnId}
             group.MapDelete("/{columnId:guid}", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
                 [FromServices] IColumnWriteService svc,
                 HttpContext http,
