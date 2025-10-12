@@ -1,5 +1,6 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
+using Api.Filters;
 using Application.Common.Abstractions.Auth;
 using Application.Projects.Abstractions;
 using Application.Projects.DTOs;
@@ -11,9 +12,6 @@ namespace Api.Endpoints
 {
     public static class ProjectsEndpoints
     {
-        public sealed record RenameProjectDto(string Name, byte[] RowVersion);
-        public sealed record DeleteProjectDto(byte[] RowVersion);
-
         public static RouteGroupBuilder MapProjects(this IEndpointRouteBuilder app)
         {
             var group = app.MapGroup("/projects")
@@ -67,15 +65,15 @@ namespace Api.Endpoints
                 [FromServices] IProjectReadService projectReadSvc,
                 CancellationToken ct = default) =>
             {
-                var (result, project) = await projectWriteSvc.CreateAsync((Guid)userSvc.UserId!, dto.Name, DateTimeOffset.UtcNow, ct);
-
+                var userId = (Guid)userSvc.UserId!;
+                var (result, project) = await projectWriteSvc.CreateAsync(userId, dto.Name, DateTimeOffset.UtcNow, ct);
                 if (result != DomainMutation.Created) return result.ToHttp();
 
                 var created = await projectReadSvc.GetAsync(project!.Id, ct);
                 if (created is null)
                     return Results.Problem(statusCode: 500, title: "Could not load created project");
 
-                var body = created.ToReadDto((Guid)userSvc.UserId!);
+                var body = created.ToReadDto(userId);
                 return Results.Created($"/projects/{project.Id}", body);
             })
             .Produces<ProjectReadDto>(StatusCodes.Status201Created)
@@ -86,18 +84,27 @@ namespace Api.Endpoints
             .WithDescription("Creates a new project owned by the authenticated user.")
             .WithName("Projects_Create");
 
-            // PATCH /projects/{projectId}/name
-            group.MapPatch("/{projectId:guid}/name", async (
+            // PATCH /projects/{projectId}/rename
+            group.MapPatch("/{projectId:guid}/rename", async (
                 [FromRoute] Guid projectId,
-                [FromBody] RenameProjectDto dto,
-                [FromServices] IProjectWriteService svc,
+                [FromBody] ProjectRenameDto dto,
+                [FromServices] ICurrentUserService userSvc,
+                [FromServices] IProjectWriteService projectWriteSvc,
+                [FromServices] IProjectReadService projectReadSvc,
+                HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var res = await svc.RenameAsync(projectId, dto.Name, dto.RowVersion, ct);
-                return res.ToHttp();
+                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var result = await projectWriteSvc.RenameAsync(projectId, dto.NewName, rowVersion, ct);
+                if (result != DomainMutation.Updated) return result.ToHttp();
+
+                var edited = await projectReadSvc.GetAsync(projectId, ct);
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
+                return Results.Ok(edited.ToReadDto((Guid)userSvc.UserId!));
             })
+            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectAdmin)
-            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ProjectReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
@@ -110,13 +117,15 @@ namespace Api.Endpoints
             // DELETE /projects/{projectId}
             group.MapDelete("/{projectId:guid}", async (
                 [FromRoute] Guid projectId,
-                [FromBody] DeleteProjectDto dto,
                 [FromServices] IProjectWriteService svc,
+                HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var res = await svc.DeleteAsync(projectId, dto.RowVersion, ct);
+                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var res = await svc.DeleteAsync(projectId, rowVersion, ct);
                 return res.ToHttp();
             })
+            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectOwner)
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
