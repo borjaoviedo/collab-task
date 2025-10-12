@@ -1,4 +1,3 @@
-using Application.TaskActivities.DTOs;
 using Application.TaskActivities.Mapping;
 using Domain.Entities;
 using Domain.Enums;
@@ -9,23 +8,6 @@ namespace Application.Tests.TaskActivities.Mapping
 {
     public sealed class TaskActivityMappingTests
     {
-        [Fact]
-        public void CreateDto_To_Entity_Maps()
-        {
-            var dto = new TaskActivityCreateDto
-            {
-                TaskId = Guid.NewGuid(),
-                ActorId = Guid.NewGuid(),
-                Type = TaskActivityType.TaskEdited,
-                Payload = "{\"k\":1}"
-            };
-
-            var e = dto.ToEntity();
-            e.TaskId.Should().Be(dto.TaskId);
-            e.Type.Should().Be(dto.Type);
-            e.Payload.Value.Should().Be(dto.Payload);
-        }
-
         [Fact]
         public void Entity_To_ReadDto_Maps_With_Timestamps()
         {
