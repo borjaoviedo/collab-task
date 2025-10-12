@@ -29,18 +29,6 @@ namespace Application.Projects.Mapping
                 RowVersion = item.RowVersion
             };
 
-        public static ProjectListItemDto ToListDto(this Project item, Guid currentUserId)
-            => new()
-            {
-                Id = item.Id,
-                Name = item.Name.Value,
-                Slug = item.Slug.Value,
-                MembersCount = item.Members.Count(m => m.RemovedAt == null),
-                CurrentUserRole = item.Members
-                    .FirstOrDefault(x => x.UserId == currentUserId && x.RemovedAt == null)?.Role
-                    ?? ProjectRole.Reader
-            };
-
         public static Project ToEntity(this ProjectCreateDto item, Guid ownerId, DateTimeOffset nowUtc)
             => Project.Create(ownerId, ProjectName.Create(item.Name), nowUtc);
 
