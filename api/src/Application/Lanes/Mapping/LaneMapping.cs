@@ -18,20 +18,5 @@ namespace Application.Lanes.Mapping
 
         public static Lane ToEntity(this LaneCreateDto dto)
             => Lane.Create(dto.ProjectId, LaneName.Create(dto.Name), dto.Order);
-
-        public static LaneRenameDto ToRenameDto(this LaneReadDto dto)
-            => new()
-            {
-                Id = dto.Id,
-                Name = dto.Name,
-                RowVersion = dto.RowVersion
-            };
-
-        public static LaneDeleteDto ToDeleteDto(this LaneReadDto dto)
-            => new()
-            {
-                Id = dto.Id,
-                RowVersion = dto.RowVersion
-            };
     }
 }
