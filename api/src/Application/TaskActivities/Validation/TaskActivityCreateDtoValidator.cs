@@ -8,8 +8,6 @@ namespace Application.TaskActivities.Validation
     {
         public TaskActivityCreateDtoValidator()
         {
-            RuleFor(a => a.TaskId).RequiredGuid();
-            RuleFor(a => a.ActorId).RequiredGuid();
             RuleFor(a => a.Type).TaskActivityTypeRules();
             RuleFor(a => a.Payload).ActivityPayloadRules();
         }
