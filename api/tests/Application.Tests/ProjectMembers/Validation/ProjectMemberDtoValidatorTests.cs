@@ -68,12 +68,10 @@ namespace Application.Tests.ProjectMembers.Validation
             var v = new ProjectMemberUpdateRoleDtoValidator();
             var dto = new ProjectMemberUpdateRoleDto
             {
-                Role = (ProjectRole)999,
-                RowVersion = []
+                Role = (ProjectRole)999
             };
             var r = v.TestValidate(dto);
             r.ShouldHaveValidationErrorFor(x => x.Role).WithErrorMessage("Invalid project role value.");
-            r.ShouldHaveValidationErrorFor(x => x.RowVersion).WithErrorMessage("RowVersion cannot be empty.");
         }
 
         [Fact]
@@ -82,8 +80,7 @@ namespace Application.Tests.ProjectMembers.Validation
             var v = new ProjectMemberUpdateRoleDtoValidator();
             var dto = new ProjectMemberUpdateRoleDto
             {
-                Role = ProjectRole.Member,
-                RowVersion = [1]
+                Role = ProjectRole.Member
             };
             v.TestValidate(dto).ShouldNotHaveAnyValidationErrors();
         }
@@ -97,16 +94,13 @@ namespace Application.Tests.ProjectMembers.Validation
             var r1 = v.TestValidate(new ProjectMemberRemoveDto
             {
                 RemovedAt = DateTimes.NonUtcInstant(), // not UTC
-                RowVersion = []
             });
             r1.ShouldHaveValidationErrorFor(x => x.RemovedAt).WithErrorMessage("RemovedAt must be in UTC.");
-            r1.ShouldHaveValidationErrorFor(x => x.RowVersion).WithErrorMessage("RowVersion cannot be empty.");
 
             // Future
             var r2 = v.TestValidate(new ProjectMemberRemoveDto
             {
-                RemovedAt = DateTimeOffset.UtcNow.AddMinutes(1),
-                RowVersion = [1]
+                RemovedAt = DateTimeOffset.UtcNow.AddMinutes(1)
             });
             r2.ShouldHaveValidationErrorFor(x => x.RemovedAt).WithErrorMessage("RemovedAt cannot be in the future.");
         }
@@ -117,8 +111,7 @@ namespace Application.Tests.ProjectMembers.Validation
             var v = new ProjectMemberRemoveDtoValidator();
             var dto = new ProjectMemberRemoveDto
             {
-                RemovedAt = DateTimeOffset.UtcNow,
-                RowVersion = [1]
+                RemovedAt = DateTimeOffset.UtcNow
             };
             v.TestValidate(dto).ShouldNotHaveAnyValidationErrors();
         }
