@@ -1,6 +1,7 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
 using Api.Filters;
+using Application.Common.Abstractions.Auth;
 using Application.TaskAssignments.Abstractions;
 using Application.TaskAssignments.DTOs;
 using Application.TaskAssignments.Mapping;
@@ -13,12 +14,12 @@ namespace Api.Endpoints
     {
         public static RouteGroupBuilder MapTaskAssignments(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/projects/{projectId:guid}/lanes/{laneId:guid}/columns/{columnId:guid}/tasks/{taskId:guid}/assignments")
+            var nested = app.MapGroup("/projects/{projectId:guid}/lanes/{laneId:guid}/columns/{columnId:guid}/tasks/{taskId:guid}/assignments")
                 .WithTags("Task Assignments")
                 .RequireAuthorization(Policies.ProjectReader);
 
             // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments
-            group.MapGet("/", async (
+            nested.MapGet("/", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
@@ -38,8 +39,29 @@ namespace Api.Endpoints
             .WithDescription("Returns all assignments for the specified task.")
             .WithName("TaskAssignments_Get_All");
 
+            // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}
+            nested.MapGet("/{userId:guid}", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid laneId,
+                [FromRoute] Guid columnId,
+                [FromRoute] Guid taskId,
+                [FromRoute] Guid userId,
+                [FromServices] ITaskAssignmentReadService assignmentReadSvc,
+                CancellationToken ct = default) =>
+            {
+                var a = await assignmentReadSvc.GetAsync(taskId, userId, ct);
+                return a is null ? Results.NotFound() : Results.Ok(a.ToReadDto());
+            })
+            .Produces<TaskAssignmentReadDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get task assignment")
+            .WithDescription("Returns the assignment of a given user on a task.")
+            .WithName("TaskAssignments_Get");
+
             // POST /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments
-            group.MapPost("/", async (
+            nested.MapPost("/", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
@@ -75,7 +97,7 @@ namespace Api.Endpoints
             .WithName("Assignments_Create");
 
             // PATCH /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}/role
-            group.MapPatch("/{userId:guid}/role", async (
+            nested.MapPatch("/{userId:guid}/role", async (
                 [FromRoute] Guid taskId,
                 [FromRoute] Guid userId,
                 [FromBody] TaskAssignmentChangeRoleDto dto,
@@ -108,7 +130,7 @@ namespace Api.Endpoints
             .WithName("Assignments_Change_Role");
 
             // DELETE /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}
-            group.MapDelete("/{userId:guid}", async (
+            nested.MapDelete("/{userId:guid}", async (
                 [FromRoute] Guid taskId,
                 [FromRoute] Guid userId,
                 [FromServices] ITaskAssignmentWriteService svc,
@@ -131,7 +153,47 @@ namespace Api.Endpoints
             .WithDescription("Removes a task assignment using optimistic concurrency (If-Match).")
             .WithName("Assignments_Remove");
 
-            return group;
+            // top-level lists
+            var top = app.MapGroup("/assignments")
+                .WithTags("Task Assignments")
+                .RequireAuthorization(Policies.ProjectReader);
+
+            // GET /assignments/me
+            top.MapGet("/me", async (
+                HttpContext http,
+                [FromServices] ITaskAssignmentReadService assignmentReadSvc,
+                [FromServices] ICurrentUserService currentUserSvc,
+                CancellationToken ct = default) =>
+            {
+                var userId = (Guid)currentUserSvc.UserId!;
+                var items = await assignmentReadSvc.ListByUserAsync(userId, ct);
+                var dto = items.Select(a => a.ToReadDto()).ToList();
+                return Results.Ok(dto);
+            })
+            .Produces<IEnumerable<TaskAssignmentReadDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .WithSummary("List my task assignments")
+            .WithDescription("Lists task assignments of the authenticated user across accessible projects.")
+            .WithName("TaskAssignments_ListMine");
+
+            // GET /assignments/users/{userId}
+            top.MapGet("/users/{userId:guid}", async (
+                [FromRoute] Guid userId,
+                [FromServices] ITaskAssignmentReadService assignmentReadSvc,
+                CancellationToken ct = default) =>
+            {
+                var items = await assignmentReadSvc.ListByUserAsync(userId, ct);
+                var dto = items.Select(a => a.ToReadDto()).ToList();
+                return Results.Ok(dto);
+            })
+            .Produces<IEnumerable<TaskAssignmentReadDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .WithSummary("List task assignments by user")
+            .WithDescription("Lists task assignments of the specified user across accessible projects.")
+            .WithName("TaskAssignments_ListByUser");
+
+            return top;
         }
     }
 }
