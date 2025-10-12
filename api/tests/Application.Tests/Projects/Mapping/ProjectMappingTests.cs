@@ -1,4 +1,3 @@
-using Application.Projects.DTOs;
 using Application.Projects.Mapping;
 using Domain.Entities;
 using Domain.Enums;
@@ -66,34 +65,6 @@ namespace Application.Tests.Projects.Mapping
             var dto = p.ToReadDto(u.Id);
 
             Assert.Equal(1, dto.MembersCount);
-        }
-
-        [Fact]
-        public void ToEntity_FromCreateDto_Sets_All_Properties()
-        {
-            var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Owner User"), Bytes(32), Bytes(16));
-            var now = DateTimeOffset.UtcNow;
-
-            var dto = new ProjectCreateDto { Name = "Project Name" };
-            var entity = dto.ToEntity(u.Id, now);
-
-            Assert.NotEqual(entity.Id, Guid.Empty);
-            Assert.Equal(entity.OwnerId, u.Id);
-            Assert.Equal(entity.Name, ProjectName.Create(dto.Name));
-            Assert.Equal(entity.Slug, ProjectSlug.Create(dto.Name));
-            Assert.Single(entity.Members);
-        }
-
-        [Fact]
-        public void ToUpdateDto_Maps_All_Fields()
-        {
-            var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Demo User"), Bytes(32), Bytes(16));
-            var p = Project.Create(u.Id, ProjectName.Create("Project Name"), DateTimeOffset.UtcNow);
-
-            var dto = p.ToUpdateDto();
-
-            Assert.Equal(p.Name.Value, dto.Name);
-            Assert.Equal(p.RowVersion, dto.RowVersion);
         }
     }
 }

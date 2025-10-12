@@ -1,7 +1,6 @@
 using Application.Projects.DTOs;
 using Domain.Entities;
 using Domain.Enums;
-using Domain.ValueObjects;
 
 namespace Application.Projects.Mapping
 {
@@ -21,16 +20,5 @@ namespace Application.Projects.Mapping
                     .FirstOrDefault(x => x.UserId == currentUserId && x.RemovedAt == null)?.Role
                     ?? ProjectRole.Reader
             };
-
-        public static ProjectUpdateDto ToUpdateDto(this Project item)
-            => new()
-            {
-                Name = item.Name.Value,
-                RowVersion = item.RowVersion
-            };
-
-        public static Project ToEntity(this ProjectCreateDto item, Guid ownerId, DateTimeOffset nowUtc)
-            => Project.Create(ownerId, ProjectName.Create(item.Name), nowUtc);
-
     }
 }
