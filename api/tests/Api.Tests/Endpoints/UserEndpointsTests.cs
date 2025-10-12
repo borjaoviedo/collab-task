@@ -1,6 +1,7 @@
 using Api.Tests.Common.Helpers;
 using Api.Tests.Testing;
 using Application.Common.Abstractions.Security;
+using Application.Users.DTOs;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
@@ -17,9 +18,6 @@ namespace Api.Tests.Endpoints
         private sealed record RegisterReq(string Email, string Name, string Password);
         private sealed record AuthToken(string AccessToken, Guid UserId, string Email, string Name, string Role);
         private sealed record UserReadDto(Guid Id, string Email, string Name, string Role, byte[] RowVersion);
-        private sealed record RenameUserDto(string Name, byte[] RowVersion);
-        private sealed record ChangeRoleDto(int Role, byte[] RowVersion);
-        private sealed record DeleteUserDto(byte[] RowVersion);
 
         [Fact]
         public async Task Get_ById_Returns200_When_Admin()
@@ -84,7 +82,7 @@ namespace Api.Tests.Endpoints
         }
 
         [Fact]
-        public async Task Rename_Self_Returns204_When_Valid_RowVersion()
+        public async Task Rename_Self_Returns200_When_Valid_IfMatch()
         {
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
@@ -92,34 +90,44 @@ namespace Api.Tests.Endpoints
             var u = await RegisterAndLogin(client);
             var adminBearer = await MintToken(app, u.UserId, u.Email, u.Name, "Admin");
 
-            // get current RowVersion via admin GET
             var get = await GetUser(client, u.UserId, adminBearer);
-            var row = get.RowVersion;
 
-            // now rename with self token
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", u.AccessToken);
-            var payload = new RenameUserDto("Renamed User", row);
-            var resp = await client.PatchAsJsonAsync($"/users/{u.UserId}/name", payload);
-            resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+            var base64 = Convert.ToBase64String(get.RowVersion);
+            client.DefaultRequestHeaders.IfMatch.Clear();
+            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", $"W/\"{base64}\"");
+
+            var payload = new UserRenameDto() { NewName = "Renamed User"};
+            var resp = await client.PatchAsJsonAsync($"/users/{u.UserId}/rename", payload);
+
+            resp.StatusCode.Should().Be(HttpStatusCode.OK);
+            var body = await resp.Content.ReadFromJsonAsync<UserReadDto>();
+            body!.Name.Should().Be("Renamed User");
         }
 
         [Fact]
-        public async Task Change_Role_Returns204_When_Admin()
+        public async Task Change_Role_Returns200_When_Admin()
         {
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            // target user
             var target = await RegisterAndLogin(client);
-
-            // admin acts on target
             var adminBearer = await MintToken(app, target.UserId, target.Email, target.Name, "Admin");
             var current = await GetUser(client, target.UserId, adminBearer);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminBearer);
-            var payload = new ChangeRoleDto(1, current.RowVersion);
+
+            var base64 = Convert.ToBase64String(current.RowVersion);
+            client.DefaultRequestHeaders.IfMatch.Clear();
+            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", $"W/\"{base64}\"");
+
+            var payload = new UserChangeRoleDto() { NewRole = Domain.Enums.UserRole.Admin };
             var resp = await client.PatchAsJsonAsync($"/users/{target.UserId}/role", payload);
-            resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+            resp.StatusCode.Should().Be(HttpStatusCode.OK);
+            var body = await resp.Content.ReadFromJsonAsync<UserReadDto>();
+            body!.Role.Should().Be("Admin");
         }
 
         [Fact]
@@ -133,8 +141,12 @@ namespace Api.Tests.Endpoints
             var current = await GetUser(client, victim.UserId, adminBearer);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminBearer);
-            var payload = new DeleteUserDto(current.RowVersion);
-            var resp = await client.DeleteAsJsonAsync($"/users/{victim.UserId}", payload);
+            var etag = $"W/\"{Convert.ToBase64String(current.RowVersion)}\"";
+
+            var req = new HttpRequestMessage(HttpMethod.Delete, $"/users/{victim.UserId}");
+            req.Headers.TryAddWithoutValidation("If-Match", etag);
+
+            var resp = await client.SendAsync(req);
             resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
 
