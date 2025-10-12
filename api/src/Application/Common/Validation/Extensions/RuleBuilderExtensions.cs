@@ -20,6 +20,13 @@ namespace Application.Common.Validation.Extensions
 
         private static bool IsUtc(DateTimeOffset d) => d.Offset == TimeSpan.Zero;
 
+        private static bool IsValidJson(string? s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return false;
+            try { using var _ = JsonDocument.Parse(s); return true; }
+            catch (JsonException) { return false; }
+        }
+
         // User
         public static IRuleBuilderOptions<T, string> UserEmailRules<T>(this IRuleBuilder<T, string> rb) =>
             rb.NotEmpty().WithMessage("Email is required.")
@@ -101,11 +108,11 @@ namespace Application.Common.Validation.Extensions
               .Must(s => !string.IsNullOrWhiteSpace(s)).WithMessage("Activity payload cannot be whitespace.")
               .Must(IsValidJson).WithMessage("Activity payload must be valid JSON.");
 
-        private static bool IsValidJson(string? s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return false;
-            try { using var _ = JsonDocument.Parse(s); return true; }
-            catch (JsonException) { return false; }
-        }
+        // Orders and SortKeys
+        public static IRuleBuilderOptions<T, int> NonNegativeOrder<T>(this IRuleBuilder<T, int> rb, string field = "Order") =>
+            rb.GreaterThanOrEqualTo(0).WithMessage($"{field} must be ≥ 0.");
+
+        public static IRuleBuilderOptions<T, decimal> NonNegativeSortKey<T>(this IRuleBuilder<T, decimal> rb) =>
+            rb.GreaterThanOrEqualTo(0m).WithMessage("SortKey must be ≥ 0.");
     }
 }
