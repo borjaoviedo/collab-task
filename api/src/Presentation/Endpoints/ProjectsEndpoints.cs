@@ -57,6 +57,45 @@ namespace Api.Endpoints
             .WithDescription("Returns the specified project if the authenticated user has at least reader permissions.")
             .WithName("Projects_Get_ById");
 
+            // GET /projects/me
+            group.MapGet("/me", async (
+                HttpContext http,
+                [FromServices] ICurrentUserService currentUserSvc,
+                [FromServices] IProjectReadService projectReadSvc,
+                CancellationToken ct = default) =>
+            {
+                var userId = (Guid)currentUserSvc.UserId!;
+                var projects = await projectReadSvc.GetAllByUserAsync(userId, filter: null, ct);
+
+                var dto = projects.Select(p => p.ToReadDto(userId)).ToList();
+                return Results.Ok(dto);
+            })
+            .RequireAuthorization(Policies.ProjectReader)
+            .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .WithSummary("List my projects")
+            .WithDescription("Lists all projects the authenticated user can access.")
+            .WithName("Projects_ListMine");
+
+            // GET /projects/users/{userId}
+            group.MapGet("/users/{userId:guid}", async (
+                [FromRoute] Guid userId,
+                [FromServices] IProjectReadService projectReadSvc,
+                CancellationToken ct = default) =>
+            {
+                var projects = await projectReadSvc.GetAllByUserAsync(userId, filter: null, ct);
+
+                var dto = projects.Select(p => p.ToReadDto(userId)).ToList();
+                return Results.Ok(dto);
+            })
+            .RequireAuthorization(Policies.ProjectReader)
+            .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .WithSummary("List projects by user")
+            .WithDescription("Lists all projects the specified user can access. Admin-only if the user differs from the caller.")
+            .WithName("Projects_List_ByUser");
+
             // POST /projects
             group.MapPost("/", async (
                 [FromBody] ProjectCreateDto dto,
