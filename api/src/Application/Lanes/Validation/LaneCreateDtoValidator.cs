@@ -10,7 +10,7 @@ namespace Application.Lanes.Validation
         {
             RuleFor(l => l.ProjectId).RequiredGuid();
             RuleFor(l => l.Name).LaneNameRules();
-            RuleFor(l => l.Order).NonNegativeOrder();
+            RuleFor(l => l.Order).NonNegativeOrder(field: "Lane order");
         }
     }
 }

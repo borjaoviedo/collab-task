@@ -11,7 +11,7 @@ namespace Application.Columns.Validation
             RuleFor(c => c.ProjectId).RequiredGuid();
             RuleFor(c => c.LaneId).RequiredGuid();
             RuleFor(c => c.Name).ColumnNameRules();
-            RuleFor(c => c.Order).NonNegativeOrder();
+            RuleFor(c => c.Order).NonNegativeOrder(field: "Column order");
         }
     }
 }
