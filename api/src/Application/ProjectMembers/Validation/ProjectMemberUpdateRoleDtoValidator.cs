@@ -9,7 +9,6 @@ namespace Application.ProjectMembers.Validation
         public ProjectMemberUpdateRoleDtoValidator()
         {
             RuleFor(pm => pm.Role).ProjectRoleRules();
-            RuleFor(pm => pm.RowVersion).ConcurrencyTokenRules();
         }
     }
 }
