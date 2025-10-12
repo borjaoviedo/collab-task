@@ -8,9 +8,7 @@ namespace Application.Lanes.Validation
     {
         public LaneReorderDtoValidator()
         {
-            RuleFor(l => l.Id).RequiredGuid();
             RuleFor(l => l.NewOrder).NonNegativeOrder(field: "Lane order");
-            RuleFor(l => l.RowVersion).ConcurrencyTokenRules();
         }
     }
 }

@@ -8,9 +8,7 @@ namespace Application.Lanes.Validation
     {
         public LaneRenameDtoValidator()
         {
-            RuleFor(l => l.Id).RequiredGuid();
             RuleFor(l => l.Name).LaneNameRules();
-            RuleFor(l => l.RowVersion).ConcurrencyTokenRules();
         }
     }
 }

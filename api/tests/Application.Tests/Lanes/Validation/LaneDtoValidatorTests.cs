@@ -10,9 +10,8 @@ namespace Application.Tests.Lanes.Validation
         public void LaneCreate_Invalid_Fails()
         {
             var v = new LaneCreateDtoValidator();
-            var dto = new LaneCreateDto { ProjectId = Guid.Empty, Name = "  ", Order = -1 };
+            var dto = new LaneCreateDto { Name = "  ", Order = -1 };
             var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(x => x.ProjectId);
             r.ShouldHaveValidationErrorFor(x => x.Name);
             r.ShouldHaveValidationErrorFor(x => x.Order);
         }
@@ -22,7 +21,7 @@ namespace Application.Tests.Lanes.Validation
         {
             var lv = new LaneCreateDtoValidator();
 
-            lv.TestValidate(new LaneCreateDto { ProjectId = Guid.NewGuid(), Name = "Backlog", Order = 0 })
+            lv.TestValidate(new LaneCreateDto { Name = "Backlog", Order = 0 })
               .ShouldNotHaveAnyValidationErrors();
         }
     }
