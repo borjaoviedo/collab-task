@@ -29,6 +29,7 @@ namespace Api.Extensions
             endpoints.MapColumns();
             endpoints.MapTaskItems();
             endpoints.MapTaskNotes();
+            endpoints.MapTaskAssignments();
 
             return endpoints;
         }
