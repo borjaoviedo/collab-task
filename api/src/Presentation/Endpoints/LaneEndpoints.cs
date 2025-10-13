@@ -36,6 +36,7 @@ namespace Api.Endpoints
 
             // GET /projects/{projectId}/lanes/{laneId}
             group.MapGet("/{laneId:guid}", async (
+                [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromServices] ILaneReadService laneReadSvc,
                 CancellationToken ct = default) =>
@@ -87,7 +88,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var result = await laneWriteSvc.RenameAsync(laneId, dto.NewName, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp();
+                if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var renamed = await laneReadSvc.GetAsync(laneId, ct);
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed!.RowVersion)}\"";
@@ -118,7 +119,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var result = await laneWriteSvc.ReorderAsync(laneId, dto.NewOrder, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp();
+                if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var reordered = await laneReadSvc.GetAsync(laneId, ct);
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(reordered!.RowVersion)}\"";
@@ -147,7 +148,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var result = await laneWriteSvc.DeleteAsync(laneId, rowVersion, ct);
-                return result.ToHttp();
+                return result.ToHttp(http);
             })
             .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectMember)

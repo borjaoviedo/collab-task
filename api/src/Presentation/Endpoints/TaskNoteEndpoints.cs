@@ -105,7 +105,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var result = await taskNoteWriteSvc.EditAsync(noteId, dto.NewContent, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp();
+                if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var edited = await taskNoteReadSvc.GetAsync(noteId, ct);
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
@@ -137,7 +137,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var result = await svc.DeleteAsync(noteId, rowVersion, ct);
-                return result.ToHttp();
+                return result.ToHttp(http);
             })
             .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectMember)

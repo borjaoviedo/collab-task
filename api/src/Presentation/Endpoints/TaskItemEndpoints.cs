@@ -98,7 +98,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var result = await taskItemWriteSvc.EditAsync(taskId, dto.Title, dto.Description, dto.DueDate, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp();
+                if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var edited = await taskItemReadSvc.GetAsync(taskId, ct);
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
@@ -131,7 +131,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var result = await taskItemWriteSvc.MoveAsync(taskId, dto.TargetColumnId, dto.TargetLaneId, dto.TargetSortKey, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp();
+                if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var moved = await taskItemReadSvc.GetAsync(taskId, ct);
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(moved!.RowVersion)}\"";
@@ -162,7 +162,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var result = await svc.DeleteAsync(taskId, rowVersion, ct);
-                return result.ToHttp();
+                return result.ToHttp(http);
             })
             .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectMember)

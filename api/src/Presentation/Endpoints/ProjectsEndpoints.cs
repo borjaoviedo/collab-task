@@ -135,7 +135,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var result = await projectWriteSvc.RenameAsync(projectId, dto.NewName, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp();
+                if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var edited = await projectReadSvc.GetAsync(projectId, ct);
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
@@ -162,7 +162,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var res = await svc.DeleteAsync(projectId, rowVersion, ct);
-                return res.ToHttp();
+                return res.ToHttp(http);
             })
             .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectOwner)

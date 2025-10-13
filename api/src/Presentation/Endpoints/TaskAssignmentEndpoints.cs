@@ -98,6 +98,9 @@ namespace Api.Endpoints
 
             // PATCH /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}/role
             nested.MapPatch("/{userId:guid}/role", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid laneId,
+                [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
                 [FromRoute] Guid userId,
                 [FromBody] TaskAssignmentChangeRoleDto dto,
@@ -108,7 +111,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var m = await taskAssignmentWriteSvc.ChangeRoleAsync(taskId, userId, dto.NewRole, rowVersion, ct);
-                if (m != DomainMutation.Updated) return m.ToHttp();
+                if (m != DomainMutation.Updated) return m.ToHttp(http);
 
                 var updated = await taskAssignmentReadSvc.GetAsync(taskId, userId, ct);
                 if (updated is null) return Results.NotFound();
@@ -131,6 +134,9 @@ namespace Api.Endpoints
 
             // DELETE /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}
             nested.MapDelete("/{userId:guid}", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid laneId,
+                [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
                 [FromRoute] Guid userId,
                 [FromServices] ITaskAssignmentWriteService svc,
@@ -139,7 +145,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var m = await svc.RemoveAsync(taskId, userId, rowVersion, ct);
-                return m.ToHttp();
+                return m.ToHttp(http);
             })
             .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectMember)

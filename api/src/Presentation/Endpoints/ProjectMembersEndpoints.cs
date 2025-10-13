@@ -126,7 +126,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var result = await projectMemberWriteSvc.ChangeRoleAsync(projectId, userId, dto.NewRole, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp();
+                if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var updated = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(updated!.RowVersion)}\"";
@@ -156,7 +156,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var result = await projectMemberWriteSvc.RemoveAsync(projectId, userId, rowVersion, dto.RemovedAt, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp();
+                if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var removed = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(removed!.RowVersion)}\"";
@@ -185,7 +185,7 @@ namespace Api.Endpoints
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
                 var result = await projectMemberWriteSvc.RestoreAsync(projectId, userId, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp();
+                if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var removed = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(removed!.RowVersion)}\"";
