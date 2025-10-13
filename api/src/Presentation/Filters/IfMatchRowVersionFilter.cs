@@ -5,16 +5,26 @@ namespace Api.Filters
     {
         public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
         {
-            var http = context.HttpContext;
-            var ifMatch = http.Request.Headers.IfMatch.ToString();
+            var ifMatch = context.HttpContext.Request.Headers.IfMatch.ToString();
+
             if (!string.IsNullOrWhiteSpace(ifMatch))
             {
-                http.Items["IfMatchPresent"] = true;
+                if (ifMatch.Trim() == "*")
+                {
+                    context.HttpContext.Items["IfMatchWildcard"] = true;
+                    return next(context);
+                }
 
-                // parse weak ETag: W/"base64"
-                var token = ifMatch.Trim().TrimStart('W').TrimStart('/').Trim('"');
-                if (Convert.TryFromBase64String(token, new Span<byte>(new byte[token.Length]), out _))
-                    http.Items["rowVersion"] = Convert.FromBase64String(token);
+                var first = ifMatch.Split(',')[0].Trim();
+                if (first.StartsWith("W/")) first = first[2..].Trim();
+                if (first.StartsWith("\"") && first.EndsWith("\""))
+                {
+                    try
+                    {
+                        context.HttpContext.Items["rowVersion"] = Convert.FromBase64String(first.Trim('"'));
+                    }
+                    catch { /* ignore invalid */ }
+                }
             }
             return await next(context);
         }
