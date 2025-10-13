@@ -86,7 +86,7 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
-                var result = await laneWriteSvc.RenameAsync(laneId, dto.Name, rowVersion, ct);
+                var result = await laneWriteSvc.RenameAsync(laneId, dto.NewName, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp();
 
                 var renamed = await laneReadSvc.GetAsync(laneId, ct);

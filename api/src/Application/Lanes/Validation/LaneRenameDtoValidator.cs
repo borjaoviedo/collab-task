@@ -8,7 +8,7 @@ namespace Application.Lanes.Validation
     {
         public LaneRenameDtoValidator()
         {
-            RuleFor(l => l.Name).LaneNameRules();
+            RuleFor(l => l.NewName).LaneNameRules();
         }
     }
 }
