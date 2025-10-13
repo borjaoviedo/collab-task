@@ -1,13 +1,11 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
 using Application.ProjectMembers.Abstractions;
-using Application.Projects.Abstractions;
 using Domain.Entities;
 using Domain.Enums;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
@@ -41,20 +39,13 @@ namespace Api.Tests.Auth.Authorization
 
             var sp = services.BuildServiceProvider();
             var authz = sp.GetRequiredService<IAuthorizationService>();
-            var accessor = sp.GetRequiredService<IHttpContextAccessor>();
 
-            // Build HttpContext with route projectId and authenticated user
             var http = new DefaultHttpContext();
-            var rd = new RouteData();
-            rd.Values["projectId"] = Guid.NewGuid().ToString();
-            http.SetEndpoint(new Endpoint(c => default!, new EndpointMetadataCollection(), "test"));
-            http.Features.Set<IRoutingFeature>(new RoutingFeature { RouteData = rd });
+            http.Request.RouteValues["projectId"] = Guid.NewGuid().ToString();
 
-            var userId = Guid.NewGuid();
-            var identity = new ClaimsIdentity("test");
-            identity.AddClaim(new Claim("sub", userId.ToString()));
-            http.User = new ClaimsPrincipal(identity);
-            accessor.HttpContext = http;
+            var id = new ClaimsIdentity("test");
+            id.AddClaim(new Claim("sub", Guid.NewGuid().ToString()));
+            http.User = new ClaimsPrincipal(id);
 
             var policyName = required switch
             {
@@ -65,7 +56,7 @@ namespace Api.Tests.Auth.Authorization
                 _ => throw new ArgumentOutOfRangeException(nameof(required), required, "ProjectRole required value is not valid for the policy.")
             };
 
-            var result = await authz.AuthorizeAsync(http.User, resource: null, policyName);
+            var result = await authz.AuthorizeAsync(http.User, http, policyName);
             result.Succeeded.Should().Be(expected);
         }
 
