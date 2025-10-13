@@ -19,9 +19,9 @@ namespace Application.Tests.TaskNotes.Validation
         public void Edit_Invalid_Fails()
         {
             var v = new TaskNoteEditDtoValidator();
-            var dto = new TaskNoteEditDto { Content = ""};
+            var dto = new TaskNoteEditDto { NewContent = ""};
             var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(x => x.Content);
+            r.ShouldHaveValidationErrorFor(x => x.NewContent);
         }
     }
 }

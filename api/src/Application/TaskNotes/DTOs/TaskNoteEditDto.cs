@@ -3,6 +3,6 @@ namespace Application.TaskNotes.DTOs
 {
     public sealed class TaskNoteEditDto
     {
-        public required string Content { get; set; }
+        public required string NewContent { get; set; }
     }
 }

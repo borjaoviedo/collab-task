@@ -8,7 +8,7 @@ namespace Application.TaskNotes.Validation
     {
         public TaskNoteEditDtoValidator()
         {
-            RuleFor(n => n.Content).NoteContentRules();
+            RuleFor(n => n.NewContent).NoteContentRules();
         }
     }
 }

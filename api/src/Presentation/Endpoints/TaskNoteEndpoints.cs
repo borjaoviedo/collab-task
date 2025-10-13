@@ -104,7 +104,7 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
-                var result = await taskNoteWriteSvc.EditAsync(noteId, dto.Content, rowVersion, ct);
+                var result = await taskNoteWriteSvc.EditAsync(noteId, dto.NewContent, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp();
 
                 var edited = await taskNoteReadSvc.GetAsync(noteId, ct);
