@@ -1,6 +1,6 @@
 namespace Application.Users.DTOs
 {
-    public sealed class UserCreateDto
+    public sealed class UserRegisterDto
     {
         public required string Email { get; set; }
         public required string Name { get; set; }

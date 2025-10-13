@@ -9,8 +9,8 @@ namespace Application.Tests.Users.Validation
         [Fact]
         public void Create_Invalid_Fails()
         {
-            var v = new UserCreateDtoValidator();
-            var dto = new UserCreateDto
+            var v = new UserRegisterDtoValidator();
+            var dto = new UserRegisterDto
             {
                 Email = "bad",
                 Name = "J0hn  Doe", // invalid chars + consecutive spaces
@@ -26,13 +26,13 @@ namespace Application.Tests.Users.Validation
         [Fact]
         public void Create_Name_Length_Bounds()
         {
-            var v = new UserCreateDtoValidator();
+            var v = new UserRegisterDtoValidator();
 
-            v.TestValidate(new UserCreateDto { Email = "a@b.com", Name = "A", Password = "GoodPwd1!" })
+            v.TestValidate(new UserRegisterDto { Email = "a@b.com", Name = "A", Password = "GoodPwd1!" })
              .ShouldHaveValidationErrorFor(x => x.Name)
              .WithErrorMessage("User name must be at least 2 characters long.");
 
-            v.TestValidate(new UserCreateDto { Email = "a@b.com", Name = new string('a', 101), Password = "GoodPwd1!" })
+            v.TestValidate(new UserRegisterDto { Email = "a@b.com", Name = new string('a', 101), Password = "GoodPwd1!" })
              .ShouldHaveValidationErrorFor(x => x.Name)
              .WithErrorMessage("User name length must be at most 100 characters.");
         }
@@ -40,9 +40,9 @@ namespace Application.Tests.Users.Validation
         [Fact]
         public void Create_Email_TooLong_Fails()
         {
-            var v = new UserCreateDtoValidator();
+            var v = new UserRegisterDtoValidator();
             var local = new string('a', 251);
-            var dto = new UserCreateDto { Email = $"{local}@x.com", Name = "John", Password = "GoodPwd1!" };
+            var dto = new UserRegisterDto { Email = $"{local}@x.com", Name = "John", Password = "GoodPwd1!" };
             v.TestValidate(dto)
              .ShouldHaveValidationErrorFor(x => x.Email)
              .WithErrorMessage("Email length must be less than 256 characters.");
@@ -51,8 +51,8 @@ namespace Application.Tests.Users.Validation
         [Fact]
         public void Create_Valid_Passes()
         {
-            var v = new UserCreateDtoValidator();
-            var dto = new UserCreateDto
+            var v = new UserRegisterDtoValidator();
+            var dto = new UserRegisterDto
             {
                 Email = "john@demo.com",
                 Name = "John Doe",

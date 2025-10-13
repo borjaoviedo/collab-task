@@ -32,7 +32,7 @@ namespace Api.Endpoints
                 [FromServices] IPasswordHasher hasher,
                 [FromServices] IJwtTokenService jwtSvc,
                 [FromServices] ILoggerFactory loggerFactory,
-                [FromBody] UserCreateDto dto,
+                [FromBody] UserRegisterDto dto,
                 CancellationToken ct = default) =>
             {
                 var log = loggerFactory.CreateLogger("Auth.Register");
@@ -53,7 +53,7 @@ namespace Api.Endpoints
                 }
             })
             .AllowAnonymous()
-            .RequireValidation<UserCreateDto>()
+            .RequireValidation<UserRegisterDto>()
             .Produces<AuthTokenReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict)

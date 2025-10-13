@@ -4,9 +4,9 @@ using FluentValidation;
 
 namespace Application.Users.Validation
 {
-    public class UserCreateDtoValidator : AbstractValidator<UserCreateDto>
+    public class UserRegisterDtoValidator : AbstractValidator<UserRegisterDto>
     {
-        public UserCreateDtoValidator()
+        public UserRegisterDtoValidator()
         {
             RuleFor(u => u.Email).UserEmailRules();
             RuleFor(u => u.Name).UserNameRules();

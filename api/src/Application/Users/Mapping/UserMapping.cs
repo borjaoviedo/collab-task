@@ -19,7 +19,7 @@ namespace Application.Users.Mapping
                 RowVersion = item.RowVersion
             };
 
-        public static User ToEntity(this UserCreateDto item, byte[] hash, byte[] salt)
+        public static User ToEntity(this UserRegisterDto item, byte[] hash, byte[] salt)
             => User.Create(Email.Create(item.Email), UserName.Create(item.Name), hash, salt);
     }
 }
