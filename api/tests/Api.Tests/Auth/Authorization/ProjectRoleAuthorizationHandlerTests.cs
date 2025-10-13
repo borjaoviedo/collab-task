@@ -4,30 +4,26 @@ using Domain.Enums;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using System.Security.Claims;
 
 namespace Api.Tests.Auth.Authorization
 {
     public sealed class ProjectRoleAuthorizationHandlerTests
     {
-        private static (AuthorizationHandlerContext Ctx, DefaultHttpContext Http) BuildContext(
+        private static AuthorizationHandlerContext BuildContext(
             ProjectRole minimumRole,
             ClaimsPrincipal? user = null,
             Guid? projectId = null)
         {
             var requirement = new ProjectRoleRequirement(minimumRole);
-            var resource = new object();
             var principal = user ?? new ClaimsPrincipal(new ClaimsIdentity());
-            var ctx = new AuthorizationHandlerContext(new[] { requirement }, principal, resource);
 
             var http = new DefaultHttpContext();
-            var rd = new RouteData();
-            if (projectId is Guid pid) rd.Values["projectId"] = pid.ToString();
-            http.SetEndpoint(new Endpoint(c => default!, new EndpointMetadataCollection(), "test"));
-            http.Features.Set<IRoutingFeature>(new RoutingFeature { RouteData = rd });
+            if (projectId is Guid pid)
+                http.Request.RouteValues["projectId"] = pid.ToString();
 
-            return (ctx, http);
+            var ctx = new AuthorizationHandlerContext([requirement], principal, http);
+            return ctx;
         }
 
         private static ClaimsPrincipal BuildUser(Guid? userId = null)
@@ -45,11 +41,10 @@ namespace Api.Tests.Auth.Authorization
         {
             var userId = Guid.NewGuid();
             var projectId = Guid.NewGuid();
-            var (ctx, http) = BuildContext(ProjectRole.Member, BuildUser(userId), projectId);
+            var ctx = BuildContext(ProjectRole.Member, BuildUser(userId), projectId);
 
-            var accessor = new HttpContextAccessor { HttpContext = http };
             var reader = new FakeProjectMemberReadService((pid, uid) => ProjectRole.Admin); // >= Member
-            var handler = new ProjectRoleAuthorizationHandler(accessor, reader);
+            var handler = new ProjectRoleAuthorizationHandler(reader);
 
             await handler.HandleAsync(ctx);
 
@@ -61,11 +56,10 @@ namespace Api.Tests.Auth.Authorization
         {
             var userId = Guid.NewGuid();
             var projectId = Guid.NewGuid();
-            var (ctx, http) = BuildContext(ProjectRole.Admin, BuildUser(userId), projectId);
+            var ctx= BuildContext(ProjectRole.Admin, BuildUser(userId), projectId);
 
-            var accessor = new HttpContextAccessor { HttpContext = http };
             var reader = new FakeProjectMemberReadService((pid, uid) => ProjectRole.Member); // < Admin
-            var handler = new ProjectRoleAuthorizationHandler(accessor, reader);
+            var handler = new ProjectRoleAuthorizationHandler(reader);
 
             await handler.HandleAsync(ctx);
 
@@ -77,11 +71,10 @@ namespace Api.Tests.Auth.Authorization
         {
             var userId = Guid.NewGuid();
             var projectId = Guid.NewGuid();
-            var (ctx, http) = BuildContext(ProjectRole.Reader, BuildUser(userId), projectId);
+            var ctx = BuildContext(ProjectRole.Reader, BuildUser(userId), projectId);
 
-            var accessor = new HttpContextAccessor { HttpContext = http };
             var reader = new FakeProjectMemberReadService((pid, uid) => null); // not in project
-            var handler = new ProjectRoleAuthorizationHandler(accessor, reader);
+            var handler = new ProjectRoleAuthorizationHandler( reader);
 
             await handler.HandleAsync(ctx);
 
@@ -92,11 +85,10 @@ namespace Api.Tests.Auth.Authorization
         public async Task Fails_When_Missing_Sub_Claim()
         {
             var projectId = Guid.NewGuid();
-            var (ctx, http) = BuildContext(ProjectRole.Reader, BuildUser(null), projectId);
+            var ctx = BuildContext(ProjectRole.Reader, BuildUser(null), projectId);
 
-            var accessor = new HttpContextAccessor { HttpContext = http };
             var reader = new FakeProjectMemberReadService((pid, uid) => ProjectRole.Owner);
-            var handler = new ProjectRoleAuthorizationHandler(accessor, reader);
+            var handler = new ProjectRoleAuthorizationHandler( reader);
 
             await handler.HandleAsync(ctx);
 
@@ -107,11 +99,10 @@ namespace Api.Tests.Auth.Authorization
         public async Task Fails_When_Missing_ProjectId_In_Route()
         {
             var userId = Guid.NewGuid();
-            var (ctx, http) = BuildContext(ProjectRole.Reader, BuildUser(userId), projectId: null);
+            var ctx = BuildContext(ProjectRole.Reader, BuildUser(userId), projectId: null);
 
-            var accessor = new HttpContextAccessor { HttpContext = http };
             var reader = new FakeProjectMemberReadService((pid, uid) => ProjectRole.Owner);
-            var handler = new ProjectRoleAuthorizationHandler(accessor, reader);
+            var handler = new ProjectRoleAuthorizationHandler( reader);
 
             await handler.HandleAsync(ctx);
 
