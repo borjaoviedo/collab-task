@@ -32,6 +32,7 @@ namespace Infrastructure.Data.Repositories
         public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
             => await _db.Users
                         .AsNoTracking()
+                        .Include(u => u.ProjectMemberships)
                         .FirstOrDefaultAsync(u => u.Id == id, ct);
 
         public async Task<User?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default)
