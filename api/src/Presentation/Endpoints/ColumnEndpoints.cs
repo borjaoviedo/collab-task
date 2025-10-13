@@ -92,7 +92,7 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var rowVersion = (byte[])http.Items["rowVersion"]!;
-                var result = await columnWriteSvc.RenameAsync(columnId, dto.Name, rowVersion, ct);
+                var result = await columnWriteSvc.RenameAsync(columnId, dto.NewName, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp();
 
                 var renamed = await columnReadSvc.GetAsync(columnId, ct);

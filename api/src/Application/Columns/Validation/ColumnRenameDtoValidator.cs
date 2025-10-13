@@ -8,7 +8,7 @@ namespace Application.Columns.Validation
     {
         public ColumnRenameDtoValidator()
         {
-            RuleFor(c => c.Name).ColumnNameRules();
+            RuleFor(c => c.NewName).ColumnNameRules();
         }
     }
 }
