@@ -7,16 +7,12 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
+using TestHelpers;
 
 namespace Api.Tests.Endpoints
 {
     public sealed class UsersEndpointsTests
     {
-        private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-
-        private sealed record AuthToken(string AccessToken, Guid UserId, string Email, string Name, string Role);
-
         [Fact]
         public async Task Get_ById_Returns200_When_Admin()
         {
@@ -33,7 +29,7 @@ namespace Api.Tests.Endpoints
             var resp = await client.GetAsync($"/users/{u.UserId}");
             resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var dto = await resp.Content.ReadFromJsonAsync<UserReadDto>(Json);
+            var dto = await resp.Content.ReadFromJsonAsync<UserReadDto>(AuthTestHelper.Json);
             dto!.Id.Should().Be(u.UserId);
             dto.Email.Should().Be(u.Email);
         }
@@ -150,7 +146,7 @@ namespace Api.Tests.Endpoints
 
         // ---- helpers ----
 
-        private static async Task<AuthToken> RegisterAndLogin(HttpClient client)
+        private static async Task<AuthTestHelper.AuthToken> RegisterAndLogin(HttpClient client)
         {
             var email = $"{Guid.NewGuid():N}@demo.com";
             var name = "Test User";
@@ -158,7 +154,7 @@ namespace Api.Tests.Endpoints
             (await client.PostAsJsonAsync("/auth/register", new UserRegisterDto() { Email = email, Name = name, Password = password })).EnsureSuccessStatusCode();
             var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
             login.EnsureSuccessStatusCode();
-            var dto = await login.Content.ReadFromJsonAsync<AuthToken>(Json);
+            var dto = await login.Content.ReadFromJsonAsync<AuthTestHelper.AuthToken>(AuthTestHelper.Json);
             return dto!;
         }
 
@@ -175,7 +171,7 @@ namespace Api.Tests.Endpoints
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminBearer);
             var resp = await client.GetAsync($"/users/{userId}");
             resp.EnsureSuccessStatusCode();
-            var dto = await resp.Content.ReadFromJsonAsync<UserReadDto>(Json);
+            var dto = await resp.Content.ReadFromJsonAsync<UserReadDto>(AuthTestHelper.Json);
             return dto!;
         }
     }

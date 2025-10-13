@@ -5,15 +5,12 @@ using FluentAssertions;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
+using TestHelpers;
 
 namespace Api.Tests.Endpoints
 {
     public sealed class ProjectsEndpointsTests
     {
-        private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-        private sealed record AuthToken(string AccessToken, Guid UserId, string Email, string Name, string Role);
-
         [Fact]
         public async Task Create_Then_List_Shows_Project_For_User()
         {
@@ -29,7 +26,7 @@ namespace Api.Tests.Endpoints
             var list = await client.GetAsync("/projects");
             list.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var items = await list.Content.ReadFromJsonAsync<List<ProjectReadDto>>(Json);
+            var items = await list.Content.ReadFromJsonAsync<List<ProjectReadDto>>(AuthTestHelper.Json);
             items.Should().NotBeNull();
             items!.Any().Should().BeTrue();
             items!.Should().Contain(p => p != null && p.Name == "My Project");
@@ -47,7 +44,7 @@ namespace Api.Tests.Endpoints
             var create = await client.PostAsJsonAsync("/projects", new ProjectCreateDto() { Name = "P1" });
             create.StatusCode.Should().Be(HttpStatusCode.Created);
 
-            var list = await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", Json);
+            var list = await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", AuthTestHelper.Json);
             var prj = list!.Single(p => p.Name == "P1");
 
             var resp = await client.GetAsync($"/projects/{prj.Id}");
@@ -67,7 +64,7 @@ namespace Api.Tests.Endpoints
             (await client.PostAsJsonAsync("/projects", new ProjectCreateDto() { Name = "ToRename" }))
                 .EnsureSuccessStatusCode();
 
-            var prj = (await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", Json))!
+            var prj = (await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", AuthTestHelper.Json))!
                 .Single(p => p.Name == "ToRename");
 
             // If-Match header from current RowVersion
@@ -97,7 +94,7 @@ namespace Api.Tests.Endpoints
             (await client.PostAsJsonAsync("/projects", new ProjectCreateDto() { Name = "ToDelete" }))
                 .EnsureSuccessStatusCode();
 
-            var prj = (await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", Json))!
+            var prj = (await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", AuthTestHelper.Json))!
                 .Single(p => p.Name == "ToDelete");
 
             // If-Match header from current RowVersion
@@ -111,7 +108,7 @@ namespace Api.Tests.Endpoints
             resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
 
-        private static async Task<AuthToken> RegisterAndLogin(HttpClient client)
+        private static async Task<AuthTestHelper.AuthToken> RegisterAndLogin(HttpClient client)
         {
             var email = $"{Guid.NewGuid():N}@demo.com";
             var name = "Test User";
@@ -122,7 +119,7 @@ namespace Api.Tests.Endpoints
             var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
             login.EnsureSuccessStatusCode();
 
-            var dto = await login.Content.ReadFromJsonAsync<AuthToken>(Json);
+            var dto = await login.Content.ReadFromJsonAsync<AuthTestHelper.AuthToken>(AuthTestHelper.Json);
             return dto!;
         }
     }
