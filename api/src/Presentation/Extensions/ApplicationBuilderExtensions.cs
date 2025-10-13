@@ -25,6 +25,12 @@ namespace Api.Extensions
             endpoints.MapUsers();
             endpoints.MapProjects();
             endpoints.MapProjectMembers();
+            endpoints.MapLanes();
+            endpoints.MapColumns();
+            endpoints.MapTaskItems();
+            endpoints.MapTaskNotes();
+            endpoints.MapTaskAssignments();
+            endpoints.MapTaskActivities();
 
             return endpoints;
         }

@@ -1,0 +1,131 @@
+using Application.TaskItems.Abstractions;
+using Domain.Entities;
+using Domain.Enums;
+using Domain.ValueObjects;
+
+namespace Api.Tests.Fakes
+{
+    public sealed class FakeTaskItemRepository : ITaskItemRepository
+    {
+        private readonly Dictionary<Guid, TaskItem> _tasks = [];
+        private readonly Func<Guid, object?> _getColumn;
+        private readonly Func<Guid, object?> _getLane;
+
+        public FakeTaskItemRepository(Func<Guid, object?> getColumn, Func<Guid, object?> getLane)
+        {
+            _getColumn = getColumn;
+            _getLane = getLane;
+        }
+
+        private static byte[] NextRowVersion() => Guid.NewGuid().ToByteArray();
+
+        public Task<TaskItem?> GetByIdAsync(Guid taskId, CancellationToken ct = default)
+            => Task.FromResult(_tasks.TryGetValue(taskId, out var t) ? Clone(t) : null);
+
+        public Task<TaskItem?> GetTrackedByIdAsync(Guid taskId, CancellationToken ct = default)
+            => Task.FromResult(_tasks.TryGetValue(taskId, out var t) ? t : null);
+
+        public Task<bool> ExistsWithTitleAsync(Guid columnId, string title, Guid? excludeTaskId = null, CancellationToken ct = default)
+        {
+            var q = _tasks.Values.Where(t => t.ColumnId == columnId && t.Title == title);
+            if (excludeTaskId is Guid id) q = q.Where(t => t.Id != id);
+            return Task.FromResult(q.Any());
+        }
+
+        public Task<IReadOnlyList<TaskItem>> ListByColumnAsync(Guid columnId, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<TaskItem>>(_tasks.Values.Where(t => t.ColumnId == columnId)
+                .OrderBy(t => t.SortKey).Select(Clone).ToList());
+
+        public Task AddAsync(TaskItem task, CancellationToken ct = default)
+        {
+            task.RowVersion = NextRowVersion();
+            _tasks[task.Id] = task;
+            return Task.CompletedTask;
+        }
+
+        public async Task<DomainMutation> EditAsync(Guid taskId, string? newTitle, string? newDescription, DateTimeOffset? newDueDate, byte[] rowVersion, CancellationToken ct = default)
+        {
+            var task = await GetTrackedByIdAsync(taskId, ct);
+            if (task is null) return DomainMutation.NotFound;
+            if (!task.RowVersion.SequenceEqual(rowVersion)) return DomainMutation.Conflict;
+
+            if (newTitle != null && await ExistsWithTitleAsync(task.ColumnId, newTitle, task.Id, ct)) return DomainMutation.Conflict;
+
+            var beforeTitle = task.Title;
+            var beforeDesc = task.Description;
+            var beforeDue = task.DueDate;
+
+            var titleVO = newTitle is null ? null : TaskTitle.Create(newTitle);
+            var descVO = newDescription is null ? null : TaskDescription.Create(newDescription);
+
+            task.Edit(titleVO, descVO, newDueDate);
+
+            if (Equals(beforeTitle, task.Title) && Equals(beforeDesc, task.Description) && Nullable.Equals(beforeDue, task.DueDate))
+                return DomainMutation.NoOp;
+
+            task.RowVersion = NextRowVersion();
+            return DomainMutation.Updated;
+        }
+
+        public async Task<DomainMutation> MoveAsync(Guid taskId, Guid targetColumnId, Guid targetLaneId, decimal targetSortKey, byte[] rowVersion, CancellationToken ct = default)
+        {
+            var task = await GetTrackedByIdAsync(taskId, ct);
+            if (task is null) return DomainMutation.NotFound;
+            if (!task.RowVersion.SequenceEqual(rowVersion)) return DomainMutation.Conflict;
+
+            var targetColumn = _getColumn(targetColumnId) as Column;
+            if (targetColumn is null) return DomainMutation.NotFound;
+            var targetLane = _getLane(targetLaneId) as Lane;
+            if (targetLane is null) return DomainMutation.NotFound;
+
+            if (targetColumn.LaneId != targetLaneId) return DomainMutation.Conflict;
+            if (targetColumn.ProjectId != task.ProjectId || targetLane.ProjectId != task.ProjectId) return DomainMutation.Conflict;
+
+            if (task.ColumnId == targetColumnId && task.LaneId == targetLaneId && task.SortKey == targetSortKey)
+                return DomainMutation.NoOp;
+
+            task.Move(targetLaneId, targetColumnId, targetSortKey);
+            task.RowVersion = NextRowVersion();
+            return DomainMutation.Updated;
+        }
+
+        public async Task<DomainMutation> DeleteAsync(Guid taskId, byte[] rowVersion, CancellationToken ct = default)
+        {
+            var task = await GetTrackedByIdAsync(taskId, ct);
+            if (task is null) return DomainMutation.NotFound;
+            if (!task.RowVersion.SequenceEqual(rowVersion)) return DomainMutation.Conflict;
+
+            _tasks.Remove(taskId);
+            return DomainMutation.Deleted;
+        }
+
+        public Task<decimal> GetNextSortKeyAsync(Guid columnId, CancellationToken ct = default)
+        {
+            var max = _tasks.Values.Where(t => t.ColumnId == columnId).Select(t => (decimal?)t.SortKey).DefaultIfEmpty(null).Max();
+            return Task.FromResult((max ?? -1m) + 1m);
+        }
+
+        public Task RebalanceSortKeysAsync(Guid columnId, CancellationToken ct = default)
+        {
+            var list = _tasks.Values.Where(t => t.ColumnId == columnId).OrderBy(t => t.SortKey).ToList();
+            for (int i = 0; i < list.Count; i++) list[i].SortKey = i;
+            return Task.CompletedTask;
+        }
+
+        public Task<int> SaveChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
+
+        private static TaskItem Clone(TaskItem t)
+        {
+            var clone = TaskItem.Create(
+                t.ColumnId,
+                t.LaneId,
+                t.ProjectId,
+                TaskTitle.Create(t.Title),
+                TaskDescription.Create(t.Description),
+                t.DueDate,
+                t.SortKey);
+            clone.RowVersion = (t.RowVersion is null) ? Array.Empty<byte>() : t.RowVersion.ToArray();
+            return clone;
+        }
+    }
+}

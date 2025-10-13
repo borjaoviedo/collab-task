@@ -1,39 +1,25 @@
 using FluentAssertions;
-using Infrastructure.Data;
-using Infrastructure.Tests.Containers;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Domain.ValueObjects;
+using TestHelpers;
+using Infrastructure.Tests.Containers;
 
 namespace Infrastructure.Tests.Auditing
 {
     [Collection("SqlServerContainer")]
-    public sealed class AuditingSaveChangesInterceptorTests : IClassFixture<MsSqlContainerFixture>
+    public sealed class AuditingSaveChangesInterceptorTests(MsSqlContainerFixture fx)
     {
-        private readonly string _baseConnectionString;
-
-        public AuditingSaveChangesInterceptorTests(MsSqlContainerFixture fx) => _baseConnectionString = fx.ContainerConnectionString;
-
-        public static byte[] Bytes(int n, byte fill = 0x5A) => Enumerable.Repeat(fill, n).ToArray();
-
-        private ServiceProvider BuildProvider(string dbName)
-        {
-            var cs = $"{_baseConnectionString};Database={dbName}";
-            var sc = new ServiceCollection();
-            sc.AddInfrastructure(cs);
-            return sc.BuildServiceProvider();
-        }
+        private readonly MsSqlContainerFixture _fx = fx;
+        private readonly string _cs = fx.ConnectionString;
 
         [Fact]
         public async Task CreatedAt_And_UpdatedAt_Are_Set_On_Insert()
         {
-            using var provider = BuildProvider($"ct_{Guid.NewGuid():N}");
-            using var scope = provider.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
-            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Project user"), Bytes(32), Bytes(16));
+            var u = User.Create(Email.Create($"{Guid.NewGuid()}@demo.com"), UserName.Create("Project user"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             var p = Project.Create(u.Id, ProjectName.Create("Audit Test"), DateTimeOffset.UtcNow);
 
             db.AddRange(u, p);
@@ -47,12 +33,10 @@ namespace Infrastructure.Tests.Auditing
         [Fact]
         public async Task UpdatedAt_Is_Changed_On_Update_And_Not_Changed_When_No_Modifications()
         {
-            using var provider = BuildProvider($"ct_{Guid.NewGuid():N}");
-            using var scope = provider.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
-            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Project user"), Bytes(32), Bytes(16));
+            var u = User.Create(Email.Create($"{Guid.NewGuid()}@demo.com"), UserName.Create("Project user"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             var p = Project.Create(u.Id, ProjectName.Create("Audit Test 2"), DateTimeOffset.UtcNow);
 
             db.AddRange(u, p);

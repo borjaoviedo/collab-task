@@ -1,45 +1,54 @@
-using Application.Projects.Abstractions;
+using Application.ProjectMembers.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 namespace Api.Auth.Authorization
 {
-    public sealed class ProjectRoleAuthorizationHandler : AuthorizationHandler<ProjectRoleRequirement>
+    public sealed class ProjectRoleAuthorizationHandler(IProjectMemberReadService membership) : AuthorizationHandler<ProjectRoleRequirement>
     {
-        private readonly IHttpContextAccessor _http;
-        private readonly IProjectMembershipReader _membership;
+        private readonly IProjectMemberReadService _membership = membership;
 
-        public ProjectRoleAuthorizationHandler(
-            IHttpContextAccessor http,
-            IProjectMembershipReader membership)
+        protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, ProjectRoleRequirement requirement)
         {
-            _http = http;
-            _membership = membership;
-        }
-
-        protected override async Task HandleRequirementAsync(
-            AuthorizationHandlerContext context,
-            ProjectRoleRequirement requirement)
-        {
-            var httpContext = _http.HttpContext;
-            if (httpContext is null) return;
+            // policy not applicable
+            if (context.Resource is not HttpContext http) return;
 
             // userId from claims
             var sub = context.User.FindFirst("sub") ?? context.User.FindFirst(ClaimTypes.NameIdentifier);
-            if (sub is null || !Guid.TryParse(sub.Value, out var userId)) return;
+            if (sub is null || !Guid.TryParse(sub.Value, out var userId))
+            {
+                context.Fail(); 
+                return;
+            }
 
-            // projectId from route values
-            var routeVals = httpContext.GetRouteData()?.Values;
-            if (routeVals is null ||
-                !routeVals.TryGetValue("projectId", out var raw) ||
-                raw is null ||
-                !Guid.TryParse(raw.ToString(), out var projectId)) return;
+            // projectId from route values (must be present for this policy)
+            if (!TryGetProjectId(http, out var projectId)) return;
 
-            var role = await _membership.GetRoleAsync(projectId, userId, httpContext.RequestAborted);
-            if (role is null) return;
+            // membership
+            var role = await _membership.GetRoleAsync(projectId, userId, http.RequestAborted);
+            if (role is null)
+            {
+                context.Fail(); // 403
+                return;
+            }
 
-            if (role.Value >= requirement.MinimumRole)
-                context.Succeed(requirement);
+            if (role.Value >= requirement.MinimumRole) context.Succeed(requirement);
+            else context.Fail();
+        }
+
+        private static bool TryGetProjectId(HttpContext http, out Guid projectId)
+        {
+            projectId = Guid.Empty;
+            var rv = http.GetRouteData()?.Values;
+            if (rv is null) return false;
+
+            if (rv.TryGetValue("projectId", out var raw) &&
+                raw is not null &&
+                Guid.TryParse(raw.ToString(), out projectId))
+            {
+                return true;
+            }
+            return false;
         }
     }
 }

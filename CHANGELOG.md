@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- **Backend / Kanban**
+  - Domain entities: `Lane`, `Column`, `TaskItem`, `TaskNote`, `TaskAssignment`, `TaskActivity`.
+  - Value Objects: `LaneName`, `ColumnName`, `TaskTitle`, `TaskDescription`, `NoteContent`, `ActivityPayload`.
+  - Enum `TaskActivityType` with events for create/edit/move/owner/co-owners/notes.
+  - EF Core configurations and repositories for all new entities.
+  - Minimal API endpoints:
+    - Lanes: create, list, rename, reorder, delete.
+    - Columns: create, list, rename, reorder, delete.
+    - Tasks: create, read, list, edit, move, delete.
+    - Assignments: set/unset owner; add/remove co-owners.
+    - Notes: add, edit, delete, list.
+    - Task activities: list and append.
+  - Concurrency tokens (`RowVersion`) and ordering (`Order`, `SortKey`) applied.
+  - Auditing fields on tasks including `CreatedAt`, `UpdatedAt`, optional `DueDate`.
+
+### Changed
+- Authorization wired to existing project-role policies for all new endpoints.
+- DTOs, mappers, and validators aligned with nested routes and domain rules.
+
+### Migrations
+- `ProjectBoardSchemaUpdate` introducing the full board schema.
+- `ProjectBoard_AssignmentsRowVersion_ProviderChecks` follow-up for row versions and provider-specific checks.
+
+### Testing
+- Added tests across Domain, Application, Infrastructure, and API covering core board flows.
+
+### Notes
+- Work in progress for v0.3.0. No release tag yet. Frontend Kanban UI will land before tagging v0.3.0.
+
 ## [0.2.0] - 2025-10-08
 
 ### Added

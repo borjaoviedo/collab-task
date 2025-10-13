@@ -1,19 +1,18 @@
 using Api.Auth.Authorization;
-using Api.Common;
+using Api.Extensions;
+using Api.Filters;
+using Api.Helpers;
 using Application.Common.Abstractions.Auth;
-using Application.Common.Results;
 using Application.Projects.Abstractions;
 using Application.Projects.DTOs;
 using Application.Projects.Mapping;
+using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
 {
     public static class ProjectsEndpoints
     {
-        public sealed record RenameProjectDto(string Name, byte[] RowVersion);
-        public sealed record DeleteProjectDto(byte[] RowVersion);
-
         public static RouteGroupBuilder MapProjects(this IEndpointRouteBuilder app)
         {
             var group = app.MapGroup("/projects")
@@ -24,18 +23,18 @@ namespace Api.Endpoints
             group.MapGet("/", async (
                 [AsParameters] ProjectFilter filter,
                 [FromServices] ICurrentUserService userSvc,
-                [FromServices] IProjectRepository repo,
+                [FromServices] IProjectReadService projectReadSvc,
                 CancellationToken ct = default) =>
             {
                 var userId = (Guid)userSvc.UserId!;
-                var projects = await repo.GetByUserAsync(userId, filter, ct);
+                var projects = await projectReadSvc.GetAllByUserAsync(userId, filter, ct);
                 var dto = projects.Select(p => p.ToReadDto(userId)).ToList();
                 return Results.Ok(dto);
             })
             .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("Get all projects")
-            .WithDescription("Returns projects where the authenticated user has at least reader permissions.")
+            .WithDescription("Returns all projects where the authenticated user has at least reader permissions.")
             .WithName("Projects_Get_All");
 
             // GET /projects/{projectId}
@@ -56,28 +55,66 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get project by id")
-            .WithDescription("Returns the project if the authenticated user has at least reader permissions.")
+            .WithDescription("Returns the specified project if the authenticated user has at least reader permissions.")
             .WithName("Projects_Get_ById");
+
+            // GET /projects/me
+            group.MapGet("/me", async (
+                HttpContext http,
+                [FromServices] ICurrentUserService currentUserSvc,
+                [FromServices] IProjectReadService projectReadSvc,
+                CancellationToken ct = default) =>
+            {
+                var userId = (Guid)currentUserSvc.UserId!;
+                var projects = await projectReadSvc.GetAllByUserAsync(userId, filter: null, ct);
+
+                var dto = projects.Select(p => p.ToReadDto(userId)).ToList();
+                return Results.Ok(dto);
+            })
+            .RequireAuthorization()
+            .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .WithSummary("List my projects")
+            .WithDescription("Lists all projects the authenticated user can access.")
+            .WithName("Projects_ListMine");
+
+            // GET /projects/users/{userId}
+            group.MapGet("/users/{userId:guid}", async (
+                [FromRoute] Guid userId,
+                [FromServices] IProjectReadService projectReadSvc,
+                CancellationToken ct = default) =>
+            {
+                var projects = await projectReadSvc.GetAllByUserAsync(userId, filter: null, ct);
+
+                var dto = projects.Select(p => p.ToReadDto(userId)).ToList();
+                return Results.Ok(dto);
+            })
+            .RequireAuthorization()
+            .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .WithSummary("List projects by user")
+            .WithDescription("Lists all projects the specified user can access. Admin-only if the user differs from the caller.")
+            .WithName("Projects_List_ByUser");
 
             // POST /projects
             group.MapPost("/", async (
                 [FromBody] ProjectCreateDto dto,
                 [FromServices] ICurrentUserService userSvc,
-                [FromServices] IProjectService svc,
-                [FromServices] IProjectRepository repo,
+                [FromServices] IProjectWriteService projectWriteSvc,
+                [FromServices] IProjectReadService projectReadSvc,
                 CancellationToken ct = default) =>
             {
-                var (result, id) = await svc.CreateAsync((Guid)userSvc.UserId!, dto.Name, DateTimeOffset.UtcNow, ct);
+                var userId = (Guid)userSvc.UserId!;
+                var (result, project) = await projectWriteSvc.CreateAsync(userId, dto.Name, DateTimeOffset.UtcNow, ct);
+                if (result != DomainMutation.Created) return result.ToHttp();
 
-                if (result != WriteResult.Created)
-                    return result.ToHttp();
-
-                var created = await repo.GetByIdAsync(id, ct);
+                var created = await projectReadSvc.GetAsync(project!.Id, ct);
                 if (created is null)
                     return Results.Problem(statusCode: 500, title: "Could not load created project");
 
-                var body = created.ToReadDto((Guid)userSvc.UserId!);
-                return Results.Created($"/projects/{id}", body);
+                var body = created.ToReadDto(userId);
+                return Results.Created($"/projects/{project.Id}", body);
             })
             .Produces<ProjectReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -87,38 +124,54 @@ namespace Api.Endpoints
             .WithDescription("Creates a new project owned by the authenticated user.")
             .WithName("Projects_Create");
 
-            // PATCH /projects/{projectId}/name
-            group.MapPatch("/{projectId:guid}/name", async (
+            // PATCH /projects/{projectId}/rename
+            group.MapPatch("/{projectId:guid}/rename", async (
                 [FromRoute] Guid projectId,
-                [FromBody] RenameProjectDto dto,
-                [FromServices] IProjectService svc,
+                [FromBody] ProjectRenameDto dto,
+                [FromServices] ICurrentUserService userSvc,
+                [FromServices] IProjectWriteService projectWriteSvc,
+                [FromServices] IProjectReadService projectReadSvc,
+                HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var res = await svc.RenameAsync(projectId, dto.Name, dto.RowVersion, ct);
-                return res.ToHttp();
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => projectReadSvc.GetAsync(projectId, ct), p => p.RowVersion);
+
+                var result = await projectWriteSvc.RenameAsync(projectId, dto.NewName, rowVersion, ct);
+                if (result != DomainMutation.Updated) return result.ToHttp(http);
+
+                var edited = await projectReadSvc.GetAsync(projectId, ct);
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
+                return Results.Ok(edited.ToReadDto((Guid)userSvc.UserId!));
             })
             .RequireAuthorization(Policies.ProjectAdmin)
-            .Produces(StatusCodes.Status204NoContent)
+            .RequireIfMatch()
+            .Produces<ProjectReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Rename project")
-            .WithDescription("Requires at least admin role in the target project.")
+            .WithDescription("Renames an existing project.")
             .WithName("Projects_Rename");
 
             // DELETE /projects/{projectId}
             group.MapDelete("/{projectId:guid}", async (
                 [FromRoute] Guid projectId,
-                [FromBody] DeleteProjectDto dto,
-                [FromServices] IProjectService svc,
+                [FromServices] IProjectWriteService projectWriteSvc,
+                [FromServices] IProjectReadService projectReadSvc,
+                HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var res = await svc.DeleteAsync(projectId, dto.RowVersion, ct);
-                return res.ToHttp();
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => projectReadSvc.GetAsync(projectId, ct), p => p.RowVersion);
+
+                var res = await projectWriteSvc.DeleteAsync(projectId, rowVersion, ct);
+                return res.ToHttp(http);
             })
             .RequireAuthorization(Policies.ProjectOwner)
+            .RequireIfMatch()
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -126,7 +179,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Delete project")
-            .WithDescription("Requires owner role in the target project.")
+            .WithDescription("Deletes the specified project.")
             .WithName("Projects_Delete");
 
             return group;

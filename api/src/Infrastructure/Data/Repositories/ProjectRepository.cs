@@ -3,29 +3,35 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace Infrastructure.Data.Repositories
 {
-    public sealed class ProjectRepository : IProjectRepository
+    public sealed class ProjectRepository(AppDbContext db) : IProjectRepository
     {
-        private readonly AppDbContext _db;
-        public ProjectRepository(AppDbContext db) => _db = db;
+        private readonly AppDbContext _db = db;
+
         public async Task<Project?> GetByIdAsync(Guid id, CancellationToken ct = default)
             => await _db.Projects
-            .AsNoTracking()
-            .Include(p => p.Members.Where(m => m.RemovedAt == null))
-            .FirstOrDefaultAsync(p => p.Id == id, ct);
+                        .AsNoTracking()
+                        .Include(p => p.Members.Where(m => m.RemovedAt == null))
+                        .FirstOrDefaultAsync(p => p.Id == id, ct);
 
-        public async Task<IReadOnlyList<Project>> GetByUserAsync(Guid userId, ProjectFilter? filter = null, CancellationToken ct = default)
+        public async Task<Project?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default)
+            => await _db.Projects
+                        .Include(p => p.Members.Where(m => m.RemovedAt == null))
+                        .FirstOrDefaultAsync(p => p.Id == id, ct);
+
+        public async Task<IReadOnlyList<Project>> GetAllByUserAsync(Guid userId, ProjectFilter? filter = null, CancellationToken ct = default)
         {
             filter ??= new ProjectFilter();
             var includeRemoved = filter.IncludeRemoved == true;
 
             IQueryable<Project> q = _db.Projects
-                .AsNoTracking()
-                .AsSplitQuery()
-                .Include(p => p.Members.Where(m => includeRemoved || m.RemovedAt == null))
-                .Where(p => p.OwnerId == userId || p.Members.Any(m => m.UserId == userId && (includeRemoved || m.RemovedAt == null)));
+                                        .AsNoTracking()
+                                        .AsSplitQuery()
+                                        .Include(p => p.Members.Where(m => includeRemoved || m.RemovedAt == null))
+                                        .Where(p => p.OwnerId == userId || p.Members.Any(m => m.UserId == userId && (includeRemoved || m.RemovedAt == null)));
 
             if (!string.IsNullOrWhiteSpace(filter.NameContains))
             {
@@ -63,33 +69,55 @@ namespace Infrastructure.Data.Repositories
 
         public async Task<DomainMutation> RenameAsync(Guid id, string newName, byte[] rowVersion, CancellationToken ct = default)
         {
-            var proj = await _db.Projects.FirstOrDefaultAsync(p => p.Id == id, ct);
-            if (proj is null) return DomainMutation.NotFound;
-            if (proj.Name == newName) return DomainMutation.NoOp;
+            var project = await GetTrackedByIdAsync(id, ct);
+            if (project is null) return DomainMutation.NotFound;
+            if (project.Name == newName) return DomainMutation.NoOp;
 
-            _db.Entry(proj).Property(p => p.RowVersion).OriginalValue = rowVersion;
+            _db.Entry(project).Property(p => p.RowVersion).OriginalValue = rowVersion;
 
-            proj.Rename(ProjectName.Create(newName));
-            _db.Entry(proj).Property(p => p.Name).IsModified = true;
-            _db.Entry(proj).Property(p => p.Slug).IsModified = true;
+            project.Rename(ProjectName.Create(newName));
+            _db.Entry(project).Property(p => p.Name).IsModified = true;
+            _db.Entry(project).Property(p => p.Slug).IsModified = true;
 
-            return DomainMutation.Updated;
+            try
+            {
+                await _db.SaveChangesAsync(ct);
+                return DomainMutation.Updated;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return DomainMutation.Conflict;
+            }
         }
 
         public async Task<DomainMutation> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default)
         {
-            var proj = await _db.Projects.FirstOrDefaultAsync(p => p.Id == id, ct);
-            if (proj is null) return DomainMutation.NotFound;
+            var project = await GetTrackedByIdAsync(id, ct);
+            if (project is null) return DomainMutation.NotFound;
 
-            _db.Entry(proj).Property(p => p.RowVersion).OriginalValue = rowVersion;
-            _db.Projects.Remove(proj);
+            _db.Entry(project).Property(p => p.RowVersion).OriginalValue = rowVersion;
+            _db.Projects.Remove(project);
 
-            return DomainMutation.Deleted;
+            try
+            {
+                await _db.SaveChangesAsync(ct);
+                return DomainMutation.Deleted;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return DomainMutation.Conflict;
+            }
+            catch (DbUpdateException)
+            {
+                return DomainMutation.Conflict;
+            }
         }
 
-        public async Task<bool> ExistsByNameAsync(Guid ownerId, ProjectName name, CancellationToken ct = default)
+        public async Task<bool> ExistsByNameAsync(Guid ownerId, string name, CancellationToken ct = default)
             => await _db.Projects
-                .AsNoTracking()
-                .AnyAsync(p => p.OwnerId == ownerId && p.Name == name, ct);
+                        .AsNoTracking()
+                        .AnyAsync(p => p.OwnerId == ownerId && p.Name == name, ct);
+
+        public async Task<int> SaveChangesAsync(CancellationToken ct = default) => await _db.SaveChangesAsync(ct);
     }
 }

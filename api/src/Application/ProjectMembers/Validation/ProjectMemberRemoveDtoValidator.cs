@@ -9,7 +9,6 @@ namespace Application.ProjectMembers.Validation
         public ProjectMemberRemoveDtoValidator()
         {
             RuleFor(pm => pm.RemovedAt).RemovedAtRules();
-            RuleFor(pm => pm.RowVersion).ConcurrencyTokenRules();
         }
     }
 }

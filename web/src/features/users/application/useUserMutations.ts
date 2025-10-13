@@ -3,12 +3,13 @@ import { changeUserRole, deleteUser, renameUser } from "../infrastructure/users.
 import type { components } from "@shared/api/types";
 import { normalizeSysRole } from "../domain/User";
 
-type ChangeRoleDto = components["schemas"]["ChangeRoleDto"];
+type SysUserRole = components["schemas"]["UserRole"];
 
 export function useUserRoleMutation(userId: string, rowVersion: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (role: ChangeRoleDto["role"]) => changeUserRole(userId, normalizeSysRole(role), rowVersion),
+    mutationFn: (newRole: SysUserRole) =>
+      changeUserRole(userId, normalizeSysRole(newRole), rowVersion),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users", "all"] }),
   });
 }

@@ -1,6 +1,8 @@
 using Api.Auth.Authorization;
-using Api.Common;
-using Application.Projects.Abstractions;
+using Api.Extensions;
+using Api.Filters;
+using Api.Helpers;
+using Application.ProjectMembers.Abstractions;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
@@ -11,10 +13,6 @@ namespace Api.Endpoints
 {
     public static class UsersEndpoints
     {
-        public sealed record RenameUserDto(string Name, byte[] RowVersion);
-        public sealed record ChangeRoleDto(UserRole Role, byte[] RowVersion);
-        public sealed record DeleteUserDto(byte[] RowVersion);
-
         public static RouteGroupBuilder MapUsers(this IEndpointRouteBuilder app)
         {
             var group = app.MapGroup("/users")
@@ -23,16 +21,16 @@ namespace Api.Endpoints
 
             // GET /users
             group.MapGet("/", async (
-                [FromServices] IUserRepository repo,
-                [FromServices] IProjectMembershipReader membership,
+                [FromServices] IUserReadService userReadSvc,
+                [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 CancellationToken ct = default) =>
             {
-                var users = await repo.GetAllAsync(ct);
+                var users = await userReadSvc.ListAsync(ct);
                 var dto = users.Select(u => u.ToReadDto()).ToList();
 
                 foreach (var d in dto)
                 {
-                    d.ProjectMembershipsCount = await membership.CountActiveAsync(d.Id, ct);
+                    d.ProjectMembershipsCount = await projectMemberReadSvc.CountActiveAsync(d.Id, ct);
                 }
 
                 return Results.Ok(dto);
@@ -42,16 +40,16 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .WithSummary("Get all users")
-            .WithDescription("Returns all users info including RowVersion.")
+            .WithDescription("Lists all users with summary info and active project membership counts.")
             .WithName("Users_Get_All");
 
-            // GET /users/{id}
-            group.MapGet("/{id:guid}", async (
-                [FromRoute] Guid id,
-                [FromServices] IUserRepository repo,
+            // GET /users/{userId}
+            group.MapGet("/{userId:guid}", async (
+                [FromRoute] Guid userId,
+                [FromServices] IUserReadService svc,
                 CancellationToken ct = default) =>
             {
-                var u = await repo.GetByIdAsync(id, ct);
+                var u = await svc.GetAsync(userId, ct);
                 if (u is null) return Results.NotFound();
                 return Results.Ok(u.ToReadDto());
             })
@@ -61,61 +59,104 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get user by id")
-            .WithDescription("Returns user info including RowVersion.")
+            .WithDescription("Gets a user by id. Returns summary info.")
             .WithName("Users_Get_ById");
 
-            // PATCH /users/{id}/name
-            group.MapPatch("/{id:guid}/name", async (
-                [FromRoute] Guid id,
-                [FromBody] RenameUserDto dto,
-                [FromServices] IUserService svc,
+            // GET /users/by-email?email=
+            group.MapGet("/by-email", async (
+                [FromQuery] string email,
+                [FromServices] IUserReadService userReadSvc,
                 CancellationToken ct = default) =>
             {
-                var res = await svc.RenameAsync(id, dto.Name, dto.RowVersion, ct);
-                return res.ToHttp();
+                var user = await userReadSvc.GetByEmailAsync(email, ct);
+                return user is null ? Results.NotFound() : Results.Ok(user.ToReadDto());
+            })
+            .RequireAuthorization(Policies.SystemAdmin)
+            .Produces<UserReadDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get user by email")
+            .WithDescription("Returns a user by email. Returns summary info.")
+            .WithName("Users_Get_ByEmail");
+
+            // PATCH /users/{userId}/rename
+            group.MapPatch("/{userId:guid}/rename", async (
+                [FromRoute] Guid userId,
+                [FromBody] UserRenameDto dto,
+                [FromServices] IUserReadService userReadSvc,
+                [FromServices] IUserWriteService userWriteSvc,
+                HttpContext http,
+                CancellationToken ct = default) =>
+            {
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
+
+                var result = await userWriteSvc.RenameAsync(userId, dto.NewName, rowVersion, ct);
+                if (result != DomainMutation.Updated) return result.ToHttp(http);
+
+                var renamed = await userReadSvc.GetAsync(userId, ct);
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed!.RowVersion)}\"";
+                return Results.Ok(renamed.ToReadDto());
             })
             .RequireAuthorization()
-            .Produces(StatusCodes.Status204NoContent)
+            .RequireIfMatch()
+            .Produces<UserReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Rename user")
-            .WithDescription("Allows an authenticated user to rename itself")
+            .WithDescription("Renames a user and returns the updated user.")
             .WithName("Users_Rename");
 
-            // PATCH /users/{id}/role
-            group.MapPatch("/{id:guid}/role", async (
-                [FromRoute] Guid id,
-                [FromBody] ChangeRoleDto dto,
-                [FromServices] IUserService svc,
+            // PATCH /users/{userId}/role
+            group.MapPatch("/{userId:guid}/role", async (
+                [FromRoute] Guid userId,
+                [FromBody] UserChangeRoleDto dto,
+                [FromServices] IUserReadService userReadSvc,
+                [FromServices] IUserWriteService userWriteSvc,
+                HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var res = await svc.ChangeRoleAsync(id, dto.Role, dto.RowVersion, ct);
-                return res.ToHttp();
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
+
+                var result = await userWriteSvc.ChangeRoleAsync(userId, dto.NewRole, rowVersion, ct);
+                if (result != DomainMutation.Updated) return result.ToHttp(http);
+
+                var edited = await userReadSvc.GetAsync(userId, ct);
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
+                return Results.Ok(edited.ToReadDto());
             })
             .RequireAuthorization(Policies.SystemAdmin)
-            .Produces(StatusCodes.Status204NoContent)
+            .RequireIfMatch()
+            .Produces<UserReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Change user role")
-            .WithDescription("Requires system admin role to modify another user's role")
+            .WithDescription("Changes a user's role and returns the updated user.")
             .WithName("Users_Change_Role");
 
-            // DELETE /users/{id}
-            group.MapDelete("/{id:guid}", async (
-                [FromRoute] Guid id,
-                [FromBody] DeleteUserDto dto,
-                [FromServices] IUserService svc,
+            // DELETE /users/{userId}
+            group.MapDelete("/{userId:guid}", async (
+                [FromRoute] Guid userId,
+                [FromServices] IUserReadService userReadSvc,
+                [FromServices] IUserWriteService userWriteSvc,
+                HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var res = await svc.DeleteAsync(id, dto.RowVersion, ct);
-                return res.ToHttp();
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
+
+                var res = await userWriteSvc.DeleteAsync(userId, rowVersion, ct);
+                return res.ToHttp(http);
             })
             .RequireAuthorization(Policies.SystemAdmin)
+            .RequireIfMatch()
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -123,7 +164,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Delete user")
-            .WithDescription("Requires system admin role to delete an existing user")
+            .WithDescription("Deletes an existing user.")
             .WithName("Users_Delete");
 
             return group;

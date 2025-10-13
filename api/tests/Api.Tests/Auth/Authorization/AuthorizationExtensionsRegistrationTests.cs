@@ -1,7 +1,7 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
 using Api.Tests.Fakes;
-using Application.Projects.Abstractions;
+using Application.ProjectMembers.Abstractions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
@@ -27,7 +27,7 @@ namespace Api.Tests.Auth.Authorization
                 .Build();
 
             // Fake membership reader so DI is satisfied
-            services.AddScoped<IProjectMembershipReader, FakeMembershipReader>();
+            services.AddScoped<IProjectMemberReadService, FakeProjectMemberReadService>();
 
             services.AddJwtAuthAndPolicies(cfg);
 

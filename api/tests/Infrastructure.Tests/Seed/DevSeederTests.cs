@@ -1,75 +1,98 @@
 using Application.Common.Abstractions.Security;
 using Domain.ValueObjects;
 using FluentAssertions;
-using Infrastructure.Data;
 using Infrastructure.Data.Seeders;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using TestHelpers;
 
 namespace Infrastructure.Tests.Seed
 {
     [Collection("SqlServerContainer")]
-    public sealed class DevSeederTests : IClassFixture<MsSqlContainerFixture>
+    public sealed class DevSeederTests(MsSqlContainerFixture fx)
     {
-        private readonly MsSqlContainerFixture _fx;
-        public DevSeederTests(MsSqlContainerFixture fx) => _fx = fx;
+        private readonly MsSqlContainerFixture _fx = fx;
+        private readonly string _cs = fx.ConnectionString;
 
         [Fact]
-        public async Task Seed_Creates_Demo_Users_And_Project()
+        public async Task Seed_Creates_Demo_Data_With_Two_Projects_And_Board()
         {
-            var baseCs = _fx.ContainerConnectionString;
-            var dbName = $"CollabTaskTest_{Guid.NewGuid():N}";
-            var cs = $"{baseCs};Database={dbName}";
+            await _fx.ResetAsync();
+            var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var sc = new ServiceCollection();
-            sc.AddInfrastructure(cs);
-            var services = sc.BuildServiceProvider();
+            await DevSeeder.SeedAsync(sp);
 
-            using (var scope = services.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                await db.Database.MigrateAsync();
-            }
-            await DevSeeder.SeedAsync(services);
+            using var scope = sp.CreateScope();
+            var provider = scope.ServiceProvider;
+            var hasher = provider.GetRequiredService<IPasswordHasher>();
 
-            using var s2 = services.CreateScope();
-            var sp = s2.ServiceProvider;
-            var db2 = sp.GetRequiredService<AppDbContext>();
+            // Users
+            var emails = await db.Users.AsNoTracking().Select(u => u.Email.Value).ToListAsync();
+            emails.Should().Contain(["admin@demo.com", "user@demo.com", "guest@demo.com"]);
 
-            var users = await db2.Users.AsNoTracking().ToListAsync();
-            users.Select(u => u.Email.Value)
-                 .Should().Contain(["admin@demo.com", "user@demo.com"]);
-
-            var hasher = sp.GetRequiredService<IPasswordHasher>();
-            var admin = users.Single(u => u.Email.Value == "admin@demo.com");
+            var admin = await db.Users.AsNoTracking().SingleAsync(u => u.Email == Email.Create("admin@demo.com"));
             hasher.Verify("Admin123!", admin.PasswordSalt, admin.PasswordHash).Should().BeTrue();
 
-            (await db2.Projects.AsNoTracking().CountAsync(p => p.Slug == ProjectSlug.Create("demo-project"))).Should().Be(1);
-            (await db2.ProjectMembers.AsNoTracking().CountAsync()).Should().BeGreaterThan(0);
+            var user = await db.Users.AsNoTracking().SingleAsync(u => u.Email == Email.Create("user@demo.com"));
+            hasher.Verify("User123!", user.PasswordSalt, user.PasswordHash).Should().BeTrue();
+
+            var guest = await db.Users.AsNoTracking().SingleAsync(u => u.Email == Email.Create("guest@demo.com"));
+            hasher.Verify("Guest123!", guest.PasswordSalt, guest.PasswordHash).Should().BeTrue();
+
+            // Projects
+            (await db.Projects.AsNoTracking().CountAsync(p => p.Slug == ProjectSlug.Create("demo-project-a"))).Should().Be(1);
+            (await db.Projects.AsNoTracking().CountAsync(p => p.Slug == ProjectSlug.Create("demo-project-b"))).Should().Be(1);
+
+            // Memberships
+            (await db.ProjectMembers.AsNoTracking().CountAsync()).Should().BeGreaterThan(0);
+
+            // Board primitives
+            (await db.Lanes.AsNoTracking().CountAsync()).Should().BeGreaterThan(0);
+            (await db.Columns.AsNoTracking().CountAsync()).Should().BeGreaterThan(0);
+
+            // Tasks and related
+            (await db.TaskItems.AsNoTracking().CountAsync()).Should().BeGreaterThan(0);
+            (await db.TaskAssignments.AsNoTracking().CountAsync()).Should().BeGreaterThan(0);
+            (await db.TaskNotes.AsNoTracking().CountAsync()).Should().BeGreaterThan(0);
+            (await db.TaskActivities.AsNoTracking().CountAsync()).Should().BeGreaterThan(0);
         }
 
         [Fact]
         public async Task Seed_Is_Idempotent()
         {
-            var baseCs = _fx.ContainerConnectionString;
-            var dbName = $"CollabTaskTest_{Guid.NewGuid():N}";
-            var cs = $"{baseCs};Database={dbName}";
+            await _fx.ResetAsync();
+            var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var sc = new ServiceCollection().AddInfrastructure(cs).BuildServiceProvider();
+            await DevSeeder.SeedAsync(sp);
+            await DevSeeder.SeedAsync(sp);
 
-            using (var s = sc.CreateScope())
-                await s.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
-
-            await DevSeeder.SeedAsync(sc);
-            await DevSeeder.SeedAsync(sc);
-
-            using var s2 = sc.CreateScope();
-            var db = s2.ServiceProvider.GetRequiredService<AppDbContext>();
-
+            // Users remain unique
             (await db.Users.CountAsync(u => u.Email == Email.Create("admin@demo.com"))).Should().Be(1);
             (await db.Users.CountAsync(u => u.Email == Email.Create("user@demo.com"))).Should().Be(1);
-            (await db.Projects.CountAsync(p => p.Slug == ProjectSlug.Create("demo-project"))).Should().Be(1);
+            (await db.Users.CountAsync(u => u.Email == Email.Create("guest@demo.com"))).Should().Be(1);
+
+            // Projects remain singletons
+            (await db.Projects.CountAsync(p => p.Slug == ProjectSlug.Create("demo-project-a"))).Should().Be(1);
+            (await db.Projects.CountAsync(p => p.Slug == ProjectSlug.Create("demo-project-b"))).Should().Be(1);
+
+            // No duplication on board/task artifacts
+            // Sanity: totals unchanged after second run
+            var lanes = await db.Lanes.AsNoTracking().CountAsync();
+            var columns = await db.Columns.AsNoTracking().CountAsync();
+            var tasks = await db.TaskItems.AsNoTracking().CountAsync();
+            var notes = await db.TaskNotes.AsNoTracking().CountAsync();
+            var assigns = await db.TaskAssignments.AsNoTracking().CountAsync();
+            var acts = await db.TaskActivities.AsNoTracking().CountAsync();
+
+            await DevSeeder.SeedAsync(sp);
+
+            (await db.Lanes.AsNoTracking().CountAsync()).Should().Be(lanes);
+            (await db.Columns.AsNoTracking().CountAsync()).Should().Be(columns);
+            (await db.TaskItems.AsNoTracking().CountAsync()).Should().Be(tasks);
+            (await db.TaskNotes.AsNoTracking().CountAsync()).Should().Be(notes);
+            (await db.TaskAssignments.AsNoTracking().CountAsync()).Should().Be(assigns);
+            (await db.TaskActivities.AsNoTracking().CountAsync()).Should().Be(acts);
         }
     }
 }

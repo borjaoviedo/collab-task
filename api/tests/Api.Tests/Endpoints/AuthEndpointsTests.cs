@@ -1,6 +1,7 @@
 using Api.Auth.DTOs;
 using Api.Tests.Testing;
 using Application.Common.Abstractions.Security;
+using Application.Users.DTOs;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,18 +12,13 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
-using System.Text.Json;
+using TestHelpers;
 
 namespace Api.Tests.Endpoints
 {
     public sealed class AuthEndpointsTests
     {
         public sealed record ProblemDetailsLike(string Type, string Title, int Status, string Detail, string Instance);
-        private sealed record AuthTokenReadDto (string AccessToken, string TokenType, DateTime ExpiresAtUtc, Guid UserId, string Email, string Name, string Role);
-        private sealed record RegisterReq(string Email, string Name, string Password);
-        private sealed record AuthTokenReadDtoContract(string AccessToken, Guid UserId, string Email, string Name, string Role);
-        private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-
         [Fact]
         public async Task Login_Returns200_With_Token_And_Metadata()
         {
@@ -38,7 +34,7 @@ namespace Api.Tests.Endpoints
             var resp = await client.PostAsJsonAsync("/auth/login", new { email, password });
             resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var dto = await resp.Content.ReadFromJsonAsync<AuthTokenReadDto>(Json);
+            var dto = await resp.Content.ReadFromJsonAsync<AuthTokenReadDto>(AuthTestHelper.Json);
             dto.Should().NotBeNull();
 
             dto!.AccessToken.Should().NotBeNullOrWhiteSpace();
@@ -66,7 +62,7 @@ namespace Api.Tests.Endpoints
             var resp = await client.PostAsJsonAsync("/auth/login", new { email, password });
             resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var dto = await resp.Content.ReadFromJsonAsync<AuthTokenReadDto>(Json);
+            var dto = await resp.Content.ReadFromJsonAsync<AuthTokenReadDto>(AuthTestHelper.Json);
             dto.Should().NotBeNull();
 
             var jwt = new JwtSecurityTokenHandler().ReadJwtToken(dto!.AccessToken);
@@ -91,7 +87,7 @@ namespace Api.Tests.Endpoints
             resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             resp.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
 
-            var problem = await resp.Content.ReadFromJsonAsync<ProblemDetailsLike>(Json);
+            var problem = await resp.Content.ReadFromJsonAsync<ProblemDetailsLike>(AuthTestHelper.Json);
             problem!.Status.Should().Be(401);
             problem.Title.Should().Be("Unauthorized");
             problem.Detail.Should().NotBeNullOrWhiteSpace();
@@ -116,7 +112,7 @@ namespace Api.Tests.Endpoints
             resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             resp.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
 
-            var problem = await resp.Content.ReadFromJsonAsync<ProblemDetailsLike>(Json);
+            var problem = await resp.Content.ReadFromJsonAsync<ProblemDetailsLike>(AuthTestHelper.Json);
             problem!.Status.Should().Be(401);
             problem.Title.Should().Be("Unauthorized");
             problem.Detail.Should().NotBeNullOrWhiteSpace();
@@ -162,11 +158,11 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var payload = new RegisterReq($"ok_{Guid.NewGuid():N}@demo.com", "Valid Name", "Str0ngP@ss!");
+            var payload = new UserRegisterDto() { Email = $"ok_{Guid.NewGuid():N}@demo.com" , Name = "Valid Name", Password = "Str0ngP@ss!" };
             var resp = await client.PostAsJsonAsync("/auth/register", payload);
             resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var dto = await resp.Content.ReadFromJsonAsync<AuthTokenReadDtoContract>();
+            var dto = await resp.Content.ReadFromJsonAsync<AuthTokenReadDto>();
             dto.Should().NotBeNull();
             dto!.AccessToken.Should().NotBeNullOrWhiteSpace();
             dto.Email.Should().Be(payload.Email);
@@ -194,8 +190,8 @@ namespace Api.Tests.Endpoints
             using var client = app.CreateClient();
 
             var email = $"dup_{Guid.NewGuid():N}@demo.com";
-            var firstPayload = new RegisterReq(email, "User Name", "Str0ngP@ss!");
-            var secondPayload = new RegisterReq(email, "Different User Name", "Str0ngP@ss!");
+            var firstPayload = new UserRegisterDto() { Email = email, Name = "User Name", Password = "Str0ngP@ss!" };
+            var secondPayload = new UserRegisterDto() { Email = email, Name = "Different User Name", Password = "Str0ngP@ss!" };
 
             var first = await client.PostAsJsonAsync("/auth/register", firstPayload);
             first.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -211,8 +207,8 @@ namespace Api.Tests.Endpoints
             using var client = app.CreateClient();
 
             var name = "Dup Name";
-            var firstPayload = new RegisterReq($"{Guid.NewGuid():N}@demo.com", name, "Str0ngP@ss!");
-            var secondPayload = new RegisterReq($"{Guid.NewGuid():N}@demo.com", name, "Str0ngP@ss!");
+            var firstPayload = new UserRegisterDto() { Email = $"{Guid.NewGuid():N}@demo.com", Name = name, Password = "Str0ngP@ss!" };
+            var secondPayload = new UserRegisterDto() { Email = $"{Guid.NewGuid():N}@demo.com", Name = name, Password = "Str0ngP@ss!" };
 
             var first = await client.PostAsJsonAsync("/auth/register", firstPayload);
             first.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -228,8 +224,8 @@ namespace Api.Tests.Endpoints
             using var client = app.CreateClient();
 
             var email = $"race_{Guid.NewGuid():N}@demo.com";
-            var firstPayload = new RegisterReq(email, "User Name", "Str0ngP@ss!");
-            var secondPayload = new RegisterReq(email, "Different User Name", "Str0ngP@ss!");
+            var firstPayload = new UserRegisterDto() { Email = email, Name = "User Name", Password = "Str0ngP@ss!" };
+            var secondPayload = new UserRegisterDto() { Email = email, Name = "Different User Name", Password = "Str0ngP@ss!" };
 
             var t1 = client.PostAsJsonAsync("/auth/register", firstPayload);
             var t2 = client.PostAsJsonAsync("/auth/register", secondPayload);
@@ -248,8 +244,8 @@ namespace Api.Tests.Endpoints
             using var client = app.CreateClient();
 
             var name = "R Name";
-            var firstPayload = new RegisterReq($"{Guid.NewGuid():N}@demo.com", name, "Str0ngP@ss!");
-            var secondPayload = new RegisterReq($"{Guid.NewGuid():N}@demo.com", name, "Str0ngP@ss!");
+            var firstPayload = new UserRegisterDto() { Email = $"{Guid.NewGuid():N}@demo.com", Name = name, Password = "Str0ngP@ss!" };
+            var secondPayload = new UserRegisterDto() { Email = $"{Guid.NewGuid():N}@demo.com", Name = name, Password = "Str0ngP@ss!" };
 
             var t1 = client.PostAsJsonAsync("/auth/register", firstPayload);
             var t2 = client.PostAsJsonAsync("/auth/register", secondPayload);
@@ -274,7 +270,7 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var payload = new RegisterReq(email, name, password);
+            var payload = new UserRegisterDto() { Email = email, Name = name, Password = password } ;
             var resp = await client.PostAsJsonAsync("/auth/register", payload);
 
             resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -288,12 +284,12 @@ namespace Api.Tests.Endpoints
 
             var email = $"claims_{Guid.NewGuid():N}@demo.com";
             var name = "Claim User";
-            var payload = new RegisterReq(email, name, "Str0ngP@ss!");
+            var payload = new UserRegisterDto() { Email = email, Name = name, Password = "Str0ngP@ss!" };
 
             var resp = await client.PostAsJsonAsync("/auth/register", payload);
             resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var dto = await resp.Content.ReadFromJsonAsync<AuthTokenReadDtoContract>();
+            var dto = await resp.Content.ReadFromJsonAsync<AuthTokenReadDto>();
             dto.Should().NotBeNull();
 
             var token = new JwtSecurityTokenHandler().ReadJwtToken(dto!.AccessToken);
@@ -323,14 +319,14 @@ namespace Api.Tests.Endpoints
 
             var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
             login.StatusCode.Should().Be(HttpStatusCode.OK);
-            var auth = await login.Content.ReadFromJsonAsync<AuthTokenReadDto>(Json);
+            var auth = await login.Content.ReadFromJsonAsync<AuthTokenReadDto>(AuthTestHelper.Json);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth!.AccessToken);
 
             var resp = await client.GetAsync("/auth/me");
             resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var dto = await resp.Content.ReadFromJsonAsync<MeReadDto>(Json);
+            var dto = await resp.Content.ReadFromJsonAsync<MeReadDto>(AuthTestHelper.Json);
             dto.Should().NotBeNull();
             dto.Email.Should().Be(email.ToLowerInvariant());
             dto.Name.Should().Be(name);

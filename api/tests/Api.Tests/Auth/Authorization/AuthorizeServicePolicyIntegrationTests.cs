@@ -1,11 +1,11 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
-using Application.Projects.Abstractions;
+using Application.ProjectMembers.Abstractions;
+using Domain.Entities;
 using Domain.Enums;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
@@ -34,25 +34,18 @@ namespace Api.Tests.Auth.Authorization
 
             services.AddLogging();
             // Inject fake reader that returns the role for current user
-            services.AddScoped<IProjectMembershipReader>(_ => new StubReader(userRole));
+            services.AddScoped<IProjectMemberReadService>(_ => new StubProjectMemberReadService(userRole));
             services.AddJwtAuthAndPolicies(cfg);
 
             var sp = services.BuildServiceProvider();
             var authz = sp.GetRequiredService<IAuthorizationService>();
-            var accessor = sp.GetRequiredService<IHttpContextAccessor>();
 
-            // Build HttpContext with route projectId and authenticated user
             var http = new DefaultHttpContext();
-            var rd = new RouteData();
-            rd.Values["projectId"] = Guid.NewGuid().ToString();
-            http.SetEndpoint(new Endpoint(c => default!, new EndpointMetadataCollection(), "test"));
-            http.Features.Set<IRoutingFeature>(new RoutingFeature { RouteData = rd });
+            http.Request.RouteValues["projectId"] = Guid.NewGuid().ToString();
 
-            var userId = Guid.NewGuid();
-            var identity = new ClaimsIdentity("test");
-            identity.AddClaim(new Claim("sub", userId.ToString()));
-            http.User = new ClaimsPrincipal(identity);
-            accessor.HttpContext = http;
+            var id = new ClaimsIdentity("test");
+            id.AddClaim(new Claim("sub", Guid.NewGuid().ToString()));
+            http.User = new ClaimsPrincipal(id);
 
             var policyName = required switch
             {
@@ -63,16 +56,25 @@ namespace Api.Tests.Auth.Authorization
                 _ => throw new ArgumentOutOfRangeException(nameof(required), required, "ProjectRole required value is not valid for the policy.")
             };
 
-            var result = await authz.AuthorizeAsync(http.User, resource: null, policyName);
+            var result = await authz.AuthorizeAsync(http.User, http, policyName);
             result.Succeeded.Should().Be(expected);
         }
 
-        private sealed class StubReader : IProjectMembershipReader
+        private sealed class StubProjectMemberReadService : IProjectMemberReadService
         {
             private readonly ProjectRole _role;
-            public StubReader(ProjectRole role) => _role = role;
+
+            public StubProjectMemberReadService(ProjectRole role) => _role = role;
+
+            public Task<ProjectMember?> GetAsync(Guid projectId, Guid userId, CancellationToken ct = default)
+                => Task.FromResult<ProjectMember?>(null);
+
+            public Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(Guid projectId, bool includeRemoved = false, CancellationToken ct = default)
+                => Task.FromResult<IReadOnlyList<ProjectMember>>(Array.Empty<ProjectMember>());
+
             public Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
                 => Task.FromResult<ProjectRole?>(_role);
+
             public Task<int> CountActiveAsync(Guid userId, CancellationToken ct = default)
                 => Task.FromResult(1);
         }

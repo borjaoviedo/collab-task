@@ -3,11 +3,12 @@ using Api.Auth.Mapping;
 using Api.Extensions;
 using Application.Common.Abstractions.Security;
 using Application.Common.Exceptions;
-using Application.Projects.Abstractions;
+using Application.ProjectMembers.Abstractions;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
 using Domain.Common.Exceptions;
+using Domain.Enums;
 using FluentValidation;
 using Infrastructure.Data.Extensions;
 using Microsoft.AspNetCore.Mvc;
@@ -27,26 +28,22 @@ namespace Api.Endpoints
 
             // POST /auth/register
             group.MapPost("/register", async (
-                [FromServices] IUserRepository users,
-                [FromServices] IUserService userService,
+                [FromServices] IUserWriteService userWriteSvc,
                 [FromServices] IPasswordHasher hasher,
-                [FromServices] IJwtTokenService jwt,
+                [FromServices] IJwtTokenService jwtSvc,
                 [FromServices] ILoggerFactory loggerFactory,
-                [FromBody] UserCreateDto dto,
+                [FromBody] UserRegisterDto dto,
                 CancellationToken ct = default) =>
             {
                 var log = loggerFactory.CreateLogger("Auth.Register");
-
-                if (await users.ExistsByEmailAsync(dto.Email, ct) || await users.ExistsByNameAsync(dto.Name, ct))
-                    throw new DuplicateEntityException("Could not complete registration.");
-
                 var (hash, salt) = hasher.Hash(dto.Password);
-                var user = dto.ToEntity(hash, salt);
 
                 try
                 {
-                    await userService.CreateAsync(user, ct);
-                    var (accessToken, expiresAtUtc) = jwt.CreateToken(user.Id, user.Email.Value, user.Name.Value, user.Role.ToString());
+                    var (res, user) = await userWriteSvc.CreateAsync(dto.Email, dto.Name, hash, salt, UserRole.User, ct);
+                    if (res != DomainMutation.Created) return res.ToHttp();
+
+                    var (accessToken, expiresAtUtc) = jwtSvc.CreateToken(user!.Id, user.Email.Value, user.Name.Value, user.Role.ToString());
                     return Results.Ok(user.ToReadDto(accessToken, expiresAtUtc));
                 }
                 catch (DbUpdateException ex) when (ex.IsUniqueViolation())
@@ -56,7 +53,7 @@ namespace Api.Endpoints
                 }
             })
             .AllowAnonymous()
-            .RequireValidation<UserCreateDto>()
+            .RequireValidation<UserRegisterDto>()
             .Produces<AuthTokenReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict)
@@ -66,9 +63,9 @@ namespace Api.Endpoints
 
             // POST /auth/login
             group.MapPost("/login", async (
-                [FromServices] IUserRepository users,
+                [FromServices] IUserReadService userReadSvc,
                 [FromServices] IPasswordHasher hasher,
-                [FromServices] IJwtTokenService jwt,
+                [FromServices] IJwtTokenService jwtSvc,
                 [FromServices] ILoggerFactory loggerFactory,
                 [FromBody] UserLoginDto dto,
                 CancellationToken ct = default) =>
@@ -78,7 +75,7 @@ namespace Api.Endpoints
                 // small jitter to reduce timing attacks
                 await Task.Delay(Random.Shared.Next(10, 30), ct);
 
-                var user = await users.GetByEmailAsync(dto.Email, ct);
+                var user = await userReadSvc.GetByEmailAsync(dto.Email, ct);
                 var valid = user is not null &&
                             hasher.Verify(dto.Password, user.PasswordSalt, user.PasswordHash);
 
@@ -94,7 +91,7 @@ namespace Api.Endpoints
 
                 log.LogInformation("Login success userId={UserId}", user!.Id);
 
-                var (accessToken, expiresAtUtc) = jwt.CreateToken(user!.Id, user.Email.Value, user.Name.Value, user.Role.ToString());
+                var (accessToken, expiresAtUtc) = jwtSvc.CreateToken(user!.Id, user.Email.Value, user.Name.Value, user.Role.ToString());
                 var payload = user.ToReadDto(accessToken, expiresAtUtc);
 
                 return Results.Ok(payload);
@@ -110,8 +107,8 @@ namespace Api.Endpoints
             // GET /auth/me
             group.MapGet("/me", async (
                 HttpContext http,
-                [FromServices] IUserRepository users,
-                [FromServices] IProjectMembershipReader membership,
+                [FromServices] IUserReadService userReadSvc,
+                [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 [FromServices] ILoggerFactory loggerFactory,
                 CancellationToken ct = default) =>
             {
@@ -127,7 +124,7 @@ namespace Api.Endpoints
                     throw new InvalidCredentialsException("Invalid or missing authentication claims.");
                 }
 
-                var user = await users.GetByIdAsync(userId, ct);
+                var user = await userReadSvc.GetAsync(userId, ct);
                 if (user is null)
                 {
                     logger.LogWarning("Authenticated user not found. userId: {UserId}", userId);
@@ -135,7 +132,7 @@ namespace Api.Endpoints
                 }
 
                 var dto = user.ToMeReadDto();
-                dto.ProjectMembershipsCount = await membership.CountActiveAsync(userId, ct);
+                dto.ProjectMembershipsCount = await projectMemberReadSvc.CountActiveAsync(userId, ct);
 
                 return Results.Ok(dto);
             })

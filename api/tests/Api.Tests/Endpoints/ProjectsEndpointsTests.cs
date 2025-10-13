@@ -1,25 +1,16 @@
-using Api.Tests.Common.Helpers;
 using Api.Tests.Testing;
+using Application.Projects.DTOs;
+using Application.Users.DTOs;
 using FluentAssertions;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
+using TestHelpers;
 
 namespace Api.Tests.Endpoints
 {
     public sealed class ProjectsEndpointsTests
     {
-        private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-
-        private sealed record RegisterReq(string Email, string Name, string Password);
-        private sealed record AuthToken(string AccessToken, Guid UserId, string Email, string Name, string Role);
-
-        private sealed record ProjectCreateDto(string Name);
-        private sealed record ProjectReadDto(Guid Id, string Name, string Slug, string Role, byte[] RowVersion);
-        private sealed record RenameProjectDto(string Name, byte[] RowVersion);
-        private sealed record DeleteProjectDto(byte[] RowVersion);
-
         [Fact]
         public async Task Create_Then_List_Shows_Project_For_User()
         {
@@ -29,13 +20,13 @@ namespace Api.Tests.Endpoints
             var auth = await RegisterAndLogin(client);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-            var create = await client.PostAsJsonAsync("/projects", new ProjectCreateDto("My Project"));
+            var create = await client.PostAsJsonAsync("/projects", new ProjectCreateDto() { Name = "My Project"});
             create.StatusCode.Should().Be(HttpStatusCode.Created);
 
             var list = await client.GetAsync("/projects");
             list.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var items = await list.Content.ReadFromJsonAsync<List<ProjectReadDto>>(Json);
+            var items = await list.Content.ReadFromJsonAsync<List<ProjectReadDto>>(AuthTestHelper.Json);
             items.Should().NotBeNull();
             items!.Any().Should().BeTrue();
             items!.Should().Contain(p => p != null && p.Name == "My Project");
@@ -50,10 +41,10 @@ namespace Api.Tests.Endpoints
             var auth = await RegisterAndLogin(client);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-            var create = await client.PostAsJsonAsync("/projects", new ProjectCreateDto("P1"));
+            var create = await client.PostAsJsonAsync("/projects", new ProjectCreateDto() { Name = "P1" });
             create.StatusCode.Should().Be(HttpStatusCode.Created);
 
-            var list = await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", Json);
+            var list = await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", AuthTestHelper.Json);
             var prj = list!.Single(p => p.Name == "P1");
 
             var resp = await client.GetAsync($"/projects/{prj.Id}");
@@ -61,19 +52,33 @@ namespace Api.Tests.Endpoints
         }
 
         [Fact]
-        public async Task Rename_Returns204_For_Admin_Or_Owner()
+        public async Task Rename_Returns200_For_Admin_Or_Owner()
         {
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
             var auth = await RegisterAndLogin(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-            (await client.PostAsJsonAsync("/projects", new ProjectCreateDto("ToRename"))).EnsureSuccessStatusCode();
-            var prj = (await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", Json))!.Single(p => p.Name == "ToRename");
+            (await client.PostAsJsonAsync("/projects", new ProjectCreateDto() { Name = "ToRename" }))
+                .EnsureSuccessStatusCode();
 
-            var resp = await client.PatchAsJsonAsync($"/projects/{prj.Id}/name", new RenameProjectDto("Renamed", prj.RowVersion));
-            resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
+            var prj = (await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", AuthTestHelper.Json))!
+                .Single(p => p.Name == "ToRename");
+
+            // If-Match header from current RowVersion
+            var base64 = Convert.ToBase64String(prj.RowVersion);
+            client.DefaultRequestHeaders.IfMatch.Clear();
+            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", $"W/\"{base64}\"");
+
+            // Align DTO and route
+            var resp = await client.PatchAsJsonAsync($"/projects/{prj.Id}/rename",
+                new ProjectRenameDto() { NewName =  "Renamed"});
+
+            resp.StatusCode.Should().Be(HttpStatusCode.OK);
+            var body = await resp.Content.ReadFromJsonAsync<ProjectReadDto>();
+            body!.Name.Should().Be("Renamed");
         }
 
         [Fact]
@@ -83,29 +88,38 @@ namespace Api.Tests.Endpoints
             using var client = app.CreateClient();
 
             var auth = await RegisterAndLogin(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-            (await client.PostAsJsonAsync("/projects", new ProjectCreateDto("ToDelete"))).EnsureSuccessStatusCode();
-            var prj = (await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", Json))!.Single(p => p.Name == "ToDelete");
+            (await client.PostAsJsonAsync("/projects", new ProjectCreateDto() { Name = "ToDelete" }))
+                .EnsureSuccessStatusCode();
 
-            var resp = await client.DeleteAsJsonAsync($"/projects/{prj.Id}", new DeleteProjectDto(prj.RowVersion));
+            var prj = (await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", AuthTestHelper.Json))!
+                .Single(p => p.Name == "ToDelete");
+
+            // If-Match header from current RowVersion
+            var base64 = Convert.ToBase64String(prj.RowVersion);
+            var req = new HttpRequestMessage(HttpMethod.Delete, $"/projects/{prj.Id}");
+            req.Headers.TryAddWithoutValidation("If-Match", $"W/\"{base64}\"");
+
+            // No body for DELETE
+            var resp = await client.SendAsync(req);
+
             resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
 
-        
-
-        private static async Task<AuthToken> RegisterAndLogin(HttpClient client)
+        private static async Task<AuthTestHelper.AuthToken> RegisterAndLogin(HttpClient client)
         {
             var email = $"{Guid.NewGuid():N}@demo.com";
             var name = "Test User";
             var password = "Str0ngP@ss!";
 
-            (await client.PostAsJsonAsync("/auth/register", new RegisterReq(email, name, password))).EnsureSuccessStatusCode();
+            (await client.PostAsJsonAsync("/auth/register", new UserRegisterDto() { Email = email, Name = name, Password = password})).EnsureSuccessStatusCode();
 
             var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
             login.EnsureSuccessStatusCode();
 
-            var dto = await login.Content.ReadFromJsonAsync<AuthToken>(Json);
+            var dto = await login.Content.ReadFromJsonAsync<AuthTestHelper.AuthToken>(AuthTestHelper.Json);
             return dto!;
         }
     }

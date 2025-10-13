@@ -6,38 +6,29 @@ using Infrastructure.Data;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using TestHelpers;
 
 namespace Infrastructure.Tests.Persistence.Contracts
 {
     [Collection("SqlServerContainer")]
-    public sealed class UserPersistenceContractTests : IClassFixture<MsSqlContainerFixture>
+    public sealed class UserPersistenceContractTests(MsSqlContainerFixture fx)
     {
-        private readonly string _baseCs;
-        public UserPersistenceContractTests(MsSqlContainerFixture fx) => _baseCs = fx.ContainerConnectionString;
-
-        public static byte[] Bytes(int n, byte fill = 0x5A) => Enumerable.Repeat(fill, n).ToArray();
-        private (ServiceProvider sp, AppDbContext db) BuildDb(string name)
-        {
-            var cs = $"{_baseCs};Database={name}";
-            var sc = new ServiceCollection();
-            sc.AddInfrastructure(cs);
-            var sp = sc.BuildServiceProvider();
-            var db = sp.GetRequiredService<AppDbContext>();
-            return (sp, db);
-        }
+        private readonly MsSqlContainerFixture _fx = fx;
+        private readonly string _cs = fx.ConnectionString;
 
         [Fact]
         public async Task Add_And_GetByEmail_Works()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
-            var u = User.Create(Email.Create("repo@demo.com"), UserName.Create("Repo User"), Bytes(32), Bytes(16));
+            var u = User.Create(Email.Create("repo@demo.com"), UserName.Create("Repo User"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             db.Users.Add(u);
             await db.SaveChangesAsync();
 
             db.ChangeTracker.Clear();
             var found = await db.Users.SingleOrDefaultAsync(x => x.Email == Email.Create("repo@demo.com"));
+
             found.Should().NotBeNull();
             found!.Id.Should().Be(u.Id);
         }
@@ -45,49 +36,100 @@ namespace Infrastructure.Tests.Persistence.Contracts
         [Fact]
         public async Task GetByName_Works()
         {
-            var (_, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
-            var u = User.Create(Email.Create("repo@demo.com"), UserName.Create("Repo User"), Bytes(32), Bytes(16));
+            var u = User.Create(Email.Create("repo@demo.com"), UserName.Create("Repo User"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             db.Users.Add(u);
             await db.SaveChangesAsync();
 
             db.ChangeTracker.Clear();
             var found = await db.Users.SingleOrDefaultAsync(x => x.Name == UserName.Create("Repo User"));
+
             found.Should().NotBeNull();
-            found.Name.Should().Be(u.Name);
+            found!.Name.Should().Be(u.Name);
         }
 
         [Fact]
-        public async Task Update_Role_With_Concurrency_Token()
+        public async Task Unique_Index_On_Email()
         {
-            var (sp, db) = BuildDb($"ct_{Guid.NewGuid():N}");
-            await db.Database.MigrateAsync();
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
 
-            var u = User.Create(Email.Create("concurrency@demo.com"), UserName.Create("Concurrency User"), Bytes(32), Bytes(16));
+            var email = Email.Create("same@demo.com");
+            var u1 = User.Create(email, UserName.Create("First"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            db.Users.Add(u1);
+            await db.SaveChangesAsync();
+
+            var u2 = User.Create(email, UserName.Create("Second"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            db.Users.Add(u2);
+
+            await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        }
+
+        [Fact]
+        public async Task Unique_Index_On_Name()
+        {
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
+
+            var name = UserName.Create("Same name");
+            var u1 = User.Create(Email.Create("u1@demo.com"), name, TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            db.Users.Add(u1);
+            await db.SaveChangesAsync();
+
+            var u2 = User.Create(Email.Create("u2@demo.com"), name, TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            db.Users.Add(u2);
+
+            await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        }
+
+        [Fact]
+        public async Task Email_Normalization_Allows_MixedCase_Lookup()
+        {
+            await _fx.ResetAsync();
+            var (_, db) = DbHelper.BuildDb(_cs);
+
+            var mixed = Email.Create("SaMe@e.CoM");
+            var u = User.Create(mixed, UserName.Create("User Name"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             db.Users.Add(u);
             await db.SaveChangesAsync();
 
-            // simulate stale rowversion
+            db.ChangeTracker.Clear();
+            var found = await db.Users.SingleOrDefaultAsync(x => x.Email == Email.Create("same@e.com"));
+
+            found.Should().NotBeNull();
+            found!.Id.Should().Be(u.Id);
+        }
+
+        [Fact]
+        public async Task RowVersion_Concurrency_Throws_On_Stale_Update()
+        {
+            await _fx.ResetAsync();
+            var (sp, db) = DbHelper.BuildDb(_cs);
+
+            var u = User.Create(Email.Create("concurrency@demo.com"), UserName.Create("Concurrency User"), TestDataFactory. Bytes(32), TestDataFactory.Bytes(16));
+            db.Users.Add(u);
+            await db.SaveChangesAsync();
+
+            // keep stale rowversion
             var stale = u.RowVersion!.ToArray();
 
             // first update succeeds
             u.Role = UserRole.Admin;
             await db.SaveChangesAsync();
 
-            // second context tries with stale rowversion
+            // second context with stale original rowversion
             using var scope2 = sp.CreateScope();
             var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
             var same = await db2.Users.SingleAsync(x => x.Id == u.Id);
 
-            // concurrence simulation
             var entry = db2.Entry(same);
             entry.Property(x => x.RowVersion).OriginalValue = stale;
 
             same.Role = UserRole.User;
 
-            Func<Task> act = async () => await db2.SaveChangesAsync();
-            await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+            await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => db2.SaveChangesAsync());
         }
     }
 }

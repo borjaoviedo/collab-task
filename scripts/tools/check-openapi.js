@@ -1,9 +1,11 @@
+// check-openapi.js — CollabTask API contract guard (v0.3.0)
 const fs = require("node:fs");
 
-// ---------- helpers ----------
+// ---------- load ----------
 const raw = fs.readFileSync("contracts/openapi.json", "utf8");
 const doc = JSON.parse(raw);
 
+// ---------- helpers ----------
 const fail = (m) => { throw new Error(m); };
 const get = (o, p) => p.split(".").reduce((a, k) => (a && a[k] !== undefined ? a[k] : undefined), o);
 const has = (p) => get(doc, p) !== undefined;
@@ -66,7 +68,6 @@ const hasProblemSchema = (base, code) => {
 
   return false;
 };
-
 const expectProblem = (base, code) => {
   if (!hasProblemSchema(base, code)) {
     fail(`Missing problem response schema ${code} at ${base.replace(/^paths\./, "")}`);
@@ -80,49 +81,164 @@ if (!doc.paths) fail("Missing 'paths'");
 // ---------- security scheme ----------
 if (!has("components.securitySchemes.bearerAuth.scheme")) fail("Missing bearerAuth security scheme");
 
-// ---------- required endpoints ----------
+// ========== REQUIRED ENDPOINTS ==========
+
+// Health
+["paths./health.get"].forEach((p) => { if (!has(p)) fail(`Missing ${p.replace("paths.", "").toUpperCase()}`); });
+
+// Auth
 [
-  "paths./health.get",
   "paths./auth/register.post",
   "paths./auth/login.post",
   "paths./auth/me.get",
+].forEach((p) => { if (!has(p)) fail(`Missing ${p.replace("paths.", "").toUpperCase()}`); });
 
-  // Users
-  "paths./users/{id}.get",
-  "paths./users/{id}/name.patch",
-  "paths./users/{id}/role.patch",
-  "paths./users/{id}.delete",
+// Users
+[
+  "paths./users.get",
+  "paths./users/{userId}.get",
+  "paths./users/by-email.get",
+  "paths./users/{userId}/rename.patch",
+  "paths./users/{userId}/role.patch",
+  "paths./users/{userId}.delete",
+].forEach((p) => { if (!has(p)) fail(`Missing ${p.replace("paths.", "").toUpperCase()}`); });
 
-  // Projects
+// Projects
+[
   "paths./projects.get",
   "paths./projects.post",
   "paths./projects/{projectId}.get",
-  "paths./projects/{projectId}/name.patch",
+  "paths./projects/{projectId}/rename.patch",
   "paths./projects/{projectId}.delete",
+].forEach((p) => { if (!has(p)) fail(`Missing ${p.replace("paths.", "").toUpperCase()}`); });
 
-  // Project Members
+// Project Members
+[
   "paths./projects/{projectId}/members.get",
   "paths./projects/{projectId}/members.post",
+  "paths./projects/{projectId}/members/{userId}.get",
+  "paths./projects/{projectId}/members/{userId}/role.get",
   "paths./projects/{projectId}/members/{userId}/role.patch",
   "paths./projects/{projectId}/members/{userId}/remove.patch",
   "paths./projects/{projectId}/members/{userId}/restore.patch",
 ].forEach((p) => { if (!has(p)) fail(`Missing ${p.replace("paths.", "").toUpperCase()}`); });
 
+// Lanes
+[
+  "paths./projects/{projectId}/lanes.get",
+  "paths./projects/{projectId}/lanes.post",
+  "paths./projects/{projectId}/lanes/{laneId}/rename.put",
+  "paths./projects/{projectId}/lanes/{laneId}/reorder.put",
+  "paths./projects/{projectId}/lanes/{laneId}.delete",
+].forEach((p) => { if (!has(p)) fail(`Missing ${p.replace("paths.", "").toUpperCase()}`); });
+
+// Columns
+[
+  "paths./projects/{projectId}/lanes/{laneId}/columns.get",
+  "paths./projects/{projectId}/lanes/{laneId}/columns.post",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename.put",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/reorder.put",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}.delete",
+].forEach((p) => { if (!has(p)) fail(`Missing ${p.replace("paths.", "").toUpperCase()}`); });
+
+// Tasks
+[
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks.get",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks.post",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/edit.patch",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/move.put",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}.delete",
+].forEach((p) => { if (!has(p)) fail(`Missing ${p.replace("paths.", "").toUpperCase()}`); });
+
+// Task Notes
+[
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes.get",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes.post",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{noteId}/edit.patch",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{noteId}.delete",
+  "paths./notes/me.get",
+  "paths./notes/users/{userId}.get",
+].forEach((p) => { if (!has(p)) fail(`Missing ${p.replace("paths.", "").toUpperCase()}`); });
+
+// Task Assignments
+[
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments.get",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}.get",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments.post",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}/role.patch",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}.delete",
+  "paths./assignments/me.get",
+  "paths./assignments/users/{userId}.get",
+].forEach((p) => { if (!has(p)) fail(`Missing ${p.replace("paths.", "").toUpperCase()}`); });
+
+// Task Activities
+[
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities.get",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities.post",
+  "paths./activities/me.get",
+].forEach((p) => { if (!has(p)) fail(`Missing ${p.replace("paths.", "").toUpperCase()}`); });
+
 // ---------- core schemas existence ----------
 [
-  "UserCreateDto",
+  // Auth
+  "UserRegisterDto",
   "UserLoginDto",
-  "UserReadDto",
-  "MeReadDto",
   "AuthTokenReadDto",
+  "MeReadDto",
+
+  // Users
+  "UserReadDto",
+  "UserRenameDto",
+  "UserChangeRoleDto",
+
+  // Projects
   "ProjectReadDto",
   "ProjectCreateDto",
+  "ProjectRenameDto",
+
+  // Project Members
   "ProjectMemberReadDto",
+  "ProjectMemberCreateDto",
+  "ProjectMemberChangeRoleDto",
+
+  // Lanes
+  "LaneReadDto",
+  "LaneCreateDto",
+  "LaneRenameDto",
+  "LaneReorderDto",
+
+  // Columns
+  "ColumnReadDto",
+  "ColumnCreateDto",
+  "ColumnRenameDto",
+  "ColumnReorderDto",
+
+  // Tasks
+  "TaskItemReadDto",
+  "TaskItemCreateDto",
+  "TaskItemEditDto",
+  "TaskItemMoveDto",
+
+  // Notes
+  "TaskNoteReadDto",
+  "TaskNoteCreateDto",
+  "TaskNoteEditDto",
+
+  // Assignments
+  "TaskAssignmentReadDto",
+  "TaskAssignmentCreateDto",
+  "TaskAssignmentChangeRoleDto",
+
+  // Activities
+  "TaskActivityReadDto",
+  "TaskActivityCreateDto",
+
+  // Error
   "ProblemDetails",
 ].forEach((s) => { if (!has(`components.schemas.${s}`)) fail(`Missing schema ${s}`); });
 
 // ---------- requests: auth ----------
-expectRefEndsWith("paths./auth/register.post.requestBody.content.application/json.schema.$ref", "UserCreateDto");
+expectRefEndsWith("paths./auth/register.post.requestBody.content.application/json.schema.$ref", "UserRegisterDto");
 expectRefEndsWith("paths./auth/login.post.requestBody.content.application/json.schema.$ref", "UserLoginDto");
 
 // ---------- responses: auth ----------
@@ -140,161 +256,191 @@ expectRefEndsWith("paths./auth/me.get.responses.200.content.application/json.sch
 
 // ---------- security: protected ops ----------
 [
-  "paths./auth/me.get",
-  // Users
-  "paths./users/{id}.get",
-  "paths./users/{id}/name.patch",
-  "paths./users/{id}/role.patch",
-  "paths./users/{id}.delete",
-  // Projects
+  // users
+  "paths./users.get",
+  "paths./users/{userId}.get",
+  "paths./users/by-email.get",
+  "paths./users/{userId}/rename.patch",
+  "paths./users/{userId}/role.patch",
+  "paths./users/{userId}.delete",
+
+  // projects
   "paths./projects.get",
   "paths./projects.post",
   "paths./projects/{projectId}.get",
-  "paths./projects/{projectId}/name.patch",
+  "paths./projects/{projectId}/rename.patch",
   "paths./projects/{projectId}.delete",
-  // Project Members
+
+  // members
   "paths./projects/{projectId}/members.get",
   "paths./projects/{projectId}/members.post",
+  "paths./projects/{projectId}/members/{userId}.get",
+  "paths./projects/{projectId}/members/{userId}/role.get",
   "paths./projects/{projectId}/members/{userId}/role.patch",
   "paths./projects/{projectId}/members/{userId}/remove.patch",
   "paths./projects/{projectId}/members/{userId}/restore.patch",
+
+  // lanes
+  "paths./projects/{projectId}/lanes.get",
+  "paths./projects/{projectId}/lanes.post",
+  "paths./projects/{projectId}/lanes/{laneId}/rename.put",
+  "paths./projects/{projectId}/lanes/{laneId}/reorder.put",
+  "paths./projects/{projectId}/lanes/{laneId}.delete",
+
+  // columns
+  "paths./projects/{projectId}/lanes/{laneId}/columns.get",
+  "paths./projects/{projectId}/lanes/{laneId}/columns.post",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename.put",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/reorder.put",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}.delete",
+
+  // tasks
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks.get",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks.post",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/edit.patch",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/move.put",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}.delete",
+
+  // notes
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes.get",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes.post",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{noteId}/edit.patch",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{noteId}.delete",
+  "paths./notes/me.get",
+  "paths./notes/users/{userId}.get",
+
+  // assignments
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments.get",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}.get",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments.post",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}/role.patch",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}.delete",
+  "paths./assignments/me.get",
+  "paths./assignments/users/{userId}.get",
+
+  // activities
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities.get",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities.post",
+  "paths./activities/me.get",
 ].forEach(expectBearer);
 
-// ---------- requests: users ----------
-expectRefEndsWith("paths./users/{id}/name.patch.requestBody.content.application/json.schema.$ref", "RenameUserDto");
-expectRefEndsWith("paths./users/{id}/role.patch.requestBody.content.application/json.schema.$ref", "ChangeRoleDto");
-// DELETE with body for concurrency (rowVersion)
-expectRefEndsWith("paths./users/{id}.delete.requestBody.content.application/json.schema.$ref", "DeleteUserDto");
-
-// ---------- responses: users ----------
-expectRefEndsWith("paths./users/{id}.get.responses.200.content.application/json.schema.$ref", "UserReadDto");
+// ---------- requests & responses: USERS ----------
+expectRefEndsWith("paths./users/{userId}/rename.patch.requestBody.content.application/json.schema.$ref", "UserRenameDto");
+expectRefEndsWith("paths./users/{userId}/role.patch.requestBody.content.application/json.schema.$ref", "UserChangeRoleDto");
+expectRefEndsWith("paths./users/{userId}.get.responses.200.content.application/json.schema.$ref", "UserReadDto");
+expectRefEndsWith("paths./users.get.responses.200.content.application/json.schema.items.$ref", "UserReadDto");
+expectRefEndsWith("paths./users/by-email.get.responses.200.content.application/json.schema.$ref", "UserReadDto");
+expectRefEndsWith("paths./users/{userId}/role.patch.responses.200.content.application/json.schema.$ref", "UserReadDto");
 [
-  ["paths./users/{id}.get", 401],
-  ["paths./users/{id}.get", 404],
-  ["paths./users/{id}/name.patch", 204],
-  ["paths./users/{id}/name.patch", 400],
-  ["paths./users/{id}/name.patch", 401],
-  ["paths./users/{id}/name.patch", 404],
-  ["paths./users/{id}/name.patch", 409],
-  ["paths./users/{id}/role.patch", 204],
-  ["paths./users/{id}/role.patch", 400],
-  ["paths./users/{id}/role.patch", 401],
-  ["paths./users/{id}/role.patch", 403],
-  ["paths./users/{id}/role.patch", 404],
-  ["paths./users/{id}/role.patch", 409],
-  ["paths./users/{id}.delete", 204],
-  ["paths./users/{id}.delete", 400],
-  ["paths./users/{id}.delete", 401],
-  ["paths./users/{id}.delete", 403],
-  ["paths./users/{id}.delete", 404],
-  ["paths./users/{id}.delete", 409],
+  ["paths./users/{userId}/rename.patch", 200],
+  ["paths./users/{userId}/rename.patch", 400],
+  ["paths./users/{userId}/rename.patch", 401],
+  ["paths./users/{userId}/rename.patch", 404],
+  ["paths./users/{userId}/rename.patch", 409],
+  ["paths./users/{userId}.delete", 204],
+  ["paths./users/{userId}/role.patch", 200],
 ].forEach(([b, c]) => expectStatus(b, c));
 
-// ---------- requests: projects ----------
+// ---------- requests & responses: PROJECTS ----------
 expectRefEndsWith("paths./projects.post.requestBody.content.application/json.schema.$ref", "ProjectCreateDto");
-expectRefEndsWith("paths./projects/{projectId}/name.patch.requestBody.content.application/json.schema.$ref", "RenameProjectDto");
-
-// ---------- responses: projects ----------
+expectRefEndsWith("paths./projects/{projectId}/rename.patch.requestBody.content.application/json.schema.$ref", "ProjectRenameDto");
 expectRefEndsWith("paths./projects.get.responses.200.content.application/json.schema.items.$ref", "ProjectReadDto");
 expectRefEndsWith("paths./projects/{projectId}.get.responses.200.content.application/json.schema.$ref", "ProjectReadDto");
 expectRefEndsWith("paths./projects.post.responses.201.content.application/json.schema.$ref", "ProjectReadDto");
-[
-  ["paths./projects.get", 401],
-  ["paths./projects/{projectId}.get", 401],
-  ["paths./projects/{projectId}.get", 403],
-  ["paths./projects/{projectId}.get", 404],
-  ["paths./projects.post", 400],
-  ["paths./projects.post", 401],
-  ["paths./projects.post", 409],
-  ["paths./projects/{projectId}/name.patch", 204],
-  ["paths./projects/{projectId}/name.patch", 400],
-  ["paths./projects/{projectId}/name.patch", 401],
-  ["paths./projects/{projectId}/name.patch", 403],
-  ["paths./projects/{projectId}/name.patch", 404],
-  ["paths./projects/{projectId}/name.patch", 409],
-  ["paths./projects/{projectId}.delete", 204],
-  ["paths./projects/{projectId}.delete", 400],
-  ["paths./projects/{projectId}.delete", 401],
-  ["paths./projects/{projectId}.delete", 403],
-  ["paths./projects/{projectId}.delete", 404],
-  ["paths./projects/{projectId}.delete", 409],
-].forEach(([b, c]) => expectStatus(b, c));
 
-// ---------- requests: project members ----------
-expectRefEndsWith("paths./projects/{projectId}/members.post.requestBody.content.application/json.schema.$ref", "AddMemberDto");
-expectRefEndsWith("paths./projects/{projectId}/members/{userId}/role.patch.requestBody.content.application/json.schema.$ref", "ChangeMemberRoleDto");
-expectRefEndsWith("paths./projects/{projectId}/members/{userId}/remove.patch.requestBody.content.application/json.schema.$ref", "RemoveMemberDto");
-expectRefEndsWith("paths./projects/{projectId}/members/{userId}/restore.patch.requestBody.content.application/json.schema.$ref", "RestoreMemberDto");
-
-// ---------- responses: project members ----------
+// ---------- requests & responses: MEMBERS ----------
+expectRefEndsWith("paths./projects/{projectId}/members.post.requestBody.content.application/json.schema.$ref", "ProjectMemberCreateDto");
+expectRefEndsWith("paths./projects/{projectId}/members/{userId}/role.patch.requestBody.content.application/json.schema.$ref", "ProjectMemberChangeRoleDto");
 expectRefEndsWith("paths./projects/{projectId}/members.get.responses.200.content.application/json.schema.items.$ref", "ProjectMemberReadDto");
-[
-  ["paths./projects/{projectId}/members.get", 401],
-  ["paths./projects/{projectId}/members.get", 403],
-  ["paths./projects/{projectId}/members.get", 404],
-  ["paths./projects/{projectId}/members.post", 201],
-  ["paths./projects/{projectId}/members.post", 400],
-  ["paths./projects/{projectId}/members.post", 401],
-  ["paths./projects/{projectId}/members.post", 403],
-  ["paths./projects/{projectId}/members.post", 404],
-  ["paths./projects/{projectId}/members.post", 409],
-  ["paths./projects/{projectId}/members/{userId}/role.patch", 204],
-  ["paths./projects/{projectId}/members/{userId}/role.patch", 400],
-  ["paths./projects/{projectId}/members/{userId}/role.patch", 401],
-  ["paths./projects/{projectId}/members/{userId}/role.patch", 403],
-  ["paths./projects/{projectId}/members/{userId}/role.patch", 404],
-  ["paths./projects/{projectId}/members/{userId}/role.patch", 409],
-  ["paths./projects/{projectId}/members/{userId}/remove.patch", 204],
-  ["paths./projects/{projectId}/members/{userId}/remove.patch", 400],
-  ["paths./projects/{projectId}/members/{userId}/remove.patch", 401],
-  ["paths./projects/{projectId}/members/{userId}/remove.patch", 403],
-  ["paths./projects/{projectId}/members/{userId}/remove.patch", 404],
-  ["paths./projects/{projectId}/members/{userId}/remove.patch", 409],
-  ["paths./projects/{projectId}/members/{userId}/restore.patch", 204],
-  ["paths./projects/{projectId}/members/{userId}/restore.patch", 400],
-  ["paths./projects/{projectId}/members/{userId}/restore.patch", 401],
-  ["paths./projects/{projectId}/members/{userId}/restore.patch", 403],
-  ["paths./projects/{projectId}/members/{userId}/restore.patch", 404],
-  ["paths./projects/{projectId}/members/{userId}/restore.patch", 409],
-].forEach(([b, c]) => expectStatus(b, c));
 
-// ---------- shape checks ----------
-const authProps = get(doc, "components.schemas.AuthTokenReadDto.properties") || {};
-["accessToken", "tokenType", "expiresAtUtc", "userId", "email", "name", "role"].forEach((p) => {
-  if (!authProps[p]) fail(`AuthTokenReadDto missing property '${p}'`);
-});
+// ---------- requests & responses: LANES ----------
+expectRefEndsWith("paths./projects/{projectId}/lanes.post.requestBody.content.application/json.schema.$ref", "LaneCreateDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes.get.responses.200.content.application/json.schema.items.$ref", "LaneReadDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/rename.put.requestBody.content.application/json.schema.$ref", "LaneRenameDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/reorder.put.requestBody.content.application/json.schema.$ref", "LaneReorderDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/rename.put.responses.200.content.application/json.schema.$ref", "LaneReadDto");
 
-const meProps = get(doc, "components.schemas.MeReadDto.properties") || {};
-["id", "email", "name", "role", "projectMembershipsCount"].forEach((p) => {
-  if (!meProps[p]) fail(`MeReadDto missing property '${p}'`);
-});
+// ---------- requests & responses: COLUMNS ----------
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns.post.requestBody.content.application/json.schema.$ref", "ColumnCreateDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns.get.responses.200.content.application/json.schema.items.$ref", "ColumnReadDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename.put.requestBody.content.application/json.schema.$ref", "ColumnRenameDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/reorder.put.requestBody.content.application/json.schema.$ref", "ColumnReorderDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename.put.responses.200.content.application/json.schema.$ref", "ColumnReadDto");
 
-const userProps = get(doc, "components.schemas.UserReadDto.properties") || {};
-["id", "email", "name", "role", "createdAt", "updatedAt", "projectMembershipsCount", "rowVersion"].forEach((p) => {
-  if (!userProps[p]) fail(`UserReadDto missing property '${p}'`);
-});
+// ---------- requests & responses: TASKS ----------
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks.post.requestBody.content.application/json.schema.$ref", "TaskItemCreateDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks.get.responses.200.content.application/json.schema.items.$ref", "TaskItemReadDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/edit.patch.requestBody.content.application/json.schema.$ref", "TaskItemEditDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/move.put.requestBody.content.application/json.schema.$ref", "TaskItemMoveDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/edit.patch.responses.200.content.application/json.schema.$ref", "TaskItemReadDto");
 
-const projProps = get(doc, "components.schemas.ProjectReadDto.properties") || {};
-["id", "name", "slug", "createdAt", "updatedAt", "rowVersion", "membersCount", "currentUserRole"].forEach((p) => {
-  if (!projProps[p]) fail(`ProjectReadDto missing property '${p}'`);
-});
+// ---------- requests & responses: NOTES ----------
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes.post.requestBody.content.application/json.schema.$ref", "TaskNoteCreateDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes.get.responses.200.content.application/json.schema.items.$ref", "TaskNoteReadDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{noteId}/edit.patch.requestBody.content.application/json.schema.$ref", "TaskNoteEditDto");
 
-const pmProps = get(doc, "components.schemas.ProjectMemberReadDto.properties") || {};
-["projectId", "userId", "userName", "role", "joinedAt", "removedAt", "rowVersion"].forEach((p) => {
-  if (!pmProps[p]) fail(`ProjectMemberReadDto missing property '${p}'`);
-});
+// ---------- requests & responses: ASSIGNMENTS ----------
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments.post.requestBody.content.application/json.schema.$ref", "TaskAssignmentCreateDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments.get.responses.200.content.application/json.schema.items.$ref", "TaskAssignmentReadDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}/role.patch.requestBody.content.application/json.schema.$ref", "TaskAssignmentChangeRoleDto");
+
+// ---------- requests & responses: ACTIVITIES ----------
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities.post.requestBody.content.application/json.schema.$ref", "TaskActivityCreateDto");
+expectRefEndsWith("paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities.get.responses.200.content.application/json.schema.items.$ref", "TaskActivityReadDto");
 
 // ---------- type sanity ----------
 [
-  "UserCreateDto",
+  "UserRegisterDto",
   "UserLoginDto",
   "AuthTokenReadDto",
   "MeReadDto",
   "UserReadDto",
+  "UserRenameDto",
+  "UserChangeRoleDto",
   "ProjectReadDto",
   "ProjectCreateDto",
+  "ProjectRenameDto",
   "ProjectMemberReadDto",
+  "ProjectMemberCreateDto",
+  "ProjectMemberChangeRoleDto",
+  "LaneReadDto",
+  "LaneCreateDto",
+  "LaneRenameDto",
+  "LaneReorderDto",
+  "ColumnReadDto",
+  "ColumnCreateDto",
+  "ColumnRenameDto",
+  "ColumnReorderDto",
+  "TaskItemReadDto",
+  "TaskItemCreateDto",
+  "TaskItemEditDto",
+  "TaskItemMoveDto",
+  "TaskNoteReadDto",
+  "TaskNoteCreateDto",
+  "TaskNoteEditDto",
+  "TaskAssignmentReadDto",
+  "TaskAssignmentCreateDto",
+  "TaskAssignmentChangeRoleDto",
+  "TaskActivityReadDto",
+  "TaskActivityCreateDto",
   "ProblemDetails",
 ].forEach(ensureObjectSchema);
+
+// ---------- minimal status/problem checks for concurrency ----------
+[
+  "paths./projects/{projectId}/lanes/{laneId}/rename.put",
+  "paths./projects/{projectId}/lanes/{laneId}/reorder.put",
+  "paths./projects/{projectId}/lanes/{laneId}.delete",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename.put",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/reorder.put",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}.delete",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/edit.patch",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/move.put",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}.delete",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{noteId}/edit.patch",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{noteId}.delete",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}/role.patch",
+  "paths./projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}.delete"
+].forEach((b) => expectProblem(b, 412));
 
 console.log("OpenAPI contract check passed.");

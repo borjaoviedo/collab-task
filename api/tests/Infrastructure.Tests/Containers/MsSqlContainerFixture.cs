@@ -1,60 +1,61 @@
 using Infrastructure.Data;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Hosting.Internal;
 using Testcontainers.MsSql;
+using Respawn;
 
 namespace Infrastructure.Tests.Containers
 {
     public sealed class MsSqlContainerFixture : IAsyncLifetime
     {
         private MsSqlContainer _container = default!;
-        public IServiceProvider Services = default!;
-        public string ContainerConnectionString => _container.GetConnectionString();
+        private string _dbName = default!;
+        private Respawner _respawner = default!;
+
+        public string ConnectionString { get; private set; } = default!;
 
         public async Task InitializeAsync()
         {
-            _container = new MsSqlBuilder()
-                .WithPassword("Str0ng!Passw0rd")
-                .Build();
-
+            _container = new MsSqlBuilder().WithPassword("Str0ng!Passw0rd").Build();
             await _container.StartAsync();
 
-            var cs = _container.GetConnectionString();
+            _dbName = $"ct_shared_{Guid.NewGuid():N}";
+            var serverCs = _container.GetConnectionString();
 
-            var sc = new ServiceCollection();
-
-            var cfg = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["ConnectionStrings:Default"] = cs,
-                    ["ASPNETCORE_ENVIRONMENT"] = Environments.Development
-                })
-                .Build();
-
-            sc.AddSingleton<IConfiguration>(cfg);
-            sc.AddSingleton<IHostEnvironment>(new HostingEnvironment
+            await using (var conn = new SqlConnection(serverCs))
             {
-                EnvironmentName = Environments.Development,
-                ApplicationName = "Infrastructure.Tests",
-                ContentRootPath = Directory.GetCurrentDirectory()
+                await conn.OpenAsync();
+                await using var cmd = new SqlCommand($"CREATE DATABASE [{_dbName}];", conn);
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            ConnectionString = $"{serverCs};Database={_dbName}";
+
+            var opts = new DbContextOptionsBuilder<AppDbContext>()
+                .UseSqlServer(ConnectionString, o => o.EnableRetryOnFailure())
+                .Options;
+
+            await using (var db = new AppDbContext(opts))
+                await db.Database.MigrateAsync();
+
+            // Configure Respawn v6 for SQL Server
+            await using var resetConn = new SqlConnection(ConnectionString);
+            await resetConn.OpenAsync();
+            _respawner = await Respawner.CreateAsync(resetConn, new RespawnerOptions
+            {
+                DbAdapter = DbAdapter.SqlServer,
+                SchemasToInclude = ["dbo"],
+                TablesToIgnore = [new("__EFMigrationsHistory")]
             });
-
-            sc.AddInfrastructure(cs);
-
-            Services = sc.BuildServiceProvider();
-
-            using var scope = Services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            await db.Database.MigrateAsync();
         }
 
-        public async Task DisposeAsync()
+        public async Task ResetAsync()
         {
-            if (Services is IDisposable d) d.Dispose();
-            if (_container is not null) await _container.DisposeAsync();
+            await using var conn = new SqlConnection(ConnectionString);
+            await conn.OpenAsync();
+            await _respawner.ResetAsync(conn);
         }
+
+        public async Task DisposeAsync() => await _container.DisposeAsync();
     }
 }

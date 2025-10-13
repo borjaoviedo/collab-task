@@ -1,5 +1,7 @@
+using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using System.Net;
 
 namespace Api.Tests.Endpoints
 {
@@ -13,7 +15,11 @@ namespace Api.Tests.Endpoints
 
             using var client = factory.CreateClient();
             var resp = await client.GetAsync("/health");
-            resp.EnsureSuccessStatusCode();
+            resp.StatusCode.Should().Be(HttpStatusCode.OK);
+            resp.Content.Headers.ContentType!.MediaType.Should().Be("application/json");
+
+            var body = await resp.Content.ReadAsStringAsync();
+            body.Should().NotBeNullOrWhiteSpace();
         }
     }
 }
