@@ -1,8 +1,21 @@
+using Api.Filters;
 using Api.Tests.Fakes;
+using Application.Columns.Abstractions;
+using Application.Columns.Services;
+using Application.Lanes.Abstractions;
+using Application.Lanes.Services;
 using Application.ProjectMembers.Abstractions;
 using Application.ProjectMembers.Services;
 using Application.Projects.Abstractions;
 using Application.Projects.Services;
+using Application.TaskActivities.Abstractions;
+using Application.TaskActivities.Services;
+using Application.TaskAssignments.Abstractions;
+using Application.TaskAssignments.Services;
+using Application.TaskItems.Abstractions;
+using Application.TaskItems.Services;
+using Application.TaskNotes.Abstractions;
+using Application.TaskNotes.Services;
 using Application.Users.Abstractions;
 using Application.Users.Services;
 using Infrastructure.Security;
@@ -34,45 +47,91 @@ namespace Api.Tests.Testing
 
             builder.ConfigureServices(services =>
             {
+                // Essentials
+                services.AddHttpContextAccessor();
+                services.AddProblemDetails();
+
+                // Db out
                 services.RemoveAll(typeof(DbContextOptions<>));
                 services.RemoveAll(typeof(DbContext));
 
-                // User
+                // ===== Users =====
                 services.RemoveAll(typeof(IUserRepository));
                 services.AddSingleton<IUserRepository, FakeUserRepository>();
-
                 services.RemoveAll(typeof(IUserReadService));
-                services.AddScoped<IUserReadService>(sp =>
-                    new UserReadService(sp.GetRequiredService<IUserRepository>()));
-
+                services.AddScoped<IUserReadService>(sp => new UserReadService(sp.GetRequiredService<IUserRepository>()));
                 services.RemoveAll(typeof(IUserWriteService));
-                services.AddScoped<IUserWriteService>(sp =>
-                    new UserWriteService(sp.GetRequiredService<IUserRepository>()));
+                services.AddScoped<IUserWriteService>(sp => new UserWriteService(sp.GetRequiredService<IUserRepository>()));
 
-                // Project
+                // ===== Projects =====
                 services.RemoveAll(typeof(IProjectRepository));
                 services.AddSingleton<IProjectRepository, FakeProjectRepository>();
-
                 services.RemoveAll(typeof(IProjectReadService));
-                services.AddScoped<IProjectReadService>(sp =>
-                    new ProjectReadService(sp.GetRequiredService<IProjectRepository>()));
-
+                services.AddScoped<IProjectReadService>(sp => new ProjectReadService(sp.GetRequiredService<IProjectRepository>()));
                 services.RemoveAll(typeof(IProjectWriteService));
-                services.AddScoped<IProjectWriteService>(sp =>
-                    new ProjectWriteService(sp.GetRequiredService<IProjectRepository>()));
+                services.AddScoped<IProjectWriteService>(sp => new ProjectWriteService(sp.GetRequiredService<IProjectRepository>()));
 
-                // Project member
+                // ===== Project Members =====
                 services.RemoveAll(typeof(IProjectMemberRepository));
                 services.AddSingleton<IProjectMemberRepository, FakeProjectMemberRepository>();
-
                 services.RemoveAll(typeof(IProjectMemberReadService));
-                services.AddScoped<IProjectMemberReadService>(sp =>
-                    new ProjectMemberReadService(sp.GetRequiredService<IProjectMemberRepository>()));
-
+                services.AddScoped<IProjectMemberReadService>(sp => new ProjectMemberReadService(sp.GetRequiredService<IProjectMemberRepository>()));
                 services.RemoveAll(typeof(IProjectMemberWriteService));
-                services.AddScoped<IProjectMemberWriteService>(sp =>
-                    new ProjectMemberWriteService(sp.GetRequiredService<IProjectMemberRepository>()));
+                services.AddScoped<IProjectMemberWriteService>(sp => new ProjectMemberWriteService(sp.GetRequiredService<IProjectMemberRepository>()));
 
+                // ===== Lanes =====
+                services.RemoveAll(typeof(ILaneRepository));
+                services.AddSingleton<ILaneRepository, FakeLaneRepository>();
+                services.RemoveAll(typeof(ILaneReadService));
+                services.AddScoped<ILaneReadService>(sp => new LaneReadService(sp.GetRequiredService<ILaneRepository>()));
+                services.RemoveAll(typeof(ILaneWriteService));
+                services.AddScoped<ILaneWriteService>(sp => new LaneWriteService(sp.GetRequiredService<ILaneRepository>()));
+
+                // ===== Columns =====
+                services.RemoveAll(typeof(IColumnRepository));
+                services.AddSingleton<IColumnRepository, FakeColumnRepository>();
+                services.RemoveAll(typeof(IColumnReadService));
+                services.AddScoped<IColumnReadService>(sp => new ColumnReadService(sp.GetRequiredService<IColumnRepository>()));
+                services.RemoveAll(typeof(IColumnWriteService));
+                services.AddScoped<IColumnWriteService>(sp => new ColumnWriteService(sp.GetRequiredService<IColumnRepository>()));
+
+                // ===== Task Items =====
+                services.RemoveAll(typeof(ITaskItemRepository));
+                services.AddSingleton<ITaskItemRepository, FakeTaskItemRepository>();
+                services.RemoveAll(typeof(ITaskItemReadService));
+                services.AddScoped<ITaskItemReadService>(sp => new TaskItemReadService(sp.GetRequiredService<ITaskItemRepository>()));
+                services.RemoveAll(typeof(ITaskItemWriteService));
+                services.AddScoped<ITaskItemWriteService>(sp => new TaskItemWriteService(sp.GetRequiredService<ITaskItemRepository>()));
+
+                // ===== Task Notes =====
+                services.RemoveAll(typeof(ITaskNoteRepository));
+                services.AddSingleton<ITaskNoteRepository, FakeTaskNoteRepository>();
+                services.RemoveAll(typeof(ITaskNoteReadService));
+                services.AddScoped<ITaskNoteReadService>(sp => new TaskNoteReadService(sp.GetRequiredService<ITaskNoteRepository>()));
+                services.RemoveAll(typeof(ITaskNoteWriteService));
+                services.AddScoped<ITaskNoteWriteService>(sp => new TaskNoteWriteService(sp.GetRequiredService<ITaskNoteRepository>()));
+
+                // ===== Task Assignments =====
+                services.RemoveAll(typeof(ITaskAssignmentRepository));
+                services.AddSingleton<ITaskAssignmentRepository, FakeTaskAssignmentRepository>();
+                services.RemoveAll(typeof(ITaskAssignmentReadService));
+                services.AddScoped<ITaskAssignmentReadService>(sp => new TaskAssignmentReadService(sp.GetRequiredService<ITaskAssignmentRepository>()));
+                services.RemoveAll(typeof(ITaskAssignmentWriteService));
+                services.AddScoped<ITaskAssignmentWriteService>(sp => new TaskAssignmentWriteService(sp.GetRequiredService<ITaskAssignmentRepository>()));
+
+                // ===== Task Activities =====
+                services.RemoveAll(typeof(ITaskActivityRepository));
+                services.AddSingleton<ITaskActivityRepository, FakeTaskActivityRepository>();
+                services.RemoveAll(typeof(ITaskActivityReadService));
+                services.AddScoped<ITaskActivityReadService>(sp => new TaskActivityReadService(sp.GetRequiredService<ITaskActivityRepository>()));
+                services.RemoveAll(typeof(ITaskActivityWriteService));
+                services.AddScoped<ITaskActivityWriteService>(sp => new TaskActivityWriteService(sp.GetRequiredService<ITaskActivityRepository>()));
+
+                // ===== Endpoint filter para If-Match =====
+                services.RemoveAll(typeof(IfMatchRowVersionFilter));
+                services.AddScoped<IfMatchRowVersionFilter>();
+
+                // ===== AuthN/AuthZ =====
                 services.PostConfigure<JwtOptions>(o =>
                 {
                     if (string.IsNullOrWhiteSpace(o.Key)) o.Key = new string('k', 32);
