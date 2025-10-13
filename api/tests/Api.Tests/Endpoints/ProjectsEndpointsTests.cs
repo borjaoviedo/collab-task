@@ -1,5 +1,6 @@
 using Api.Tests.Testing;
 using Application.Projects.DTOs;
+using Application.Users.DTOs;
 using FluentAssertions;
 using System.Net;
 using System.Net.Http.Headers;
@@ -11,8 +12,6 @@ namespace Api.Tests.Endpoints
     public sealed class ProjectsEndpointsTests
     {
         private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-
-        private sealed record RegisterReq(string Email, string Name, string Password);
         private sealed record AuthToken(string AccessToken, Guid UserId, string Email, string Name, string Role);
 
         [Fact]
@@ -118,7 +117,7 @@ namespace Api.Tests.Endpoints
             var name = "Test User";
             var password = "Str0ngP@ss!";
 
-            (await client.PostAsJsonAsync("/auth/register", new RegisterReq(email, name, password))).EnsureSuccessStatusCode();
+            (await client.PostAsJsonAsync("/auth/register", new UserRegisterDto() { Email = email, Name = name, Password = password})).EnsureSuccessStatusCode();
 
             var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
             login.EnsureSuccessStatusCode();

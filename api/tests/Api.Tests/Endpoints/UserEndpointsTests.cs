@@ -1,7 +1,7 @@
-using Api.Tests.Common.Helpers;
 using Api.Tests.Testing;
 using Application.Common.Abstractions.Security;
 using Application.Users.DTOs;
+using Domain.Enums;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
@@ -15,9 +15,7 @@ namespace Api.Tests.Endpoints
     {
         private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-        private sealed record RegisterReq(string Email, string Name, string Password);
         private sealed record AuthToken(string AccessToken, Guid UserId, string Email, string Name, string Role);
-        private sealed record UserReadDto(Guid Id, string Email, string Name, string Role, byte[] RowVersion);
 
         [Fact]
         public async Task Get_ById_Returns200_When_Admin()
@@ -127,7 +125,7 @@ namespace Api.Tests.Endpoints
 
             resp.StatusCode.Should().Be(HttpStatusCode.OK);
             var body = await resp.Content.ReadFromJsonAsync<UserReadDto>();
-            body!.Role.Should().Be("Admin");
+            body!.Role.Should().Be(UserRole.Admin);
         }
 
         [Fact]
@@ -157,7 +155,7 @@ namespace Api.Tests.Endpoints
             var email = $"{Guid.NewGuid():N}@demo.com";
             var name = "Test User";
             var password = "Str0ngP@ss!";
-            (await client.PostAsJsonAsync("/auth/register", new RegisterReq(email, name, password))).EnsureSuccessStatusCode();
+            (await client.PostAsJsonAsync("/auth/register", new UserRegisterDto() { Email = email, Name = name, Password = password })).EnsureSuccessStatusCode();
             var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
             login.EnsureSuccessStatusCode();
             var dto = await login.Content.ReadFromJsonAsync<AuthToken>(Json);
