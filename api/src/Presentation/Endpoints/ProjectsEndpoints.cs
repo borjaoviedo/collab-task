@@ -70,7 +70,7 @@ namespace Api.Endpoints
                 var dto = projects.Select(p => p.ToReadDto(userId)).ToList();
                 return Results.Ok(dto);
             })
-            .RequireAuthorization(Policies.ProjectReader)
+            .RequireAuthorization()
             .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("List my projects")
@@ -88,7 +88,7 @@ namespace Api.Endpoints
                 var dto = projects.Select(p => p.ToReadDto(userId)).ToList();
                 return Results.Ok(dto);
             })
-            .RequireAuthorization(Policies.ProjectReader)
+            .RequireAuthorization()
             .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)

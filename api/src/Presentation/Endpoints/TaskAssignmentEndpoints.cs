@@ -162,7 +162,7 @@ namespace Api.Endpoints
             // top-level lists
             var top = app.MapGroup("/assignments")
                 .WithTags("Task Assignments")
-                .RequireAuthorization(Policies.ProjectReader);
+                .RequireAuthorization();
 
             // GET /assignments/me
             top.MapGet("/me", async (

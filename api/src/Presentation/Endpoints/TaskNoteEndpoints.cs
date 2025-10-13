@@ -155,7 +155,7 @@ namespace Api.Endpoints
             // top-level: list by author
             var top = app.MapGroup("/notes")
                 .WithTags("Task Notes")
-                .RequireAuthorization(Policies.ProjectReader);
+                .RequireAuthorization();
 
             // GET /notes/me
             top.MapGet("/me", async (

@@ -97,7 +97,7 @@ namespace Api.Endpoints
 
             var top = app.MapGroup("/activities")
                 .WithTags("Task Activities")
-                .RequireAuthorization(Policies.ProjectReader);
+                .RequireAuthorization();
 
             // GET /activities/me
             top.MapGet("/me", async (
