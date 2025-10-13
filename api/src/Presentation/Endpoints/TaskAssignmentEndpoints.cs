@@ -1,6 +1,7 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
 using Api.Filters;
+using Api.Helpers;
 using Application.Common.Abstractions.Auth;
 using Application.TaskAssignments.Abstractions;
 using Application.TaskAssignments.DTOs;
@@ -109,7 +110,9 @@ namespace Api.Endpoints
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => taskAssignmentReadSvc.GetAsync(taskId, userId, ct), a => a.RowVersion);
+
                 var m = await taskAssignmentWriteSvc.ChangeRoleAsync(taskId, userId, dto.NewRole, rowVersion, ct);
                 if (m != DomainMutation.Updated) return m.ToHttp(http);
 
@@ -119,8 +122,8 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(updated.RowVersion)}\"";
                 return Results.Ok(updated.ToReadDto());
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireIfMatch()
             .Produces<TaskAssignmentReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -139,16 +142,19 @@ namespace Api.Endpoints
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
                 [FromRoute] Guid userId,
-                [FromServices] ITaskAssignmentWriteService svc,
+                [FromServices] ITaskAssignmentWriteService taskAssignmentWriteSvc,
+                [FromServices] ITaskAssignmentReadService taskAssignmentReadSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
-                var m = await svc.RemoveAsync(taskId, userId, rowVersion, ct);
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => taskAssignmentReadSvc.GetAsync(taskId, userId, ct), a => a.RowVersion);
+
+                var m = await taskAssignmentWriteSvc.RemoveAsync(taskId, userId, rowVersion, ct);
                 return m.ToHttp(http);
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireIfMatch()
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)

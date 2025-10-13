@@ -1,6 +1,7 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
 using Api.Filters;
+using Api.Helpers;
 using Application.Lanes.Abstractions;
 using Application.Lanes.DTOs;
 using Application.Lanes.Mapping;
@@ -86,7 +87,9 @@ namespace Api.Endpoints
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion);
+
                 var result = await laneWriteSvc.RenameAsync(laneId, dto.NewName, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
@@ -94,8 +97,8 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed!.RowVersion)}\"";
                 return Results.Ok(renamed.ToReadDto());
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireIfMatch()
             .Produces<LaneReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -117,7 +120,9 @@ namespace Api.Endpoints
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion);
+
                 var result = await laneWriteSvc.ReorderAsync(laneId, dto.NewOrder, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
@@ -125,8 +130,8 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(reordered!.RowVersion)}\"";
                 return Results.Ok(reordered.ToReadDto());
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireIfMatch()
             .Produces<LaneReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -143,15 +148,18 @@ namespace Api.Endpoints
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromServices] ILaneWriteService laneWriteSvc,
+                [FromServices] ILaneReadService laneReadSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion);
+
                 var result = await laneWriteSvc.DeleteAsync(laneId, rowVersion, ct);
                 return result.ToHttp(http);
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireIfMatch()
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)

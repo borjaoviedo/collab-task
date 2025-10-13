@@ -1,6 +1,7 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
 using Api.Filters;
+using Api.Helpers;
 using Application.TaskItems.Abstractions;
 using Application.TaskItems.DTOs;
 using Application.TaskItems.Mapping;
@@ -96,7 +97,9 @@ namespace Api.Endpoints
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
+
                 var result = await taskItemWriteSvc.EditAsync(taskId, dto.Title, dto.Description, dto.DueDate, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
@@ -104,8 +107,8 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
                 return Results.Ok(edited.ToReadDto());
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireIfMatch()
             .Produces<TaskItemReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -129,7 +132,9 @@ namespace Api.Endpoints
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
+
                 var result = await taskItemWriteSvc.MoveAsync(taskId, dto.TargetColumnId, dto.TargetLaneId, dto.TargetSortKey, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
@@ -137,8 +142,8 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(moved!.RowVersion)}\"";
                 return Results.Ok(moved.ToReadDto());
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireIfMatch()
             .Produces<TaskItemReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -156,16 +161,19 @@ namespace Api.Endpoints
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
-                [FromServices] ITaskItemWriteService svc,
+                [FromServices] ITaskItemWriteService taskItemWriteSvc,
+                [FromServices] ITaskItemReadService taskItemReadSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
-                var result = await svc.DeleteAsync(taskId, rowVersion, ct);
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
+
+                var result = await taskItemWriteSvc.DeleteAsync(taskId, rowVersion, ct);
                 return result.ToHttp(http);
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireIfMatch()
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)

@@ -1,6 +1,7 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
 using Api.Filters;
+using Api.Helpers;
 using Application.Common.Abstractions.Auth;
 using Application.Projects.Abstractions;
 using Application.Projects.DTOs;
@@ -133,7 +134,9 @@ namespace Api.Endpoints
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => projectReadSvc.GetAsync(projectId, ct), p => p.RowVersion);
+
                 var result = await projectWriteSvc.RenameAsync(projectId, dto.NewName, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
@@ -141,8 +144,8 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
                 return Results.Ok(edited.ToReadDto((Guid)userSvc.UserId!));
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectAdmin)
+            .RequireIfMatch()
             .Produces<ProjectReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -156,16 +159,19 @@ namespace Api.Endpoints
             // DELETE /projects/{projectId}
             group.MapDelete("/{projectId:guid}", async (
                 [FromRoute] Guid projectId,
-                [FromServices] IProjectWriteService svc,
+                [FromServices] IProjectWriteService projectWriteSvc,
+                [FromServices] IProjectReadService projectReadSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
-                var res = await svc.DeleteAsync(projectId, rowVersion, ct);
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => projectReadSvc.GetAsync(projectId, ct), p => p.RowVersion);
+
+                var res = await projectWriteSvc.DeleteAsync(projectId, rowVersion, ct);
                 return res.ToHttp(http);
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectOwner)
+            .RequireIfMatch()
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)

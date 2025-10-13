@@ -1,6 +1,7 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
 using Api.Filters;
+using Api.Helpers;
 using Application.ProjectMembers.Abstractions;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;
@@ -88,7 +89,9 @@ namespace Api.Endpoints
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
+
                 var result = await userWriteSvc.RenameAsync(userId, dto.NewName, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
@@ -96,8 +99,8 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed!.RowVersion)}\"";
                 return Results.Ok(renamed.ToReadDto());
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization()
+            .RequireIfMatch()
             .Produces<UserReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -116,7 +119,9 @@ namespace Api.Endpoints
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
+
                 var result = await userWriteSvc.ChangeRoleAsync(userId, dto.NewRole, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
@@ -124,8 +129,8 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
                 return Results.Ok(edited.ToReadDto());
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.SystemAdmin)
+            .RequireIfMatch()
             .Produces<UserReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -139,16 +144,19 @@ namespace Api.Endpoints
             // DELETE /users/{userId}
             group.MapDelete("/{userId:guid}", async (
                 [FromRoute] Guid userId,
-                [FromServices] IUserWriteService svc,
+                [FromServices] IUserReadService userReadSvc,
+                [FromServices] IUserWriteService userWriteSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
-                var res = await svc.DeleteAsync(userId, rowVersion, ct);
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
+
+                var res = await userWriteSvc.DeleteAsync(userId, rowVersion, ct);
                 return res.ToHttp(http);
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.SystemAdmin)
+            .RequireIfMatch()
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)

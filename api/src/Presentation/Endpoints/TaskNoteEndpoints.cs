@@ -1,6 +1,7 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
 using Api.Filters;
+using Api.Helpers;
 using Application.Common.Abstractions.Auth;
 using Application.TaskNotes.Abstractions;
 using Application.TaskNotes.DTOs;
@@ -103,7 +104,9 @@ namespace Api.Endpoints
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => taskNoteReadSvc.GetAsync(noteId, ct), n => n.RowVersion);
+
                 var result = await taskNoteWriteSvc.EditAsync(noteId, dto.NewContent, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
@@ -111,8 +114,8 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
                 return Results.Ok(edited.ToReadDto());
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireIfMatch()
             .Produces<TaskNoteReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -131,16 +134,19 @@ namespace Api.Endpoints
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
                 [FromRoute] Guid noteId,
-                [FromServices] ITaskNoteWriteService svc,
+                [FromServices] ITaskNoteWriteService taskNoteWriteSvc,
+                [FromServices] ITaskNoteReadService taskNoteReadSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var rowVersion = (byte[])http.Items["rowVersion"]!;
-                var result = await svc.DeleteAsync(noteId, rowVersion, ct);
+                var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
+                    http, () => taskNoteReadSvc.GetAsync(noteId, ct), n => n.RowVersion);
+
+                var result = await taskNoteWriteSvc.DeleteAsync(noteId, rowVersion, ct);
                 return result.ToHttp(http);
             })
-            .AddEndpointFilter<IfMatchRowVersionFilter>()
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireIfMatch()
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
