@@ -89,9 +89,9 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
-            .WithSummary("Count project members")
-            .WithDescription("Returns the number of members in a project. Filter active members with the 'active' flag.")
-            .WithName("ProjectMembers_Count");
+            .WithSummary("Get count of a user’s project memberships")
+            .WithDescription("Returns how many projects the specified user belongs to. When ‘active=true’, only active memberships are counted.")
+            .WithName("ProjectMembers_CountByUser");
 
             // POST /projects/{projectId}/members
             group.MapPost("/", async (
