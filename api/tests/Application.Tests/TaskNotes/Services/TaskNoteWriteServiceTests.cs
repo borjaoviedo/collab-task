@@ -1,3 +1,4 @@
+using Application.TaskActivities.Services;
 using Application.TaskNotes.Services;
 using Domain.Enums;
 using FluentAssertions;
@@ -14,8 +15,11 @@ namespace Application.Tests.TaskNotes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
+
             var repo = new TaskNoteRepository(db);
-            var svc = new TaskNoteWriteService(repo);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskNoteWriteService(repo, actSvc);
 
             var (_, _, _, tId, _, uId) = TestDataFactory.SeedFullBoard(db);
             var (res, id) = await svc.CreateAsync(tId, uId, "content");
@@ -29,14 +33,18 @@ namespace Application.Tests.TaskNotes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
+
             var repo = new TaskNoteRepository(db);
-            var svc = new TaskNoteWriteService(repo);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskNoteWriteService(repo, actSvc);
 
             var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
+            var user = TestDataFactory.SeedUser(db);
 
             var newContent = "New Content";
-            var res = await svc.EditAsync(nId, newContent, noteFromDb.RowVersion);
+            var res = await svc.EditAsync(nId, user.Id, newContent, noteFromDb.RowVersion);
             res.Should().Be(DomainMutation.Updated);
 
             noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
@@ -48,14 +56,18 @@ namespace Application.Tests.TaskNotes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
-            var svc = new TaskNoteWriteService(repo);
 
+            var repo = new TaskNoteRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskNoteWriteService(repo, actSvc);
+           
             var originalNoteContent = "Note content";
             var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: originalNoteContent);
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
+            var user = TestDataFactory.SeedUser(db);
 
-            var res = await svc.EditAsync(nId, originalNoteContent, noteFromDb.RowVersion);
+            var res = await svc.EditAsync(nId, user.Id, originalNoteContent, noteFromDb.RowVersion);
             res.Should().Be(DomainMutation.NoOp);
 
             noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
@@ -67,13 +79,18 @@ namespace Application.Tests.TaskNotes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
+
             var repo = new TaskNoteRepository(db);
-            var svc = new TaskNoteWriteService(repo);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskNoteWriteService(repo, actSvc);
 
             var originalNoteContent = "Note content";
             var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: originalNoteContent);
 
-            var res = await svc.EditAsync(nId, "New Content", [1, 2]);
+            var user = TestDataFactory.SeedUser(db);
+            var res = await svc.EditAsync(nId, user.Id, "New Content", [1, 2]);
+
             res.Should().Be(DomainMutation.Conflict);
 
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
@@ -85,13 +102,17 @@ namespace Application.Tests.TaskNotes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
+
             var repo = new TaskNoteRepository(db);
-            var svc = new TaskNoteWriteService(repo);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskNoteWriteService(repo, actSvc);
 
             var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
 
-            var res = await svc.DeleteAsync(nId, noteFromDb.RowVersion);
+            var user = TestDataFactory.SeedUser(db);
+            var res = await svc.DeleteAsync(nId, user.Id, noteFromDb.RowVersion);
             res.Should().Be(DomainMutation.Deleted);
         }
 
@@ -100,10 +121,13 @@ namespace Application.Tests.TaskNotes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
-            var svc = new TaskNoteWriteService(repo);
 
-            var res = await svc.DeleteAsync(Guid.NewGuid(), [1, 2]);
+            var repo = new TaskNoteRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskNoteWriteService(repo, actSvc);
+
+            var res = await svc.DeleteAsync(Guid.NewGuid(), Guid.NewGuid(), [1, 2]);
             res.Should().Be(DomainMutation.NotFound);
         }
 
@@ -112,12 +136,16 @@ namespace Application.Tests.TaskNotes.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
+
             var repo = new TaskNoteRepository(db);
-            var svc = new TaskNoteWriteService(repo);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskNoteWriteService(repo, actSvc);
 
             var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
 
-            var res = await svc.DeleteAsync(nId, [1, 2]);
+            var user = TestDataFactory.SeedUser(db);
+            var res = await svc.DeleteAsync(nId, user.Id, [1, 2]);
             res.Should().Be(DomainMutation.Conflict);
         }
     }
