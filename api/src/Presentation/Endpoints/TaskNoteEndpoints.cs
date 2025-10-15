@@ -101,13 +101,16 @@ namespace Api.Endpoints
                 [FromBody] TaskNoteEditDto dto,
                 [FromServices] ITaskNoteWriteService taskNoteWriteSvc,
                 [FromServices] ITaskNoteReadService taskNoteReadSvc,
+                [FromServices] ICurrentUserService currentUserSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
                     http, () => taskNoteReadSvc.GetAsync(noteId, ct), n => n.RowVersion);
 
-                var result = await taskNoteWriteSvc.EditAsync(noteId, dto.NewContent, rowVersion, ct);
+                var userId = (Guid)currentUserSvc.UserId!;
+
+                var result = await taskNoteWriteSvc.EditAsync(noteId, userId, dto.NewContent, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var edited = await taskNoteReadSvc.GetAsync(noteId, ct);
@@ -136,13 +139,16 @@ namespace Api.Endpoints
                 [FromRoute] Guid noteId,
                 [FromServices] ITaskNoteWriteService taskNoteWriteSvc,
                 [FromServices] ITaskNoteReadService taskNoteReadSvc,
+                [FromServices] ICurrentUserService currentUserSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
                     http, () => taskNoteReadSvc.GetAsync(noteId, ct), n => n.RowVersion);
 
-                var result = await taskNoteWriteSvc.DeleteAsync(noteId, rowVersion, ct);
+                var userId = (Guid)currentUserSvc.UserId!;
+
+                var result = await taskNoteWriteSvc.DeleteAsync(noteId, userId, rowVersion, ct);
                 return result.ToHttp(http);
             })
             .RequireAuthorization(Policies.ProjectMember)
