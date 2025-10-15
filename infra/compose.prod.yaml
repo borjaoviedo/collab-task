@@ -10,17 +10,6 @@ services:
     ports: ["8080:8080"]
     profiles: ["prod"]
 
-  web:
-    # Build React (Vite) and serve with Nginx as defined in web.dockerfile
-    build:
-      args:
-        BUILD_MODE: production
-        # Vite env injected at build time
-        VITE_API_BASE_URL: "http://localhost:8080"
-    # Host 8081 -> container 8080 (Nginx in the image)
-    ports: ["8081:8080"]
-    profiles: ["prod"]
-
   sql:
     # Database is not exposed in prod; only accessible through the internal Docker network
     profiles: ["prod"]
