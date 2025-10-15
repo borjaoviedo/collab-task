@@ -83,6 +83,18 @@ namespace Infrastructure.Data.Repositories
             }
         }
 
-        public async Task<int> SaveChangesAsync(CancellationToken ct = default) => await _db.SaveChangesAsync(ct);
+        public async Task<int> SaveCreateChangesAsync(CancellationToken ct = default) => await _db.SaveChangesAsync(ct);
+        public async Task<DomainMutation> SaveUpdateChangesAsync(CancellationToken ct = default)
+        {
+            try
+            {
+                await _db.SaveChangesAsync(ct);
+                return DomainMutation.Updated;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return DomainMutation.Conflict;
+            }
+        }
     }
 }

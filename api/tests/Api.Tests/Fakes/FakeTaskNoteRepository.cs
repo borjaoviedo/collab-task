@@ -57,7 +57,8 @@ namespace Api.Tests.Fakes
             return DomainMutation.Deleted;
         }
 
-        public Task<int> SaveChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
+        public Task<int> SaveCreateChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
+        public Task<DomainMutation> SaveUpdateChangesAsync(CancellationToken ct = default) => Task.FromResult(DomainMutation.Updated);
 
         private static TaskNote Clone(TaskNote n)
         {
