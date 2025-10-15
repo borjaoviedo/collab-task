@@ -1,3 +1,4 @@
+using Application.Common.Changes;
 using Application.TaskItems.Abstractions;
 using Domain.Entities;
 using Domain.Enums;
@@ -34,17 +35,17 @@ namespace Infrastructure.Data.Repositories
         public async Task AddAsync(TaskItem task, CancellationToken ct = default)
             => await _db.TaskItems.AddAsync(task, ct);
 
-        public async Task<DomainMutation> EditAsync(Guid taskId, string? newTitle, string? newDescription, DateTimeOffset? newDueDate,
-            byte[] rowVersion, CancellationToken ct = default)
+        public async Task<(DomainMutation Mutation, TaskItemChange? Change)> EditAsync(Guid taskId, string? newTitle,
+            string? newDescription, DateTimeOffset? newDueDate, byte[] rowVersion, CancellationToken ct = default)
         {
             var task = await GetTrackedByIdAsync(taskId, ct);
-            if (task is null) return DomainMutation.NotFound;
+            if (task is null) return (DomainMutation.NotFound, null);
 
             _db.Entry(task).Property(t => t.RowVersion).OriginalValue = rowVersion;
 
             // Enforce uniqueness
             if (newTitle != null && await ExistsWithTitleAsync(task.ColumnId, newTitle, task.Id, ct))
-                return DomainMutation.Conflict;
+                return (DomainMutation.Conflict, null);
 
             var titleBefore = task.Title;
             var descriptionBefore = task.Description;
@@ -60,56 +61,51 @@ namespace Infrastructure.Data.Repositories
             if (!Equals(descriptionBefore, task.Description)) { _db.Entry(task).Property(t => t.Description).IsModified = true; changed = true; }
             if (!Nullable.Equals(dueDateBefore, task.DueDate)) { _db.Entry(task).Property(t => t.DueDate).IsModified = true; changed = true; }
 
-            if (!changed) return DomainMutation.NoOp;
+            if (!changed) return (DomainMutation.NoOp, null);
 
-            try
-            {
-                await _db.SaveChangesAsync(ct);
-                return DomainMutation.Updated;
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return DomainMutation.Conflict;
-            }
+            var change = new TaskItemEditedChange(
+                titleBefore?.Value, task.Title?.Value,
+                descriptionBefore?.Value, task.Description?.Value,
+                dueDateBefore, task.DueDate);
+
+            return (DomainMutation.Updated, change);
         }
 
-        public async Task<DomainMutation> MoveAsync(Guid taskId, Guid targetColumnId, Guid targetLaneId, decimal targetSortKey,
-            byte[] rowVersion, CancellationToken ct = default)
+        public async Task<(DomainMutation Mutation, TaskItemChange? Change)> MoveAsync(Guid taskId, Guid targetColumnId, Guid targetLaneId,
+            decimal targetSortKey, byte[] rowVersion, CancellationToken ct = default)
         {
             var task = await GetTrackedByIdAsync(taskId, ct);
-            if (task is null) return DomainMutation.NotFound;
+            if (task is null) return (DomainMutation.NotFound, null);
 
             _db.Entry(task).Property(t => t.RowVersion).OriginalValue = rowVersion;
 
             // Load target column and lane to validate relationships
             var targetColumn = await _db.Columns.AsNoTracking().FirstOrDefaultAsync(c => c.Id == targetColumnId, ct);
-            if (targetColumn is null) return DomainMutation.NotFound;
+            if (targetColumn is null) return (DomainMutation.NotFound, null);
 
             var targetLane = await _db.Lanes.AsNoTracking().FirstOrDefaultAsync(l => l.Id == targetLaneId, ct);
-            if (targetLane is null) return DomainMutation.NotFound;
+            if (targetLane is null) return (DomainMutation.NotFound, null);
 
             // Integrity: column must belong to lane, and both to same project as task
-            if (targetColumn.LaneId != targetLaneId) return DomainMutation.Conflict;
-            if (targetColumn.ProjectId != task.ProjectId || targetLane.ProjectId != task.ProjectId) return DomainMutation.Conflict;
+            if (targetColumn.LaneId != targetLaneId) return (DomainMutation.Conflict, null);
+            if (targetColumn.ProjectId != task.ProjectId || targetLane.ProjectId != task.ProjectId) return (DomainMutation.Conflict, null);
 
             // No-op if same place and same sort key
             if (task.ColumnId == targetColumnId && task.LaneId == targetLaneId && task.SortKey == targetSortKey)
-                return DomainMutation.NoOp;
+                return (DomainMutation.NoOp, null);
+
+            var change = new TaskItemMovedChange(
+                task.LaneId, targetLaneId,
+                task.ColumnId, targetColumnId,
+                task.SortKey, targetSortKey
+            );
 
             task.Move(targetLaneId, targetColumnId, targetSortKey);
             _db.Entry(task).Property(t => t.ColumnId).IsModified = true;
             _db.Entry(task).Property(t => t.LaneId).IsModified = true;
             _db.Entry(task).Property(t => t.SortKey).IsModified = true;
 
-            try
-            {
-                await _db.SaveChangesAsync(ct);
-                return DomainMutation.Updated;
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return DomainMutation.Conflict;
-            }
+            return (DomainMutation.Updated, change);
         }
 
         public async Task<DomainMutation> DeleteAsync(Guid taskId, byte[] rowVersion, CancellationToken ct = default)
