@@ -22,6 +22,7 @@ namespace Application.TaskItems.Abstractions
         Task<decimal> GetNextSortKeyAsync(Guid columnId, CancellationToken ct = default);
         Task RebalanceSortKeysAsync(Guid columnId, CancellationToken ct = default);
 
-        Task<int> SaveChangesAsync(CancellationToken ct = default);
+        Task<int> SaveCreateChangesAsync(CancellationToken ct = default);
+        Task<DomainMutation> SaveUpdateChangesAsync(CancellationToken ct = default);
     }
 }

@@ -23,7 +23,7 @@ namespace Infrastructure.Tests.Repositories
 
             var task = TaskItem.Create(cId, lId, pId, TaskTitle.Create(taskTitle), TaskDescription.Create(taskDescription));
             await repo.AddAsync(task);
-            await repo.SaveChangesAsync();
+            await repo.SaveCreateChangesAsync();
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync(t => t.Id == task.Id);
             fromDb.Title.Value.Should().Be(taskTitle);
@@ -76,8 +76,12 @@ namespace Infrastructure.Tests.Repositories
 
             var tracked = await db.TaskItems.SingleAsync(t => t.Id == task.Id);
             var newDueDate = DateTimeOffset.UtcNow.AddDays(1);
-            var res = await repo.EditAsync(task.Id, "New", "NewD", newDueDate, tracked.RowVersion!);
+            var (res, change) = await repo.EditAsync(task.Id, "New", "NewD", newDueDate, tracked.RowVersion!);
             res.Should().Be(DomainMutation.Updated);
+            change.Should().NotBeNull();
+
+            var saveRes = await repo.SaveUpdateChangesAsync();
+            saveRes.Should().Be(DomainMutation.Updated);
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync(t => t.Id == task.Id);
             fromDb.Title.Value.Should().Be("New");
@@ -96,8 +100,9 @@ namespace Infrastructure.Tests.Repositories
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
             var tracked = await db.TaskItems.SingleAsync(t => t.Id == task.Id);
-            var res = await repo.EditAsync(task.Id, null, null, null, tracked.RowVersion!);
+            var (res, change) = await repo.EditAsync(task.Id, null, null, null, tracked.RowVersion!);
             res.Should().Be(DomainMutation.NoOp);
+            change.Should().BeNull();
         }
 
         [Fact]
@@ -113,8 +118,9 @@ namespace Infrastructure.Tests.Repositories
             var taskB = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
             var trackedB = await db.TaskItems.SingleAsync(x => x.Id == taskB.Id);
-            var res = await repo.EditAsync(taskB.Id, taskATitle, null, null, trackedB.RowVersion!);
+            var (res, change) = await repo.EditAsync(taskB.Id, taskATitle, null, null, trackedB.RowVersion!);
             res.Should().Be(DomainMutation.Conflict);
+            change.Should().BeNull();
         }
 
         [Fact]
@@ -132,8 +138,12 @@ namespace Infrastructure.Tests.Repositories
             var task = TestDataFactory.SeedTaskItem(db, pId, firstLaneId, firstColumnId);
 
             var tracked = await db.TaskItems.SingleAsync(t => t.Id == task.Id);
-            var res = await repo.MoveAsync(task.Id, secondColumn.Id, secondLane.Id, 5m, tracked.RowVersion!);
+            var (res, change) = await repo.MoveAsync(task.Id, secondColumn.Id, secondLane.Id, 5m, tracked.RowVersion!);
             res.Should().Be(DomainMutation.Updated);
+            change.Should().NotBeNull();
+
+            var saveRes = await repo.SaveUpdateChangesAsync();
+            saveRes.Should().Be(DomainMutation.Updated);
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync(t => t.Id == task.Id);
             fromDb.ColumnId.Should().Be(secondColumn.Id);
@@ -154,8 +164,9 @@ namespace Infrastructure.Tests.Repositories
             var task = TestDataFactory.SeedTaskItem(db, firstProjectId, firstLaneId, firstColumnId);
 
             var tracked = await db.TaskItems.SingleAsync(t => t.Id == task.Id);
-            var res = await repo.MoveAsync(task.Id, secondProjectColumnId, secondProjectLaneId, 1m, tracked.RowVersion!);
+            var (res, change) = await repo.MoveAsync(task.Id, secondProjectColumnId, secondProjectLaneId, 1m, tracked.RowVersion!);
             res.Should().Be(DomainMutation.Conflict);
+            change.Should().BeNull();
         }
 
         [Fact]
