@@ -1,7 +1,7 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
-using Api.Filters;
 using Api.Helpers;
+using Application.Common.Abstractions.Auth;
 using Application.TaskItems.Abstractions;
 using Application.TaskItems.DTOs;
 using Application.TaskItems.Mapping;
@@ -65,11 +65,14 @@ namespace Api.Endpoints
                 [FromRoute] Guid columnId,
                 [FromBody] TaskItemCreateDto dto,
                 [FromServices] ITaskItemWriteService svc,
+                [FromServices] ICurrentUserService currentUserSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
+                var userId = (Guid)currentUserSvc.UserId!;
                 var (result, task) = await svc.CreateAsync(
-                    projectId, laneId, columnId, dto.Title, dto.Description, dto.DueDate, dto.SortKey, ct);
+                    projectId, laneId, columnId, userId,
+                    dto.Title, dto.Description, dto.DueDate, dto.SortKey, ct);
                 if (result != DomainMutation.Created) return result.ToHttp();
 
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(task!.RowVersion)}\"";
@@ -94,13 +97,15 @@ namespace Api.Endpoints
                 [FromBody] TaskItemEditDto dto,
                 [FromServices] ITaskItemWriteService taskItemWriteSvc,
                 [FromServices] ITaskItemReadService taskItemReadSvc,
+                [FromServices] ICurrentUserService currentUserSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
                     http, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
 
-                var result = await taskItemWriteSvc.EditAsync(taskId, dto.Title, dto.Description, dto.DueDate, rowVersion, ct);
+                var userId = (Guid)currentUserSvc.UserId!;
+                var result = await taskItemWriteSvc.EditAsync(taskId, userId, dto.Title, dto.Description, dto.DueDate, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var edited = await taskItemReadSvc.GetAsync(taskId, ct);
@@ -129,13 +134,16 @@ namespace Api.Endpoints
                 [FromBody] TaskItemMoveDto dto,
                 [FromServices] ITaskItemWriteService taskItemWriteSvc,
                 [FromServices] ITaskItemReadService taskItemReadSvc,
+                [FromServices] ICurrentUserService currentUserSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
                     http, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
 
-                var result = await taskItemWriteSvc.MoveAsync(taskId, dto.TargetColumnId, dto.TargetLaneId, dto.TargetSortKey, rowVersion, ct);
+                var userId = (Guid)currentUserSvc.UserId!;
+                var result = await taskItemWriteSvc.MoveAsync(taskId, dto.TargetColumnId, dto.TargetLaneId, userId,
+                    dto.TargetSortKey, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var moved = await taskItemReadSvc.GetAsync(taskId, ct);
