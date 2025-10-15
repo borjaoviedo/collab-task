@@ -65,36 +65,7 @@ namespace Api.Endpoints
             .WithDescription("Returns a single activity if it belongs to the specified task.")
             .WithName("TaskActivities_Get_ById");
 
-            // POST /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities
-            nested.MapPost("/", async (
-                [FromRoute] Guid projectId,
-                [FromRoute] Guid laneId,
-                [FromRoute] Guid columnId,
-                [FromRoute] Guid taskId,
-                [FromBody] TaskActivityCreateDto dto,
-                [FromServices] ICurrentUserService currentUser,
-                [FromServices] ITaskActivityWriteService writeSvc,
-                [FromServices] ITaskActivityReadService readSvc,
-                CancellationToken ct = default) =>
-            {
-                var actorId = (Guid)currentUser.UserId!;
-                var (m, created) = await writeSvc.CreateAsync(taskId, actorId, dto.Type, dto.Payload, ct);
-                if (m != DomainMutation.Created || created is null) return m.ToHttp();
-
-                var body = (await readSvc.GetAsync(created.Id, ct))!.ToReadDto();
-                return Results.Created($"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities/{created.Id}", body);
-            })
-            .RequireAuthorization(Policies.ProjectMember)
-            .Produces<TaskActivityReadDto>(StatusCodes.Status201Created)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .ProducesProblem(StatusCodes.Status403Forbidden)
-            .ProducesProblem(StatusCodes.Status409Conflict)
-            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-            .WithSummary("Create task activity")
-            .WithDescription("Appends a new activity to the task by the authenticated user.")
-            .WithName("TaskActivities_Create");
-
+            
             var top = app.MapGroup("/activities")
                 .WithTags("Task Activities")
                 .RequireAuthorization();
