@@ -101,7 +101,7 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(ITaskItemReadService));
                 services.AddScoped<ITaskItemReadService>(sp => new TaskItemReadService(sp.GetRequiredService<ITaskItemRepository>()));
                 services.RemoveAll(typeof(ITaskItemWriteService));
-                services.AddScoped<ITaskItemWriteService>(sp => new TaskItemWriteService(sp.GetRequiredService<ITaskItemRepository>()));
+                services.AddScoped<ITaskItemWriteService>(sp => new TaskItemWriteService(sp.GetRequiredService<ITaskItemRepository>(), sp.GetRequiredService<ITaskActivityWriteService>()));
 
                 // ===== Task Notes =====
                 services.RemoveAll(typeof(ITaskNoteRepository));
