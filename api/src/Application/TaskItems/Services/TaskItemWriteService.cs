@@ -26,7 +26,7 @@ namespace Application.TaskItems.Services
             var payload = ActivityPayloadFactory.TaskCreated(title);
             await activityWriter.CreateAsync(task.Id, userId, TaskActivityType.TaskCreated, payload, ct);
 
-            await repo.SaveChangesAsync(ct);
+            await repo.SaveCreateChangesAsync(ct);
             return (DomainMutation.Created, task);
         }
 
@@ -40,8 +40,7 @@ namespace Application.TaskItems.Services
             var payload = ActivityPayloadFactory.TaskEdited(c.OldTitle, c.NewTitle, c.OldDescription, c.NewDescription);
 
             await activityWriter.CreateAsync(taskId, userId, TaskActivityType.TaskEdited, payload, ct);
-            await repo.SaveChangesAsync(ct);
-            return DomainMutation.Updated;
+            return await repo.SaveUpdateChangesAsync(ct);
         }
 
         public async Task<DomainMutation> MoveAsync(Guid taskId, Guid targetColumnId, Guid targetLaneId, Guid userId,
@@ -54,8 +53,7 @@ namespace Application.TaskItems.Services
             var payload = ActivityPayloadFactory.TaskMoved(c.FromColumnId, c.ToColumnId);
 
             await activityWriter.CreateAsync(taskId, userId, TaskActivityType.TaskMoved, payload, ct);
-            await repo.SaveChangesAsync(ct);
-            return DomainMutation.Updated;
+            return await repo.SaveUpdateChangesAsync(ct);
         }
 
         public Task<DomainMutation> DeleteAsync(Guid taskId, byte[] rowVersion, CancellationToken ct = default)
