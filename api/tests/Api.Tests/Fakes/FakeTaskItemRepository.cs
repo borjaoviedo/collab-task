@@ -1,3 +1,4 @@
+using Application.Common.Changes;
 using Application.TaskItems.Abstractions;
 using Domain.Entities;
 using Domain.Enums;
@@ -43,13 +44,14 @@ namespace Api.Tests.Fakes
             return Task.CompletedTask;
         }
 
-        public async Task<DomainMutation> EditAsync(Guid taskId, string? newTitle, string? newDescription, DateTimeOffset? newDueDate, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<(DomainMutation Mutation, TaskItemChange? Change)> EditAsync(
+            Guid taskId, string? newTitle, string? newDescription, DateTimeOffset? newDueDate, byte[] rowVersion, CancellationToken ct = default)
         {
             var task = await GetTrackedByIdAsync(taskId, ct);
-            if (task is null) return DomainMutation.NotFound;
-            if (!task.RowVersion.SequenceEqual(rowVersion)) return DomainMutation.Conflict;
+            if (task is null) return (DomainMutation.NotFound, null);
+            if (!task.RowVersion.SequenceEqual(rowVersion)) return (DomainMutation.Conflict, null);
 
-            if (newTitle != null && await ExistsWithTitleAsync(task.ColumnId, newTitle, task.Id, ct)) return DomainMutation.Conflict;
+            if (newTitle != null && await ExistsWithTitleAsync(task.ColumnId, newTitle, task.Id, ct)) return (DomainMutation.Conflict, null);
 
             var beforeTitle = task.Title;
             var beforeDesc = task.Description;
@@ -61,32 +63,33 @@ namespace Api.Tests.Fakes
             task.Edit(titleVO, descVO, newDueDate);
 
             if (Equals(beforeTitle, task.Title) && Equals(beforeDesc, task.Description) && Nullable.Equals(beforeDue, task.DueDate))
-                return DomainMutation.NoOp;
+                return (DomainMutation.NoOp, null);
 
             task.RowVersion = NextRowVersion();
-            return DomainMutation.Updated;
+            return (DomainMutation.Updated, null);
         }
 
-        public async Task<DomainMutation> MoveAsync(Guid taskId, Guid targetColumnId, Guid targetLaneId, decimal targetSortKey, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<(DomainMutation Mutation, TaskItemChange? Change)> MoveAsync(
+            Guid taskId, Guid targetColumnId, Guid targetLaneId, decimal targetSortKey, byte[] rowVersion, CancellationToken ct = default)
         {
             var task = await GetTrackedByIdAsync(taskId, ct);
-            if (task is null) return DomainMutation.NotFound;
-            if (!task.RowVersion.SequenceEqual(rowVersion)) return DomainMutation.Conflict;
+            if (task is null) return (DomainMutation.NotFound, null);
+            if (!task.RowVersion.SequenceEqual(rowVersion)) return (DomainMutation.Conflict, null);
 
-            var targetColumn = _getColumn(targetColumnId) as Column;
-            if (targetColumn is null) return DomainMutation.NotFound;
-            var targetLane = _getLane(targetLaneId) as Lane;
-            if (targetLane is null) return DomainMutation.NotFound;
+            var targetColumn = (Column?)_getColumn(targetColumnId);
+            if (targetColumn is null) return (DomainMutation.NotFound, null);
+            var targetLane = (Lane?)_getLane(targetLaneId);
+            if (targetLane is null) return (DomainMutation.NotFound, null);
 
-            if (targetColumn.LaneId != targetLaneId) return DomainMutation.Conflict;
-            if (targetColumn.ProjectId != task.ProjectId || targetLane.ProjectId != task.ProjectId) return DomainMutation.Conflict;
+            if (targetColumn.LaneId != targetLaneId) return (DomainMutation.Conflict, null);
+            if (targetColumn.ProjectId != task.ProjectId || targetLane.ProjectId != task.ProjectId) return (DomainMutation.Conflict, null);
 
             if (task.ColumnId == targetColumnId && task.LaneId == targetLaneId && task.SortKey == targetSortKey)
-                return DomainMutation.NoOp;
+                return (DomainMutation.NoOp, null);
 
             task.Move(targetLaneId, targetColumnId, targetSortKey);
             task.RowVersion = NextRowVersion();
-            return DomainMutation.Updated;
+            return (DomainMutation.Updated, null);
         }
 
         public async Task<DomainMutation> DeleteAsync(Guid taskId, byte[] rowVersion, CancellationToken ct = default)
@@ -112,7 +115,8 @@ namespace Api.Tests.Fakes
             return Task.CompletedTask;
         }
 
-        public Task<int> SaveChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
+        public Task<int> SaveCreateChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
+        public Task<DomainMutation> SaveUpdateChangesAsync(CancellationToken ct = default) => Task.FromResult(DomainMutation.Updated);
 
         private static TaskItem Clone(TaskItem t)
         {

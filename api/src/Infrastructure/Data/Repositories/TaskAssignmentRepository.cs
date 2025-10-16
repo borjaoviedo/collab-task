@@ -1,3 +1,4 @@
+using Application.Common.Changes;
 using Application.TaskAssignments.Abstractions;
 using Domain.Entities;
 using Domain.Enums;
@@ -45,58 +46,74 @@ namespace Infrastructure.Data.Repositories
         public async Task AddAsync(TaskAssignment assignment, CancellationToken ct = default)
             => await _db.TaskAssignments.AddAsync(assignment, ct);
 
-        public async Task<DomainMutation> AssignAsync(Guid taskId, Guid userId, TaskRole role, CancellationToken ct = default)
+        public async Task<(DomainMutation Mutation, AssignmentChange? Change)> AssignAsync(Guid taskId, Guid userId, TaskRole role, CancellationToken ct = default)
         {
             var existing = await GetTrackedAsync(taskId, userId, ct);
             if (existing is not null)
             {
-                if (existing.Role == role) return DomainMutation.NoOp;
+                if (existing.Role == role) return (DomainMutation.NoOp, null);
 
                 if (role == TaskRole.Owner)
                 {
                     var anotherOwner = await _db.TaskAssignments.AsNoTracking()
                         .AnyAsync(a => a.TaskId == taskId && a.UserId != userId && a.Role == TaskRole.Owner, ct);
-                    if (anotherOwner) return DomainMutation.Conflict;
+                    if (anotherOwner) return (DomainMutation.Conflict, null);
                 }
 
+                var change = new AssignmentRoleChangedChange(existing.Role, role);
                 existing.Role = role;
                 _db.Entry(existing).Property(a => a.Role).IsModified = true;
 
-                await _db.SaveChangesAsync(ct);
-                return DomainMutation.Updated;
+                return (DomainMutation.Updated, change);
             }
 
             // Creating new assignment
             if (role == TaskRole.Owner)
             {
                 var hasOwner = await AnyOwnerAsync(taskId, ct);
-                if (hasOwner) return DomainMutation.Conflict;
+                if (hasOwner) return (DomainMutation.Conflict, null);
             }
 
             var assignment = TaskAssignment.Create(taskId, userId, role);
             _db.TaskAssignments.Add(assignment);
-            await _db.SaveChangesAsync(ct);
-            return DomainMutation.Created;
+            return (DomainMutation.Created, null);
         }
 
-        public async Task<DomainMutation> ChangeRoleAsync(Guid taskId, Guid userId, TaskRole newRole, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<(DomainMutation Mutation, AssignmentChange? Change)> ChangeRoleAsync(Guid taskId, Guid userId, TaskRole newRole, byte[] rowVersion, CancellationToken ct = default)
         {
             var existing = await GetTrackedAsync(taskId, userId, ct);
-            if (existing is null) return DomainMutation.NotFound;
-
-            if (existing.Role == newRole) return DomainMutation.NoOp;
+            if (existing is null) return (DomainMutation.NotFound, null);
+            if (existing.Role == newRole) return (DomainMutation.NoOp, null);
 
             if (newRole == TaskRole.Owner)
             {
                 var anotherOwner = await _db.TaskAssignments.AsNoTracking()
                     .AnyAsync(a => a.TaskId == taskId && a.UserId != userId && a.Role == TaskRole.Owner, ct);
-                if (anotherOwner) return DomainMutation.Conflict;
+                if (anotherOwner) return (DomainMutation.Conflict, null);
             }
             _db.Entry(existing).Property(a => a.RowVersion).OriginalValue = rowVersion;
 
+            var change = new AssignmentRoleChangedChange(existing.Role, newRole);
             existing.Role = newRole;
             _db.Entry(existing).Property(a => a.Role).IsModified = true;
+            return (DomainMutation.Updated, change);
 
+        }
+
+        public async Task<DomainMutation> RemoveAsync(Guid taskId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
+        {
+            var existing = await GetTrackedAsync(taskId, userId, ct);
+            if (existing is null) return DomainMutation.NotFound;
+
+            _db.Entry(existing).Property(a => a.RowVersion).OriginalValue = rowVersion;
+            _db.TaskAssignments.Remove(existing);
+            return DomainMutation.Deleted;
+        }
+
+        public async Task<int> SaveCreateChangesAsync(CancellationToken ct = default) => await _db.SaveChangesAsync(ct);
+
+        public async Task<DomainMutation> SaveUpdateChangesAsync(CancellationToken ct = default)
+        {
             try
             {
                 await _db.SaveChangesAsync(ct);
@@ -108,14 +125,8 @@ namespace Infrastructure.Data.Repositories
             }
         }
 
-        public async Task<DomainMutation> RemoveAsync(Guid taskId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> SaveRemoveChangesAsync(CancellationToken ct = default)
         {
-            var existing = await GetTrackedAsync(taskId, userId, ct);
-            if (existing is null) return DomainMutation.NotFound;
-
-            _db.Entry(existing).Property(a => a.RowVersion).OriginalValue = rowVersion;
-            _db.TaskAssignments.Remove(existing);
-
             try
             {
                 await _db.SaveChangesAsync(ct);
@@ -130,7 +141,5 @@ namespace Infrastructure.Data.Repositories
                 return DomainMutation.Conflict;
             }
         }
-
-        public async Task<int> SaveChangesAsync(CancellationToken ct = default) => await _db.SaveChangesAsync(ct);
     }
 }

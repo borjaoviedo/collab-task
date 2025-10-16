@@ -1,6 +1,5 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
-using Api.Filters;
 using Api.Helpers;
 using Application.Common.Abstractions.Auth;
 using Application.TaskAssignments.Abstractions;
@@ -70,10 +69,12 @@ namespace Api.Endpoints
                 [FromBody] TaskAssignmentCreateDto dto,
                 [FromServices] ITaskAssignmentWriteService taskAssignmentWriteSvc,
                 [FromServices] ITaskAssignmentReadService taskAssignmentReadSvc,
+                [FromServices] ICurrentUserService currentUserSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var (m, _) = await taskAssignmentWriteSvc.CreateAsync(taskId, dto.UserId, dto.Role, ct); // may return Created/Updated/NoOp/Conflict
+                var performedById = (Guid)currentUserSvc.UserId!;
+                var (m, _) = await taskAssignmentWriteSvc.CreateAsync(taskId, dto.UserId, dto.Role, performedById, ct); // may return Created/Updated/NoOp/Conflict
                 if (m == DomainMutation.Conflict) return m.ToHttp();
 
                 var assigned = await taskAssignmentReadSvc.GetAsync(taskId, dto.UserId, ct);
@@ -107,13 +108,15 @@ namespace Api.Endpoints
                 [FromBody] TaskAssignmentChangeRoleDto dto,
                 [FromServices] ITaskAssignmentWriteService taskAssignmentWriteSvc,
                 [FromServices] ITaskAssignmentReadService taskAssignmentReadSvc,
+                [FromServices] ICurrentUserService currentUserSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
+                var performedById = (Guid)currentUserSvc.UserId!;
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
                     http, () => taskAssignmentReadSvc.GetAsync(taskId, userId, ct), a => a.RowVersion);
 
-                var m = await taskAssignmentWriteSvc.ChangeRoleAsync(taskId, userId, dto.NewRole, rowVersion, ct);
+                var m = await taskAssignmentWriteSvc.ChangeRoleAsync(taskId, userId, dto.NewRole, performedById, rowVersion, ct);
                 if (m != DomainMutation.Updated) return m.ToHttp(http);
 
                 var updated = await taskAssignmentReadSvc.GetAsync(taskId, userId, ct);
@@ -144,13 +147,15 @@ namespace Api.Endpoints
                 [FromRoute] Guid userId,
                 [FromServices] ITaskAssignmentWriteService taskAssignmentWriteSvc,
                 [FromServices] ITaskAssignmentReadService taskAssignmentReadSvc,
+                [FromServices] ICurrentUserService currentUserSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
+                var performedById = (Guid)currentUserSvc.UserId!;
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
                     http, () => taskAssignmentReadSvc.GetAsync(taskId, userId, ct), a => a.RowVersion);
 
-                var m = await taskAssignmentWriteSvc.RemoveAsync(taskId, userId, rowVersion, ct);
+                var m = await taskAssignmentWriteSvc.RemoveAsync(taskId, userId, performedById, rowVersion, ct);
                 return m.ToHttp(http);
             })
             .RequireAuthorization(Policies.ProjectMember)

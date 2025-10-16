@@ -1,14 +1,16 @@
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ValueObjects;
 
 namespace Application.TaskActivities.Abstractions
 {
     public interface ITaskActivityWriteService
     {
         Task<(DomainMutation, TaskActivity?)> CreateAsync(
-            Guid taskId, Guid actorId, TaskActivityType type, string payload, CancellationToken ct = default);
-
-        Task<DomainMutation> CreateManyAsync(
-            IEnumerable<(Guid TaskId, Guid ActorId, TaskActivityType Type, string Payload)> activities, CancellationToken ct = default);
+            Guid taskId,
+            Guid actorId,
+            TaskActivityType type,
+            ActivityPayload payload,
+            CancellationToken ct = default);
     }
 }

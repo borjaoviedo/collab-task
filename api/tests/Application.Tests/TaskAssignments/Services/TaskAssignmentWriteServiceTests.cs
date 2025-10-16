@@ -1,3 +1,4 @@
+using Application.TaskActivities.Services;
 using Application.TaskAssignments.Services;
 using Domain.Enums;
 using FluentAssertions;
@@ -13,13 +14,16 @@ namespace Application.Tests.TaskAssignments.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
+
             var repo = new TaskAssignmentRepository(db);
-            var svc = new TaskAssignmentWriteService(repo);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskAssignmentWriteService(repo, actSvc);
 
             var (_, userId) = TestDataFactory.SeedUserWithProject(db);
             var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
 
-            var (m, a) = await svc.CreateAsync(taskId, userId, TaskRole.Owner);
+            var (m, a) = await svc.CreateAsync(taskId, affectedUserId: userId, role: TaskRole.Owner, performedBy: userId);
             m.Should().Be(DomainMutation.Created);
             a.Should().NotBeNull();
 
@@ -28,53 +32,62 @@ namespace Application.Tests.TaskAssignments.Services
         }
 
         [Fact]
-        public async Task AssignAsync_Delegates_To_Repo_And_Enforces_SingleOwner()
+        public async Task AssignAsync_Delegates_And_Enforces_SingleOwner()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
 
             var repo = new TaskAssignmentRepository(db);
-            var svc = new TaskAssignmentWriteService(repo);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskAssignmentWriteService(repo, actSvc);
 
             var (_, userA) = TestDataFactory.SeedUserWithProject(db);
             var userB = TestDataFactory.SeedUser(db).Id;
             var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
 
-            (await svc.AssignAsync(taskId, userA, TaskRole.Owner)).Should().Be(DomainMutation.Created);
-            (await svc.AssignAsync(taskId, userB, TaskRole.Owner)).Should().Be(DomainMutation.Conflict);
+            (await svc.AssignAsync(taskId, affectedUserId: userA, role: TaskRole.Owner, performedBy: userA))
+                .Should().Be(DomainMutation.Created);
+
+            (await svc.AssignAsync(taskId, affectedUserId: userB, role: TaskRole.Owner, performedBy: userB))
+                .Should().Be(DomainMutation.Conflict);
         }
 
         [Fact]
-        public async Task ChangeRoleAsync_Delegates_To_Repo()
+        public async Task ChangeRoleAsync_Updates_And_Logs_Activity()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
 
             var repo = new TaskAssignmentRepository(db);
-            var svc = new TaskAssignmentWriteService(repo);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskAssignmentWriteService(repo, actSvc);
 
             var (_, userId) = TestDataFactory.SeedUserWithProject(db);
             var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
             var assignment = TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.CoOwner);
 
-            var res = await svc.ChangeRoleAsync(taskId, userId, TaskRole.Owner, assignment.RowVersion);
+            var res = await svc.ChangeRoleAsync(taskId, affectedUserId: userId, newRole: TaskRole.Owner, performedBy: userId, rowVersion: assignment.RowVersion);
             res.Should().Be(DomainMutation.Updated);
         }
 
         [Fact]
-        public async Task RemoveAsync_Delegates_To_Repo()
+        public async Task RemoveAsync_Deletes_And_Logs_Activity()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
 
             var repo = new TaskAssignmentRepository(db);
-            var svc = new TaskAssignmentWriteService(repo);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskAssignmentWriteService(repo, actSvc);
 
             var (_, userId) = TestDataFactory.SeedUserWithProject(db);
             var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
             var assignment = TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.Owner);
 
-            var res = await svc.RemoveAsync(taskId, userId, assignment.RowVersion);
+            var res = await svc.RemoveAsync(taskId, affectedUserId: userId, performedBy: userId, rowVersion: assignment.RowVersion);
             res.Should().Be(DomainMutation.Deleted);
         }
     }

@@ -14,6 +14,7 @@ namespace Application.TaskNotes.Abstractions
         Task<DomainMutation> EditAsync(Guid noteId, string newContent, byte[] rowVersion, CancellationToken ct = default);
         Task<DomainMutation> DeleteAsync(Guid noteId, byte[] rowVersion, CancellationToken ct = default);
 
-        Task<int> SaveChangesAsync(CancellationToken ct = default);
+        Task<int> SaveCreateChangesAsync(CancellationToken ct = default);
+        Task<DomainMutation> SaveUpdateChangesAsync(CancellationToken ct = default);
     }
 }

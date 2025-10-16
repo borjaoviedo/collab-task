@@ -101,7 +101,7 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(ITaskItemReadService));
                 services.AddScoped<ITaskItemReadService>(sp => new TaskItemReadService(sp.GetRequiredService<ITaskItemRepository>()));
                 services.RemoveAll(typeof(ITaskItemWriteService));
-                services.AddScoped<ITaskItemWriteService>(sp => new TaskItemWriteService(sp.GetRequiredService<ITaskItemRepository>()));
+                services.AddScoped<ITaskItemWriteService>(sp => new TaskItemWriteService(sp.GetRequiredService<ITaskItemRepository>(), sp.GetRequiredService<ITaskActivityWriteService>()));
 
                 // ===== Task Notes =====
                 services.RemoveAll(typeof(ITaskNoteRepository));
@@ -109,7 +109,7 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(ITaskNoteReadService));
                 services.AddScoped<ITaskNoteReadService>(sp => new TaskNoteReadService(sp.GetRequiredService<ITaskNoteRepository>()));
                 services.RemoveAll(typeof(ITaskNoteWriteService));
-                services.AddScoped<ITaskNoteWriteService>(sp => new TaskNoteWriteService(sp.GetRequiredService<ITaskNoteRepository>()));
+                services.AddScoped<ITaskNoteWriteService>(sp => new TaskNoteWriteService(sp.GetRequiredService<ITaskNoteRepository>(), sp.GetRequiredService<ITaskActivityWriteService>()));
 
                 // ===== Task Assignments =====
                 services.RemoveAll(typeof(ITaskAssignmentRepository));
@@ -117,7 +117,7 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(ITaskAssignmentReadService));
                 services.AddScoped<ITaskAssignmentReadService>(sp => new TaskAssignmentReadService(sp.GetRequiredService<ITaskAssignmentRepository>()));
                 services.RemoveAll(typeof(ITaskAssignmentWriteService));
-                services.AddScoped<ITaskAssignmentWriteService>(sp => new TaskAssignmentWriteService(sp.GetRequiredService<ITaskAssignmentRepository>()));
+                services.AddScoped<ITaskAssignmentWriteService>(sp => new TaskAssignmentWriteService(sp.GetRequiredService<ITaskAssignmentRepository>(), sp.GetRequiredService<ITaskActivityWriteService>()));
 
                 // ===== Task Activities =====
                 services.RemoveAll(typeof(ITaskActivityRepository));

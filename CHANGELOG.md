@@ -4,36 +4,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2025-10-16
 ### Added
 - **Backend / Kanban**
   - Domain entities: `Lane`, `Column`, `TaskItem`, `TaskNote`, `TaskAssignment`, `TaskActivity`.
   - Value Objects: `LaneName`, `ColumnName`, `TaskTitle`, `TaskDescription`, `NoteContent`, `ActivityPayload`.
-  - Enum `TaskActivityType` with events for create/edit/move/owner/co-owners/notes.
-  - EF Core configurations and repositories for all new entities.
-  - Minimal API endpoints:
-    - Lanes: create, list, rename, reorder, delete.
-    - Columns: create, list, rename, reorder, delete.
-    - Tasks: create, read, list, edit, move, delete.
-    - Assignments: set/unset owner; add/remove co-owners.
-    - Notes: add, edit, delete, list.
-    - Task activities: list and append.
-  - Concurrency tokens (`RowVersion`) and ordering (`Order`, `SortKey`) applied.
-  - Auditing fields on tasks including `CreatedAt`, `UpdatedAt`, optional `DueDate`.
+  - Enum `TaskActivityType` representing create/edit/move/owner/co-owner/note operations.
+  - EF Core configurations and repositories for all entities.
+  - Minimal API endpoints for full CRUD and move/reorder flows.
+  - **Automatic TaskActivity logging** from write services (`TaskItem`, `TaskAssignment`, `TaskNote`).
+  - Concurrency tokens (`RowVersion`) and ordering (`Order`, `SortKey`).
+  - Auditing fields on tasks (`CreatedAt`, `UpdatedAt`, optional `DueDate`).
 
 ### Changed
-- Authorization wired to existing project-role policies for all new endpoints.
-- DTOs, mappers, and validators aligned with nested routes and domain rules.
+- Authorization connected to project-role policies across all endpoints.
+- DTOs, mappers, and validators synchronized with domain invariants.
+- **Frontend removed**; project is now backend-only.
 
 ### Migrations
-- `ProjectBoardSchemaUpdate` introducing the full board schema.
-- `ProjectBoard_AssignmentsRowVersion_ProviderChecks` follow-up for row versions and provider-specific checks.
+- `ProjectBoardSchemaUpdate` introducing full board schema.
+- `ProjectBoard_AssignmentsRowVersion_ProviderChecks` refining row version handling.
 
 ### Testing
-- Added tests across Domain, Application, Infrastructure, and API covering core board flows.
+- Added and extended tests for all core board flows and automatic activity logging.
+- Coverage gate ≥60% maintained.
 
 ### Notes
-- Work in progress for v0.3.0. No release tag yet. Frontend Kanban UI will land before tagging v0.3.0.
+- Backend-only release.
+- Tag created: `v0.3.0`.
 
 ## [0.2.0] - 2025-10-08
 
@@ -105,3 +103,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Notes
 - First functional milestone with backend + frontend integration.
 - Tag created: `v0.1.0`.
+

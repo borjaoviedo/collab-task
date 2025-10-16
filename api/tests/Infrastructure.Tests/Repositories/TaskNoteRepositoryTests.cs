@@ -22,7 +22,7 @@ namespace Infrastructure.Tests.Repositories
             var noteContent = "Note content";
             var note = TaskNote.Create(tId, uId, NoteContent.Create(noteContent));
             await repo.AddAsync(note);
-            await repo.SaveChangesAsync();
+            await repo.SaveCreateChangesAsync();
 
             var fromDb = await db.TaskNotes.AsNoTracking().SingleAsync(n => n.Id == note.Id);
             fromDb.Content.Value.Should().Be(noteContent);

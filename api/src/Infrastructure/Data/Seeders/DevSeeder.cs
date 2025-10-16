@@ -1,4 +1,5 @@
 using Application.Common.Abstractions.Security;
+using Application.TaskActivities;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -87,9 +88,18 @@ namespace Infrastructure.Data.Seeders
             var a2Co = TaskAssignment.AssignCoOwner(tA2.Id, guest.Id);
             var tA2n1 = TaskNote.Create(tA2.Id, user.Id, NoteContent.Create("Start with unit tests matrix"));
 
-            var tA2a1 = TaskActivity.Create(tA2.Id, user.Id, TaskActivityType.OwnerChanged, Payload(new { owner = user.Id })); tA2a1.CreatedAt = Now();
-            var tA2a2 = TaskActivity.Create(tA2.Id, user.Id, TaskActivityType.CoOwnerChanged, Payload(new { coOwner = guest.Id })); tA2a2.CreatedAt = Now();
-            var tA2a3 = TaskActivity.Create(tA2.Id, user.Id, TaskActivityType.NoteAdded, Payload(new { by = user.Id, text = (string)NoteContent.Create("Start with unit tests matrix") })); tA2a3.CreatedAt = Now();
+            var tA2a1 = TaskActivity.Create(
+                tA2.Id, admin.Id, TaskActivityType.AssignmentCreated,
+                ActivityPayloadFactory.AssignmentCreated(user.Id, TaskRole.Owner)); tA2a1.CreatedAt = Now();
+
+            var tA2a2 = TaskActivity.Create(
+                tA2.Id, admin.Id, TaskActivityType.AssignmentCreated,
+                ActivityPayloadFactory.AssignmentCreated(guest.Id, TaskRole.CoOwner)); tA2a2.CreatedAt = Now();
+
+            var tA2a3 = TaskActivity.Create(
+                tA2.Id, user.Id, TaskActivityType.NoteAdded,
+                Payload(new { by = user.Id, text = (string)NoteContent.Create("Start with unit tests matrix") })
+            ); tA2a3.CreatedAt = Now();
 
             // -- Task A3: Flow To do -> Doing -> Review -> Done --------------------
             var tA3 = TaskItem.Create(
@@ -102,7 +112,9 @@ namespace Infrastructure.Data.Seeders
                 sortKey: NextKey());
 
             var a3Own = TaskAssignment.AssignOwner(tA3.Id, admin.Id);
-            var tA3a1 = TaskActivity.Create(tA3.Id, admin.Id, TaskActivityType.OwnerChanged, Payload(new { owner = admin.Id })); tA3a1.CreatedAt = Now();
+            var tA3a1 = TaskActivity.Create(
+                tA3.Id, admin.Id, TaskActivityType.AssignmentCreated,
+                ActivityPayloadFactory.AssignmentCreated(admin.Id, TaskRole.Owner)); tA3a1.CreatedAt = Now();
 
             tA3.Move(laneExec.Id, colDoing.Id, NextKey());
             var tA3a2 = TaskActivity.Create(tA3.Id, admin.Id, TaskActivityType.TaskMoved, Payload(new { from = "Todo", to = "Doing" })); tA3a2.CreatedAt = Now();
@@ -127,7 +139,9 @@ namespace Infrastructure.Data.Seeders
                 sortKey: NextKey());
 
             var a4Own = TaskAssignment.AssignOwner(tA4.Id, user.Id);
-            var tA4a1 = TaskActivity.Create(tA4.Id, user.Id, TaskActivityType.OwnerChanged, Payload(new { owner = user.Id })); tA4a1.CreatedAt = Now();
+            var tA4a1 = TaskActivity.Create(
+                tA4.Id, admin.Id, TaskActivityType.AssignmentCreated,
+                ActivityPayloadFactory.AssignmentCreated(user.Id, TaskRole.Owner)); tA4a1.CreatedAt = Now();
 
             tA4.Edit(TaskTitle.Create("Board UI & accessibility"), TaskDescription.Create("aria-live and keyboard DnD hints"), tA4.DueDate);
             var tA4a2 = TaskActivity.Create(tA4.Id, user.Id, TaskActivityType.TaskEdited, Payload(new { title = (string)TaskTitle.Create("Board UI & accessibility") })); tA4a2.CreatedAt = Now();
@@ -170,7 +184,9 @@ namespace Infrastructure.Data.Seeders
                 sortKey: 1000m);
 
             var b2Own = TaskAssignment.AssignOwner(tB2.Id, user.Id);
-            var b2Act = TaskActivity.Create(tB2.Id, user.Id, TaskActivityType.OwnerChanged, Payload(new { owner = user.Id })); b2Act.CreatedAt = Now();
+            var b2Act = TaskActivity.Create(
+                tB2.Id, admin.Id, TaskActivityType.AssignmentCreated,
+                ActivityPayloadFactory.AssignmentCreated(user.Id, TaskRole.Owner)); b2Act.CreatedAt = Now();
 
             db.TaskItems.AddRange(tB1, tB2);
             db.TaskAssignments.Add(b2Own);

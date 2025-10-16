@@ -1,3 +1,4 @@
+using Application.TaskActivities.Services;
 using Application.TaskItems.Services;
 using Domain.Enums;
 using FluentAssertions;
@@ -10,20 +11,25 @@ namespace Application.Tests.TaskItems.Services
     public sealed class TaskItemWriteServiceTests
     {
         [Fact]
-        public async Task CreateAsync_Returns_Created_And_Id()
+        public async Task CreateAsync_Returns_Created_And_Task()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskItemRepository(db);
-            var svc = new TaskItemWriteService(repo);
+
+            var taskRepo = new TaskItemRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskItemWriteService(taskRepo, actSvc);
 
             var taskTitle = "Task Title";
             var taskDescription = "Description";
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
-            var (res, id) = await svc.CreateAsync(pId, lId, cId, taskTitle, taskDescription);
+            var user = TestDataFactory.SeedUser(db);
+
+            var (res, task) = await svc.CreateAsync(pId, lId, cId, user.Id, taskTitle, taskDescription);
 
             res.Should().Be(DomainMutation.Created);
-            id.Should().NotBeNull();
+            task.Should().NotBeNull();
         }
 
         [Fact]
@@ -31,28 +37,32 @@ namespace Application.Tests.TaskItems.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskItemRepository(db);
-            var svc = new TaskItemWriteService(repo);
+
+            var taskRepo = new TaskItemRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskItemWriteService(taskRepo, actSvc);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
             var newTitle = "New Title";
-            var res = await svc.EditAsync(task.Id, newTitle, newDescription: null, newDueDate: null, task.RowVersion);
+            var res = await svc.EditAsync(task.Id, user.Id, newTitle, newDescription: null, newDueDate: null, task.RowVersion);
             res.Should().Be(DomainMutation.Updated);
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
             fromDb.Title.Value.Should().Be(newTitle);
 
             var newDescription = "New Description";
-            res = await svc.EditAsync(task.Id, newTitle: null, newDescription, newDueDate: null, fromDb.RowVersion);
+            res = await svc.EditAsync(task.Id, user.Id, newTitle: null, newDescription, newDueDate: null, fromDb.RowVersion);
             res.Should().Be(DomainMutation.Updated);
 
             fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
-            fromDb.Description.Value.Should().Be(newDescription);
+            fromDb.Description!.Value.Should().Be(newDescription);
 
             var newDueDate = DateTimeOffset.UtcNow.AddDays(10);
-            res = await svc.EditAsync(task.Id, newTitle: null, newDescription: null, newDueDate, fromDb.RowVersion);
+            res = await svc.EditAsync(task.Id, user.Id, newTitle: null, newDescription: null, newDueDate, fromDb.RowVersion);
             res.Should().Be(DomainMutation.Updated);
 
             fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
@@ -64,22 +74,26 @@ namespace Application.Tests.TaskItems.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskItemRepository(db);
-            var svc = new TaskItemWriteService(repo);
+
+            var taskRepo = new TaskItemRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskItemWriteService(taskRepo, actSvc);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var user = TestDataFactory.SeedUser(db);
 
             var sameTitle = "Title";
             var sameDescription = "Description";
             var sameDueDate = DateTimeOffset.UtcNow.AddDays(10);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId, sameTitle, sameDescription, sameDueDate);
 
-            var res = await svc.EditAsync(task.Id, sameTitle, sameDescription, sameDueDate, task.RowVersion);
+            var res = await svc.EditAsync(task.Id, user.Id, sameTitle, sameDescription, sameDueDate, task.RowVersion);
             res.Should().Be(DomainMutation.NoOp);
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
             fromDb.Title.Value.Should().Be(sameTitle);
-            fromDb.Description.Value.Should().Be(sameDescription);
+            fromDb.Description!.Value.Should().Be(sameDescription);
             fromDb.DueDate.Should().Be(sameDueDate);
         }
 
@@ -88,20 +102,24 @@ namespace Application.Tests.TaskItems.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskItemRepository(db);
-            var svc = new TaskItemWriteService(repo);
+
+            var taskRepo = new TaskItemRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskItemWriteService(taskRepo, actSvc);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var user = TestDataFactory.SeedUser(db);
 
-            var oldTile = "Old";
-            var newTile = "New";
-            var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId, oldTile);
+            var oldTitle = "Old";
+            var newTitle = "New";
+            var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId, oldTitle);
 
-            var res = await svc.EditAsync(task.Id, newTile, newDescription: null, newDueDate: null, [1, 2]);
+            var res = await svc.EditAsync(task.Id, user.Id, newTitle, newDescription: null, newDueDate: null, rowVersion: new byte[] { 1, 2 });
             res.Should().Be(DomainMutation.Conflict);
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
-            fromDb.Title.Value.Should().Be(oldTile);
+            fromDb.Title.Value.Should().Be(oldTitle);
         }
 
         [Fact]
@@ -109,16 +127,21 @@ namespace Application.Tests.TaskItems.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskItemRepository(db);
-            var svc = new TaskItemWriteService(repo);
+
+            var taskRepo = new TaskItemRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskItemWriteService(taskRepo, actSvc);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
             var differentLane = TestDataFactory.SeedLane(db, pId, order: 1);
             var differentColumn = TestDataFactory.SeedColumn(db, pId, differentLane.Id);
+            await db.SaveChangesAsync();
 
-            var res = await svc.MoveAsync(task.Id, differentColumn.Id, differentLane.Id, targetSortKey: 1, task.RowVersion);
+            var res = await svc.MoveAsync(task.Id, differentColumn.Id, differentLane.Id, user.Id, targetSortKey: 1, task.RowVersion);
             res.Should().Be(DomainMutation.Updated);
         }
 
@@ -127,15 +150,20 @@ namespace Application.Tests.TaskItems.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskItemRepository(db);
-            var svc = new TaskItemWriteService(repo);
+
+            var taskRepo = new TaskItemRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskItemWriteService(taskRepo, actSvc);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
             var differentColumn = TestDataFactory.SeedColumn(db, pId, lId, order: 1);
+            await db.SaveChangesAsync();
 
-            var res = await svc.MoveAsync(task.Id, differentColumn.Id, lId, targetSortKey: 1, task.RowVersion);
+            var res = await svc.MoveAsync(task.Id, differentColumn.Id, lId, user.Id, targetSortKey: 1, task.RowVersion);
             res.Should().Be(DomainMutation.Updated);
         }
 
@@ -144,13 +172,17 @@ namespace Application.Tests.TaskItems.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskItemRepository(db);
-            var svc = new TaskItemWriteService(repo);
+
+            var taskRepo = new TaskItemRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskItemWriteService(taskRepo, actSvc);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
-            var res = await svc.MoveAsync(task.Id, cId, lId, targetSortKey: 1, task.RowVersion);
+            var res = await svc.MoveAsync(task.Id, cId, lId, user.Id, targetSortKey: 1, task.RowVersion);
             res.Should().Be(DomainMutation.Updated);
         }
 
@@ -159,13 +191,17 @@ namespace Application.Tests.TaskItems.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskItemRepository(db);
-            var svc = new TaskItemWriteService(repo);
+
+            var taskRepo = new TaskItemRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskItemWriteService(taskRepo, actSvc);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
-            var res = await svc.MoveAsync(task.Id, cId, lId, targetSortKey: 0, task.RowVersion);
+            var res = await svc.MoveAsync(task.Id, cId, lId, user.Id, targetSortKey: 0, task.RowVersion);
             res.Should().Be(DomainMutation.NoOp);
         }
 
@@ -174,16 +210,20 @@ namespace Application.Tests.TaskItems.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskItemRepository(db);
-            var svc = new TaskItemWriteService(repo);
+
+            var taskRepo = new TaskItemRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskItemWriteService(taskRepo, actSvc);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
-            var res = await svc.MoveAsync(task.Id, Guid.NewGuid(), lId, targetSortKey: 0, task.RowVersion);
+            var res = await svc.MoveAsync(task.Id, user.Id, Guid.NewGuid(), lId, targetSortKey: 0, task.RowVersion);
             res.Should().Be(DomainMutation.NotFound);
 
-            res = await svc.MoveAsync(task.Id, cId, Guid.NewGuid(), targetSortKey: 0, task.RowVersion);
+            res = await svc.MoveAsync(task.Id, user.Id, cId, Guid.NewGuid(), targetSortKey: 0, task.RowVersion);
             res.Should().Be(DomainMutation.NotFound);
         }
 
@@ -192,13 +232,17 @@ namespace Application.Tests.TaskItems.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskItemRepository(db);
-            var svc = new TaskItemWriteService(repo);
+
+            var taskRepo = new TaskItemRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskItemWriteService(taskRepo, actSvc);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
-            var res = await svc.MoveAsync(task.Id, cId, lId, targetSortKey: 1, [1, 2]);
+            var res = await svc.MoveAsync(task.Id, cId, lId, user.Id, targetSortKey: 1, rowVersion: [1, 2]);
             res.Should().Be(DomainMutation.Conflict);
         }
 
@@ -207,28 +251,36 @@ namespace Application.Tests.TaskItems.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskItemRepository(db);
-            var svc = new TaskItemWriteService(repo);
+
+            var taskRepo = new TaskItemRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskItemWriteService(taskRepo, actSvc);
 
             var (firstProjectId, firstProjectLaneId, firstProjectColumnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, firstProjectId, firstProjectLaneId, firstProjectColumnId);
 
             var (_, secondProjectLaneId, secondProjectColumnId) = TestDataFactory.SeedLaneWithColumn(db);
+            await db.SaveChangesAsync();
 
-            var res = await svc.MoveAsync(task.Id, secondProjectColumnId, secondProjectLaneId, targetSortKey: 1, task.RowVersion);
+            var res = await svc.MoveAsync(task.Id, secondProjectColumnId, secondProjectLaneId, user.Id, targetSortKey: 1, task.RowVersion);
             res.Should().Be(DomainMutation.Conflict);
         }
-
 
         [Fact]
         public async Task DeleteAsync_Returns_Deleted_When_No_Problem()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskItemRepository(db);
-            var svc = new TaskItemWriteService(repo);
+
+            var taskRepo = new TaskItemRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskItemWriteService(taskRepo, actSvc);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
             var res = await svc.DeleteAsync(task.Id, task.RowVersion);
@@ -241,10 +293,14 @@ namespace Application.Tests.TaskItems.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskItemRepository(db);
-            var svc = new TaskItemWriteService(repo);
+
+            var taskRepo = new TaskItemRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskItemWriteService(taskRepo, actSvc);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
             var res = await svc.DeleteAsync(task.Id, [9, 9, 9, 9]);
@@ -257,13 +313,17 @@ namespace Application.Tests.TaskItems.Services
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
-            var repo = new TaskItemRepository(db);
-            var svc = new TaskItemWriteService(repo);
+
+            var taskRepo = new TaskItemRepository(db);
+            var actRepo = new TaskActivityRepository(db);
+            var actSvc = new TaskActivityWriteService(actRepo);
+            var svc = new TaskItemWriteService(taskRepo, actSvc);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
-            var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
+            TestDataFactory.SeedUser(db);
+            TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
-            var res = await svc.DeleteAsync(Guid.NewGuid(), task.RowVersion);
+            var res = await svc.DeleteAsync(Guid.NewGuid(), [1, 2, 3, 4]);
 
             res.Should().Be(DomainMutation.NotFound);
         }

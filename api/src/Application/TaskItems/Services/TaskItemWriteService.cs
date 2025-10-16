@@ -1,3 +1,6 @@
+using Application.Common.Changes;
+using Application.TaskActivities;
+using Application.TaskActivities.Abstractions;
 using Application.TaskItems.Abstractions;
 using Domain.Entities;
 using Domain.Enums;
@@ -5,9 +8,10 @@ using Domain.ValueObjects;
 
 namespace Application.TaskItems.Services
 {
-    public sealed class TaskItemWriteService(ITaskItemRepository repo) : ITaskItemWriteService
+    public sealed class TaskItemWriteService(
+        ITaskItemRepository repo, ITaskActivityWriteService activityWriter) : ITaskItemWriteService
     {
-        public async Task<(DomainMutation, TaskItem?)> CreateAsync(Guid projectId, Guid laneId, Guid columnId, string title,
+        public async Task<(DomainMutation, TaskItem?)> CreateAsync(Guid projectId, Guid laneId, Guid columnId, Guid userId, string title,
             string description, DateTimeOffset? dueDate = null, decimal? sortKey = null, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(title)) return (DomainMutation.NoOp, null);
@@ -17,19 +21,40 @@ namespace Application.TaskItems.Services
 
             var key = sortKey ?? await repo.GetNextSortKeyAsync(columnId, ct);
             var task = TaskItem.Create(columnId, laneId, projectId, TaskTitle.Create(title), TaskDescription.Create(description), dueDate, key);
-
             await repo.AddAsync(task, ct);
-            await repo.SaveChangesAsync(ct);
+
+            var payload = ActivityPayloadFactory.TaskCreated(title);
+            await activityWriter.CreateAsync(task.Id, userId, TaskActivityType.TaskCreated, payload, ct);
+
+            await repo.SaveCreateChangesAsync(ct);
             return (DomainMutation.Created, task);
         }
 
-        public Task<DomainMutation> EditAsync(Guid taskId, string? newTitle, string? newDescription, DateTimeOffset? newDueDate,
+        public async Task<DomainMutation> EditAsync(Guid taskId, Guid userId, string? newTitle, string? newDescription, DateTimeOffset? newDueDate,
             byte[] rowVersion, CancellationToken ct = default)
-            => repo.EditAsync(taskId, newTitle, newDescription, newDueDate, rowVersion, ct);
+        {
+            var (mutation, change) = await repo.EditAsync(taskId, newTitle, newDescription, newDueDate, rowVersion, ct);
+            if (mutation != DomainMutation.Updated) return mutation;
 
-        public Task<DomainMutation> MoveAsync(Guid taskId, Guid targetColumnId, Guid targetLaneId, decimal targetSortKey,
-            byte[] rowVersion, CancellationToken ct = default)
-            => repo.MoveAsync(taskId, targetColumnId, targetLaneId, targetSortKey, rowVersion, ct);
+            var c = (TaskItemEditedChange)change!;
+            var payload = ActivityPayloadFactory.TaskEdited(c.OldTitle, c.NewTitle, c.OldDescription, c.NewDescription);
+
+            await activityWriter.CreateAsync(taskId, userId, TaskActivityType.TaskEdited, payload, ct);
+            return await repo.SaveUpdateChangesAsync(ct);
+        }
+
+        public async Task<DomainMutation> MoveAsync(Guid taskId, Guid targetColumnId, Guid targetLaneId, Guid userId,
+            decimal targetSortKey, byte[] rowVersion, CancellationToken ct = default)
+        {
+            var (mutation, change) = await repo.MoveAsync(taskId, targetColumnId, targetLaneId, targetSortKey, rowVersion, ct);
+            if (mutation != DomainMutation.Updated) return mutation;
+
+            var c = (TaskItemMovedChange)change!;
+            var payload = ActivityPayloadFactory.TaskMoved(c.FromColumnId, c.ToColumnId);
+
+            await activityWriter.CreateAsync(taskId, userId, TaskActivityType.TaskMoved, payload, ct);
+            return await repo.SaveUpdateChangesAsync(ct);
+        }
 
         public Task<DomainMutation> DeleteAsync(Guid taskId, byte[] rowVersion, CancellationToken ct = default)
             => repo.DeleteAsync(taskId, rowVersion, ct);
