@@ -6,8 +6,9 @@ namespace Domain.Enums
         TaskCreated,
         TaskEdited,
         TaskMoved,
-        OwnerChanged,
-        CoOwnerChanged,
+        AssignmentCreated,
+        AssignmentRoleChanged,
+        AssignmentRemoved,
         NoteAdded,
         NoteEdited,
         NoteRemoved
