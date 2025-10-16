@@ -52,8 +52,9 @@ namespace Application.Tests.TaskActivities.Services
             var (_, _, _, taskId, _, actor1) = TestDataFactory.SeedFullBoard(db);
             var actor2 = TestDataFactory.SeedUser(db).Id;
 
-            TestDataFactory.SeedTaskActivity(db, taskId, actor1, TaskActivityType.OwnerChanged, "{\"a\":1}");
-            TestDataFactory.SeedTaskActivity(db, taskId, actor2, TaskActivityType.CoOwnerChanged, "{\"a\":2}");
+            // use new assignment-related types
+            TestDataFactory.SeedTaskActivity(db, taskId, actor1, TaskActivityType.AssignmentCreated, "{\"a\":1}");
+            TestDataFactory.SeedTaskActivity(db, taskId, actor2, TaskActivityType.AssignmentRoleChanged, "{\"a\":2}");
 
             var list1 = await svc.ListByActorAsync(actor1);
             list1.Should().OnlyContain(x => x.ActorId == actor1);
