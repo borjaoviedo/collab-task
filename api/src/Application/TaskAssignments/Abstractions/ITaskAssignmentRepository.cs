@@ -1,3 +1,4 @@
+using Application.Common.Changes;
 using Domain.Entities;
 using Domain.Enums;
 
@@ -14,10 +15,12 @@ namespace Application.TaskAssignments.Abstractions
         Task<int> CountByRoleAsync(Guid taskId, TaskRole role, CancellationToken ct = default);
 
         Task AddAsync(TaskAssignment assignment, CancellationToken ct = default);
-        Task<DomainMutation> AssignAsync(Guid taskId, Guid userId, TaskRole role, CancellationToken ct = default);
-        Task<DomainMutation> ChangeRoleAsync(Guid taskId, Guid userId, TaskRole newRole, byte[] rowVersion, CancellationToken ct = default);
+        Task<(DomainMutation Mutation, AssignmentChange? Change)> AssignAsync(Guid taskId, Guid userId, TaskRole role, CancellationToken ct = default);
+        Task<(DomainMutation Mutation, AssignmentChange? Change)> ChangeRoleAsync(Guid taskId, Guid userId, TaskRole newRole, byte[] rowVersion, CancellationToken ct = default);
         Task<DomainMutation> RemoveAsync(Guid taskId, Guid userId, byte[] rowVersion, CancellationToken ct = default);
 
-        Task<int> SaveChangesAsync(CancellationToken ct = default);
+        Task<int> SaveCreateChangesAsync(CancellationToken ct = default);
+        Task<DomainMutation> SaveUpdateChangesAsync(CancellationToken ct = default);
+        Task<DomainMutation> SaveRemoveChangesAsync(CancellationToken ct = default);
     }
 }

@@ -21,7 +21,7 @@ namespace Infrastructure.Tests.Repositories
 
             var assignment = TaskAssignment.Create(taskId, userId, TaskRole.Owner);
             await repo.AddAsync(assignment);
-            await repo.SaveChangesAsync();
+            await repo.SaveCreateChangesAsync();
 
             var fromDb = await db.TaskAssignments.AsNoTracking()
                 .SingleAsync(a => a.TaskId == taskId && a.UserId == userId);
@@ -96,13 +96,14 @@ namespace Infrastructure.Tests.Repositories
             var userB = TestDataFactory.SeedUser(db).Id;
             var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
 
-            var m1 = await repo.AssignAsync(taskId, userA, TaskRole.Owner);
+            var (m1, _) = await repo.AssignAsync(taskId, userA, TaskRole.Owner);
             m1.Should().Be(DomainMutation.Created);
+            await repo.SaveCreateChangesAsync();
 
-            var m2 = await repo.AssignAsync(taskId, userA, TaskRole.Owner);
+            var (m2, _) = await repo.AssignAsync(taskId, userA, TaskRole.Owner);
             m2.Should().Be(DomainMutation.NoOp);
 
-            var m3 = await repo.AssignAsync(taskId, userB, TaskRole.Owner);
+            var (m3, _) = await repo.AssignAsync(taskId, userB, TaskRole.Owner);
             m3.Should().Be(DomainMutation.Conflict);
         }
 
@@ -118,46 +119,52 @@ namespace Infrastructure.Tests.Repositories
             var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
 
             // NotFound
-            var nf = await repo.ChangeRoleAsync(taskId, userA, TaskRole.CoOwner, [1, 2]);
+            var (nf, _) = await repo.ChangeRoleAsync(taskId, userA, TaskRole.CoOwner, [1, 2]);
             nf.Should().Be(DomainMutation.NotFound);
 
             // Create A Owner
-            await repo.AssignAsync(taskId, userA, TaskRole.Owner);
+            var (cA, _) = await repo.AssignAsync(taskId, userA, TaskRole.Owner);
+            cA.Should().Be(DomainMutation.Created);
+            await repo.SaveCreateChangesAsync();
 
             // NoOp
-            var no = await repo.ChangeRoleAsync(taskId, userA, TaskRole.Owner, [1, 2]);
+            var (no, _) = await repo.ChangeRoleAsync(taskId, userA, TaskRole.Owner, [1, 2]);
             no.Should().Be(DomainMutation.NoOp);
 
             // Create B CoOwner
-            await repo.AssignAsync(taskId, userB, TaskRole.CoOwner);
+            var (cB, _) = await repo.AssignAsync(taskId, userB, TaskRole.CoOwner);
+            cB.Should().Be(DomainMutation.Created);
+            await repo.SaveCreateChangesAsync();
 
             // Conflict promoting B to Owner while A is Owner
-            var cf1 = await repo.ChangeRoleAsync(taskId, userB, TaskRole.Owner, [1, 2]);
+            var (cf1, _) = await repo.ChangeRoleAsync(taskId, userB, TaskRole.Owner, [1, 2]);
             cf1.Should().Be(DomainMutation.Conflict);
 
-            // Conflict on rowVersion mismatch
-            var cf2 = await repo.ChangeRoleAsync(taskId, userA, TaskRole.CoOwner, [1, 2]);
+            var (updStageWrongRv, _) = await repo.ChangeRoleAsync(taskId, userA, TaskRole.CoOwner, new byte[] { 1, 2 });
+            updStageWrongRv.Should().Be(DomainMutation.Updated);
+            var cf2 = await repo.SaveUpdateChangesAsync();
             cf2.Should().Be(DomainMutation.Conflict);
 
             db.ChangeTracker.Clear();
-            var rvUserA = await db.TaskAssignments
-                                    .AsNoTracking()
-                                    .Where(a => a.TaskId == taskId && a.UserId == userA)
-                                    .Select(a => a.RowVersion)
-                                    .SingleAsync();
+            var rvUserA = await db.TaskAssignments.AsNoTracking()
+                                .Where(a => a.TaskId == taskId && a.UserId == userA)
+                                .Select(a => a.RowVersion)
+                                .SingleAsync();
 
-            // Update A → CoOwner
-            var up = await repo.ChangeRoleAsync(taskId, userA, TaskRole.CoOwner, rvUserA);
+            var (updAStage, _) = await repo.ChangeRoleAsync(taskId, userA, TaskRole.CoOwner, rvUserA!);
+            updAStage.Should().Be(DomainMutation.Updated);
+            var up = await repo.SaveUpdateChangesAsync();
             up.Should().Be(DomainMutation.Updated);
 
-            var rvUserB = await db.TaskAssignments
-                                    .AsNoTracking()
-                                    .Where(a => a.TaskId == taskId && a.UserId == userB)
-                                    .Select(a => a.RowVersion)
-                                    .SingleAsync();
+            db.ChangeTracker.Clear();
+            var rvUserB = await db.TaskAssignments.AsNoTracking()
+                                .Where(a => a.TaskId == taskId && a.UserId == userB)
+                                .Select(a => a.RowVersion)
+                                .SingleAsync();
 
-            // Now promote B → Owner
-            var up2 = await repo.ChangeRoleAsync(taskId, userB, TaskRole.Owner, rvUserB);
+            var (updBStage, _) = await repo.ChangeRoleAsync(taskId, userB, TaskRole.Owner, rvUserB!);
+            updBStage.Should().Be(DomainMutation.Updated);
+            var up2 = await repo.SaveUpdateChangesAsync();
             up2.Should().Be(DomainMutation.Updated);
         }
 
@@ -177,10 +184,12 @@ namespace Infrastructure.Tests.Repositories
 
             var assignment = TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.Owner);
 
-            var con = await repo.RemoveAsync(taskId, userId, [1, 2]);
+            await repo.RemoveAsync(taskId, userId, [1, 2]);
+            var con = await repo.SaveUpdateChangesAsync();
             con.Should().Be(DomainMutation.Conflict);
 
-            var del = await repo.RemoveAsync(taskId, userId, assignment.RowVersion);
+            await repo.RemoveAsync(taskId, userId, assignment.RowVersion!);
+            var del = await repo.SaveRemoveChangesAsync();
             del.Should().Be(DomainMutation.Deleted);
 
             (await repo.ExistsAsync(taskId, userId)).Should().BeFalse();
