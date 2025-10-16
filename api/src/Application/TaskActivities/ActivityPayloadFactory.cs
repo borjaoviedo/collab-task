@@ -1,3 +1,4 @@
+using Domain.Enums;
 using Domain.ValueObjects;
 
 namespace Application.TaskActivities
@@ -19,11 +20,14 @@ namespace Application.TaskActivities
         public static ActivityPayload TaskMoved(Guid fromColumnId, Guid toColumnId) =>
             ActivityPayload.Create($$"""{"fromColumnId":"{{fromColumnId}}","toColumnId":"{{toColumnId}}"}""");
 
-        public static ActivityPayload OwnerChanged(Guid? oldOwnerId, Guid? newOwnerId) =>
-            ActivityPayload.Create($$"""{"oldOwnerId":{{ToJsonOrNull(oldOwnerId)}},"newOwnerId":{{ToJsonOrNull(newOwnerId)}}}""");
+        public static ActivityPayload AssignmentCreated(Guid userId, TaskRole role) =>
+            ActivityPayload.Create($$"""{"userId":"{{userId}}","role":"{{role}}"}""");
 
-        public static ActivityPayload CoOwnerChanged(Guid userId, string change) =>
-            ActivityPayload.Create($$"""{"userId":"{{userId}}","change":"{{change}}"}""");
+        public static ActivityPayload AssignmentRoleChanged(Guid userId, TaskRole oldRole, TaskRole newRole) =>
+    ActivityPayload.Create($$"""{"userId":"{{userId}}","oldRole":"{{oldRole}}","newRole":"{{newRole}}"}""");
+
+        public static ActivityPayload AssignmentRemoved(Guid userId) =>
+            ActivityPayload.Create($$"""{"userId":"{{userId}}"}""");
 
         public static ActivityPayload NoteAdded(Guid noteId) =>
             ActivityPayload.Create($$"""{"noteId":"{{noteId}}"}""");
@@ -36,6 +40,5 @@ namespace Application.TaskActivities
 
         private static string JsonEscape(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
         private static string ToJsonOrNull(string? s) => s is null ? "null" : $"\"{JsonEscape(s)}\"";
-        private static string ToJsonOrNull(Guid? g) => g is null ? "null" : $"\"{g}\"";
     }
 }
