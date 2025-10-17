@@ -17,8 +17,13 @@ namespace Application.TaskActivities
          }
         """);
 
-        public static ActivityPayload TaskMoved(Guid fromColumnId, Guid toColumnId) =>
-            ActivityPayload.Create($$"""{"fromColumnId":"{{fromColumnId}}","toColumnId":"{{toColumnId}}"}""");
+        public static ActivityPayload TaskMoved(Guid fromLaneId, Guid fromColumnId, Guid toLaneId, Guid toColumnId) =>
+            ActivityPayload.Create($$"""
+        {
+            "from": { "laneId": "{{fromLaneId}}", "columnId": "{{fromColumnId}}" },
+            "to":   { "laneId": "{{toLaneId}}",   "columnId": "{{toColumnId}}" }
+        }
+        """);
 
         public static ActivityPayload AssignmentCreated(Guid userId, TaskRole role) =>
             ActivityPayload.Create($$"""{"userId":"{{userId}}","role":"{{role}}"}""");
