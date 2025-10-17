@@ -17,6 +17,7 @@ using Application.TaskNotes.Services;
 using Application.Users.Abstractions;
 using Application.Users.Services;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection.Metadata;
 
 namespace Application
 {
@@ -43,6 +44,9 @@ namespace Application
                 .AddScoped<ITaskAssignmentReadService, TaskAssignmentReadService>()
                 .AddScoped<ITaskActivityWriteService, TaskActivityWriteService>()
                 .AddScoped<ITaskActivityReadService, TaskActivityReadService>();
+
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly));
+
             return services;
         }
     }
