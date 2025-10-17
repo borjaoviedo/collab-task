@@ -33,9 +33,7 @@ namespace Application.Tests.Realtime
             var payload = new TaskNoteCreatedPayload(
                 TaskId: Guid.NewGuid(),
                 NoteId: Guid.NewGuid(),
-                Content: "Note content",
-                AuthorId: Guid.NewGuid(),
-                CreatedAt: DateTimeOffset.UtcNow);
+                Content: "Note content");
             var evt = new TaskNoteCreatedEvent(projectId, payload);
 
             var json = JsonSerializer.Serialize(evt, new JsonSerializerOptions
