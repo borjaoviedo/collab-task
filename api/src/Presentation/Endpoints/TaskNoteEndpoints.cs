@@ -75,7 +75,7 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var authorId = (Guid)currentUserSvc.UserId!;
-                var (result, note) = await taskNoteWriteSvc.CreateAsync(taskId, authorId, dto.Content, ct);
+                var (result, note) = await taskNoteWriteSvc.CreateAsync(projectId, taskId, authorId, dto.Content, ct);
                 if (result != DomainMutation.Created) return result.ToHttp();
 
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(note!.RowVersion)}\"";
