@@ -84,5 +84,28 @@ namespace Application.Tests.TaskItems.Realtime
                 It.IsAny<CancellationToken>()),
             Times.Once);
         }
+
+        [Fact]
+        public async Task DeletedHandler_calls_notifier_with_TaskDeletedEvent()
+        {
+            // Arrange
+            var notifier = new Mock<IBoardNotifier>();
+            var handler = new TaskItemChangedHandler(notifier.Object);
+            var projectId = Guid.NewGuid();
+            var payload = new TaskItemDeletedPayload(Guid.NewGuid());
+
+            // Act
+            await handler.Handle(new TaskItemDeleted(projectId, payload), CancellationToken.None);
+
+            // Assert
+            notifier.Verify(n => n.NotifyAsync(
+                projectId,
+                It.Is<BoardEvent<TaskItemDeletedPayload>>(e =>
+                    e.Type == "task.deleted" &&
+                    e.ProjectId == projectId &&
+                    e.Payload == payload),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        }
     }
 }
