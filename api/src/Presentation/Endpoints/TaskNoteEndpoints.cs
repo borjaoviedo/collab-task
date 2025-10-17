@@ -110,7 +110,7 @@ namespace Api.Endpoints
 
                 var userId = (Guid)currentUserSvc.UserId!;
 
-                var result = await taskNoteWriteSvc.EditAsync(noteId, userId, dto.NewContent, rowVersion, ct);
+                var result = await taskNoteWriteSvc.EditAsync(projectId, taskId, noteId, userId, dto.NewContent, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var edited = await taskNoteReadSvc.GetAsync(noteId, ct);
@@ -148,7 +148,7 @@ namespace Api.Endpoints
 
                 var userId = (Guid)currentUserSvc.UserId!;
 
-                var result = await taskNoteWriteSvc.DeleteAsync(noteId, userId, rowVersion, ct);
+                var result = await taskNoteWriteSvc.DeleteAsync(projectId, noteId, userId, rowVersion, ct);
                 return result.ToHttp(http);
             })
             .RequireAuthorization(Policies.ProjectMember)

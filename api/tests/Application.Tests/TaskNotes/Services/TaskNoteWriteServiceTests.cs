@@ -33,12 +33,11 @@ namespace Application.Tests.TaskNotes.Services
             note.Should().NotBeNull();
 
             mediator.Verify(m => m.Publish(
-                It.Is<TaskNoteItemCreated>(n =>
+                It.Is<TaskNoteCreated>(n =>
                     n.ProjectId == pId &&
                     n.Payload.TaskId == tId &&
                     n.Payload.NoteId == note.Id &&
-                    n.Payload.Content == "content" &&
-                    n.Payload.AuthorId == uId),
+                    n.Payload.Content == "content"),
                 It.IsAny<CancellationToken>()),
                 Times.Once);
         }
@@ -55,11 +54,11 @@ namespace Application.Tests.TaskNotes.Services
             var mediator = new Mock<IMediator>();
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
 
-            var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
+            var (pId, _, _, tId, nId, _) = TestDataFactory.SeedFullBoard(db);
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
             var user = TestDataFactory.SeedUser(db);
 
-            var res = await svc.EditAsync(nId, user.Id, "New Content", noteFromDb.RowVersion);
+            var res = await svc.EditAsync(pId, tId, nId, user.Id, "New Content", noteFromDb.RowVersion);
             res.Should().Be(DomainMutation.Updated);
 
             var after = await db.TaskNotes.AsNoTracking().SingleAsync();
@@ -81,11 +80,11 @@ namespace Application.Tests.TaskNotes.Services
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
 
             var original = "Note content";
-            var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: original);
+            var (pId, _, _, tId, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: original);
             var note = await db.TaskNotes.AsNoTracking().SingleAsync();
             var user = TestDataFactory.SeedUser(db);
 
-            var res = await svc.EditAsync(nId, user.Id, original, note.RowVersion);
+            var res = await svc.EditAsync(pId, tId, nId, user.Id, original, note.RowVersion);
             res.Should().Be(DomainMutation.NoOp);
 
             mediator.Verify(m => m.Publish(It.IsAny<INotification>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -104,10 +103,10 @@ namespace Application.Tests.TaskNotes.Services
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
 
             var original = "Note content";
-            var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: original);
+            var (pId, _, _, tId, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: original);
             var user = TestDataFactory.SeedUser(db);
 
-            var res = await svc.EditAsync(nId, user.Id, "New Content", [1, 2]);
+            var res = await svc.EditAsync(pId, tId, nId, user.Id, "New Content", [1, 2]);
             res.Should().Be(DomainMutation.Conflict);
 
             var note = await db.TaskNotes.AsNoTracking().SingleAsync();
@@ -128,11 +127,11 @@ namespace Application.Tests.TaskNotes.Services
             var mediator = new Mock<IMediator>();
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
 
-            var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
+            var (pId, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
             var note = await db.TaskNotes.AsNoTracking().SingleAsync();
             var user = TestDataFactory.SeedUser(db);
 
-            var res = await svc.DeleteAsync(nId, user.Id, note.RowVersion);
+            var res = await svc.DeleteAsync(pId, nId, user.Id, note.RowVersion);
             res.Should().Be(DomainMutation.Deleted);
 
             mediator.Verify(m => m.Publish(It.IsAny<INotification>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -150,7 +149,7 @@ namespace Application.Tests.TaskNotes.Services
             var mediator = new Mock<IMediator>();
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
 
-            var res = await svc.DeleteAsync(Guid.NewGuid(), Guid.NewGuid(),[1, 2]);
+            var res = await svc.DeleteAsync(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),[1, 2]);
             res.Should().Be(DomainMutation.NotFound);
 
             mediator.Verify(m => m.Publish(It.IsAny<INotification>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -168,10 +167,10 @@ namespace Application.Tests.TaskNotes.Services
             var mediator = new Mock<IMediator>();
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
 
-            var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
+            var (pId, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
             var user = TestDataFactory.SeedUser(db);
 
-            var res = await svc.DeleteAsync(nId, user.Id, [1, 2]);
+            var res = await svc.DeleteAsync(pId, nId, user.Id, [1, 2]);
             res.Should().Be(DomainMutation.Conflict);
 
             mediator.Verify(m => m.Publish(It.IsAny<INotification>(), It.IsAny<CancellationToken>()), Times.Never);
