@@ -308,7 +308,7 @@ namespace Application.Tests.TaskItems.Services
         }
 
         [Fact]
-        public async Task DeleteAsync_Returns_Deleted_When_No_Problem()
+        public async Task DeleteAsync_Returns_Deleted_And_Publishes_TaskDeleted()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -316,16 +316,29 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo);
-            var mediator = new Mock<IMediator>();
+            var mediator = new Mock<IMediator>(MockBehavior.Strict);
+
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
+            mediator
+                .Setup(m => m.Publish(
+                    It.Is<TaskItemDeleted>(n => n.ProjectId == pId && n.Payload.TaskId == task.Id),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
             var res = await svc.DeleteAsync(pId, task.Id, task.RowVersion);
 
             res.Should().Be(DomainMutation.Deleted);
+
+            mediator.Verify(m => m.Publish(
+                It.Is<TaskItemDeleted>(n => n.ProjectId == pId && n.Payload.TaskId == task.Id),
+                It.IsAny<CancellationToken>()), Times.Once);
+
             mediator.VerifyNoOtherCalls();
         }
 
