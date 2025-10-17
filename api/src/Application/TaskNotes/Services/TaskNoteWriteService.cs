@@ -24,41 +24,50 @@ namespace Application.TaskNotes.Services
             await activityWriter.CreateAsync(taskId, authorId, TaskActivityType.NoteAdded, payload, ct);
 
             await repo.SaveCreateChangesAsync(ct);
-
             await mediator.Publish(
-                new TaskNoteItemCreated(
-                    projectId,
-                    new TaskNoteCreatedPayload(taskId, note.Id, note.Content.Value, authorId, note.CreatedAt)
-                ),
-                ct);
+                new TaskNoteCreated(
+                    projectId, new TaskNoteCreatedPayload(taskId, note.Id, note.Content.Value)
+                    ), ct);
+
             return (DomainMutation.Created, note);
         }
 
         public async Task<DomainMutation> EditAsync(
-            Guid noteId, Guid userId, string content, byte[] rowVersion, CancellationToken ct = default)
+            Guid projectId, Guid taskId, Guid noteId, Guid userId, string content, byte[] rowVersion, CancellationToken ct = default)
         {
             var mutation = await repo.EditAsync(noteId, content, rowVersion, ct);
             if (mutation != DomainMutation.Updated) return mutation;
 
-            var note = await repo.GetByIdAsync(noteId, ct);
             var payload = ActivityPayloadFactory.NoteEdited(noteId);
+            await activityWriter.CreateAsync(taskId, userId, TaskActivityType.NoteEdited, payload, ct);
 
-            await activityWriter.CreateAsync(note!.TaskId, userId, TaskActivityType.NoteEdited, payload, ct);
-            return await repo.SaveUpdateChangesAsync(ct);
+            var saved = await repo.SaveUpdateChangesAsync(ct);
+            if (saved == DomainMutation.Updated)
+            {
+                await mediator.Publish(new TaskNoteUpdated(projectId, new TaskNoteUpdatedPayload(noteId, content)), ct);
+            }
+
+            return saved;
         }
 
-        public async Task<DomainMutation> DeleteAsync(Guid noteId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> DeleteAsync(Guid projectId, Guid noteId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
         {
             var note = await repo.GetByIdAsync(noteId, ct);
+            if (note is null) return DomainMutation.NotFound;
 
             var mutation = await repo.DeleteAsync(noteId, rowVersion, ct);
             if (mutation != DomainMutation.Deleted) return mutation;
             
             var payload = ActivityPayloadFactory.NoteRemoved(noteId);
-            await activityWriter.CreateAsync(note!.TaskId, userId, TaskActivityType.NoteRemoved, payload, ct);
-            await repo.SaveCreateChangesAsync(ct);
+            await activityWriter.CreateAsync(note.TaskId, userId, TaskActivityType.NoteRemoved, payload, ct);
 
-            return DomainMutation.Deleted;
+            var saved = await repo.SaveDeleteChangesAsync(ct);
+            if (saved == DomainMutation.Deleted)
+            {
+                await mediator.Publish(new TaskNoteDeleted(projectId, new TaskNoteDeletedPayload(note.Id)), ct);
+            }
+
+            return saved;
         }
     }
 }
