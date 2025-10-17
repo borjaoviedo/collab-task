@@ -4,8 +4,22 @@ Collaborative task management backend built with **ASP.NET Core** under **Clean 
 
 ---
 
-## Version v0.3.0
-Kanban backend fully implemented and stable.
+## Version v0.4.0
+Backend now includes **real-time collaboration** via SignalR.
+
+### Realtime System
+- Integrated **SignalR** hub: `/hubs/board`.
+- Groups: `project:{projectId}` for scoped event delivery.
+- Service: `BoardNotifier` for broadcasting events to connected clients.
+- Events implemented:
+  - **TaskItem** → `task.created`, `task.updated`, `task.moved`, `task.deleted`
+  - **TaskAssignment** → `assignment.created`, `assignment.updated`, `assignment.removed`
+  - **TaskNote** → `note.created`, `note.updated`, `note.deleted`
+- All events follow the schema:
+  ```json
+  { "type": "note.updated", "projectId": "guid", "payload": { ... } }
+  ```
+- Tested serialization, handler logic, and hub broadcasting for all event types.
 
 ### Domain
 - Entities: `Lane`, `Column`, `TaskItem`, `TaskNote`, `TaskAssignment`, `TaskActivity`.
@@ -16,37 +30,36 @@ Kanban backend fully implemented and stable.
 
 ### Application
 - Read/Write services for lanes, columns, tasks, notes, assignments, and activities.
-- Business rules: single owner per task, consistency among project/lane/column relationships.
-- **Automatic TaskActivity logging** integrated in write services (TaskItem, TaskAssignment, TaskNote).
-- DTOs, mappers, and validators for create/rename/reorder/move/edit flows.
+- Business rules: single owner per task, project consistency, validation on moves and deletions.
+- **Realtime publishing** integrated using Mediator notifications.
+- **Automatic TaskActivity logging** preserved from v0.3.0.
+- DTOs, mappers, and validators for create/rename/reorder/move/edit/delete flows.
 
 ### Infrastructure
-- EF Core configurations and migrations:
-  - `ProjectBoardSchemaUpdate` (initial Kanban schema).
-  - `ProjectBoard_AssignmentsRowVersion_ProviderChecks` (row version + provider fixes).
-- Repositories for all entities.
-- Database integrity validated for every board entity linkage.
+- EF Core configurations and migrations maintained from v0.3.0.
+- Added SignalR services in DI container.
+- `WebApplicationExtensions.MapApiLayer()` registers `/hubs/board`.
 
 ### API (Minimal APIs)
 - Nested endpoints under `/projects/{projectId}/lanes/{laneId}/columns/{columnId}`.
-- Full CRUD and business flows for lanes, columns, tasks, assignments, notes, and activities.
-- Authorization based on project role policies.
+- CRUD + realtime publishing for tasks, assignments, and notes.
+- Authorization based on project role policies (`ProjectReader`, `ProjectMember`, etc.).
 
 ### Testing
-- Extensive tests across **Domain**, **Application**, **Infrastructure**, and **API**.
-- Activity autolog verified through integration tests.
-- Coverage ≥60% enforced via CI.
+- Unit and integration tests for all event serialization and handler pipelines.
+- `BoardNotifierTests` verifying SignalR broadcasting.
+- Coverage ≥60% enforced.
 
 ---
 
 ## Backend Overview
 - **Domain**: Users, Projects, Members, and full Kanban entities.
-- **Application**: Services applying validation, rules, and persistence orchestration.
-- **Infrastructure**: EF Core persistence, repositories, migrations, and Testcontainers.
-- **API**: Minimal API routes grouped per feature.
+- **Application**: Validation, business rules, persistence orchestration, realtime publication.
+- **Infrastructure**: EF Core persistence, repositories, migrations, SignalR integration.
+- **API**: Minimal API routes grouped per feature and `/hubs/board` for realtime.
 
 ## Frontend
-Frontend removed since v0.3.0. The project is now backend-only.
+Frontend removed since v0.3.0. The project is backend-only.
 
 ## Project Structure
 ```

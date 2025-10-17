@@ -4,7 +4,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-10-17
+### Added
+- **Backend / Realtime**
+  - Integrated **SignalR** for real-time board updates.
+  - Added **BoardHub** with group management per `project:{id}`.
+  - Introduced **BoardNotifier** service for broadcasting events to clients.
+  - Implemented new realtime event models and handlers:
+    - `TaskItemCreated`, `TaskItemUpdated`, `TaskItemMoved`, `TaskItemDeleted`
+    - `TaskAssignmentCreated`, `TaskAssignmentUpdated`, `TaskAssignmentRemoved`
+    - `TaskNoteCreated`, `TaskNoteUpdated`, `TaskNoteDeleted`
+  - Added dedicated handlers: `TaskItemChangedHandler`, `TaskNoteChangedHandler`, and `TaskAssignmentChangedHandler`.
+  - All events share a unified contract `{ type, projectId, payload }` for consistent serialization.
+  - `/hubs/board` endpoint exposed through SignalR integration in the API layer.
+  - Extended testing suite:
+    - `BoardEventSerializationTests`, `BoardNotifierTests`, and all handler tests (`TaskItem`, `TaskNote`, `TaskAssignment`).
+
+### Changed
+- **Application / Write Services**
+  - Refactored all board write services to integrate **Mediator-based event publication** after persistence commits:
+    - **TaskItemWriteService** → emits `TaskItemCreated`, `TaskItemUpdated`, `TaskItemMoved`, `TaskItemDeleted`.
+    - **TaskNoteWriteService** → emits `TaskNoteCreated`, `TaskNoteUpdated`, `TaskNoteDeleted`.
+    - **TaskAssignmentWriteService** → emits `TaskAssignmentCreated`, `TaskAssignmentUpdated`, `TaskAssignmentRemoved`.
+  - Method signatures now include `projectId` to ensure precise event scoping.
+- **API / Composition Root**
+  - Added `.AddSignalR()` registration and configured dependency injection for realtime components.
+  - `WebApplicationExtensions.MapApiLayer()` exposes the `/hubs/board` SignalR endpoint.
+- **Testing & CI**
+  - Coverage gate **raised from 60% to 75%**, maintained across all test suites.
+
+### Notes
+- This version completes the realtime backend milestone.
+- Next phase: refactors, documentation, and optimization before public release (`v1.0.0`).
+
 ## [0.3.0] - 2025-10-16
+
 ### Added
 - **Backend / Kanban**
   - Domain entities: `Lane`, `Column`, `TaskItem`, `TaskNote`, `TaskAssignment`, `TaskActivity`.
@@ -103,4 +137,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Notes
 - First functional milestone with backend + frontend integration.
 - Tag created: `v0.1.0`.
-
