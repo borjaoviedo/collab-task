@@ -31,7 +31,7 @@ namespace Application.TaskItems.Services
             await repo.SaveCreateChangesAsync(ct);
             await mediator.Publish(
                 new TaskItemCreated(task.ProjectId,
-                    new TaskCreatedPayload(task.Id, task.ColumnId, task.LaneId, task.Title.Value, task.Description.Value, task.SortKey)),
+                    new TaskItemCreatedPayload(task.Id, task.ColumnId, task.LaneId, task.Title.Value, task.Description.Value, task.SortKey)),
                 ct);
 
             return (DomainMutation.Created, task);
@@ -54,7 +54,7 @@ namespace Application.TaskItems.Services
                 var task = await repo.GetByIdAsync(taskId, ct);
                 await mediator.Publish(
                     new TaskItemUpdated(task!.ProjectId,
-                        new TaskUpdatedPayload(taskId, c.NewTitle, c.NewDescription, newDueDate)),
+                        new TaskItemUpdatedPayload(taskId, c.NewTitle, c.NewDescription, newDueDate)),
                     ct);
             }
 
@@ -78,7 +78,7 @@ namespace Application.TaskItems.Services
                 var task = await repo.GetByIdAsync(taskId, ct);
                 await mediator.Publish(
                     new TaskItemMoved(task!.ProjectId,
-                        new TaskMovedPayload(taskId, c.FromLaneId, c.FromColumnId, c.ToLaneId, c.ToColumnId, targetSortKey)),
+                        new TaskItemMovedPayload(taskId, c.FromLaneId, c.FromColumnId, c.ToLaneId, c.ToColumnId, targetSortKey)),
                     ct);
             }
             return result;

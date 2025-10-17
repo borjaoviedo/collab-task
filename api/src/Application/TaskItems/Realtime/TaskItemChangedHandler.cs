@@ -8,8 +8,11 @@ namespace Application.TaskItems.Realtime
     INotificationHandler<TaskItemUpdated>,
     INotificationHandler<TaskItemMoved>
     {
-        public Task Handle(TaskItemCreated n, CancellationToken cancellationToken) => notifier.NotifyAsync(n.ProjectId, new TaskCreatedEvent(n.ProjectId, n.Payload), cancellationToken);
-        public Task Handle(TaskItemUpdated n, CancellationToken cancellationToken) => notifier.NotifyAsync(n.ProjectId, new TaskUpdatedEvent(n.ProjectId, n.Payload), cancellationToken);
-        public Task Handle(TaskItemMoved n, CancellationToken cancellationToken) => notifier.NotifyAsync(n.ProjectId, new TaskMovedEvent(n.ProjectId, n.Payload), cancellationToken);
+        public Task Handle(TaskItemCreated n, CancellationToken cancellationToken)
+            => notifier.NotifyAsync(n.ProjectId, new TaskItemCreatedEvent(n.ProjectId, n.Payload), cancellationToken);
+        public Task Handle(TaskItemUpdated n, CancellationToken cancellationToken)
+            => notifier.NotifyAsync(n.ProjectId, new TaskItemUpdatedEvent(n.ProjectId, n.Payload), cancellationToken);
+        public Task Handle(TaskItemMoved n, CancellationToken cancellationToken)
+            => notifier.NotifyAsync(n.ProjectId, new TaskItemMovedEvent(n.ProjectId, n.Payload), cancellationToken);
     }
 }

@@ -15,8 +15,8 @@ namespace Api.Tests.Realtime
             var hubContext = new Mock<IHubContext<BoardHub>>();
 
             var projectId = Guid.NewGuid();
-            var payload = new TaskCreatedPayload(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Title", "Desc", 1m);
-            var evt = new TaskCreatedEvent(projectId, payload);
+            var payload = new TaskItemCreatedPayload(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Title", "Desc", 1m);
+            var evt = new TaskItemCreatedEvent(projectId, payload);
 
             hubClients.Setup(c => c.Group($"project:{projectId}")).Returns(groupClient.Object);
             hubContext.SetupGet(h => h.Clients).Returns(hubClients.Object);

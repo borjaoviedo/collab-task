@@ -9,8 +9,8 @@ namespace Application.Tests.Realtime
         public void TaskCreatedEvent_serializes_flat_payload()
         {
             var projectId = Guid.NewGuid();
-            var payload = new TaskCreatedPayload(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Title", "Description", 1m);
-            var evt = new TaskCreatedEvent(projectId, payload);
+            var payload = new TaskItemCreatedPayload(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Title", "Description", 1m);
+            var evt = new TaskItemCreatedEvent(projectId, payload);
 
             var json = JsonSerializer.Serialize(evt, new JsonSerializerOptions
             {

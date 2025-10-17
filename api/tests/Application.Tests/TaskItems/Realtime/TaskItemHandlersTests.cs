@@ -13,7 +13,7 @@ namespace Application.Tests.TaskItems.Realtime
             var notifier = new Mock<IBoardNotifier>();
             var handler = new TaskItemChangedHandler(notifier.Object);
             var projectId = Guid.NewGuid();
-            var payload = new TaskCreatedPayload(
+            var payload = new TaskItemCreatedPayload(
                 TaskId: Guid.NewGuid(),
                 ColumnId: Guid.NewGuid(),
                 LaneId: Guid.NewGuid(),
@@ -27,7 +27,7 @@ namespace Application.Tests.TaskItems.Realtime
             // Assert
             notifier.Verify(n => n.NotifyAsync(
                 projectId,
-                It.Is<BoardEvent<TaskCreatedPayload>>(e =>
+                It.Is<BoardEvent<TaskItemCreatedPayload>>(e =>
                     e.Type == "task.created" &&
                     e.ProjectId == projectId &&
                     e.Payload == payload),
@@ -41,7 +41,7 @@ namespace Application.Tests.TaskItems.Realtime
             var notifier = new Mock<IBoardNotifier>();
             var handler = new TaskItemChangedHandler(notifier.Object);
             var projectId = Guid.NewGuid();
-            var payload = new TaskUpdatedPayload(
+            var payload = new TaskItemUpdatedPayload(
                 TaskId: Guid.NewGuid(),
                 NewTitle: "New",
                 NewDescription: "NewDesc",
@@ -51,7 +51,7 @@ namespace Application.Tests.TaskItems.Realtime
 
             notifier.Verify(n => n.NotifyAsync(
                 projectId,
-                It.Is<BoardEvent<TaskUpdatedPayload>>(e =>
+                It.Is<BoardEvent<TaskItemUpdatedPayload>>(e =>
                     e.Type == "task.updated" &&
                     e.ProjectId == projectId &&
                     e.Payload == payload),
@@ -65,7 +65,7 @@ namespace Application.Tests.TaskItems.Realtime
             var notifier = new Mock<IBoardNotifier>();
             var handler = new TaskItemChangedHandler(notifier.Object);
             var projectId = Guid.NewGuid();
-            var payload = new TaskMovedPayload(
+            var payload = new TaskItemMovedPayload(
                 TaskId: Guid.NewGuid(),
                 FromLaneId: Guid.NewGuid(),
                 FromColumnId: Guid.NewGuid(),
@@ -77,7 +77,7 @@ namespace Application.Tests.TaskItems.Realtime
 
             notifier.Verify(n => n.NotifyAsync(
                 projectId,
-                It.Is<BoardEvent<TaskMovedPayload>>(e =>
+                It.Is<BoardEvent<TaskItemMovedPayload>>(e =>
                     e.Type == "task.moved" &&
                     e.ProjectId == projectId &&
                     e.Payload == payload),
