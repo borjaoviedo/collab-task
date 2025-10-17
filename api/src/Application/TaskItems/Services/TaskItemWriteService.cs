@@ -1,9 +1,8 @@
 using Application.Common.Changes;
-using Application.Realtime;
 using Application.TaskActivities;
 using Application.TaskActivities.Abstractions;
 using Application.TaskItems.Abstractions;
-using Application.TaskItems.Handlers;
+using Application.TaskItems.Realtime;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -54,8 +53,8 @@ namespace Application.TaskItems.Services
             {
                 var task = await repo.GetByIdAsync(taskId, ct);
                 await mediator.Publish(
-                    new TaskItemEdited(task!.ProjectId,
-                        new TaskEditedPayload(taskId, c.NewTitle, c.NewDescription, newDueDate)),
+                    new TaskItemUpdated(task!.ProjectId,
+                        new TaskUpdatedPayload(taskId, c.NewTitle, c.NewDescription, newDueDate)),
                     ct);
             }
 

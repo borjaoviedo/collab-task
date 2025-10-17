@@ -1,5 +1,5 @@
 using Api.Realtime;
-using Application.Realtime;
+using Application.TaskItems.Realtime;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 
