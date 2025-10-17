@@ -11,6 +11,7 @@ var app = builder.Build();
 
 app.UseApiLayer();
 app.MapApiEndpoints();
+app.MapApiLayer();
 
 app.Run();
 
