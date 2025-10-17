@@ -19,6 +19,7 @@ using Application.TaskNotes.Services;
 using Application.Users.Abstractions;
 using Application.Users.Services;
 using Infrastructure.Security;
+using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -101,7 +102,8 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(ITaskItemReadService));
                 services.AddScoped<ITaskItemReadService>(sp => new TaskItemReadService(sp.GetRequiredService<ITaskItemRepository>()));
                 services.RemoveAll(typeof(ITaskItemWriteService));
-                services.AddScoped<ITaskItemWriteService>(sp => new TaskItemWriteService(sp.GetRequiredService<ITaskItemRepository>(), sp.GetRequiredService<ITaskActivityWriteService>()));
+                services.AddScoped<ITaskItemWriteService>(sp
+                    => new TaskItemWriteService(sp.GetRequiredService<ITaskItemRepository>(), sp.GetRequiredService<ITaskActivityWriteService>(), sp.GetRequiredService<IMediator>()));
 
                 // ===== Task Notes =====
                 services.RemoveAll(typeof(ITaskNoteRepository));
@@ -109,7 +111,8 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(ITaskNoteReadService));
                 services.AddScoped<ITaskNoteReadService>(sp => new TaskNoteReadService(sp.GetRequiredService<ITaskNoteRepository>()));
                 services.RemoveAll(typeof(ITaskNoteWriteService));
-                services.AddScoped<ITaskNoteWriteService>(sp => new TaskNoteWriteService(sp.GetRequiredService<ITaskNoteRepository>(), sp.GetRequiredService<ITaskActivityWriteService>()));
+                services.AddScoped<ITaskNoteWriteService>(sp
+                    => new TaskNoteWriteService(sp.GetRequiredService<ITaskNoteRepository>(), sp.GetRequiredService<ITaskActivityWriteService>(), sp.GetRequiredService<IMediator>()));
 
                 // ===== Task Assignments =====
                 services.RemoveAll(typeof(ITaskAssignmentRepository));
@@ -117,7 +120,8 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(ITaskAssignmentReadService));
                 services.AddScoped<ITaskAssignmentReadService>(sp => new TaskAssignmentReadService(sp.GetRequiredService<ITaskAssignmentRepository>()));
                 services.RemoveAll(typeof(ITaskAssignmentWriteService));
-                services.AddScoped<ITaskAssignmentWriteService>(sp => new TaskAssignmentWriteService(sp.GetRequiredService<ITaskAssignmentRepository>(), sp.GetRequiredService<ITaskActivityWriteService>()));
+                services.AddScoped<ITaskAssignmentWriteService>(sp
+                    => new TaskAssignmentWriteService(sp.GetRequiredService<ITaskAssignmentRepository>(), sp.GetRequiredService<ITaskActivityWriteService>(), sp.GetRequiredService<IMediator>()));
 
                 // ===== Task Activities =====
                 services.RemoveAll(typeof(ITaskActivityRepository));

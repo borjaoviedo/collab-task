@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- Fail build if coverage is below threshold -->
     <CoverletOutputFormat>opencover</CoverletOutputFormat>
-    <Threshold>60</Threshold>
+    <Threshold>75</Threshold>
     <ThresholdType>line</ThresholdType>
     <ThresholdStat>Total</ThresholdStat>
 

@@ -16,5 +16,6 @@ namespace Application.TaskNotes.Abstractions
 
         Task<int> SaveCreateChangesAsync(CancellationToken ct = default);
         Task<DomainMutation> SaveUpdateChangesAsync(CancellationToken ct = default);
+        Task<DomainMutation> SaveDeleteChangesAsync(CancellationToken ct = default);
     }
 }

@@ -96,5 +96,21 @@ namespace Infrastructure.Data.Repositories
                 return DomainMutation.Conflict;
             }
         }
+        public async Task<DomainMutation> SaveDeleteChangesAsync(CancellationToken ct = default)
+        {
+            try
+            {
+                await _db.SaveChangesAsync(ct);
+                return DomainMutation.Deleted;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return DomainMutation.Conflict;
+            }
+            catch (DbUpdateException)
+            {
+                return DomainMutation.Conflict;
+            }
+        }
     }
 }
