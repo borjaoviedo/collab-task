@@ -151,7 +151,7 @@ namespace Api.Tests.Realtime
 
             await notifier.NotifyAsync(projectId, evt, CancellationToken.None);
 
-            AssertCaptured(capture, "tasknote.created", projectId, payload);
+            AssertCaptured(capture, "note.created", projectId, payload);
             groupClient.Verify(g => g.SendCoreAsync("board:event", It.IsAny<object[]>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 

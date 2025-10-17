@@ -5,7 +5,7 @@ namespace Application.TaskNotes.Realtime
 
     public sealed record TaskNoteCreatedEvent(Guid ProjectId, TaskNoteCreatedPayload Payload)
         : Application.Realtime.BoardEvent<TaskNoteCreatedPayload>(
-            "tasknote.created",
+            "note.created",
             ProjectId,
             DateTimeOffset.UtcNow,
             Payload);

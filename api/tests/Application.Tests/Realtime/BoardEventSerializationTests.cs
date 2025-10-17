@@ -43,7 +43,7 @@ namespace Application.Tests.Realtime
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
 
-            Assert.Contains("\"type\":\"tasknote.created\"", json);
+            Assert.Contains("\"type\":\"note.created\"", json);
             Assert.Contains("\"payload\"", json);
             Assert.Contains("\"noteId\"", json, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("\"TaskNote\":{", json, StringComparison.Ordinal);

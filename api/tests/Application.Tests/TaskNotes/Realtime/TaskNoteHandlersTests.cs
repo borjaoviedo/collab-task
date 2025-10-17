@@ -24,7 +24,7 @@ namespace Application.Tests.TaskNotes.Realtime
             notifier.Verify(n => n.NotifyAsync(
                 projectId,
                 It.Is<BoardEvent<TaskNoteCreatedPayload>>(e =>
-                    e.Type == "tasknote.created" &&
+                    e.Type == "note.created" &&
                     e.ProjectId == projectId &&
                     e.Payload == payload),
                 It.IsAny<CancellationToken>()),
