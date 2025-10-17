@@ -142,9 +142,7 @@ namespace Api.Tests.Realtime
             var payload = new TaskNoteCreatedPayload(
                 NoteId: Guid.NewGuid(),
                 TaskId: Guid.NewGuid(),
-                AuthorId: Guid.NewGuid(),
-                Content: "note text",
-                CreatedAt: DateTimeOffset.UtcNow);
+                Content: "note text");
 
             var evt = new TaskNoteCreatedEvent(projectId, payload);
             var notifier = new BoardNotifier(hubContext.Object);
@@ -155,6 +153,35 @@ namespace Api.Tests.Realtime
             groupClient.Verify(g => g.SendCoreAsync("board:event", It.IsAny<object[]>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
+        [Fact]
+        public async Task NotifyAsync_sends_note_updated_event()
+        {
+            var (hubContext, groupClient, capture, projectId) = CreateHubContextWithCapture();
+
+            var payload = new TaskNoteUpdatedPayload(Guid.NewGuid(), "new");
+            var evt = new TaskNoteUpdatedEvent(projectId, payload);
+            var notifier = new BoardNotifier(hubContext.Object);
+
+            await notifier.NotifyAsync(projectId, evt, CancellationToken.None);
+
+            AssertCaptured(capture, "note.updated", projectId, payload);
+            groupClient.Verify(g => g.SendCoreAsync("board:event", It.IsAny<object[]>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task NotifyAsync_sends_note_deleted_event()
+        {
+            var (hubContext, groupClient, capture, projectId) = CreateHubContextWithCapture();
+
+            var payload = new TaskNoteDeletedPayload(Guid.NewGuid());
+            var evt = new TaskNoteDeletedEvent(projectId, payload);
+            var notifier = new BoardNotifier(hubContext.Object);
+
+            await notifier.NotifyAsync(projectId, evt, CancellationToken.None);
+
+            AssertCaptured(capture, "note.deleted", projectId, payload);
+            groupClient.Verify(g => g.SendCoreAsync("board:event", It.IsAny<object[]>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
 
         // ---------- helpers ----------
 
