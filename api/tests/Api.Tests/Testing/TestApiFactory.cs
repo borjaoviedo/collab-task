@@ -19,6 +19,7 @@ using Application.TaskNotes.Services;
 using Application.Users.Abstractions;
 using Application.Users.Services;
 using Infrastructure.Security;
+using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -101,7 +102,8 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(ITaskItemReadService));
                 services.AddScoped<ITaskItemReadService>(sp => new TaskItemReadService(sp.GetRequiredService<ITaskItemRepository>()));
                 services.RemoveAll(typeof(ITaskItemWriteService));
-                services.AddScoped<ITaskItemWriteService>(sp => new TaskItemWriteService(sp.GetRequiredService<ITaskItemRepository>(), sp.GetRequiredService<ITaskActivityWriteService>()));
+                services.AddScoped<ITaskItemWriteService>(sp
+                    => new TaskItemWriteService(sp.GetRequiredService<ITaskItemRepository>(), sp.GetRequiredService<ITaskActivityWriteService>(), sp.GetRequiredService<IMediator>()));
 
                 // ===== Task Notes =====
                 services.RemoveAll(typeof(ITaskNoteRepository));
