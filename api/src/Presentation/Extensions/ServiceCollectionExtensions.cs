@@ -1,6 +1,8 @@
 using Api.Errors;
 using Infrastructure;
 using Application;
+using Application.Realtime;
+using Api.Realtime;
 
 namespace Api.Extensions
 {
@@ -18,7 +20,10 @@ namespace Api.Extensions
                 .AddJwtAuthAndPolicies(config)
                 .AddApplication()
                 .AddAppValidation()
-                .AddProblemDetailsAndExceptionMapping();
+                .AddProblemDetailsAndExceptionMapping()
+                .AddSignalR();
+
+            services.AddScoped<IBoardNotifier, BoardNotifier>();
 
             return services;
         }
