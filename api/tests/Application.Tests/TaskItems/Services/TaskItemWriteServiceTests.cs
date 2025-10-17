@@ -59,7 +59,7 @@ namespace Application.Tests.TaskItems.Services
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
             var newTitle = "New Title";
-            var res = await svc.EditAsync(task.Id, user.Id, newTitle, newDescription: null, newDueDate: null, task.RowVersion);
+            var res = await svc.EditAsync(pId, task.Id, user.Id, newTitle, newDescription: null, newDueDate: null, task.RowVersion);
             res.Should().Be(DomainMutation.Updated);
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
@@ -71,7 +71,7 @@ namespace Application.Tests.TaskItems.Services
                 Times.Once);
 
             var newDescription = "New Description";
-            res = await svc.EditAsync(task.Id, user.Id, newTitle: null, newDescription, newDueDate: null, fromDb.RowVersion);
+            res = await svc.EditAsync(pId, task.Id, user.Id, newTitle: null, newDescription, newDueDate: null, fromDb.RowVersion);
             res.Should().Be(DomainMutation.Updated);
 
             fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
@@ -98,7 +98,7 @@ namespace Application.Tests.TaskItems.Services
             var sameDueDate = DateTimeOffset.UtcNow.AddDays(10);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId, sameTitle, sameDescription, sameDueDate);
 
-            var res = await svc.EditAsync(task.Id, user.Id, sameTitle, sameDescription, sameDueDate, task.RowVersion);
+            var res = await svc.EditAsync(pId, task.Id, user.Id, sameTitle, sameDescription, sameDueDate, task.RowVersion);
             res.Should().Be(DomainMutation.NoOp);
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
@@ -128,7 +128,7 @@ namespace Application.Tests.TaskItems.Services
             var newTitle = "New";
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId, oldTitle);
 
-            var res = await svc.EditAsync(task.Id, user.Id, newTitle, newDescription: null, newDueDate: null, rowVersion: [1, 2]);
+            var res = await svc.EditAsync(pId, task.Id, user.Id, newTitle, newDescription: null, newDueDate: null, rowVersion: [1, 2]);
             res.Should().Be(DomainMutation.Conflict);
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
@@ -157,7 +157,7 @@ namespace Application.Tests.TaskItems.Services
             var differentColumn = TestDataFactory.SeedColumn(db, pId, differentLane.Id);
             await db.SaveChangesAsync();
 
-            var res = await svc.MoveAsync(task.Id, differentColumn.Id, differentLane.Id, user.Id, targetSortKey: 1, task.RowVersion);
+            var res = await svc.MoveAsync(pId, task.Id, differentColumn.Id, differentLane.Id, user.Id, targetSortKey: 1, task.RowVersion);
             res.Should().Be(DomainMutation.Updated);
 
             mediator.Verify(m => m.Publish(
@@ -189,7 +189,7 @@ namespace Application.Tests.TaskItems.Services
             var differentColumn = TestDataFactory.SeedColumn(db, pId, lId, order: 1);
             await db.SaveChangesAsync();
 
-            var res = await svc.MoveAsync(task.Id, differentColumn.Id, lId, user.Id, targetSortKey: 1, task.RowVersion);
+            var res = await svc.MoveAsync(pId, task.Id, differentColumn.Id, lId, user.Id, targetSortKey: 1, task.RowVersion);
             res.Should().Be(DomainMutation.Updated);
         }
 
@@ -209,7 +209,7 @@ namespace Application.Tests.TaskItems.Services
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
-            var res = await svc.MoveAsync(task.Id, cId, lId, user.Id, targetSortKey: 1, task.RowVersion);
+            var res = await svc.MoveAsync(pId, task.Id, cId, lId, user.Id, targetSortKey: 1, task.RowVersion);
             res.Should().Be(DomainMutation.Updated);
         }
 
@@ -229,7 +229,7 @@ namespace Application.Tests.TaskItems.Services
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
-            var res = await svc.MoveAsync(task.Id, cId, lId, user.Id, targetSortKey: 0, task.RowVersion);
+            var res = await svc.MoveAsync(pId, task.Id, cId, lId, user.Id, targetSortKey: 0, task.RowVersion);
             res.Should().Be(DomainMutation.NoOp);
 
             mediator.Verify(m => m.Publish(It.IsAny<TaskItemMoved>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -251,10 +251,10 @@ namespace Application.Tests.TaskItems.Services
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
-            var res = await svc.MoveAsync(task.Id, Guid.NewGuid(), lId, user.Id, targetSortKey: 0, task.RowVersion);
+            var res = await svc.MoveAsync(pId, task.Id, Guid.NewGuid(), lId, user.Id, targetSortKey: 0, task.RowVersion);
             res.Should().Be(DomainMutation.NotFound);
 
-            res = await svc.MoveAsync(task.Id, cId, Guid.NewGuid(), user.Id, targetSortKey: 0, task.RowVersion);
+            res = await svc.MoveAsync(pId, task.Id, cId, Guid.NewGuid(), user.Id, targetSortKey: 0, task.RowVersion);
             res.Should().Be(DomainMutation.NotFound);
 
             mediator.Verify(m => m.Publish(It.IsAny<TaskItemMoved>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -276,7 +276,7 @@ namespace Application.Tests.TaskItems.Services
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
-            var res = await svc.MoveAsync(task.Id, cId, lId, user.Id, targetSortKey: 1, rowVersion: [1, 2]);
+            var res = await svc.MoveAsync(pId, task.Id, cId, lId, user.Id, targetSortKey: 1, rowVersion: [1, 2]);
             res.Should().Be(DomainMutation.Conflict);
 
             mediator.Verify(m => m.Publish(It.IsAny<TaskItemMoved>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -298,10 +298,10 @@ namespace Application.Tests.TaskItems.Services
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, firstProjectId, firstProjectLaneId, firstProjectColumnId);
 
-            var (_, secondProjectLaneId, secondProjectColumnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (pId, secondProjectLaneId, secondProjectColumnId) = TestDataFactory.SeedLaneWithColumn(db);
             await db.SaveChangesAsync();
 
-            var res = await svc.MoveAsync(task.Id, secondProjectColumnId, secondProjectLaneId, user.Id, targetSortKey: 1, task.RowVersion);
+            var res = await svc.MoveAsync(pId, task.Id, secondProjectColumnId, secondProjectLaneId, user.Id, targetSortKey: 1, task.RowVersion);
             res.Should().Be(DomainMutation.Conflict);
 
             mediator.Verify(m => m.Publish(It.IsAny<TaskItemMoved>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -323,7 +323,7 @@ namespace Application.Tests.TaskItems.Services
             TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
-            var res = await svc.DeleteAsync(task.Id, task.RowVersion);
+            var res = await svc.DeleteAsync(pId, task.Id, task.RowVersion);
 
             res.Should().Be(DomainMutation.Deleted);
             mediator.VerifyNoOtherCalls();
@@ -345,7 +345,7 @@ namespace Application.Tests.TaskItems.Services
             TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
-            var res = await svc.DeleteAsync(task.Id, [9, 9, 9, 9]);
+            var res = await svc.DeleteAsync(pId, task.Id, [9, 9, 9, 9]);
 
             res.Should().Be(DomainMutation.Conflict);
             mediator.Verify(m => m.Publish(It.IsAny<INotification>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -367,7 +367,7 @@ namespace Application.Tests.TaskItems.Services
             TestDataFactory.SeedUser(db);
             TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
-            var res = await svc.DeleteAsync(Guid.NewGuid(), [1, 2, 3, 4]);
+            var res = await svc.DeleteAsync(pId, Guid.NewGuid(), [1, 2, 3, 4]);
 
             res.Should().Be(DomainMutation.NotFound);
             mediator.Verify(m => m.Publish(It.IsAny<INotification>(), It.IsAny<CancellationToken>()), Times.Never);

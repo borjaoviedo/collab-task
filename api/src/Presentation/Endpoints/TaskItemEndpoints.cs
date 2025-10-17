@@ -105,7 +105,7 @@ namespace Api.Endpoints
                     http, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var result = await taskItemWriteSvc.EditAsync(taskId, userId, dto.Title, dto.Description, dto.DueDate, rowVersion, ct);
+                var result = await taskItemWriteSvc.EditAsync(projectId, taskId, userId, dto.Title, dto.Description, dto.DueDate, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var edited = await taskItemReadSvc.GetAsync(taskId, ct);
@@ -142,7 +142,7 @@ namespace Api.Endpoints
                     http, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var result = await taskItemWriteSvc.MoveAsync(taskId, dto.TargetColumnId, dto.TargetLaneId, userId,
+                var result = await taskItemWriteSvc.MoveAsync(projectId, taskId, dto.TargetColumnId, dto.TargetLaneId, userId,
                     dto.TargetSortKey, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
@@ -177,7 +177,7 @@ namespace Api.Endpoints
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
                     http, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
 
-                var result = await taskItemWriteSvc.DeleteAsync(taskId, rowVersion, ct);
+                var result = await taskItemWriteSvc.DeleteAsync(projectId, taskId, rowVersion, ct);
                 return result.ToHttp(http);
             })
             .RequireAuthorization(Policies.ProjectMember)
