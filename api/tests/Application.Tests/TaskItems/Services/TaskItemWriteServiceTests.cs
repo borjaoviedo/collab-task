@@ -1,5 +1,5 @@
 using Application.TaskActivities.Services;
-using Application.TaskItems.Handlers;
+using Application.TaskItems.Realtime;
 using Application.TaskItems.Services;
 using Domain.Enums;
 using FluentAssertions;
@@ -66,7 +66,7 @@ namespace Application.Tests.TaskItems.Services
             fromDb.Title.Value.Should().Be(newTitle);
 
             mediator.Verify(m => m.Publish(
-                It.Is<TaskItemEdited>(n => n.ProjectId == pId && n.Payload.TaskId == task.Id && n.Payload.NewTitle == newTitle),
+                It.Is<TaskItemUpdated>(n => n.ProjectId == pId && n.Payload.TaskId == task.Id && n.Payload.NewTitle == newTitle),
                 It.IsAny<CancellationToken>()),
                 Times.Once);
 
@@ -106,7 +106,7 @@ namespace Application.Tests.TaskItems.Services
             fromDb.Description!.Value.Should().Be(sameDescription);
             fromDb.DueDate.Should().Be(sameDueDate);
 
-            mediator.Verify(m => m.Publish(It.IsAny<TaskItemEdited>(), It.IsAny<CancellationToken>()), Times.Never);
+            mediator.Verify(m => m.Publish(It.IsAny<TaskItemUpdated>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
@@ -134,7 +134,7 @@ namespace Application.Tests.TaskItems.Services
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
             fromDb.Title.Value.Should().Be(oldTitle);
 
-            mediator.Verify(m => m.Publish(It.IsAny<TaskItemEdited>(), It.IsAny<CancellationToken>()), Times.Never);
+            mediator.Verify(m => m.Publish(It.IsAny<TaskItemUpdated>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]

@@ -1,5 +1,5 @@
 using Application.Realtime;
-using Application.TaskItems.Handlers;
+using Application.TaskItems.Realtime;
 using Moq;
 
 namespace Application.Tests.Realtime
@@ -41,17 +41,17 @@ namespace Application.Tests.Realtime
             var notifier = new Mock<IBoardNotifier>();
             var handler = new TaskItemChangedHandler(notifier.Object);
             var projectId = Guid.NewGuid();
-            var payload = new TaskEditedPayload(
+            var payload = new TaskUpdatedPayload(
                 TaskId: Guid.NewGuid(),
                 NewTitle: "New",
                 NewDescription: "NewDesc",
                 NewDueDate: DateTimeOffset.UtcNow);
 
-            await handler.Handle(new TaskItemEdited(projectId, payload), CancellationToken.None);
+            await handler.Handle(new TaskItemUpdated(projectId, payload), CancellationToken.None);
 
             notifier.Verify(n => n.NotifyAsync(
                 projectId,
-                It.Is<BoardEvent<TaskEditedPayload>>(e =>
+                It.Is<BoardEvent<TaskUpdatedPayload>>(e =>
                     e.Type == "task.updated" &&
                     e.ProjectId == projectId &&
                     e.Payload == payload),
