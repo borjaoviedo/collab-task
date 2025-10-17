@@ -60,6 +60,8 @@ namespace Api.Tests.Fakes
         public Task<int> SaveCreateChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
         public Task<DomainMutation> SaveUpdateChangesAsync(CancellationToken ct = default) => Task.FromResult(DomainMutation.Updated);
 
+        public Task<DomainMutation> SaveDeleteChangesAsync(CancellationToken ct = default) => Task.FromResult(DomainMutation.Deleted);
+
         private static TaskNote Clone(TaskNote n)
         {
             var clone = TaskNote.Create(n.TaskId, n.AuthorId, NoteContent.Create(n.Content));
