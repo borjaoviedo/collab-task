@@ -2,7 +2,7 @@ using Application.Realtime;
 using Application.TaskItems.Realtime;
 using Moq;
 
-namespace Application.Tests.Realtime
+namespace Application.Tests.TaskItems.Realtime
 {
     public class TaskItemHandlersTests
     {
