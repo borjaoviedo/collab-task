@@ -43,7 +43,7 @@ namespace Application.Tests.TaskNotes.Services
         }
 
         [Fact]
-        public async Task EditAsync_Returns_Updated_When_Content_Changes_No_Publish()
+        public async Task EditAsync_Returns_Updated_And_Publishes_NoteUpdated()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -51,20 +51,37 @@ namespace Application.Tests.TaskNotes.Services
             var repo = new TaskNoteRepository(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo);
-            var mediator = new Mock<IMediator>();
+            var mediator = new Mock<IMediator>(MockBehavior.Strict);
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
 
             var (pId, _, _, tId, nId, _) = TestDataFactory.SeedFullBoard(db);
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
             var user = TestDataFactory.SeedUser(db);
 
-            var res = await svc.EditAsync(pId, tId, nId, user.Id, "New Content", noteFromDb.RowVersion);
+            const string newContent = "New Content";
+
+            mediator
+                .Setup(m => m.Publish(
+                    It.Is<TaskNoteUpdated>(n => n.ProjectId == pId &&
+                                                n.Payload.NoteId == nId &&
+                                                n.Payload.NewContent == newContent),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            var res = await svc.EditAsync(pId, tId, nId, user.Id, newContent, noteFromDb.RowVersion);
+
             res.Should().Be(DomainMutation.Updated);
 
             var after = await db.TaskNotes.AsNoTracking().SingleAsync();
-            after.Content.Value.Should().Be("New Content");
+            after.Content.Value.Should().Be(newContent);
 
-            mediator.Verify(m => m.Publish(It.IsAny<INotification>(), It.IsAny<CancellationToken>()), Times.Never);
+            mediator.Verify(m => m.Publish(
+                It.Is<TaskNoteUpdated>(n => n.ProjectId == pId &&
+                                            n.Payload.NoteId == nId &&
+                                            n.Payload.NewContent == newContent),
+                It.IsAny<CancellationToken>()), Times.Once);
+            mediator.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -116,7 +133,7 @@ namespace Application.Tests.TaskNotes.Services
         }
 
         [Fact]
-        public async Task DeleteAsync_Returns_Deleted_When_Note_Exists_No_Publish()
+        public async Task DeleteAsync_Returns_Deleted_And_Publishes_NoteDeleted()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -124,17 +141,27 @@ namespace Application.Tests.TaskNotes.Services
             var repo = new TaskNoteRepository(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo);
-            var mediator = new Mock<IMediator>();
+            var mediator = new Mock<IMediator>(MockBehavior.Strict);
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
 
             var (pId, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
             var note = await db.TaskNotes.AsNoTracking().SingleAsync();
             var user = TestDataFactory.SeedUser(db);
 
-            var res = await svc.DeleteAsync(pId, nId, user.Id, note.RowVersion);
-            res.Should().Be(DomainMutation.Deleted);
+            mediator
+                .Setup(m => m.Publish(
+                    It.Is<TaskNoteDeleted>(n => n.ProjectId == pId && n.Payload.NoteId == nId),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
 
-            mediator.Verify(m => m.Publish(It.IsAny<INotification>(), It.IsAny<CancellationToken>()), Times.Never);
+            var res = await svc.DeleteAsync(pId, nId, user.Id, note.RowVersion);
+
+            res.Should().Be(DomainMutation.Deleted);
+            mediator.Verify(m => m.Publish(
+                It.Is<TaskNoteDeleted>(n => n.ProjectId == pId && n.Payload.NoteId == nId),
+                It.IsAny<CancellationToken>()), Times.Once);
+            mediator.VerifyNoOtherCalls();
         }
 
         [Fact]
