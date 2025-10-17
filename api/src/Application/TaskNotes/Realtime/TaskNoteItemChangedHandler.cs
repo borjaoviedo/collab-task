@@ -1,8 +1,7 @@
 using Application.Realtime;
-using Application.TaskNotes.Realtime;
 using MediatR;
 
-namespace Application.TaskNotes.Services
+namespace Application.TaskNotes.Realtime
 {
     public sealed class TaskNoteItemChangedHandler(IBoardNotifier notifier)
     : INotificationHandler<TaskNoteItemCreated>
