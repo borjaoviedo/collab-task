@@ -1,6 +1,5 @@
 using Application.Users.DTOs;
 using Domain.Entities;
-using Domain.ValueObjects;
 
 namespace Application.Users.Mapping
 {
@@ -18,8 +17,5 @@ namespace Application.Users.Mapping
                 ProjectMembershipsCount = item.ProjectMemberships?.Count ?? 0,
                 RowVersion = item.RowVersion
             };
-
-        public static User ToEntity(this UserRegisterDto item, byte[] hash, byte[] salt)
-            => User.Create(Email.Create(item.Email), UserName.Create(item.Name), hash, salt);
     }
 }

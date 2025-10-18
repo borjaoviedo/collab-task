@@ -1,4 +1,3 @@
-using Application.Users.DTOs;
 using Application.Users.Mapping;
 using Domain.Entities;
 using Domain.Enums;
@@ -31,22 +30,6 @@ namespace Application.Tests.Users.Mapping
             Assert.Equal(u.CreatedAt, dto.CreatedAt);
             Assert.Equal(u.UpdatedAt, dto.UpdatedAt);
             Assert.Equal(2, dto.ProjectMembershipsCount);
-        }
-
-        [Fact]
-        public void ToEntity_FromCreateDto_Sets_Email_Name_Role_User_And_Hash_Salt()
-        {
-            var create = new UserRegisterDto { Email = "user@demo.com", Name = "User Name", Password = "GoodPwd1!" };
-            var hash = Bytes(32);
-            var salt = Bytes(16);
-
-            var entity = create.ToEntity(hash, salt);
-
-            Assert.Equal(Email.Create("user@demo.com"), entity.Email);
-            Assert.Equal(UserName.Create("User Name"), entity.Name);
-            Assert.Equal(UserRole.User, entity.Role);
-            Assert.Same(hash, entity.PasswordHash);
-            Assert.Same(salt, entity.PasswordSalt);
         }
     }
 }
