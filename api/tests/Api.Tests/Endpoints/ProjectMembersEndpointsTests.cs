@@ -65,8 +65,7 @@ namespace Api.Tests.Endpoints
             client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", etag2);
 
             var rem = await client.PatchAsJsonAsync(
-                $"/projects/{prj.Id}/members/{member.UserId}/remove",
-                new ProjectMemberRemoveDto() { RemovedAt = DateTimeOffset.UtcNow });
+                $"/projects/{prj.Id}/members/{member.UserId}/remove", new object());
             rem.StatusCode.Should().Be(HttpStatusCode.OK);
             var removedDto = await rem.Content.ReadFromJsonAsync<ProjectMemberReadDto>(AuthTestHelper.Json);
             removedDto!.RemovedAt.Should().NotBeNull();

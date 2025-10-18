@@ -132,7 +132,6 @@ namespace Api.Endpoints
             nested.MapPatch("/{userId:guid}/remove", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
-                [FromBody] ProjectMemberRemoveDto dto,
                 [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 [FromServices] IProjectMemberWriteService projectMemberWriteSvc,
                 HttpContext http,
@@ -141,7 +140,7 @@ namespace Api.Endpoints
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
                     http, () => projectMemberReadSvc.GetAsync(projectId, userId, ct), pm => pm.RowVersion);
 
-                var result = await projectMemberWriteSvc.RemoveAsync(projectId, userId, rowVersion, dto.RemovedAt, ct);
+                var result = await projectMemberWriteSvc.RemoveAsync(projectId, userId, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var removed = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
@@ -149,7 +148,6 @@ namespace Api.Endpoints
                 return Results.Ok(removed.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectAdmin)
-            .RequireValidation<ProjectMemberRemoveDto>()
             .RequireIfMatch()
             .Produces<ProjectMemberReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
