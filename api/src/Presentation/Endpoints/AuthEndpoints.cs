@@ -108,7 +108,6 @@ namespace Api.Endpoints
             group.MapGet("/me", async (
                 HttpContext http,
                 [FromServices] IUserReadService userReadSvc,
-                [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 [FromServices] ILoggerFactory loggerFactory,
                 CancellationToken ct = default) =>
             {
@@ -132,7 +131,6 @@ namespace Api.Endpoints
                 }
 
                 var dto = user.ToMeReadDto();
-                dto.ProjectMembershipsCount = await projectMemberReadSvc.CountActiveAsync(userId, ct);
 
                 return Results.Ok(dto);
             })
