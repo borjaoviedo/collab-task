@@ -134,9 +134,9 @@ namespace Api.Endpoints
             .RequireAuthorization()
             .Produces<MeReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .WithName("Auth_GetMe")
             .WithSummary("Returns the authenticated user's profile")
-            .WithDescription("User profile");
+            .WithDescription("User profile")
+            .WithName("Auth_GetMe");
 
             return group;
         }
