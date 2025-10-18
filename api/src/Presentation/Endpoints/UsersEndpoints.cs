@@ -1,7 +1,6 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
 using Api.Helpers;
-using Application.ProjectMembers.Abstractions;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
@@ -21,7 +20,6 @@ namespace Api.Endpoints
             // GET /users
             group.MapGet("/", async (
                 [FromServices] IUserReadService userReadSvc,
-                [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 CancellationToken ct = default) =>
             {
                 var users = await userReadSvc.ListAsync(ct);
