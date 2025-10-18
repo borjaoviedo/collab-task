@@ -71,7 +71,6 @@ namespace Api.Endpoints
 
             // GET /activities/me
             top.MapGet("/me", async (
-                HttpContext http,
                 [FromServices] ITaskActivityReadService activityReadSvc,
                 [FromServices] ICurrentUserService currentUserService,
                 CancellationToken ct = default) =>
@@ -86,6 +85,24 @@ namespace Api.Endpoints
             .WithSummary("List my activities")
             .WithDescription("Lists task activities performed by the authenticated user.")
             .WithName("TaskActivities_ListMine");
+
+            // GET /activities/users/{userId}
+            top.MapGet("/users/{userId:guid}", async(
+                [FromRoute] Guid userId,
+                [FromServices] ITaskActivityReadService activityReadSvc,
+                CancellationToken ct = default) =>
+            {
+                var items = await activityReadSvc.ListByActorAsync(userId, ct);
+                var dto = items.Select(a => a.ToReadDto()).ToList();
+                return Results.Ok(dto);
+            })
+            .RequireAuthorization(Policies.SystemAdmin)
+            .Produces<IEnumerable<TaskActivityReadDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .WithSummary("List activities by user")
+            .WithDescription("Lists task activities performed by the specified user.")
+            .WithName("TaskActivities_List_ByUser");
 
             return top;
         }
