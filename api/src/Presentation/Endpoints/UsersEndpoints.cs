@@ -91,7 +91,6 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed!.RowVersion)}\"";
                 return Results.Ok(renamed.ToReadDto());
             })
-            .RequireAuthorization()
             .RequireIfMatch()
             .Produces<UserReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
