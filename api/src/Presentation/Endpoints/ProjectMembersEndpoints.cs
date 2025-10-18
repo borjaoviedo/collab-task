@@ -73,26 +73,6 @@ namespace Api.Endpoints
             .WithDescription("Returns the role of a user within a project.")
             .WithName("ProjectMembers_GetRole");
 
-            // GET /projects/{projectId}/members/{userId}/count?active=true
-            group.MapGet("/{userId:guid}/count", async (
-                [FromRoute] Guid projectId,
-                [FromRoute] Guid userId,
-                [FromServices] IProjectMemberReadService projectMemberReadSvc,
-                [FromQuery] bool active = true,
-                CancellationToken ct = default) =>
-            {
-                var count = await projectMemberReadSvc.CountActiveAsync(userId, ct);
-                return Results.Ok(new { Count = count });
-            })
-            .RequireAuthorization(Policies.ProjectAdmin)
-            .Produces<object>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .ProducesProblem(StatusCodes.Status403Forbidden)
-            .ProducesProblem(StatusCodes.Status404NotFound)
-            .WithSummary("Get count of a user’s project memberships")
-            .WithDescription("Returns how many projects the specified user belongs to. When ‘active=true’, only active memberships are counted.")
-            .WithName("ProjectMembers_CountByUser");
-
             // POST /projects/{projectId}/members
             group.MapPost("/", async (
                 [FromRoute] Guid projectId,
@@ -209,7 +189,29 @@ namespace Api.Endpoints
             .WithDescription("Restores a previously removed project member.")
             .WithName("ProjectMembers_Restore");
 
-            return group;
+            var top = app.MapGroup("/members")
+                .WithTags("Project Members")
+                .RequireAuthorization();
+
+            // GET /members/{userId}/count
+            top.MapGet("/{userId:guid}/count", async (
+                [FromRoute] Guid userId,
+                [FromServices] IProjectMemberReadService projectMemberReadSvc,
+                CancellationToken ct = default) =>
+            {
+                var count = await projectMemberReadSvc.CountActiveAsync(userId, ct);
+                return Results.Ok(new { Count = count });
+            })
+            .RequireAuthorization(Policies.ProjectAdmin)
+            .Produces<object>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get total active project memberships of a user")
+            .WithDescription("Returns the total number of active projects in which the specified user is a member.")
+            .WithName("ProjectMembers_CountActiveByUser");
+
+            return top;
         }
     }
 }
