@@ -15,7 +15,7 @@ namespace Api.Endpoints
         {
             var group = app.MapGroup("/projects/{projectId:guid}/members")
                 .WithTags("Project Members")
-                .RequireAuthorization();
+                .RequireAuthorization(Policies.ProjectReader);
 
             // GET /projects/{projectId}/members
             group.MapGet("/", async (
@@ -28,7 +28,6 @@ namespace Api.Endpoints
                 var dto = members.Select(m => m.ToReadDto()).ToList();
                 return Results.Ok(dto);
             })
-            .RequireAuthorization(Policies.ProjectReader)
             .Produces<IEnumerable<ProjectMemberReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
