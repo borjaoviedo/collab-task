@@ -25,10 +25,10 @@ namespace Api.Endpoints
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
-                [FromServices] ITaskNoteReadService svc,
+                [FromServices] ITaskNoteReadService taskNoteReadSvc,
                 CancellationToken ct = default) =>
             {
-                var notes = await svc.ListByTaskAsync(taskId, ct);
+                var notes = await taskNoteReadSvc.ListByTaskAsync(taskId, ct);
                 var dto = notes.Select(t => t.ToReadDto()).ToList();
                 return Results.Ok(dto);
             })
@@ -47,10 +47,10 @@ namespace Api.Endpoints
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
                 [FromRoute] Guid noteId,
-                [FromServices] ITaskNoteReadService noteReadSvc,
+                [FromServices] ITaskNoteReadService taskNoteReadSvc,
                 CancellationToken ct = default) =>
             {
-                var note = await noteReadSvc.GetAsync(noteId, ct);
+                var note = await taskNoteReadSvc.GetAsync(noteId, ct);
                 return note is null ? Results.NotFound() : Results.Ok(note.ToReadDto());
             })
             .Produces<TaskNoteReadDto>(StatusCodes.Status200OK)
