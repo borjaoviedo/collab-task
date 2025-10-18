@@ -199,6 +199,7 @@ namespace Api.Endpoints
                 var dto = items.Select(n => n.ToReadDto()).ToList();
                 return Results.Ok(dto);
             })
+            .RequireAuthorization(Policies.SystemAdmin)
             .Produces<IEnumerable<TaskNoteReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
