@@ -21,10 +21,10 @@ namespace Api.Endpoints
             group.MapGet("/", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
-                [FromServices] IColumnReadService svc,
+                [FromServices] IColumnReadService columnReadSvc,
                 CancellationToken ct = default) =>
             {
-                var columns = await svc.ListByLaneAsync(laneId, ct);
+                var columns = await columnReadSvc.ListByLaneAsync(laneId, ct);
                 var dto = columns.Select(c => c.ToReadDto()).ToList();
                 return Results.Ok(dto);
             })
@@ -41,10 +41,10 @@ namespace Api.Endpoints
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
-                [FromServices] IColumnReadService svc,
+                [FromServices] IColumnReadService columnReadSvc,
                 CancellationToken ct = default) =>
             {
-                var column = await svc.GetAsync(columnId, ct);
+                var column = await columnReadSvc.GetAsync(columnId, ct);
                 return column is null ? Results.NotFound() : Results.Ok(column.ToReadDto());
             })
             .Produces<ColumnReadDto>(StatusCodes.Status200OK)
@@ -60,11 +60,11 @@ namespace Api.Endpoints
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromBody] ColumnCreateDto dto,
-                [FromServices] IColumnWriteService svc,
+                [FromServices] IColumnWriteService columnWriteSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var (result, column) = await svc.CreateAsync(projectId, laneId, dto.Name, dto.Order, ct);
+                var (result, column) = await columnWriteSvc.CreateAsync(projectId, laneId, dto.Name, dto.Order, ct);
                 if (result != DomainMutation.Created) return result.ToHttp();
 
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(column!.RowVersion)}\"";
