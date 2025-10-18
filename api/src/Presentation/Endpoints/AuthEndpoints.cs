@@ -51,7 +51,6 @@ namespace Api.Endpoints
                     throw new DuplicateEntityException("Could not complete registration.");
                 }
             })
-            .AllowAnonymous()
             .RequireValidation<UserRegisterDto>()
             .Produces<AuthTokenReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -95,7 +94,6 @@ namespace Api.Endpoints
 
                 return Results.Ok(payload);
             })
-            .AllowAnonymous()
             .RequireValidation<UserLoginDto>()
             .Produces<AuthTokenReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
