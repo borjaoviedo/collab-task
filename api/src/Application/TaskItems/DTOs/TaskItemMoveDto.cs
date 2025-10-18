@@ -3,8 +3,8 @@ namespace Application.TaskItems.DTOs
 {
     public sealed class TaskItemMoveDto
     {
-        public Guid TargetColumnId { get; set; }
-        public Guid TargetLaneId { get; set; }
-        public decimal TargetSortKey { get; set; }
+        public required Guid TargetColumnId { get; init; }
+        public required Guid TargetLaneId { get; init; }
+        public required decimal TargetSortKey { get; init; }
     }
 }

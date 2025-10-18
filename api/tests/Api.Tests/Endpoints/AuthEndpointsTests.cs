@@ -39,11 +39,10 @@ namespace Api.Tests.Endpoints
 
             dto!.AccessToken.Should().NotBeNullOrWhiteSpace();
             dto.TokenType.Should().Be("Bearer");
-            dto.ExpiresAtUtc.Kind.Should().Be(DateTimeKind.Utc);
-
+            dto.ExpiresAtUtc.Offset.Should().Be(TimeSpan.Zero);
             dto.Email.Should().Be(email.ToLowerInvariant());
             dto.Name.Should().Be(name);
-            dto.Role.Should().NotBeNullOrWhiteSpace();
+            dto.Role.Should().NotBe(null);
         }
 
         [Fact]

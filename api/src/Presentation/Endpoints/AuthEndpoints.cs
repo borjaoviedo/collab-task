@@ -3,7 +3,6 @@ using Api.Auth.Mapping;
 using Api.Extensions;
 using Application.Common.Abstractions.Security;
 using Application.Common.Exceptions;
-using Application.ProjectMembers.Abstractions;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
@@ -41,9 +40,9 @@ namespace Api.Endpoints
                 try
                 {
                     var (res, user) = await userWriteSvc.CreateAsync(dto.Email, dto.Name, hash, salt, UserRole.User, ct);
-                    if (res != DomainMutation.Created) return res.ToHttp();
+                    if (res != DomainMutation.Created || user is null) return res.ToHttp();
 
-                    var (accessToken, expiresAtUtc) = jwtSvc.CreateToken(user!.Id, user.Email.Value, user.Name.Value, user.Role.ToString());
+                    var (accessToken, expiresAtUtc) = jwtSvc.CreateToken(user.Id, user.Email.Value, user.Name.Value, user.Role.ToString());
                     return Results.Ok(user.ToReadDto(accessToken, expiresAtUtc));
                 }
                 catch (DbUpdateException ex) when (ex.IsUniqueViolation())
@@ -108,7 +107,6 @@ namespace Api.Endpoints
             group.MapGet("/me", async (
                 HttpContext http,
                 [FromServices] IUserReadService userReadSvc,
-                [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 [FromServices] ILoggerFactory loggerFactory,
                 CancellationToken ct = default) =>
             {
@@ -132,7 +130,6 @@ namespace Api.Endpoints
                 }
 
                 var dto = user.ToMeReadDto();
-                dto.ProjectMembershipsCount = await projectMemberReadSvc.CountActiveAsync(userId, ct);
 
                 return Results.Ok(dto);
             })

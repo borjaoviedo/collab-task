@@ -4,7 +4,7 @@ namespace Application.TaskAssignments.DTOs
 {
     public sealed class TaskAssignmentCreateDto
     {
-        public Guid UserId { get; set; }
-        public TaskRole Role { get; set; }
+        public required Guid UserId { get; init; }
+        public required TaskRole Role { get; init; }
     }
 }

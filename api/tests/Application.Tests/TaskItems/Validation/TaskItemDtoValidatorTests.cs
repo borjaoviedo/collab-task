@@ -12,9 +12,10 @@ namespace Application.Tests.TaskItems.Validation
             var v = new TaskItemCreateDtoValidator();
             var dto = new TaskItemCreateDto
             {
-                Title = "A",
-                Description = "D",
-                DueDate = DateTimeOffset.UtcNow.AddMinutes(-1)
+                Title = "Title",
+                Description = "Description",
+                DueDate = DateTimeOffset.UtcNow.AddMinutes(-1),
+                SortKey = 0m
             };
             v.TestValidate(dto).ShouldHaveValidationErrorFor(x => x.DueDate);
         }
@@ -25,12 +26,12 @@ namespace Application.Tests.TaskItems.Validation
             var v = new TaskItemEditDtoValidator();
             var dto = new TaskItemEditDto
             {
-                Title = null, // optional
-                Description = "", // invalid if provided
+                NewTitle = null, // optional
+                NewDescription = "", // invalid if provided
             };
             var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(x => x.Description);
-            r.ShouldNotHaveValidationErrorFor(x => x.Title);
+            r.ShouldHaveValidationErrorFor(x => x.NewDescription);
+            r.ShouldNotHaveValidationErrorFor(x => x.NewTitle);
         }
 
         [Fact]

@@ -3,6 +3,6 @@ namespace Application.Columns.DTOs
 {
     public sealed class ColumnReorderDto
     {
-        public int NewOrder { get; set; }
+        public required int NewOrder { get; init; }
     }
 }

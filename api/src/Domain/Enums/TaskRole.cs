@@ -1,9 +1,11 @@
+using System.Text.Json.Serialization;
 
 namespace Domain.Enums
 {
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum TaskRole
     {
-        CoOwner = 0,
-        Owner = 1
+        CoOwner,
+        Owner
     }
 }

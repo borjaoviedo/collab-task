@@ -105,7 +105,7 @@ namespace Api.Endpoints
                     http, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var result = await taskItemWriteSvc.EditAsync(projectId, taskId, userId, dto.Title, dto.Description, dto.DueDate, rowVersion, ct);
+                var result = await taskItemWriteSvc.EditAsync(projectId, taskId, userId, dto.NewTitle, dto.NewDescription, dto.NewDueDate, rowVersion, ct);
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var edited = await taskItemReadSvc.GetAsync(taskId, ct);
