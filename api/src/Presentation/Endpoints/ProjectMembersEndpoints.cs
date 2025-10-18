@@ -1,6 +1,7 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
 using Api.Helpers;
+using Application.Common.Abstractions.Auth;
 using Application.ProjectMembers.Abstractions;
 using Application.ProjectMembers.DTOs;
 using Application.ProjectMembers.Mapping;
@@ -194,6 +195,23 @@ namespace Api.Endpoints
             var top = app.MapGroup("/members")
                 .WithTags("Project Members")
                 .RequireAuthorization();
+
+            // GET /members/me/count
+            top.MapGet("/me/count", async (
+                [FromServices] IProjectMemberReadService projectMemberReadSvc,
+                [FromServices] ICurrentUserService currentUserSvc,
+                CancellationToken ct = default) =>
+            {
+                var userId = (Guid)currentUserSvc.UserId!;
+
+                var count = await projectMemberReadSvc.CountActiveAsync(userId, ct);
+                return Results.Ok(new { Count = count });
+            })
+            .Produces<object>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .WithSummary("Get total active project memberships of the authenticated user")
+            .WithDescription("Returns the total number of active projects in which the authenticated user is a member.")
+            .WithName("ProjectMembers_CountActiveMine");
 
             // GET /members/{userId}/count
             top.MapGet("/{userId:guid}/count", async (
