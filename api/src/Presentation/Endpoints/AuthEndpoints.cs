@@ -40,9 +40,9 @@ namespace Api.Endpoints
                 try
                 {
                     var (res, user) = await userWriteSvc.CreateAsync(dto.Email, dto.Name, hash, salt, UserRole.User, ct);
-                    if (res != DomainMutation.Created) return res.ToHttp();
+                    if (res != DomainMutation.Created || user is null) return res.ToHttp();
 
-                    var (accessToken, expiresAtUtc) = jwtSvc.CreateToken(user!.Id, user.Email.Value, user.Name.Value, user.Role.ToString());
+                    var (accessToken, expiresAtUtc) = jwtSvc.CreateToken(user.Id, user.Email.Value, user.Name.Value, user.Role.ToString());
                     return Results.Ok(user.ToReadDto(accessToken, expiresAtUtc));
                 }
                 catch (DbUpdateException ex) when (ex.IsUniqueViolation())
