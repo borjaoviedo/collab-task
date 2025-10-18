@@ -4,9 +4,9 @@ namespace Application.TaskAssignments.DTOs
 {
     public sealed class TaskAssignmentReadDto
     {
-        public Guid TaskId { get; set; }
-        public Guid UserId { get; set; }
-        public TaskRole Role { get; set; }
-        public byte[] RowVersion { get; set; } = default!;
+        public Guid TaskId { get; init; }
+        public Guid UserId { get; init; }
+        public TaskRole Role { get; init; }
+        public byte[] RowVersion { get; init; } = default!;
     }
 }
