@@ -42,7 +42,7 @@ namespace Api.Tests.Endpoints
             dto.ExpiresAtUtc.Offset.Should().Be(TimeSpan.Zero);
             dto.Email.Should().Be(email.ToLowerInvariant());
             dto.Name.Should().Be(name);
-            dto.Role.Should().NotBeNullOrWhiteSpace();
+            dto.Role.Should().NotBe(null);
         }
 
         [Fact]

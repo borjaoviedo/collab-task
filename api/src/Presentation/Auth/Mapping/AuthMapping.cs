@@ -14,7 +14,7 @@ namespace Api.Auth.Mapping
             UserId = user.Id,
             Email = user.Email.Value,
             Name = user.Name.Value,
-            Role = user.Role.ToString()
+            Role = user.Role
         };
     }
 }

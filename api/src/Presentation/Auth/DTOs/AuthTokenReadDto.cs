@@ -1,3 +1,5 @@
+using Domain.Enums;
+
 namespace Api.Auth.DTOs
 {
     public sealed class AuthTokenReadDto
@@ -8,6 +10,6 @@ namespace Api.Auth.DTOs
         public Guid UserId { get; init; }
         public string Email { get; init; } = default!;
         public string Name { get; init; } = default!;
-        public string Role { get; init; } = default!;
+        public UserRole Role { get; init; }
     }
 }
