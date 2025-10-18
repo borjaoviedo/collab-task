@@ -14,12 +14,12 @@ namespace Api.Endpoints
     {
         public static RouteGroupBuilder MapProjectMembers(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/projects/{projectId:guid}/members")
+            var nested = app.MapGroup("/projects/{projectId:guid}/members")
                 .WithTags("Project Members")
                 .RequireAuthorization(Policies.ProjectReader);
 
             // GET /projects/{projectId}/members
-            group.MapGet("/", async (
+            nested.MapGet("/", async (
                 [FromRoute] Guid projectId,
                 [FromQuery] bool includeRemoved,
                 [FromServices] IProjectMemberReadService projectMemberReadSvc,
@@ -38,7 +38,7 @@ namespace Api.Endpoints
             .WithName("ProjectMembers_Get_All");
 
             // GET /projects/{projectId}/members/{userId}
-            group.MapGet("/{userId:guid}", async (
+            nested.MapGet("/{userId:guid}", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
                 [FromServices] IProjectMemberReadService projectMemberReadSvc,
@@ -56,7 +56,7 @@ namespace Api.Endpoints
             .WithName("ProjectMembers_Get");
 
             // GET /projects/{projectId}/members/{userId}/role
-            group.MapGet("/{userId:guid}/role", async (
+            nested.MapGet("/{userId:guid}/role", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
                 [FromServices] IProjectMemberReadService projectMemberReadSvc,
@@ -74,7 +74,7 @@ namespace Api.Endpoints
             .WithName("ProjectMembers_GetRole");
 
             // POST /projects/{projectId}/members
-            group.MapPost("/", async (
+            nested.MapPost("/", async (
                 [FromRoute] Guid projectId,
                 [FromBody] ProjectMemberCreateDto dto,
                 [FromServices] IProjectMemberWriteService projectMemberWriteSvc,
@@ -96,7 +96,7 @@ namespace Api.Endpoints
             .WithName("ProjectMembers_Create");
 
             // PATCH /projects/{projectId}/members/{userId}/role
-            group.MapPatch("/{userId:guid}/role", async (
+            nested.MapPatch("/{userId:guid}/role", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
                 [FromBody] ProjectMemberChangeRoleDto dto,
@@ -129,7 +129,7 @@ namespace Api.Endpoints
             .WithName("ProjectMembers_Change_Role");
 
             // PATCH /projects/{projectId}/members/{userId}/remove
-            group.MapPatch("/{userId:guid}/remove", async (
+            nested.MapPatch("/{userId:guid}/remove", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
                 [FromBody] ProjectMemberRemoveDto dto,
@@ -162,7 +162,7 @@ namespace Api.Endpoints
             .WithName("ProjectMembers_Remove");
 
             // PATCH /projects/{projectId}/members/{userId}/restore
-            group.MapPatch("/{userId:guid}/restore", async (
+            nested.MapPatch("/{userId:guid}/restore", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
                 [FromServices] IProjectMemberReadService projectMemberReadSvc,
