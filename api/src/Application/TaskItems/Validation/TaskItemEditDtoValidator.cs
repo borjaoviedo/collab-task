@@ -8,8 +8,8 @@ namespace Application.TaskItems.Validation
     {
         public TaskItemEditDtoValidator()
         {
-            When(t => t.Title is not null, () => RuleFor(t => t.Title!).TaskTitleRules());
-            When(t => t.Description is not null, () => RuleFor(t => t.Description!).TaskDescriptionRules());
+            When(t => t.NewTitle is not null, () => RuleFor(t => t.NewTitle!).TaskTitleRules());
+            When(t => t.NewDescription is not null, () => RuleFor(t => t.NewDescription!).TaskDescriptionRules());
         }
     }
 }
