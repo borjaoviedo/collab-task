@@ -77,7 +77,7 @@ namespace Infrastructure.Tests.Repositories
 
             var (pId, _) = TestDataFactory.SeedUserWithProject(db);
             var newUser = TestDataFactory.SeedUser(db);
-            var newProjectMember = ProjectMember.Create(pId, newUser.Id, ProjectRole.Member, DateTimeOffset.UtcNow);
+            var newProjectMember = ProjectMember.Create(pId, newUser.Id, ProjectRole.Member);
 
             await repo.AddAsync(newProjectMember);
             await repo.SaveChangesAsync();

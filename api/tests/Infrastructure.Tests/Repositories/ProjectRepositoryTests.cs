@@ -205,7 +205,7 @@ namespace Infrastructure.Tests.Repositories
 
             var projectName = "New Project";
             var owner = TestDataFactory.SeedUser(db);
-            var project = Project.Create(owner.Id, ProjectName.Create(projectName), DateTimeOffset.UtcNow);
+            var project = Project.Create(owner.Id, ProjectName.Create(projectName));
 
             await repo.AddAsync(project);
             await repo.SaveChangesAsync();

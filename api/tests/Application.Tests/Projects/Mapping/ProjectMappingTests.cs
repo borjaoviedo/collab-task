@@ -13,7 +13,7 @@ namespace Application.Tests.Projects.Mapping
         public void ToReadDto_Maps_All_Fields()
         {
             var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Demo User"), Bytes(32), Bytes(16));
-            var p = Project.Create(u.Id, ProjectName.Create("Project Name"), DateTimeOffset.UtcNow);
+            var p = Project.Create(u.Id, ProjectName.Create("Project Name"));
 
             var dto = p.ToReadDto(u.Id);
 
@@ -31,16 +31,16 @@ namespace Application.Tests.Projects.Mapping
         public void ToReadDto_CurrentUserRole_Depends_On_User_Role()
         {
             var u1 = User.Create(Email.Create("user@demo.com"), UserName.Create("Owner User"), Bytes(32), Bytes(16));
-            var p = Project.Create(u1.Id, ProjectName.Create("Project Name"), DateTimeOffset.UtcNow);
+            var p = Project.Create(u1.Id, ProjectName.Create("Project Name"));
 
             var u2 = User.Create(Email.Create("user2@demo.com"), UserName.Create("Member User"), Bytes(32), Bytes(16));
-            p.AddMember(u2.Id, ProjectRole.Member, DateTimeOffset.UtcNow);
+            p.AddMember(u2.Id, ProjectRole.Member);
 
             var u3 = User.Create(Email.Create("user3@demo.com"), UserName.Create("Reader User"), Bytes(32), Bytes(16));
-            p.AddMember(u3.Id, ProjectRole.Reader, DateTimeOffset.UtcNow);
+            p.AddMember(u3.Id, ProjectRole.Reader);
 
             var u4 = User.Create(Email.Create("user4@demo.com"), UserName.Create("Admin User"), Bytes(32), Bytes(16));
-            p.AddMember(u4.Id, ProjectRole.Admin, DateTimeOffset.UtcNow);
+            p.AddMember(u4.Id, ProjectRole.Admin);
 
             var dto1 = p.ToReadDto(u1.Id);
             var dto2 = p.ToReadDto(u2.Id);
@@ -56,10 +56,10 @@ namespace Application.Tests.Projects.Mapping
         public void ToReadDto_Ignores_Removed_Members()
         {
             var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Owner User"), Bytes(32), Bytes(16));
-            var p = Project.Create(u.Id, ProjectName.Create("Project Name"), DateTimeOffset.UtcNow);
+            var p = Project.Create(u.Id, ProjectName.Create("Project Name"));
 
             var m = User.Create(Email.Create("removed@demo.com"), UserName.Create("Removed User"), Bytes(32), Bytes(16));
-            p.AddMember(m.Id, ProjectRole.Member, DateTimeOffset.UtcNow);
+            p.AddMember(m.Id, ProjectRole.Member);
             p.Members.First(x => x.UserId == m.Id).Remove(DateTimeOffset.UtcNow);
 
             var dto = p.ToReadDto(u.Id);

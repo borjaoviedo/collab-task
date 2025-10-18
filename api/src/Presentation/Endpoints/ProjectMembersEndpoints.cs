@@ -80,7 +80,7 @@ namespace Api.Endpoints
                 [FromServices] IProjectMemberWriteService projectMemberWriteSvc,
                 CancellationToken ct = default) =>
             {
-                var (result, _) = await projectMemberWriteSvc.CreateAsync(projectId, dto.UserId, dto.Role, dto.JoinedAt, ct);
+                var (result, _) = await projectMemberWriteSvc.CreateAsync(projectId, dto.UserId, dto.Role, ct);
                 return result.ToHttp();
             })
             .RequireAuthorization(Policies.ProjectAdmin)

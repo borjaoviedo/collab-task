@@ -105,7 +105,7 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var userId = (Guid)currentUserSvc.UserId!;
-                var (result, project) = await projectWriteSvc.CreateAsync(userId, dto.Name, DateTimeOffset.UtcNow, ct);
+                var (result, project) = await projectWriteSvc.CreateAsync(userId, dto.Name, ct);
                 if (result != DomainMutation.Created) return result.ToHttp();
 
                 var created = await projectReadSvc.GetAsync(project!.Id, ct);

@@ -15,18 +15,17 @@ namespace Domain.Tests.Entities
             var projectId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var role = ProjectRole.Member;
-            var joinedAt = DateTimeOffset.UtcNow.AddDays(-2);
             var removedAt = DateTimeOffset.UtcNow.AddDays(-1);
             var rv = Bytes(8);
 
-            var pm = ProjectMember.Create(projectId, userId, role, joinedAt);
+            var pm = ProjectMember.Create(projectId, userId, role);
             pm.RemovedAt = removedAt;
             pm.RowVersion = rv;
 
             pm.ProjectId.Should().Be(projectId);
             pm.UserId.Should().Be(userId);
             pm.Role.Should().Be(role);
-            pm.JoinedAt.Should().Be(joinedAt);
+            pm.JoinedAt.Should().NotBe(null);
             pm.RemovedAt.Should().Be(removedAt);
             pm.RowVersion.Should().BeSameAs(rv);
         }
@@ -35,9 +34,9 @@ namespace Domain.Tests.Entities
         public void Navigation_Properties_Assignable()
         {
             var user = User.Create(Email.Create("member@demo.com"), UserName.Create("Project Member"), Bytes(32), Bytes(16));
-            var p = Project.Create(user.Id, ProjectName.Create("A Project Name"), DateTimeOffset.UtcNow.AddDays(-5));
+            var p = Project.Create(user.Id, ProjectName.Create("A Project Name"));
 
-            var pm = ProjectMember.Create(p.Id, user.Id, ProjectRole.Reader, DateTimeOffset.UtcNow);
+            var pm = ProjectMember.Create(p.Id, user.Id, ProjectRole.Reader);
             pm.User = user;
             pm.Project = p;
 
@@ -48,21 +47,9 @@ namespace Domain.Tests.Entities
         }
 
         [Fact]
-        public void RemovedAt_After_JoinedAt_When_Assigned()
-        {
-            var joinedAt = DateTimeOffset.UtcNow.AddHours(-2);
-            var removedAt = joinedAt.AddMinutes(30);
-
-            var pm = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Member, joinedAt);
-            pm.RemovedAt = removedAt;
-
-            (pm.RemovedAt >= pm.JoinedAt).Should().BeTrue();
-        }
-
-        [Fact]
         public void Role_Can_Change()
         {
-            var pm = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Reader, DateTimeOffset.UtcNow);
+            var pm = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Reader);
 
             pm.Role.Should().Be(ProjectRole.Reader);
             pm.ChangeRole(ProjectRole.Member);

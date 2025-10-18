@@ -39,9 +39,9 @@ namespace Infrastructure.Data.Seeders
             static ActivityPayload Payload(object o) => ActivityPayload.Create(JsonSerializer.Serialize(o));
 
             // ==== Project A =======================================================
-            var prjA = Project.Create(admin.Id, ProjectName.Create("Demo Project A"), Now());
-            prjA.AddMember(user.Id, ProjectRole.Admin, Now());
-            prjA.AddMember(guest.Id, ProjectRole.Member, Now());
+            var prjA = Project.Create(admin.Id, ProjectName.Create("Demo Project A"));
+            prjA.AddMember(user.Id, ProjectRole.Admin);
+            prjA.AddMember(guest.Id, ProjectRole.Member);
 
             var lanePlan = Lane.Create(prjA.Id, LaneName.Create("Planning"), 0);
             var laneExec = Lane.Create(prjA.Id, LaneName.Create("Execution"), 1);
@@ -152,9 +152,9 @@ namespace Infrastructure.Data.Seeders
             db.TaskActivities.AddRange(tA1a1, tA2a1, tA2a2, tA2a3, tA3a1, tA3a2, tA3a3, tA3a4, tA3a5, tA4a1, tA4a2);
 
             // ==== Project B =======================================================
-            var prjB = Project.Create(user.Id, ProjectName.Create("Demo Project B"), Now());
-            prjB.AddMember(admin.Id, ProjectRole.Admin, Now());
-            prjB.AddMember(guest.Id, ProjectRole.Reader, Now());
+            var prjB = Project.Create(user.Id, ProjectName.Create("Demo Project B"));
+            prjB.AddMember(admin.Id, ProjectRole.Admin);
+            prjB.AddMember(guest.Id, ProjectRole.Reader);
 
             var laneOps = Lane.Create(prjB.Id, LaneName.Create("Operations"), 0);
             var cBack = Column.Create(prjB.Id, laneOps.Id, ColumnName.Create("Backlog"), 0);

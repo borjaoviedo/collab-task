@@ -44,8 +44,7 @@ namespace TestHelpers
 
             var project = Project.Create(
                 ownerId,
-                ProjectName.Create(name),
-                DateTimeOffset.UtcNow
+                ProjectName.Create(name)
             );
 
             db.Projects.Add(project);
@@ -58,8 +57,7 @@ namespace TestHelpers
             var projectMember = ProjectMember.Create(
                 projectId,
                 userId,
-                role,
-                DateTimeOffset.UtcNow);
+                role);
 
             db.ProjectMembers.Add(projectMember);
             db.SaveChanges();

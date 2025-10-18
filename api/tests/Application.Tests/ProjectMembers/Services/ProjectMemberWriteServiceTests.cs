@@ -20,7 +20,7 @@ namespace Application.Tests.ProjectMembers.Services
             var (pId, _) = TestDataFactory.SeedUserWithProject(db);
             var user = TestDataFactory.SeedUser(db);
 
-            var (res, projectMember) = await svc.CreateAsync(pId, user.Id, ProjectRole.Member, DateTimeOffset.UtcNow);
+            var (res, projectMember) = await svc.CreateAsync(pId, user.Id, ProjectRole.Member);
             res.Should().Be(DomainMutation.Created);
             projectMember.Should().NotBeNull();
         }

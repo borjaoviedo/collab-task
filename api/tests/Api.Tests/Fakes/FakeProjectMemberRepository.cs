@@ -142,7 +142,7 @@ namespace Api.Tests.Fakes
 
         private static ProjectMember Clone(ProjectMember m, bool includeUser, User? user = null)
         {
-            var clone = ProjectMember.Create(m.ProjectId, m.UserId, m.Role, m.JoinedAt);
+            var clone = ProjectMember.Create(m.ProjectId, m.UserId, m.Role);
             clone.RowVersion = (m.RowVersion is null) ? [] : m.RowVersion.ToArray();
             clone.Remove(m.RemovedAt);
 

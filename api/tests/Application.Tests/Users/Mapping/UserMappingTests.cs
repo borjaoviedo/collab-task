@@ -15,11 +15,10 @@ namespace Application.Tests.Users.Mapping
             var projectId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var projectRole = ProjectRole.Member;
-            var utcNow = DateTimeOffset.UtcNow;
 
             var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Demo User"), Bytes(32), Bytes(16));
-            u.ProjectMemberships.Add(ProjectMember.Create(projectId, userId, projectRole, utcNow));
-            u.ProjectMemberships.Add(ProjectMember.Create(projectId, userId, projectRole, utcNow));
+            u.ProjectMemberships.Add(ProjectMember.Create(projectId, userId, projectRole));
+            u.ProjectMemberships.Add(ProjectMember.Create(projectId, userId, projectRole));
 
             var dto = u.ToReadDto();
 

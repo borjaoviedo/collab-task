@@ -6,11 +6,11 @@ namespace Application.ProjectMembers.Services
 {
     public sealed class ProjectMemberWriteService(IProjectMemberRepository repo) : IProjectMemberWriteService
     {
-        public async Task<(DomainMutation, ProjectMember?)> CreateAsync(Guid projectId, Guid userId, ProjectRole role, DateTimeOffset joinedAt, CancellationToken ct = default)
+        public async Task<(DomainMutation, ProjectMember?)> CreateAsync(Guid projectId, Guid userId, ProjectRole role, CancellationToken ct = default)
         {
             if (await repo.ExistsAsync(projectId, userId, ct)) return (DomainMutation.NotFound, null);
 
-            var projectMember = ProjectMember.Create(projectId, userId, role, joinedAt);
+            var projectMember = ProjectMember.Create(projectId, userId, role);
             await repo.AddAsync(projectMember, ct);
             await repo.SaveChangesAsync(ct);
             return (DomainMutation.Created, projectMember);

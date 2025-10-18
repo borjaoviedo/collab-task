@@ -27,7 +27,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
             db.Users.Add(owner);
             await db.SaveChangesAsync();
 
-            var p = Project.Create(owner.Id, ProjectName.Create("Alpha Board"), DateTimeOffset.UtcNow);
+            var p = Project.Create(owner.Id, ProjectName.Create("Alpha Board"));
             db.Projects.Add(p);
             await db.SaveChangesAsync();
 
@@ -55,12 +55,12 @@ namespace Infrastructure.Tests.Persistence.Contracts
 
             var pname = ProjectName.Create("Same Name");
 
-            var p1 = Project.Create(owner1.Id, pname, DateTimeOffset.UtcNow);
+            var p1 = Project.Create(owner1.Id, pname);
             db.Projects.Add(p1);
             await db.SaveChangesAsync();
 
             // Same owner + same name -> should throw due to unique (OwnerId, Slug)
-            var p2 = Project.Create(owner1.Id, pname, DateTimeOffset.UtcNow.AddMinutes(1));
+            var p2 = Project.Create(owner1.Id, pname);
             db.Projects.Add(p2);
             await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
 
@@ -68,7 +68,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
             db.Entry(p2).State = EntityState.Detached;
 
             // Different owner + same name -> allowed
-            var p3 = Project.Create(owner2.Id, pname, DateTimeOffset.UtcNow);
+            var p3 = Project.Create(owner2.Id, pname);
             db.Projects.Add(p3);
             await db.SaveChangesAsync();
 
@@ -89,18 +89,18 @@ namespace Infrastructure.Tests.Persistence.Contracts
             db.Users.AddRange(owner1, owner2);
             await db.SaveChangesAsync();
 
-            var p1 = Project.Create(owner1.Id, ProjectName.Create("P1"), DateTimeOffset.UtcNow);
+            var p1 = Project.Create(owner1.Id, ProjectName.Create("P1"));
             p1.Slug = ProjectSlug.Create("same");
             db.Projects.Add(p1);
             await db.SaveChangesAsync();
 
-            var p2 = Project.Create(owner1.Id, ProjectName.Create("P2"), DateTimeOffset.UtcNow);
+            var p2 = Project.Create(owner1.Id, ProjectName.Create("P2"));
             p2.Slug = ProjectSlug.Create("same");
             db.Projects.Add(p2);
             await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
             db.Entry(p2).State = EntityState.Detached;
 
-            var p3 = Project.Create(owner2.Id, ProjectName.Create("P3"), DateTimeOffset.UtcNow);
+            var p3 = Project.Create(owner2.Id, ProjectName.Create("P3"));
             p3.Slug = ProjectSlug.Create("same");
             db.Projects.Add(p3);
             await db.SaveChangesAsync();
@@ -116,7 +116,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
             db.Users.Add(owner);
             await db.SaveChangesAsync();
 
-            var p = Project.Create(owner.Id, ProjectName.Create("Gamma Board"), DateTimeOffset.UtcNow);
+            var p = Project.Create(owner.Id, ProjectName.Create("Gamma Board"));
             db.Projects.Add(p);
             await db.SaveChangesAsync();
 
@@ -145,7 +145,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
             db.Users.Add(owner);
             await db.SaveChangesAsync();
 
-            var p = Project.Create(owner.Id, ProjectName.Create("Owner Project"), DateTimeOffset.UtcNow);
+            var p = Project.Create(owner.Id, ProjectName.Create("Owner Project"));
             db.Projects.Add(p);
             await db.SaveChangesAsync();
 

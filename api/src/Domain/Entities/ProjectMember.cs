@@ -15,7 +15,7 @@ namespace Domain.Entities
 
         private ProjectMember() { }
 
-        public static ProjectMember Create(Guid projectId, Guid userId, ProjectRole role, DateTimeOffset joinedAtUtc)
+        public static ProjectMember Create(Guid projectId, Guid userId, ProjectRole role)
         {
             if (projectId == Guid.Empty) throw new ArgumentException("ProjectId cannot be empty.", nameof(projectId));
             if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty.", nameof(userId));
@@ -25,7 +25,7 @@ namespace Domain.Entities
                 ProjectId = projectId,
                 UserId = userId,
                 Role = role,
-                JoinedAt = joinedAtUtc
+                JoinedAt = DateTimeOffset.UtcNow
             };
         }
 
