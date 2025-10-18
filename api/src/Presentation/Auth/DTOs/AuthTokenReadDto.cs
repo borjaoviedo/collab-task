@@ -4,7 +4,7 @@ namespace Api.Auth.DTOs
     {
         public string AccessToken { get; init; } = default!;
         public string TokenType { get; init; } = "Bearer";
-        public DateTime ExpiresAtUtc { get; init; }
+        public DateTimeOffset ExpiresAtUtc { get; init; }
         public Guid UserId { get; init; }
         public string Email { get; init; } = default!;
         public string Name { get; init; } = default!;
