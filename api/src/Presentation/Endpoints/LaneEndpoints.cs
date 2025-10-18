@@ -20,10 +20,10 @@ namespace Api.Endpoints
             // GET /projects/{projectId}/lanes/
             group.MapGet("/", async (
                 [FromRoute] Guid projectId,
-                [FromServices] ILaneReadService svc,
+                [FromServices] ILaneReadService laneReadSvc,
                 CancellationToken ct = default) =>
             {
-                var lanes = await svc.ListByProjectAsync(projectId, ct);
+                var lanes = await laneReadSvc.ListByProjectAsync(projectId, ct);
                 var dto = lanes.Select(l => l.ToReadDto()).ToList();
                 return Results.Ok(dto);
             })
@@ -56,11 +56,11 @@ namespace Api.Endpoints
             group.MapPost("/", async (
                 [FromRoute] Guid projectId,
                 [FromBody] LaneCreateDto dto,
-                [FromServices] ILaneWriteService svc,
+                [FromServices] ILaneWriteService laneWriteSvc,
                 HttpContext http,
                 CancellationToken ct = default) =>
             {
-                var (result, lane) = await svc.CreateAsync(projectId, dto.Name, dto.Order, ct);
+                var (result, lane) = await laneWriteSvc.CreateAsync(projectId, dto.Name, dto.Order, ct);
                 if (result != DomainMutation.Created) return result.ToHttp();
 
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(lane!.RowVersion)}\"";
