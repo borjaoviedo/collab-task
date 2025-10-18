@@ -27,11 +27,11 @@ namespace Api.Endpoints
 
             // POST /auth/register
             group.MapPost("/register", async (
+                [FromBody] UserRegisterDto dto,
                 [FromServices] IUserWriteService userWriteSvc,
                 [FromServices] IPasswordHasher hasher,
                 [FromServices] IJwtTokenService jwtSvc,
                 [FromServices] ILoggerFactory loggerFactory,
-                [FromBody] UserRegisterDto dto,
                 CancellationToken ct = default) =>
             {
                 var log = loggerFactory.CreateLogger("Auth.Register");
@@ -62,11 +62,11 @@ namespace Api.Endpoints
 
             // POST /auth/login
             group.MapPost("/login", async (
+                [FromBody] UserLoginDto dto,
                 [FromServices] IUserReadService userReadSvc,
                 [FromServices] IPasswordHasher hasher,
                 [FromServices] IJwtTokenService jwtSvc,
                 [FromServices] ILoggerFactory loggerFactory,
-                [FromBody] UserLoginDto dto,
                 CancellationToken ct = default) =>
             {
                 var log = loggerFactory.CreateLogger("Auth.Login");
@@ -105,9 +105,9 @@ namespace Api.Endpoints
 
             // GET /auth/me
             group.MapGet("/me", async (
-                HttpContext http,
                 [FromServices] IUserReadService userReadSvc,
                 [FromServices] ILoggerFactory loggerFactory,
+                HttpContext http,
                 CancellationToken ct = default) =>
             {
                 var logger = loggerFactory.CreateLogger("Auth.Me");
