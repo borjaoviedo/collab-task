@@ -63,24 +63,24 @@ namespace Application.Tests.ProjectMembers.Validation
         }
 
         [Fact]
-        public void UpdateRole_Invalid_Fails()
+        public void ChangeRole_Invalid_Fails()
         {
-            var v = new ProjectMemberUpdateRoleDtoValidator();
-            var dto = new ProjectMemberUpdateRoleDto
+            var v = new ProjectMemberChangeRoleDtoValidator();
+            var dto = new ProjectMemberChangeRoleDto
             {
-                Role = (ProjectRole)999
+                NewRole = (ProjectRole)999
             };
             var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(x => x.Role).WithErrorMessage("Invalid project role value.");
+            r.ShouldHaveValidationErrorFor(x => x.NewRole).WithErrorMessage("Invalid project role value.");
         }
 
         [Fact]
-        public void UpdateRole_Valid_Passes()
+        public void ChangeRole_Valid_Passes()
         {
-            var v = new ProjectMemberUpdateRoleDtoValidator();
-            var dto = new ProjectMemberUpdateRoleDto
+            var v = new ProjectMemberChangeRoleDtoValidator();
+            var dto = new ProjectMemberChangeRoleDto
             {
-                Role = ProjectRole.Member
+                NewRole = ProjectRole.Member
             };
             v.TestValidate(dto).ShouldNotHaveAnyValidationErrors();
         }
