@@ -3,6 +3,6 @@ namespace Application.Lanes.DTOs
 {
     public sealed class LaneReorderDto
     {
-        public int NewOrder { get; set; }
+        public required int NewOrder { get; set; }
     }
 }

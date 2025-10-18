@@ -4,8 +4,8 @@ namespace Application.ProjectMembers.DTOs
 {
     public sealed class ProjectMemberCreateDto
     {
-        public Guid UserId { get; set; }
-        public ProjectRole Role { get; set; }
-        public DateTimeOffset JoinedAt { get; set; }
+        public required Guid UserId { get; set; }
+        public required ProjectRole Role { get; set; }
+        public required DateTimeOffset JoinedAt { get; set; }
     }
 }

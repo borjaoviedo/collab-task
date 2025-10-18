@@ -6,6 +6,6 @@ namespace Application.TaskItems.DTOs
         public required string Title { get; set; }
         public required string Description { get; set; }
         public DateTimeOffset? DueDate { get; set; }
-        public decimal SortKey { get; set; }
+        public required decimal SortKey { get; set; }
     }
 }

@@ -4,6 +4,6 @@ namespace Application.ProjectMembers.DTOs
 {
     public sealed class ProjectMemberChangeRoleDto
     {
-        public ProjectRole NewRole { get; set; }
+        public required ProjectRole NewRole { get; set; }
     }
 }

@@ -4,6 +4,6 @@ namespace Application.Users.DTOs
 {
     public sealed class UserChangeRoleDto
     {
-        public UserRole NewRole { get; set; }
+        public required UserRole NewRole { get; set; }
     }
 }
