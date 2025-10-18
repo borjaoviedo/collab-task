@@ -38,10 +38,10 @@ namespace Api.Endpoints
             // GET /users/{userId}
             group.MapGet("/{userId:guid}", async (
                 [FromRoute] Guid userId,
-                [FromServices] IUserReadService svc,
+                [FromServices] IUserReadService userReadSvc,
                 CancellationToken ct = default) =>
             {
-                var u = await svc.GetAsync(userId, ct);
+                var u = await userReadSvc.GetAsync(userId, ct);
                 if (u is null) return Results.NotFound();
                 return Results.Ok(u.ToReadDto());
             })
