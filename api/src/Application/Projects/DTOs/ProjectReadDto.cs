@@ -1,5 +1,4 @@
 using Domain.Enums;
-using System.Text.Json.Serialization;
 
 namespace Application.Projects.DTOs
 {
@@ -12,6 +11,6 @@ namespace Application.Projects.DTOs
         public DateTimeOffset UpdatedAt { get; init; }
         public byte[] RowVersion { get; init; } = default!;
         public int MembersCount { get; init; }
-        [JsonConverter(typeof(JsonStringEnumConverter))] public ProjectRole CurrentUserRole { get; init; }
+        public ProjectRole CurrentUserRole { get; init; }
     }
 }
