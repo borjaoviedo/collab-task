@@ -88,12 +88,12 @@ namespace Api.Endpoints
                 var dto = projects.Select(p => p.ToReadDto(userId)).ToList();
                 return Results.Ok(dto);
             })
-            .RequireAuthorization()
+            .RequireAuthorization(Policies.SystemAdmin)
             .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .WithSummary("List projects by user")
-            .WithDescription("Lists all projects the specified user can access. Admin-only if the user differs from the caller.")
+            .WithDescription("Lists all projects the specified user can access.")
             .WithName("Projects_List_ByUser");
 
             // POST /projects
