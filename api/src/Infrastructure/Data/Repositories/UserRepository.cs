@@ -17,6 +17,7 @@ namespace Infrastructure.Data.Repositories
             => await _db.Users
                         .AsNoTracking()
                         .OrderBy(u => u.Name)
+                        .Include(u => u.ProjectMemberships)
                         .ToListAsync(ct);
 
         public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
