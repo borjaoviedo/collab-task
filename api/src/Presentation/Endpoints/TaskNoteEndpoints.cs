@@ -81,6 +81,7 @@ namespace Api.Endpoints
                 return Results.Created($"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{note.Id}", note.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireValidation<TaskNoteCreateDto>()
             .Produces<TaskNoteReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -117,6 +118,7 @@ namespace Api.Endpoints
                 return Results.Ok(edited.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireValidation<TaskNoteEditDto>()
             .RequireIfMatch()
             .Produces<TaskNoteReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)

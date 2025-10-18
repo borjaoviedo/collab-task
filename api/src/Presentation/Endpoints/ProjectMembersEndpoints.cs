@@ -84,6 +84,7 @@ namespace Api.Endpoints
                 return result.ToHttp();
             })
             .RequireAuthorization(Policies.ProjectAdmin)
+            .RequireValidation<ProjectMemberCreateDto>()
             .Produces(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -115,6 +116,7 @@ namespace Api.Endpoints
                 return Results.Ok(updated.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectOwner)
+            .RequireValidation<ProjectMemberChangeRoleDto>()
             .RequireIfMatch()
             .Produces<ProjectMemberReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -147,6 +149,7 @@ namespace Api.Endpoints
                 return Results.Ok(removed.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectAdmin)
+            .RequireValidation<ProjectMemberRemoveDto>()
             .RequireIfMatch()
             .Produces<ProjectMemberReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)

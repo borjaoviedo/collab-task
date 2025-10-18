@@ -116,6 +116,7 @@ namespace Api.Endpoints
                 return Results.Created($"/projects/{project.Id}", body);
             })
             .Produces<ProjectReadDto>(StatusCodes.Status201Created)
+            .RequireValidation<ProjectCreateDto>()
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status409Conflict)
@@ -146,6 +147,7 @@ namespace Api.Endpoints
                 return Results.Ok(edited.ToReadDto(userId));
             })
             .RequireAuthorization(Policies.ProjectAdmin)
+            .RequireValidation<ProjectRenameDto>()
             .RequireIfMatch()
             .Produces<ProjectReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)

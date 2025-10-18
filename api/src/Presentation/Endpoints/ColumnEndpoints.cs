@@ -71,6 +71,7 @@ namespace Api.Endpoints
                 return Results.Created($"/projects/{projectId}/lanes/{laneId}/columns/{column.Id}", column.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireValidation<ColumnCreateDto>()
             .Produces<ColumnReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -102,6 +103,7 @@ namespace Api.Endpoints
                 return Results.Ok(renamed.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireValidation<ColumnRenameDto>()
             .RequireIfMatch()
             .Produces<ColumnReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -136,6 +138,7 @@ namespace Api.Endpoints
                 return Results.Ok(reordered.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireValidation<ColumnReorderDto>()
             .RequireIfMatch()
             .Produces<ColumnReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)

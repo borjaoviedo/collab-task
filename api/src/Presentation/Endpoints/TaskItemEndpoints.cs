@@ -79,6 +79,7 @@ namespace Api.Endpoints
                 return Results.Created($"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{task.Id}", task.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireValidation<TaskItemCreateDto>()
             .Produces<TaskItemReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -113,6 +114,7 @@ namespace Api.Endpoints
                 return Results.Ok(edited.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireValidation<TaskItemEditDto>()
             .RequireIfMatch()
             .Produces<TaskItemReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -151,6 +153,7 @@ namespace Api.Endpoints
                 return Results.Ok(moved.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireValidation<TaskItemMoveDto>()
             .RequireIfMatch()
             .Produces<TaskItemReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)

@@ -67,6 +67,7 @@ namespace Api.Endpoints
                 return Results.Created($"/projects/{projectId}/lanes/{lane.Id}", lane.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireValidation<LaneCreateDto>()
             .Produces<LaneReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -97,6 +98,7 @@ namespace Api.Endpoints
                 return Results.Ok(renamed.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireValidation<LaneRenameDto>()
             .RequireIfMatch()
             .Produces<LaneReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -130,6 +132,7 @@ namespace Api.Endpoints
                 return Results.Ok(reordered.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireValidation<LaneReorderDto>()
             .RequireIfMatch()
             .Produces<LaneReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)

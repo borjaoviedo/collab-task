@@ -88,6 +88,7 @@ namespace Api.Endpoints
                     : Results.Ok(body);
             })
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireValidation<TaskAssignmentCreateDto>()
             .Produces<TaskAssignmentReadDto>(StatusCodes.Status201Created)
             .Produces<TaskAssignmentReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -126,6 +127,7 @@ namespace Api.Endpoints
                 return Results.Ok(updated.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
+            .RequireValidation<TaskAssignmentChangeRoleDto>()
             .RequireIfMatch()
             .Produces<TaskAssignmentReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)

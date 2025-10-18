@@ -92,6 +92,7 @@ namespace Api.Endpoints
                 return Results.Ok(renamed.ToReadDto());
             })
             .RequireIfMatch()
+            .RequireValidation<UserRenameDto>()
             .Produces<UserReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -121,6 +122,7 @@ namespace Api.Endpoints
                 return Results.Ok(edited.ToReadDto());
             })
             .RequireAuthorization(Policies.SystemAdmin)
+            .RequireValidation<UserChangeRoleDto>()
             .RequireIfMatch()
             .Produces<UserReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
