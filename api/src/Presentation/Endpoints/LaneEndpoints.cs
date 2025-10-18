@@ -1,6 +1,5 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
-using Api.Filters;
 using Api.Helpers;
 using Application.Lanes.Abstractions;
 using Application.Lanes.DTOs;
