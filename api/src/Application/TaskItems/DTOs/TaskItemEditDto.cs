@@ -3,8 +3,8 @@ namespace Application.TaskItems.DTOs
 {
     public sealed class TaskItemEditDto
     {
-        public string? NewTitle { get; set; } = default!;
-        public string? NewDescription { get; set; } = default!;
-        public DateTimeOffset? NewDueDate { get; set; }
+        public string? NewTitle { get; init; } = default!;
+        public string? NewDescription { get; init; } = default!;
+        public DateTimeOffset? NewDueDate { get; init; }
     }
 }

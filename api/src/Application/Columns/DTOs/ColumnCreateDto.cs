@@ -3,7 +3,7 @@ namespace Application.Columns.DTOs
 {
     public sealed class ColumnCreateDto
     {
-        public required string Name { get; set; }
-        public required int Order { get; set; }
+        public required string Name { get; init; }
+        public required int Order { get; init; }
     }
 }

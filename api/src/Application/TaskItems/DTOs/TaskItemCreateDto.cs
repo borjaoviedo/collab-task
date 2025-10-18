@@ -3,9 +3,9 @@ namespace Application.TaskItems.DTOs
 {
     public sealed class TaskItemCreateDto
     {
-        public required string Title { get; set; }
-        public required string Description { get; set; }
-        public DateTimeOffset? DueDate { get; set; }
-        public required decimal SortKey { get; set; }
+        public required string Title { get; init; }
+        public required string Description { get; init; }
+        public DateTimeOffset? DueDate { get; init; }
+        public required decimal SortKey { get; init; }
     }
 }
