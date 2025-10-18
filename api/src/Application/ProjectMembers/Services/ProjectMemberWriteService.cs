@@ -19,10 +19,10 @@ namespace Application.ProjectMembers.Services
         public async Task<DomainMutation> ChangeRoleAsync(Guid projectId, Guid userId, ProjectRole newRole, byte[] rowVersion, CancellationToken ct = default)
             => await repo.UpdateRoleAsync(projectId, userId, newRole, rowVersion, ct);
 
-        public async Task<DomainMutation> RemoveAsync(Guid projectId, Guid userId, byte[] rowVersion, DateTimeOffset removedAt, CancellationToken ct = default)
-            => await repo.SetRemovedAsync(projectId, userId, removedAt, rowVersion, ct);
+        public async Task<DomainMutation> RemoveAsync(Guid projectId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
+            => await repo.SetRemovedAsync(projectId, userId, rowVersion, ct);
 
         public async Task<DomainMutation> RestoreAsync(Guid projectId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
-            => await repo.SetRemovedAsync(projectId, userId, null, rowVersion, ct);
+            => await repo.SetRestoredAsync(projectId, userId, rowVersion, ct);
     }
 }

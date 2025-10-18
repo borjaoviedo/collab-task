@@ -7,7 +7,7 @@ namespace Application.ProjectMembers.Abstractions
     {
         Task<(DomainMutation, ProjectMember?)> CreateAsync(Guid projectId, Guid userId, ProjectRole role, CancellationToken ct = default);
         Task<DomainMutation> ChangeRoleAsync(Guid projectId, Guid userId, ProjectRole newRole, byte[] rowVersion, CancellationToken ct = default);
-        Task<DomainMutation> RemoveAsync(Guid projectId, Guid userId, byte[] rowVersion, DateTimeOffset removedAt, CancellationToken ct = default);
+        Task<DomainMutation> RemoveAsync(Guid projectId, Guid userId, byte[] rowVersion, CancellationToken ct = default);
         Task<DomainMutation> RestoreAsync(Guid projectId, Guid userId, byte[] rowVersion, CancellationToken ct = default);
     }
 }

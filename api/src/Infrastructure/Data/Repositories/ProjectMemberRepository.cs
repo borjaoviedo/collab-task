@@ -77,16 +77,40 @@ namespace Infrastructure.Data.Repositories
             }
         }
 
-        public async Task<DomainMutation> SetRemovedAsync(Guid projectId, Guid userId, DateTimeOffset? removedAt, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> SetRemovedAsync(Guid projectId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
         {
             var projectMember = await GetTrackedByIdAsync(projectId, userId, ct);
             if (projectMember is null) return DomainMutation.NotFound;
 
-            if (projectMember.RemovedAt == removedAt) return DomainMutation.NoOp;
+            var now = DateTimeOffset.UtcNow;
+            if (projectMember.RemovedAt == now) return DomainMutation.NoOp;
 
             _db.Entry(projectMember).Property(pm => pm.RowVersion).OriginalValue = rowVersion;
 
-            projectMember.Remove(removedAt);
+            projectMember.Remove(now);
+            _db.Entry(projectMember).Property(pm => pm.RemovedAt).IsModified = true;
+
+            try
+            {
+                await _db.SaveChangesAsync(ct);
+                return DomainMutation.Updated;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return DomainMutation.Conflict;
+            }
+        }
+
+        public async Task<DomainMutation> SetRestoredAsync(Guid projectId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
+        {
+            var projectMember = await GetTrackedByIdAsync(projectId, userId, ct);
+            if (projectMember is null) return DomainMutation.NotFound;
+
+            if (projectMember.RemovedAt == null) return DomainMutation.NoOp;
+
+            _db.Entry(projectMember).Property(pm => pm.RowVersion).OriginalValue = rowVersion;
+
+            projectMember.Restore();
             _db.Entry(projectMember).Property(pm => pm.RemovedAt).IsModified = true;
 
             try

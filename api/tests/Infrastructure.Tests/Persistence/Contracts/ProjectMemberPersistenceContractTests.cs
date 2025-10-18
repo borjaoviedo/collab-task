@@ -122,7 +122,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
 
             // clear RemovedAt
             var tracked = await db.ProjectMembers.SingleAsync(x => x.ProjectId == p.Id && x.UserId == u.Id);
-            tracked.Remove(null);
+            tracked.Restore();
             db.Entry(tracked).Property(x => x.RemovedAt).IsModified = true;
             await db.SaveChangesAsync();
 
