@@ -21,11 +21,11 @@ namespace Api.Endpoints
             // GET /projects?filter=...
             group.MapGet("/", async (
                 [AsParameters] ProjectFilter filter,
-                [FromServices] ICurrentUserService userSvc,
+                [FromServices] ICurrentUserService currentUserSvc,
                 [FromServices] IProjectReadService projectReadSvc,
                 CancellationToken ct = default) =>
             {
-                var userId = (Guid)userSvc.UserId!;
+                var userId = (Guid)currentUserSvc.UserId!;
                 var projects = await projectReadSvc.GetAllByUserAsync(userId, filter, ct);
                 var dto = projects.Select(p => p.ToReadDto(userId)).ToList();
                 return Results.Ok(dto);
@@ -39,14 +39,15 @@ namespace Api.Endpoints
             // GET /projects/{projectId}
             group.MapGet("/{projectId:guid}", async (
                 [FromRoute] Guid projectId,
-                [FromServices] ICurrentUserService userSvc,
+                [FromServices] ICurrentUserService currentUserSvc,
                 [FromServices] IProjectRepository repo,
                 CancellationToken ct = default) =>
             {
                 var res = await repo.GetByIdAsync(projectId, ct);
                 if (res is null) return Results.NotFound();
 
-                return Results.Ok(res.ToReadDto((Guid)userSvc.UserId!));
+                var userId = (Guid)currentUserSvc.UserId!;
+                return Results.Ok(res.ToReadDto(userId));
             })
             .RequireAuthorization(Policies.ProjectReader)
             .Produces<ProjectReadDto>(StatusCodes.Status200OK)
@@ -99,12 +100,12 @@ namespace Api.Endpoints
             // POST /projects
             group.MapPost("/", async (
                 [FromBody] ProjectCreateDto dto,
-                [FromServices] ICurrentUserService userSvc,
+                [FromServices] ICurrentUserService currentUserSvc,
                 [FromServices] IProjectWriteService projectWriteSvc,
                 [FromServices] IProjectReadService projectReadSvc,
                 CancellationToken ct = default) =>
             {
-                var userId = (Guid)userSvc.UserId!;
+                var userId = (Guid)currentUserSvc.UserId!;
                 var (result, project) = await projectWriteSvc.CreateAsync(userId, dto.Name, DateTimeOffset.UtcNow, ct);
                 if (result != DomainMutation.Created) return result.ToHttp();
 
@@ -127,7 +128,7 @@ namespace Api.Endpoints
             group.MapPatch("/{projectId:guid}/rename", async (
                 [FromRoute] Guid projectId,
                 [FromBody] ProjectRenameDto dto,
-                [FromServices] ICurrentUserService userSvc,
+                [FromServices] ICurrentUserService currentUserSvc,
                 [FromServices] IProjectWriteService projectWriteSvc,
                 [FromServices] IProjectReadService projectReadSvc,
                 HttpContext http,
@@ -141,7 +142,9 @@ namespace Api.Endpoints
 
                 var edited = await projectReadSvc.GetAsync(projectId, ct);
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
-                return Results.Ok(edited.ToReadDto((Guid)userSvc.UserId!));
+
+                var userId = (Guid)currentUserSvc.UserId!;
+                return Results.Ok(edited.ToReadDto(userId));
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireIfMatch()
