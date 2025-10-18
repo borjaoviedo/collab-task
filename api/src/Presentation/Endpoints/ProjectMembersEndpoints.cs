@@ -21,10 +21,10 @@ namespace Api.Endpoints
             group.MapGet("/", async (
                 [FromRoute] Guid projectId,
                 [FromQuery] bool includeRemoved,
-                [FromServices] IProjectMemberReadService svc,
+                [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 CancellationToken ct = default) =>
             {
-                var members = await svc.ListByProjectAsync(projectId, includeRemoved, ct);
+                var members = await projectMemberReadSvc.ListByProjectAsync(projectId, includeRemoved, ct);
                 var dto = members.Select(m => m.ToReadDto()).ToList();
                 return Results.Ok(dto);
             })
@@ -41,10 +41,10 @@ namespace Api.Endpoints
             group.MapGet("/{userId:guid}", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
-                [FromServices] IProjectMemberReadService pmReadSvc,
+                [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 CancellationToken ct = default) =>
             {
-                var pm = await pmReadSvc.GetAsync(projectId, userId, ct);
+                var pm = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
                 return pm is null ? Results.NotFound() : Results.Ok(pm.ToReadDto());
             })
             .Produces<ProjectMemberReadDto>(StatusCodes.Status200OK)
@@ -59,10 +59,10 @@ namespace Api.Endpoints
             group.MapGet("/{userId:guid}/role", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
-                [FromServices] IProjectMemberReadService pmReadSvc,
+                [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 CancellationToken ct = default) =>
             {
-                var role = await pmReadSvc.GetRoleAsync(projectId, userId, ct);
+                var role = await projectMemberReadSvc.GetRoleAsync(projectId, userId, ct);
                 return role is null ? Results.NotFound() : Results.Ok(new { Role = role });
             })
             .Produces<object>(StatusCodes.Status200OK)
@@ -77,11 +77,11 @@ namespace Api.Endpoints
             group.MapGet("/{userId:guid}/count", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
-                [FromServices] IProjectMemberReadService pmReadSvc,
+                [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 [FromQuery] bool active = true,
                 CancellationToken ct = default) =>
             {
-                var count = await pmReadSvc.CountActiveAsync(userId, ct);
+                var count = await projectMemberReadSvc.CountActiveAsync(userId, ct);
                 return Results.Ok(new { Count = count });
             })
             .RequireAuthorization(Policies.ProjectAdmin)
@@ -97,10 +97,10 @@ namespace Api.Endpoints
             group.MapPost("/", async (
                 [FromRoute] Guid projectId,
                 [FromBody] ProjectMemberCreateDto dto,
-                [FromServices] IProjectMemberWriteService svc,
+                [FromServices] IProjectMemberWriteService projectMemberWriteSvc,
                 CancellationToken ct = default) =>
             {
-                var (result, _) = await svc.CreateAsync(projectId, dto.UserId, dto.Role, dto.JoinedAt, ct);
+                var (result, _) = await projectMemberWriteSvc.CreateAsync(projectId, dto.UserId, dto.Role, dto.JoinedAt, ct);
                 return result.ToHttp();
             })
             .RequireAuthorization(Policies.ProjectAdmin)
