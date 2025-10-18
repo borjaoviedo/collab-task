@@ -3,7 +3,6 @@ using Api.Auth.Mapping;
 using Api.Extensions;
 using Application.Common.Abstractions.Security;
 using Application.Common.Exceptions;
-using Application.ProjectMembers.Abstractions;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
