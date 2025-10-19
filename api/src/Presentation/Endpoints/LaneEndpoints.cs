@@ -24,8 +24,9 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var lanes = await laneReadSvc.ListByProjectAsync(projectId, ct);
-                var dto = lanes.Select(l => l.ToReadDto()).ToList();
-                return Results.Ok(dto);
+                var responseDto = lanes.Select(l => l.ToReadDto()).ToList();
+
+                return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<LaneReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -39,10 +40,16 @@ namespace Api.Endpoints
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromServices] ILaneReadService laneReadSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var lane = await laneReadSvc.GetAsync(laneId, ct);
-                return lane is null ? Results.NotFound() : Results.Ok(lane.ToReadDto());
+                if (lane is null) return Results.NotFound();
+
+                var responseDto = lane.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .Produces<LaneReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -57,18 +64,19 @@ namespace Api.Endpoints
                 [FromRoute] Guid projectId,
                 [FromBody] LaneCreateDto dto,
                 [FromServices] ILaneWriteService laneWriteSvc,
-                HttpContext http,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var (result, lane) = await laneWriteSvc.CreateAsync(projectId, dto.Name, dto.Order, ct);
-                if (result != DomainMutation.Created || lane is null) return result.ToHttp();
+                if (result != DomainMutation.Created || lane is null) return result.ToHttp(context);
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(lane.RowVersion)}\"";
+                var responseDto = lane.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
                 return Results.CreatedAtRoute(
                     "Lanes_Get_ById",
                     new { projectId, laneId = lane.Id},
-                    lane.ToReadDto());
+                    responseDto);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<LaneCreateDto>()
@@ -86,22 +94,24 @@ namespace Api.Endpoints
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromBody] LaneRenameDto dto,
-                [FromServices] ILaneWriteService laneWriteSvc,
                 [FromServices] ILaneReadService laneReadSvc,
-                HttpContext http,
+                [FromServices] ILaneWriteService laneWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion);
+                    context, () => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion);
 
                 var result = await laneWriteSvc.RenameAsync(laneId, dto.NewName, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp(http);
+                if (result != DomainMutation.Updated) return result.ToHttp(context);
 
                 var renamed = await laneReadSvc.GetAsync(laneId, ct);
                 if (renamed is null) return Results.NotFound();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed.RowVersion)}\"";
-                return Results.Ok(renamed.ToReadDto());
+                var responseDto = renamed.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<LaneRenameDto>()
@@ -122,22 +132,24 @@ namespace Api.Endpoints
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromBody] LaneReorderDto dto,
-                [FromServices] ILaneWriteService laneWriteSvc,
                 [FromServices] ILaneReadService laneReadSvc,
-                HttpContext http,
+                [FromServices] ILaneWriteService laneWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion);
+                    context, () => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion);
 
                 var result = await laneWriteSvc.ReorderAsync(laneId, dto.NewOrder, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp(http);
+                if (result != DomainMutation.Updated) return result.ToHttp(context);
 
                 var reordered = await laneReadSvc.GetAsync(laneId, ct);
                 if (reordered is null) return Results.NotFound();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(reordered.RowVersion)}\"";
-                return Results.Ok(reordered.ToReadDto());
+                var responseDto = reordered.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<LaneReorderDto>()
@@ -157,16 +169,17 @@ namespace Api.Endpoints
             group.MapDelete("/{laneId:guid}", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
-                [FromServices] ILaneWriteService laneWriteSvc,
                 [FromServices] ILaneReadService laneReadSvc,
-                HttpContext http,
+                [FromServices] ILaneWriteService laneWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion);
+                    context, () => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion);
 
                 var result = await laneWriteSvc.DeleteAsync(laneId, rowVersion, ct);
-                return result.ToHttp(http);
+
+                return result.ToHttp(context);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireIfMatch()
