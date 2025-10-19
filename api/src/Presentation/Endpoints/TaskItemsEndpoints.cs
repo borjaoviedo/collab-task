@@ -23,17 +23,17 @@ namespace Api.Endpoints
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
-                [FromServices] ITaskItemReadService svc,
+                [FromServices] ITaskItemReadService taskItemReadService,
                 CancellationToken ct = default) =>
             {
-                var tasks = await svc.ListByColumnAsync(columnId, ct);
-                var dto = tasks.Select(t => t.ToReadDto()).ToList();
-                return Results.Ok(dto);
+                var tasks = await taskItemReadService.ListByColumnAsync(columnId, ct);
+                var responseDto = tasks.Select(t => t.ToReadDto()).ToList();
+
+                return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<TaskItemReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get all tasks")
             .WithDescription("Returns tasks belonging to the specified column.")
             .WithName("Tasks_Get_All");
@@ -44,11 +44,17 @@ namespace Api.Endpoints
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
-                [FromServices] ITaskItemReadService taskReadSvc,
+                [FromServices] ITaskItemReadService taskItemReadService,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
-                var task = await taskReadSvc.GetAsync(taskId, ct);
-                return task is null ? Results.NotFound() : Results.Ok(task.ToReadDto());
+                var task = await taskItemReadService.GetAsync(taskId, ct);
+                if (task is null) return Results.NotFound();
+
+                var responseDto = task.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .Produces<TaskItemReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -64,24 +70,23 @@ namespace Api.Endpoints
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
                 [FromBody] TaskItemCreateDto dto,
-                [FromServices] ITaskItemWriteService svc,
                 [FromServices] ICurrentUserService currentUserSvc,
-                HttpContext http,
+                [FromServices] ITaskItemWriteService taskItemWriteService,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var userId = (Guid)currentUserSvc.UserId!;
+                var (result, task) = await taskItemWriteService.CreateAsync(
+                    projectId, laneId, columnId, userId, dto.Title, dto.Description, dto.DueDate, dto.SortKey, ct);
+                if (result != DomainMutation.Created || task is null) return result.ToHttp(context);
 
-                var (result, task) = await svc.CreateAsync(
-                    projectId, laneId, columnId, userId,
-                    dto.Title, dto.Description, dto.DueDate, dto.SortKey, ct);
-                if (result != DomainMutation.Created || task is null) return result.ToHttp();
-
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(task.RowVersion)}\"";
+                var responseDto = task.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
                 return Results.CreatedAtRoute(
                     "Tasks_Get_ById",
                     new {projectId, laneId, columnId, taskId = task.Id },
-                    task.ToReadDto());
+                    responseDto);
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireValidation<TaskItemCreateDto>()
@@ -101,22 +106,26 @@ namespace Api.Endpoints
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
                 [FromBody] TaskItemEditDto dto,
-                [FromServices] ITaskItemWriteService taskItemWriteSvc,
-                [FromServices] ITaskItemReadService taskItemReadSvc,
                 [FromServices] ICurrentUserService currentUserSvc,
-                HttpContext http,
+                [FromServices] ITaskItemReadService taskItemReadSvc,
+                [FromServices] ITaskItemWriteService taskItemWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
+                    context, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var result = await taskItemWriteSvc.EditAsync(projectId, taskId, userId, dto.NewTitle, dto.NewDescription, dto.NewDueDate, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp(http);
+                if (result != DomainMutation.Updated) return result.ToHttp(context);
 
                 var edited = await taskItemReadSvc.GetAsync(taskId, ct);
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
-                return Results.Ok(edited.ToReadDto());
+                if (edited is null) return Results.NotFound();
+
+                var responseDto = edited.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireValidation<TaskItemEditDto>()
@@ -139,26 +148,27 @@ namespace Api.Endpoints
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
                 [FromBody] TaskItemMoveDto dto,
-                [FromServices] ITaskItemWriteService taskItemWriteSvc,
-                [FromServices] ITaskItemReadService taskItemReadSvc,
                 [FromServices] ICurrentUserService currentUserSvc,
-                HttpContext http,
+                [FromServices] ITaskItemReadService taskItemReadSvc,
+                [FromServices] ITaskItemWriteService taskItemWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
+                    context, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var result = await taskItemWriteSvc.MoveAsync(projectId, taskId, dto.TargetColumnId, dto.TargetLaneId, userId,
-                    dto.TargetSortKey, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp(http);
+                var result = await taskItemWriteSvc.MoveAsync(
+                    projectId, taskId, dto.TargetColumnId, dto.TargetLaneId, userId, dto.TargetSortKey, rowVersion, ct);
+                if (result != DomainMutation.Updated) return result.ToHttp(context);
 
                 var moved = await taskItemReadSvc.GetAsync(taskId, ct);
                 if (moved is null) return Results.NotFound();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(moved.RowVersion)}\"";
+                var responseDto = moved.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
-                return Results.Ok(moved.ToReadDto());
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireValidation<TaskItemMoveDto>()
@@ -180,16 +190,17 @@ namespace Api.Endpoints
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
-                [FromServices] ITaskItemWriteService taskItemWriteSvc,
                 [FromServices] ITaskItemReadService taskItemReadSvc,
-                HttpContext http,
+                [FromServices] ITaskItemWriteService taskItemWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
+                    context, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
 
                 var result = await taskItemWriteSvc.DeleteAsync(projectId, taskId, rowVersion, ct);
-                return result.ToHttp(http);
+
+                return result.ToHttp(context);
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireIfMatch()
