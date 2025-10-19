@@ -2,6 +2,7 @@ using Api.Auth.DTOs;
 using Api.Tests.Testing;
 using Application.Common.Abstractions.Security;
 using Application.Users.DTOs;
+using Domain.Enums;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
@@ -352,7 +353,7 @@ namespace Api.Tests.Endpoints
             var jwt = scope.ServiceProvider.GetRequiredService<IJwtTokenService>();
 
             var randomUserId = Guid.NewGuid(); // not in DB
-            var (token, _) = jwt.CreateToken(randomUserId, "ghost@demo.com", "Ghost Name", "User");
+            var (token, _) = jwt.CreateToken(randomUserId, "ghost@demo.com", "Ghost Name", UserRole.User);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 

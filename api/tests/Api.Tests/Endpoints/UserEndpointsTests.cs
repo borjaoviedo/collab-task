@@ -22,7 +22,7 @@ namespace Api.Tests.Endpoints
             // create subject user
             var u = await RegisterAndLogin(client);
             // mint admin token
-            var adminBearer = await MintToken(app, u.UserId, u.Email, u.Name, "Admin");
+            var adminBearer = await MintToken(app, u.UserId, u.Email, u.Name, UserRole.Admin);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminBearer);
 
@@ -54,7 +54,7 @@ namespace Api.Tests.Endpoints
             using var client = app.CreateClient();
 
             var u = await RegisterAndLogin(client);
-            var adminBearer = await MintToken(app, u.UserId, u.Email, u.Name, "Admin");
+            var adminBearer = await MintToken(app, u.UserId, u.Email, u.Name, UserRole.Admin);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminBearer);
 
@@ -82,7 +82,7 @@ namespace Api.Tests.Endpoints
             using var client = app.CreateClient();
 
             var u = await RegisterAndLogin(client);
-            var adminBearer = await MintToken(app, u.UserId, u.Email, u.Name, "Admin");
+            var adminBearer = await MintToken(app, u.UserId, u.Email, u.Name, UserRole.Admin);
 
             var get = await GetUser(client, u.UserId, adminBearer);
 
@@ -107,7 +107,7 @@ namespace Api.Tests.Endpoints
             using var client = app.CreateClient();
 
             var target = await RegisterAndLogin(client);
-            var adminBearer = await MintToken(app, target.UserId, target.Email, target.Name, "Admin");
+            var adminBearer = await MintToken(app, target.UserId, target.Email, target.Name, UserRole.Admin);
             var current = await GetUser(client, target.UserId, adminBearer);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminBearer);
@@ -131,7 +131,7 @@ namespace Api.Tests.Endpoints
             using var client = app.CreateClient();
 
             var victim = await RegisterAndLogin(client);
-            var adminBearer = await MintToken(app, victim.UserId, victim.Email, victim.Name, "Admin");
+            var adminBearer = await MintToken(app, victim.UserId, victim.Email, victim.Name, UserRole.Admin);
             var current = await GetUser(client, victim.UserId, adminBearer);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminBearer);
@@ -158,7 +158,7 @@ namespace Api.Tests.Endpoints
             return dto!;
         }
 
-        private static async Task<string> MintToken(TestApiFactory app, Guid userId, string email, string name, string role)
+        private static async Task<string> MintToken(TestApiFactory app, Guid userId, string email, string name, UserRole role)
         {
             await using var scope = app.Services.CreateAsyncScope();
             var jwt = scope.ServiceProvider.GetRequiredService<IJwtTokenService>();
