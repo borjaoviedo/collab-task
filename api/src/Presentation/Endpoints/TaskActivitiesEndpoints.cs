@@ -22,21 +22,21 @@ namespace Api.Endpoints
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
-                [FromQuery] TaskActivityType? type,
-                [FromServices] ITaskActivityReadService readSvc,
+                [FromQuery] TaskActivityType? activityType,
+                [FromServices] ITaskActivityReadService taskActivityReadSvc,
                 CancellationToken ct = default) =>
             {
-                var items = type is null
-                    ? await readSvc.ListByTaskAsync(taskId, ct)
-                    : await readSvc.ListByTypeAsync(taskId, type.Value, ct);
+                var activities = activityType is null
+                    ? await taskActivityReadSvc.ListByTaskAsync(taskId, ct)
+                    : await taskActivityReadSvc.ListByTypeAsync(taskId, activityType.Value, ct);
 
-                var dto = items.Select(a => a.ToReadDto()).ToList();
-                return Results.Ok(dto);
+                var responseDto = activities.Select(a => a.ToReadDto()).ToList();
+
+                return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<TaskActivityReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get task activities")
             .WithDescription("Returns all activities for the task. Optional filter by type.")
             .WithName("TaskActivities_Get_All");
@@ -48,13 +48,15 @@ namespace Api.Endpoints
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
                 [FromRoute] Guid activityId,
-                [FromServices] ITaskActivityReadService readSvc,
+                [FromServices] ITaskActivityReadService taskActivityReadSvc,
                 CancellationToken ct = default) =>
             {
-                var a = await readSvc.GetAsync(activityId, ct);
-                if (a is null || a.TaskId != taskId) return Results.NotFound();
+                var activity = await taskActivityReadSvc.GetAsync(activityId, ct);
+                if (activity is null) return Results.NotFound();
 
-                return Results.Ok(a.ToReadDto());
+                var responseDto = activity.ToReadDto();
+
+                return Results.Ok(responseDto);
             })
             .Produces<TaskActivityReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -70,14 +72,15 @@ namespace Api.Endpoints
 
             // GET /activities/me
             top.MapGet("/me", async (
-                [FromServices] ITaskActivityReadService activityReadSvc,
                 [FromServices] ICurrentUserService currentUserService,
+                [FromServices] ITaskActivityReadService taskActivityReadSvc,
                 CancellationToken ct = default) =>
             {
                 var userId = (Guid)currentUserService.UserId!;
-                var items = await activityReadSvc.ListByActorAsync(userId, ct);
-                var dto = items.Select(a => a.ToReadDto()).ToList();
-                return Results.Ok(dto);
+                var activities = await taskActivityReadSvc.ListByActorAsync(userId, ct);
+                var responseDto = activities.Select(a => a.ToReadDto()).ToList();
+
+                return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<TaskActivityReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -88,12 +91,13 @@ namespace Api.Endpoints
             // GET /activities/users/{userId}
             top.MapGet("/users/{userId:guid}", async(
                 [FromRoute] Guid userId,
-                [FromServices] ITaskActivityReadService activityReadSvc,
+                [FromServices] ITaskActivityReadService taskActivityReadSvc,
                 CancellationToken ct = default) =>
             {
-                var items = await activityReadSvc.ListByActorAsync(userId, ct);
-                var dto = items.Select(a => a.ToReadDto()).ToList();
-                return Results.Ok(dto);
+                var activities = await taskActivityReadSvc.ListByActorAsync(userId, ct);
+                var responseDto = activities.Select(a => a.ToReadDto()).ToList();
+
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.SystemAdmin)
             .Produces<IEnumerable<TaskActivityReadDto>>(StatusCodes.Status200OK)
