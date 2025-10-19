@@ -25,14 +25,13 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var columns = await columnReadSvc.ListByLaneAsync(laneId, ct);
+                var responseDto = columns.Select(c => c.ToReadDto()).ToList();
 
-                var dto = columns.Select(c => c.ToReadDto()).ToList();
-                return Results.Ok(dto);
+                return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<ColumnReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get all columns")
             .WithDescription("Returns columns belonging to the specified lane.")
             .WithName("Columns_Get_All");
@@ -43,10 +42,16 @@ namespace Api.Endpoints
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
                 [FromServices] IColumnReadService columnReadSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var column = await columnReadSvc.GetAsync(columnId, ct);
-                return column is null ? Results.NotFound() : Results.Ok(column.ToReadDto());
+                if (column is null) return Results.NotFound();
+
+                var responseDto = column.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .Produces<ColumnReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -62,18 +67,19 @@ namespace Api.Endpoints
                 [FromRoute] Guid laneId,
                 [FromBody] ColumnCreateDto dto,
                 [FromServices] IColumnWriteService columnWriteSvc,
-                HttpContext http,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var (result, column) = await columnWriteSvc.CreateAsync(projectId, laneId, dto.Name, dto.Order, ct);
-                if (result != DomainMutation.Created || column is null) return result.ToHttp();
+                if (result != DomainMutation.Created || column is null) return result.ToHttp(context);
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(column.RowVersion)}\"";
+                var responseDto = column.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
                 return Results.CreatedAtRoute(
                     "Columns_Get_ById",
                     new { projectId, laneId, columnId = column.Id },
-                    column.ToReadDto());
+                    responseDto);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ColumnCreateDto>()
@@ -92,22 +98,24 @@ namespace Api.Endpoints
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
                 [FromBody] ColumnRenameDto dto,
-                [FromServices] IColumnWriteService columnWriteSvc,
                 [FromServices] IColumnReadService columnReadSvc,
-                HttpContext http,
+                [FromServices] IColumnWriteService columnWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => columnReadSvc.GetAsync(columnId, ct), c => c.RowVersion);
+                    context, () => columnReadSvc.GetAsync(columnId, ct), c => c.RowVersion);
 
                 var result = await columnWriteSvc.RenameAsync(columnId, dto.NewName, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp(http);
+                if (result != DomainMutation.Updated) return result.ToHttp(context);
 
                 var renamed = await columnReadSvc.GetAsync(columnId, ct);
                 if (renamed is null) return Results.NotFound();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed.RowVersion)}\"";
-                return Results.Ok(renamed.ToReadDto());
+                var responseDto = renamed.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ColumnRenameDto>()
@@ -131,20 +139,22 @@ namespace Api.Endpoints
                 [FromBody] ColumnReorderDto dto,
                 [FromServices] IColumnWriteService columnWriteSvc,
                 [FromServices] IColumnReadService columnReadSvc,
-                HttpContext http,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => columnReadSvc.GetAsync(columnId, ct), c => c.RowVersion);
+                    context, () => columnReadSvc.GetAsync(columnId, ct), c => c.RowVersion);
 
                 var result = await columnWriteSvc.ReorderAsync(columnId, dto.NewOrder, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp(http);
+                if (result != DomainMutation.Updated) return result.ToHttp(context);
 
                 var reordered = await columnReadSvc.GetAsync(columnId, ct);
                 if (reordered is null) return Results.NotFound();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(reordered.RowVersion)}\"";
-                return Results.Ok(reordered.ToReadDto());
+                var responseDto = reordered.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ColumnReorderDto>()
@@ -167,14 +177,15 @@ namespace Api.Endpoints
                 [FromRoute] Guid columnId,
                 [FromServices] IColumnReadService columnReadSvc,
                 [FromServices] IColumnWriteService columnWriteSvc,
-                HttpContext http,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => columnReadSvc.GetAsync(columnId, ct), c => c.RowVersion);
+                    context, () => columnReadSvc.GetAsync(columnId, ct), c => c.RowVersion);
 
                 var result = await columnWriteSvc.DeleteAsync(columnId, rowVersion, ct);
-                return result.ToHttp(http);
+
+                return result.ToHttp(context);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireIfMatch()
