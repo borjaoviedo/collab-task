@@ -91,7 +91,7 @@ namespace Api.Endpoints
                         body)
                     : Results.Ok(body);
             })
-            .RequireAuthorization(Policies.ProjectMember)
+            .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<TaskAssignmentCreateDto>()
             .Produces<TaskAssignmentReadDto>(StatusCodes.Status201Created)
             .Produces<TaskAssignmentReadDto>(StatusCodes.Status200OK)
@@ -130,7 +130,7 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(updated.RowVersion)}\"";
                 return Results.Ok(updated.ToReadDto());
             })
-            .RequireAuthorization(Policies.ProjectMember)
+            .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<TaskAssignmentChangeRoleDto>()
             .RequireIfMatch()
             .Produces<TaskAssignmentReadDto>(StatusCodes.Status200OK)
@@ -164,7 +164,7 @@ namespace Api.Endpoints
                 var m = await taskAssignmentWriteSvc.RemoveAsync(projectId, taskId, userId, performedById, rowVersion, ct);
                 return m.ToHttp(http);
             })
-            .RequireAuthorization(Policies.ProjectMember)
+            .RequireAuthorization(Policies.ProjectAdmin)
             .RequireIfMatch()
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
