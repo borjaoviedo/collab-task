@@ -23,9 +23,9 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var users = await userReadSvc.ListAsync(ct);
-                var dto = users.Select(u => u.ToReadDto()).ToList();
+                var responseDto = users.Select(u => u.ToReadDto()).ToList();
 
-                return Results.Ok(dto);
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.SystemAdmin)
             .Produces<IEnumerable<UserReadDto>>(StatusCodes.Status200OK)
@@ -39,11 +39,16 @@ namespace Api.Endpoints
             group.MapGet("/{userId:guid}", async (
                 [FromRoute] Guid userId,
                 [FromServices] IUserReadService userReadSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
-                var u = await userReadSvc.GetAsync(userId, ct);
-                if (u is null) return Results.NotFound();
-                return Results.Ok(u.ToReadDto());
+                var user = await userReadSvc.GetAsync(userId, ct);
+                if (user is null) return Results.NotFound();
+
+                var responseDto = user.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.SystemAdmin)
             .Produces<UserReadDto>(StatusCodes.Status200OK)
@@ -61,7 +66,11 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var user = await userReadSvc.GetByEmailAsync(email, ct);
-                return user is null ? Results.NotFound() : Results.Ok(user.ToReadDto());
+                if (user is null) return Results.NotFound();
+
+                var responseDto = user.ToReadDto();
+
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.SystemAdmin)
             .Produces<UserReadDto>(StatusCodes.Status200OK)
@@ -78,29 +87,31 @@ namespace Api.Endpoints
                 [FromBody] UserRenameDto dto,
                 [FromServices] IUserReadService userReadSvc,
                 [FromServices] IUserWriteService userWriteSvc,
-                HttpContext http,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
+                    context, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
 
                 var result = await userWriteSvc.RenameAsync(userId, dto.NewName, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp(http);
+                if (result != DomainMutation.Updated) return result.ToHttp(context);
 
                 var renamed = await userReadSvc.GetAsync(userId, ct);
                 if (renamed is null) return Results.NotFound();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed.RowVersion)}\"";
+                var responseDto = renamed.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
-                return Results.Ok(renamed.ToReadDto());
+                return Results.Ok(responseDto);
             })
-            .RequireIfMatch()
             .RequireValidation<UserRenameDto>()
+            .RequireIfMatch()
             .Produces<UserReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Rename user")
             .WithDescription("Renames a user and returns the updated user.")
             .WithName("Users_Rename");
@@ -111,21 +122,22 @@ namespace Api.Endpoints
                 [FromBody] UserChangeRoleDto dto,
                 [FromServices] IUserReadService userReadSvc,
                 [FromServices] IUserWriteService userWriteSvc,
-                HttpContext http,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
+                    context, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
 
                 var result = await userWriteSvc.ChangeRoleAsync(userId, dto.NewRole, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp(http);
+                if (result != DomainMutation.Updated) return result.ToHttp(context);
 
                 var edited = await userReadSvc.GetAsync(userId, ct);
                 if (edited is null) return Results.NotFound();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited.RowVersion)}\"";
+                var responseDto = edited.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
-                return Results.Ok(edited.ToReadDto());
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.SystemAdmin)
             .RequireValidation<UserChangeRoleDto>()
@@ -136,6 +148,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Change user role")
             .WithDescription("Changes a user's role and returns the updated user.")
             .WithName("Users_ChangeRole");
@@ -145,14 +158,15 @@ namespace Api.Endpoints
                 [FromRoute] Guid userId,
                 [FromServices] IUserReadService userReadSvc,
                 [FromServices] IUserWriteService userWriteSvc,
-                HttpContext http,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
+                    context, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
 
-                var res = await userWriteSvc.DeleteAsync(userId, rowVersion, ct);
-                return res.ToHttp(http);
+                var result = await userWriteSvc.DeleteAsync(userId, rowVersion, ct);
+
+                return result.ToHttp(context);
             })
             .RequireAuthorization(Policies.SystemAdmin)
             .RequireIfMatch()
@@ -162,6 +176,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Delete user")
             .WithDescription("Deletes an existing user.")
             .WithName("Users_Delete");
