@@ -50,7 +50,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get lane")
             .WithDescription("Returns a lane by id within a project.")
-            .WithName("Lanes_Get");
+            .WithName("Lanes_Get_ById");
 
             // POST /projects/{projectId}/lanes/
             group.MapPost("/", async (
@@ -61,10 +61,14 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var (result, lane) = await laneWriteSvc.CreateAsync(projectId, dto.Name, dto.Order, ct);
-                if (result != DomainMutation.Created) return result.ToHttp();
+                if (result != DomainMutation.Created || lane is null) return result.ToHttp();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(lane!.RowVersion)}\"";
-                return Results.Created($"/projects/{projectId}/lanes/{lane.Id}", lane.ToReadDto());
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(lane.RowVersion)}\"";
+
+                return Results.CreatedAtRoute(
+                    "Lanes_Get_ById",
+                    new { projectId, laneId = lane.Id},
+                    lane.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireValidation<LaneCreateDto>()

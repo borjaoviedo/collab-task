@@ -105,18 +105,17 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var userId = (Guid)currentUserSvc.UserId!;
+
                 var (result, project) = await projectWriteSvc.CreateAsync(userId, dto.Name, ct);
-                if (result != DomainMutation.Created) return result.ToHttp();
+                if (result != DomainMutation.Created || project is null) return result.ToHttp();
 
-                var created = await projectReadSvc.GetAsync(project!.Id, ct);
-                if (created is null)
-                    return Results.Problem(statusCode: 500, title: "Could not load created project");
-
-                var body = created.ToReadDto(userId);
-                return Results.Created($"/projects/{project.Id}", body);
+                return Results.CreatedAtRoute(
+                    "Projects_Get_ById",
+                    new { projectId = project.Id},
+                    project.ToReadDto(userId));
             })
-            .Produces<ProjectReadDto>(StatusCodes.Status201Created)
             .RequireValidation<ProjectCreateDto>()
+            .Produces<ProjectReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status409Conflict)

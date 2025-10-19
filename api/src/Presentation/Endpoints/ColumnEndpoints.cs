@@ -25,6 +25,7 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var columns = await columnReadSvc.ListByLaneAsync(laneId, ct);
+
                 var dto = columns.Select(c => c.ToReadDto()).ToList();
                 return Results.Ok(dto);
             })
@@ -53,7 +54,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get column")
             .WithDescription("Returns a column by id within a lane.")
-            .WithName("Columns_Get");
+            .WithName("Columns_Get_ById");
 
             // POST /projects/{projectId}/lanes/{laneId}/columns
             group.MapPost("/", async (
@@ -65,10 +66,14 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var (result, column) = await columnWriteSvc.CreateAsync(projectId, laneId, dto.Name, dto.Order, ct);
-                if (result != DomainMutation.Created) return result.ToHttp();
+                if (result != DomainMutation.Created || column is null) return result.ToHttp();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(column!.RowVersion)}\"";
-                return Results.Created($"/projects/{projectId}/lanes/{laneId}/columns/{column.Id}", column.ToReadDto());
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(column.RowVersion)}\"";
+
+                return Results.CreatedAtRoute(
+                    "Columns_Get_ById",
+                    new { projectId, laneId, columnId = column.Id },
+                    column.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireValidation<ColumnCreateDto>()

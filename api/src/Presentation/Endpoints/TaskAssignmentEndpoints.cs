@@ -58,7 +58,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get task assignment")
             .WithDescription("Returns the assignment of a given user on a task.")
-            .WithName("TaskAssignments_Get");
+            .WithName("TaskAssignments_Get_ById");
 
             // POST /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments
             nested.MapPost("/", async (
@@ -74,17 +74,21 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var performedById = (Guid)currentUserSvc.UserId!;
-                var (m, _) = await taskAssignmentWriteSvc.CreateAsync(projectId, taskId, dto.UserId, dto.Role, performedById, ct); // may return Created/Updated/NoOp/Conflict
-                if (m == DomainMutation.Conflict) return m.ToHttp();
 
-                var assigned = await taskAssignmentReadSvc.GetAsync(taskId, dto.UserId, ct);
-                if (assigned is null) return Results.NotFound();
+                var (result, assignment) = await taskAssignmentWriteSvc.CreateAsync(projectId, taskId, dto.UserId, dto.Role, performedById, ct);
+                if (result == DomainMutation.Conflict || assignment is null) return result.ToHttp();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(assigned!.RowVersion)}\"";
-                var body = assigned.ToReadDto();
+                var created = await taskAssignmentReadSvc.GetAsync(taskId, dto.UserId, ct);
+                if (created is null) return Results.NotFound();
 
-                return m == DomainMutation.Created
-                    ? Results.Created($"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{dto.UserId}", body)
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(created.RowVersion)}\"";
+                var body = created.ToReadDto();
+
+                return result == DomainMutation.Created
+                    ? Results.CreatedAtRoute(
+                        "TaskAssignments_Get_ById",
+                        new { projectId, laneId, columnId, taskId, userId = dto.UserId },
+                        body)
                     : Results.Ok(body);
             })
             .RequireAuthorization(Policies.ProjectMember)

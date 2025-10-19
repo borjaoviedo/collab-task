@@ -59,7 +59,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithDescription("Returns a task note by id.")
             .WithSummary("Get task note")
-            .WithName("TaskNotes_Get");
+            .WithName("TaskNotes_Get_ById");
 
             // POST /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes
             nested.MapPost("/", async (
@@ -74,11 +74,16 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var authorId = (Guid)currentUserSvc.UserId!;
-                var (result, note) = await taskNoteWriteSvc.CreateAsync(projectId, taskId, authorId, dto.Content, ct);
-                if (result != DomainMutation.Created) return result.ToHttp();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(note!.RowVersion)}\"";
-                return Results.Created($"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{note.Id}", note.ToReadDto());
+                var (result, note) = await taskNoteWriteSvc.CreateAsync(projectId, taskId, authorId, dto.Content, ct);
+                if (result != DomainMutation.Created || note is null) return result.ToHttp();
+
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(note.RowVersion)}\"";
+
+                return Results.CreatedAtRoute(
+                    "TaskNotes_Get_ById",
+                    new { projectId, laneId, columnId, taskId, noteId = note.Id},
+                    note.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireValidation<TaskNoteCreateDto>()

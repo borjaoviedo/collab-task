@@ -56,7 +56,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get task")
             .WithDescription("Returns a task by id within a column.")
-            .WithName("Tasks_Get");
+            .WithName("Tasks_Get_ById");
 
             // POST /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks
             group.MapPost("/", async (
@@ -70,13 +70,18 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var userId = (Guid)currentUserSvc.UserId!;
+
                 var (result, task) = await svc.CreateAsync(
                     projectId, laneId, columnId, userId,
                     dto.Title, dto.Description, dto.DueDate, dto.SortKey, ct);
-                if (result != DomainMutation.Created) return result.ToHttp();
+                if (result != DomainMutation.Created || task is null) return result.ToHttp();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(task!.RowVersion)}\"";
-                return Results.Created($"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{task.Id}", task.ToReadDto());
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(task.RowVersion)}\"";
+
+                return Results.CreatedAtRoute(
+                    "Tasks_Get_ById",
+                    new {projectId, laneId, columnId, taskId = task.Id },
+                    task.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireValidation<TaskItemCreateDto>()
