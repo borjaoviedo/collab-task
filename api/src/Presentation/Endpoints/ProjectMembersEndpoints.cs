@@ -127,7 +127,7 @@ namespace Api.Endpoints
 
                 return Results.Ok(updated.ToReadDto());
             })
-            .RequireAuthorization(Policies.ProjectOwner)
+            .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ProjectMemberChangeRoleDto>()
             .RequireIfMatch()
             .Produces<ProjectMemberReadDto>(StatusCodes.Status200OK)
