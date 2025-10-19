@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
 {
-    public static class TaskActivityEndpoints
+    public static class TaskActivitiesEndpoints
     {
         public static RouteGroupBuilder MapTaskActivities(this IEndpointRouteBuilder app)
         {

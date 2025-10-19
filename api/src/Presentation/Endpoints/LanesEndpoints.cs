@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
 {
-    public static class LaneEndpoints
+    public static class LanesEndpoints
     {
         public static RouteGroupBuilder MapLanes(this IEndpointRouteBuilder app)
         {

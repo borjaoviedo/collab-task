@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
 {
-    public static class TaskItemEndpoints
+    public static class TaskItemsEndpoints
     {
         public static RouteGroupBuilder MapTaskItems(this IEndpointRouteBuilder app)
         {

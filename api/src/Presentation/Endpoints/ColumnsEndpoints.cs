@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
 {
-    public static class ColumnEndpoints
+    public static class ColumnsEndpoints
     {
         public static RouteGroupBuilder MapColumns(this IEndpointRouteBuilder app)
         {
