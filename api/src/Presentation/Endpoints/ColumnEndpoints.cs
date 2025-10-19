@@ -137,8 +137,8 @@ namespace Api.Endpoints
                 [FromRoute] Guid laneId,
                 [FromRoute] Guid columnId,
                 [FromBody] ColumnReorderDto dto,
-                [FromServices] IColumnWriteService columnWriteSvc,
                 [FromServices] IColumnReadService columnReadSvc,
+                [FromServices] IColumnWriteService columnWriteSvc,
                 HttpContext context,
                 CancellationToken ct = default) =>
             {
