@@ -29,13 +29,13 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var notes = await taskNoteReadSvc.ListByTaskAsync(taskId, ct);
-                var dto = notes.Select(t => t.ToReadDto()).ToList();
-                return Results.Ok(dto);
+                var responseDto = notes.Select(t => t.ToReadDto()).ToList();
+
+                return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<TaskNoteReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get all notes")
             .WithDescription("Returns notes belonging to the specified task.")
             .WithName("Notes_Get_All");
@@ -48,10 +48,16 @@ namespace Api.Endpoints
                 [FromRoute] Guid taskId,
                 [FromRoute] Guid noteId,
                 [FromServices] ITaskNoteReadService taskNoteReadSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var note = await taskNoteReadSvc.GetAsync(noteId, ct);
-                return note is null ? Results.NotFound() : Results.Ok(note.ToReadDto());
+                if (note is null) return Results.NotFound();
+
+                var responseDto = note.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .Produces<TaskNoteReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -68,22 +74,22 @@ namespace Api.Endpoints
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
                 [FromBody] TaskNoteCreateDto dto,
-                [FromServices] ITaskNoteWriteService taskNoteWriteSvc,
                 [FromServices] ICurrentUserService currentUserSvc,
-                HttpContext http,
+                [FromServices] ITaskNoteWriteService taskNoteWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
-                var authorId = (Guid)currentUserSvc.UserId!;
+                var userId = (Guid)currentUserSvc.UserId!;
+                var (result, note) = await taskNoteWriteSvc.CreateAsync(projectId, taskId, userId, dto.Content, ct);
+                if (result != DomainMutation.Created || note is null) return result.ToHttp(context);
 
-                var (result, note) = await taskNoteWriteSvc.CreateAsync(projectId, taskId, authorId, dto.Content, ct);
-                if (result != DomainMutation.Created || note is null) return result.ToHttp();
-
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(note.RowVersion)}\"";
+                var responseDto = note.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
                 return Results.CreatedAtRoute(
                     "TaskNotes_Get_ById",
-                    new { projectId, laneId, columnId, taskId, noteId = note.Id},
-                    note.ToReadDto());
+                    new { projectId, laneId, columnId, taskId, noteId = note.Id },
+                    responseDto);
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireValidation<TaskNoteCreateDto>()
@@ -104,26 +110,26 @@ namespace Api.Endpoints
                 [FromRoute] Guid taskId,
                 [FromRoute] Guid noteId,
                 [FromBody] TaskNoteEditDto dto,
-                [FromServices] ITaskNoteWriteService taskNoteWriteSvc,
-                [FromServices] ITaskNoteReadService taskNoteReadSvc,
                 [FromServices] ICurrentUserService currentUserSvc,
-                HttpContext http,
+                [FromServices] ITaskNoteReadService taskNoteReadSvc,
+                [FromServices] ITaskNoteWriteService taskNoteWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => taskNoteReadSvc.GetAsync(noteId, ct), n => n.RowVersion);
+                    context, () => taskNoteReadSvc.GetAsync(noteId, ct), n => n.RowVersion);
 
                 var userId = (Guid)currentUserSvc.UserId!;
-
                 var result = await taskNoteWriteSvc.EditAsync(projectId, taskId, noteId, userId, dto.NewContent, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp(http);
+                if (result != DomainMutation.Updated) return result.ToHttp(context);
 
                 var edited = await taskNoteReadSvc.GetAsync(noteId, ct);
                 if (edited is null) return Results.NotFound();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited.RowVersion)}\"";
+                var responseDto = edited.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
-                return Results.Ok(edited.ToReadDto());
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireValidation<TaskNoteEditDto>()
@@ -146,19 +152,19 @@ namespace Api.Endpoints
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
                 [FromRoute] Guid noteId,
-                [FromServices] ITaskNoteWriteService taskNoteWriteSvc,
-                [FromServices] ITaskNoteReadService taskNoteReadSvc,
                 [FromServices] ICurrentUserService currentUserSvc,
-                HttpContext http,
+                [FromServices] ITaskNoteReadService taskNoteReadSvc,
+                [FromServices] ITaskNoteWriteService taskNoteWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => taskNoteReadSvc.GetAsync(noteId, ct), n => n.RowVersion);
-
+                    context, () => taskNoteReadSvc.GetAsync(noteId, ct), n => n.RowVersion);
                 var userId = (Guid)currentUserSvc.UserId!;
 
                 var result = await taskNoteWriteSvc.DeleteAsync(projectId, noteId, userId, rowVersion, ct);
-                return result.ToHttp(http);
+
+                return result.ToHttp(context);
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireIfMatch()
@@ -180,16 +186,15 @@ namespace Api.Endpoints
 
             // GET /notes/me
             top.MapGet("/me", async (
-                HttpContext http,
-                [FromServices] ITaskNoteReadService noteReadSvc,
                 [FromServices] ICurrentUserService currentUserSvc,
+                [FromServices] ITaskNoteReadService taskNoteReadSvc,
                 CancellationToken ct = default) =>
             {
                 var userId = (Guid)currentUserSvc.UserId!;
-                var notes = await noteReadSvc.ListByAuthorAsync(userId, ct);
+                var notes = await taskNoteReadSvc.ListByAuthorAsync(userId, ct);
+                var responseDto = notes.Select(n => n.ToReadDto()).ToList();
 
-                var dto = notes.Select(n => n.ToReadDto()).ToList();
-                return Results.Ok(dto);
+                return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<TaskNoteReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -200,12 +205,13 @@ namespace Api.Endpoints
             // GET /notes/users/{userId}
             top.MapGet("/users/{userId:guid}", async (
                 [FromRoute] Guid userId,
-                [FromServices] ITaskNoteReadService noteReadSvc,
+                [FromServices] ITaskNoteReadService taskNoteReadSvc,
                 CancellationToken ct = default) =>
             {
-                var items = await noteReadSvc.ListByAuthorAsync(userId, ct);
-                var dto = items.Select(n => n.ToReadDto()).ToList();
-                return Results.Ok(dto);
+                var notes = await taskNoteReadSvc.ListByAuthorAsync(userId, ct);
+                var responseDto = notes.Select(n => n.ToReadDto()).ToList();
+
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.SystemAdmin)
             .Produces<IEnumerable<TaskNoteReadDto>>(StatusCodes.Status200OK)
