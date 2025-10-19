@@ -26,13 +26,13 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var members = await projectMemberReadSvc.ListByProjectAsync(projectId, includeRemoved, ct);
-                var dto = members.Select(m => m.ToReadDto()).ToList();
-                return Results.Ok(dto);
+                var responseDto = members.Select(m => m.ToReadDto()).ToList();
+
+                return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<ProjectMemberReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get all members of a project")
             .WithDescription("Returns all members of the project.")
             .WithName("ProjectMembers_Get_All");
@@ -42,10 +42,16 @@ namespace Api.Endpoints
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
                 [FromServices] IProjectMemberReadService projectMemberReadSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
-                var pm = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
-                return pm is null ? Results.NotFound() : Results.Ok(pm.ToReadDto());
+                var member = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
+                if (member is null) return Results.NotFound();
+
+                var responseDto = member.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .Produces<ProjectMemberReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -63,9 +69,13 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var role = await projectMemberReadSvc.GetRoleAsync(projectId, userId, ct);
-                return role is null ? Results.NotFound() : Results.Ok(new { Role = role });
+                if (role is null) return Results.NotFound();
+
+                var responseDto = role.Value.ToRoleReadDto();
+
+                return Results.Ok(responseDto);
             })
-            .Produces<object>(StatusCodes.Status200OK)
+            .Produces<ProjectMemberRoleReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -79,6 +89,7 @@ namespace Api.Endpoints
                 [FromBody] ProjectMemberCreateDto dto,
                 [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 [FromServices] IProjectMemberWriteService projectMemberWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var (result, member) = await projectMemberWriteSvc.CreateAsync(projectId, dto.UserId, dto.Role, ct);
@@ -87,10 +98,13 @@ namespace Api.Endpoints
                 var created = await projectMemberReadSvc.GetAsync(projectId, member.UserId, ct);
                 if (created is null) return Results.NotFound();
 
+                var responseDto = created.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
                 return Results.CreatedAtRoute(
                     "ProjectMembers_Get_ById",
                     new { projectId, userId = dto.UserId },
-                    created.ToReadDto());
+                    responseDto);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ProjectMemberCreateDto>()
@@ -111,21 +125,22 @@ namespace Api.Endpoints
                 [FromBody] ProjectMemberChangeRoleDto dto,
                 [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 [FromServices] IProjectMemberWriteService projectMemberWriteSvc,
-                HttpContext http,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => projectMemberReadSvc.GetAsync(projectId, userId, ct), pm => pm.RowVersion);
+                    context, () => projectMemberReadSvc.GetAsync(projectId, userId, ct), pm => pm.RowVersion);
 
                 var result = await projectMemberWriteSvc.ChangeRoleAsync(projectId, userId, dto.NewRole, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp(http);
+                if (result != DomainMutation.Updated) return result.ToHttp(context);
 
                 var updated = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
                 if (updated is null) return Results.NotFound();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(updated.RowVersion)}\"";
+                var responseDto = updated.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
-                return Results.Ok(updated.ToReadDto());
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ProjectMemberChangeRoleDto>()
@@ -136,6 +151,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Change role to a project member")
             .WithDescription("Changes the role of a project member.")
             .WithName("ProjectMembers_ChangeRole");
@@ -146,21 +162,22 @@ namespace Api.Endpoints
                 [FromRoute] Guid userId,
                 [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 [FromServices] IProjectMemberWriteService projectMemberWriteSvc,
-                HttpContext http,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => projectMemberReadSvc.GetAsync(projectId, userId, ct), pm => pm.RowVersion);
+                    context, () => projectMemberReadSvc.GetAsync(projectId, userId, ct), pm => pm.RowVersion);
 
                 var result = await projectMemberWriteSvc.RemoveAsync(projectId, userId, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp(http);
+                if (result != DomainMutation.Updated) return result.ToHttp(context);
 
                 var removed = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
                 if (removed is null) return Results.NotFound();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(removed.RowVersion)}\"";
+                var responseDto = removed.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
-                return Results.Ok(removed.ToReadDto());
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireIfMatch()
@@ -170,6 +187,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Remove project member")
             .WithDescription("Soft-removes a project member.")
             .WithName("ProjectMembers_Remove");
@@ -180,21 +198,22 @@ namespace Api.Endpoints
                 [FromRoute] Guid userId,
                 [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 [FromServices] IProjectMemberWriteService projectMemberWriteSvc,
-                HttpContext http,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => projectMemberReadSvc.GetAsync(projectId, userId, ct), pm => pm.RowVersion);
+                    context, () => projectMemberReadSvc.GetAsync(projectId, userId, ct), pm => pm.RowVersion);
 
                 var result = await projectMemberWriteSvc.RestoreAsync(projectId, userId, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp(http);
+                if (result != DomainMutation.Updated) return result.ToHttp(context);
 
                 var removed = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
                 if (removed is null) return Results.NotFound();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(removed.RowVersion)}\"";
+                var responseDto = removed.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
-                return Results.Ok(removed.ToReadDto());
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireIfMatch()
@@ -204,6 +223,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Restore project member")
             .WithDescription("Restores a previously removed project member.")
             .WithName("ProjectMembers_Restore");
@@ -214,16 +234,17 @@ namespace Api.Endpoints
 
             // GET /members/me/count
             top.MapGet("/me/count", async (
-                [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 [FromServices] ICurrentUserService currentUserSvc,
+                [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 CancellationToken ct = default) =>
             {
                 var userId = (Guid)currentUserSvc.UserId!;
-
                 var count = await projectMemberReadSvc.CountActiveAsync(userId, ct);
-                return Results.Ok(new { Count = count });
+                var responseDto = count.ToCountReadDto();
+
+                return Results.Ok(responseDto);
             })
-            .Produces<object>(StatusCodes.Status200OK)
+            .Produces<ProjectMemberCountReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("Get total active project memberships of the authenticated user")
             .WithDescription("Returns the total number of active projects in which the authenticated user is a member.")
@@ -236,14 +257,15 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var count = await projectMemberReadSvc.CountActiveAsync(userId, ct);
-                return Results.Ok(new { Count = count });
+                var responseDto = count.ToCountReadDto();
+
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.SystemAdmin)
-            .Produces<object>(StatusCodes.Status200OK)
+            .Produces<ProjectMemberCountReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .ProducesProblem(StatusCodes.Status404NotFound)
-            .WithSummary("Get total active project memberships of a user")
+            .WithSummary("Get total active project memberships of the specified user")
             .WithDescription("Returns the total number of active projects in which the specified user is a member.")
             .WithName("ProjectMembers_CountActive_ByUser");
 
