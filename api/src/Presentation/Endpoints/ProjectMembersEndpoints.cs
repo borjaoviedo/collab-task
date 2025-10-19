@@ -53,7 +53,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get project member")
             .WithDescription("Returns a project member by project and user id.")
-            .WithName("ProjectMembers_Get");
+            .WithName("ProjectMembers_Get_ById");
 
             // GET /projects/{projectId}/members/{userId}/role
             nested.MapGet("/{userId:guid}/role", async (
@@ -77,15 +77,22 @@ namespace Api.Endpoints
             nested.MapPost("/", async (
                 [FromRoute] Guid projectId,
                 [FromBody] ProjectMemberCreateDto dto,
+                [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 [FromServices] IProjectMemberWriteService projectMemberWriteSvc,
                 CancellationToken ct = default) =>
             {
-                var (result, _) = await projectMemberWriteSvc.CreateAsync(projectId, dto.UserId, dto.Role, ct);
-                return result.ToHttp();
+                var (result, member) = await projectMemberWriteSvc.CreateAsync(projectId, dto.UserId, dto.Role, ct);
+                if (result != DomainMutation.Created || member is null) return result.ToHttp();
+
+                var created = await projectMemberReadSvc.GetAsync(projectId, member.UserId, ct);
+                return Results.CreatedAtRoute(
+                    "ProjectMembers_Get_ById",
+                    new { projectId, userId = dto.UserId },
+                    created!.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ProjectMemberCreateDto>()
-            .Produces(StatusCodes.Status201Created)
+            .Produces<ProjectMemberReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
