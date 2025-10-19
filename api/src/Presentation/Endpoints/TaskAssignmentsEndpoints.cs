@@ -27,14 +27,14 @@ namespace Api.Endpoints
                 [FromServices] ITaskAssignmentReadService taskAssignmentReadSvc,
                 CancellationToken ct = default) =>
             {
-                var items = await taskAssignmentReadSvc.ListByTaskAsync(taskId, ct);
-                var dto = items.Select(a => a.ToReadDto()).ToList();
-                return Results.Ok(dto);
+                var assignments = await taskAssignmentReadSvc.ListByTaskAsync(taskId, ct);
+                var responseDto = assignments.Select(a => a.ToReadDto()).ToList();
+
+                return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<TaskAssignmentReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get task assignments")
             .WithDescription("Returns all assignments for the specified task.")
             .WithName("TaskAssignments_Get_All");
@@ -46,11 +46,17 @@ namespace Api.Endpoints
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
                 [FromRoute] Guid userId,
-                [FromServices] ITaskAssignmentReadService assignmentReadSvc,
+                [FromServices] ITaskAssignmentReadService taskAssignmentReadSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
-                var a = await assignmentReadSvc.GetAsync(taskId, userId, ct);
-                return a is null ? Results.NotFound() : Results.Ok(a.ToReadDto());
+                var assignment = await taskAssignmentReadSvc.GetAsync(taskId, userId, ct);
+                if (assignment is null) return Results.NotFound();
+
+                var responseDto = assignment.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .Produces<TaskAssignmentReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -67,29 +73,29 @@ namespace Api.Endpoints
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
                 [FromBody] TaskAssignmentCreateDto dto,
-                [FromServices] ITaskAssignmentWriteService taskAssignmentWriteSvc,
-                [FromServices] ITaskAssignmentReadService taskAssignmentReadSvc,
                 [FromServices] ICurrentUserService currentUserSvc,
-                HttpContext http,
+                [FromServices] ITaskAssignmentReadService taskAssignmentReadSvc,
+                [FromServices] ITaskAssignmentWriteService taskAssignmentWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var performedById = (Guid)currentUserSvc.UserId!;
 
                 var (result, assignment) = await taskAssignmentWriteSvc.CreateAsync(projectId, taskId, dto.UserId, dto.Role, performedById, ct);
-                if (result == DomainMutation.Conflict || assignment is null) return result.ToHttp();
+                if (result == DomainMutation.Conflict || assignment is null) return result.ToHttp(context);
 
                 var created = await taskAssignmentReadSvc.GetAsync(taskId, dto.UserId, ct);
                 if (created is null) return Results.NotFound();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(created.RowVersion)}\"";
-                var body = created.ToReadDto();
+                var responseDto = created.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
                 return result == DomainMutation.Created
                     ? Results.CreatedAtRoute(
                         "TaskAssignments_Get_ById",
                         new { projectId, laneId, columnId, taskId, userId = dto.UserId },
-                        body)
-                    : Results.Ok(body);
+                        responseDto)
+                    : Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<TaskAssignmentCreateDto>()
@@ -111,24 +117,26 @@ namespace Api.Endpoints
                 [FromRoute] Guid taskId,
                 [FromRoute] Guid userId,
                 [FromBody] TaskAssignmentChangeRoleDto dto,
-                [FromServices] ITaskAssignmentWriteService taskAssignmentWriteSvc,
-                [FromServices] ITaskAssignmentReadService taskAssignmentReadSvc,
                 [FromServices] ICurrentUserService currentUserSvc,
-                HttpContext http,
+                [FromServices] ITaskAssignmentReadService taskAssignmentReadSvc,
+                [FromServices] ITaskAssignmentWriteService taskAssignmentWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var performedById = (Guid)currentUserSvc.UserId!;
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => taskAssignmentReadSvc.GetAsync(taskId, userId, ct), a => a.RowVersion);
+                    context, () => taskAssignmentReadSvc.GetAsync(taskId, userId, ct), a => a.RowVersion);
 
-                var m = await taskAssignmentWriteSvc.ChangeRoleAsync(projectId, taskId, userId, dto.NewRole, performedById, rowVersion, ct);
-                if (m != DomainMutation.Updated) return m.ToHttp(http);
+                var result = await taskAssignmentWriteSvc.ChangeRoleAsync(projectId, taskId, userId, dto.NewRole, performedById, rowVersion, ct);
+                if (result != DomainMutation.Updated) return result.ToHttp(context);
 
                 var updated = await taskAssignmentReadSvc.GetAsync(taskId, userId, ct);
                 if (updated is null) return Results.NotFound();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(updated.RowVersion)}\"";
-                return Results.Ok(updated.ToReadDto());
+                var responseDto = updated.ToReadDto();
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<TaskAssignmentChangeRoleDto>()
@@ -151,25 +159,25 @@ namespace Api.Endpoints
                 [FromRoute] Guid columnId,
                 [FromRoute] Guid taskId,
                 [FromRoute] Guid userId,
-                [FromServices] ITaskAssignmentWriteService taskAssignmentWriteSvc,
-                [FromServices] ITaskAssignmentReadService taskAssignmentReadSvc,
                 [FromServices] ICurrentUserService currentUserSvc,
-                HttpContext http,
+                [FromServices] ITaskAssignmentReadService taskAssignmentReadSvc,
+                [FromServices] ITaskAssignmentWriteService taskAssignmentWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var performedById = (Guid)currentUserSvc.UserId!;
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => taskAssignmentReadSvc.GetAsync(taskId, userId, ct), a => a.RowVersion);
+                    context, () => taskAssignmentReadSvc.GetAsync(taskId, userId, ct), a => a.RowVersion);
 
-                var m = await taskAssignmentWriteSvc.RemoveAsync(projectId, taskId, userId, performedById, rowVersion, ct);
-                return m.ToHttp(http);
+                var result = await taskAssignmentWriteSvc.RemoveAsync(projectId, taskId, userId, performedById, rowVersion, ct);
+
+                return result.ToHttp(context);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireIfMatch()
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Remove assignment")
@@ -183,15 +191,15 @@ namespace Api.Endpoints
 
             // GET /assignments/me
             top.MapGet("/me", async (
-                HttpContext http,
-                [FromServices] ITaskAssignmentReadService assignmentReadSvc,
                 [FromServices] ICurrentUserService currentUserSvc,
+                [FromServices] ITaskAssignmentReadService taskAssignmentReadSvc,
                 CancellationToken ct = default) =>
             {
                 var userId = (Guid)currentUserSvc.UserId!;
-                var items = await assignmentReadSvc.ListByUserAsync(userId, ct);
-                var dto = items.Select(a => a.ToReadDto()).ToList();
-                return Results.Ok(dto);
+                var assignments = await taskAssignmentReadSvc.ListByUserAsync(userId, ct);
+                var responseDto = assignments.Select(a => a.ToReadDto()).ToList();
+
+                return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<TaskAssignmentReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -202,12 +210,13 @@ namespace Api.Endpoints
             // GET /assignments/users/{userId}
             top.MapGet("/users/{userId:guid}", async (
                 [FromRoute] Guid userId,
-                [FromServices] ITaskAssignmentReadService assignmentReadSvc,
+                [FromServices] ITaskAssignmentReadService taskAssignmentReadSvc,
                 CancellationToken ct = default) =>
             {
-                var items = await assignmentReadSvc.ListByUserAsync(userId, ct);
-                var dto = items.Select(a => a.ToReadDto()).ToList();
-                return Results.Ok(dto);
+                var assignments = await taskAssignmentReadSvc.ListByUserAsync(userId, ct);
+                var responseDto = assignments.Select(a => a.ToReadDto()).ToList();
+
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.SystemAdmin)
             .Produces<IEnumerable<TaskAssignmentReadDto>>(StatusCodes.Status200OK)
