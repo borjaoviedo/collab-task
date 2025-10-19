@@ -1,5 +1,6 @@
 using Application.ProjectMembers.DTOs;
 using Domain.Entities;
+using Domain.Enums;
 
 namespace Application.ProjectMembers.Mapping
 {
@@ -16,6 +17,18 @@ namespace Application.ProjectMembers.Mapping
                 JoinedAt = item.JoinedAt,
                 RemovedAt = item.RemovedAt,
                 RowVersion = item.RowVersion
+            };
+
+        public static ProjectMemberRoleReadDto ToRoleReadDto(this ProjectRole role)
+            => new()
+            {
+                Role = role
+            };
+
+        public static ProjectMemberCountReadDto ToCountReadDto(this int count)
+            => new()
+            {
+                Count = count
             };
     }
 }
