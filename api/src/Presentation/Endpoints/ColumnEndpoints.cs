@@ -75,7 +75,7 @@ namespace Api.Endpoints
                     new { projectId, laneId, columnId = column.Id },
                     column.ToReadDto());
             })
-            .RequireAuthorization(Policies.ProjectMember)
+            .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ColumnCreateDto>()
             .Produces<ColumnReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -109,7 +109,7 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed.RowVersion)}\"";
                 return Results.Ok(renamed.ToReadDto());
             })
-            .RequireAuthorization(Policies.ProjectMember)
+            .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ColumnRenameDto>()
             .RequireIfMatch()
             .Produces<ColumnReadDto>(StatusCodes.Status200OK)
@@ -146,7 +146,7 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(reordered.RowVersion)}\"";
                 return Results.Ok(reordered.ToReadDto());
             })
-            .RequireAuthorization(Policies.ProjectMember)
+            .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ColumnReorderDto>()
             .RequireIfMatch()
             .Produces<ColumnReadDto>(StatusCodes.Status200OK)
@@ -176,7 +176,7 @@ namespace Api.Endpoints
                 var result = await columnWriteSvc.DeleteAsync(columnId, rowVersion, ct);
                 return result.ToHttp(http);
             })
-            .RequireAuthorization(Policies.ProjectMember)
+            .RequireAuthorization(Policies.ProjectAdmin)
             .RequireIfMatch()
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)

@@ -70,7 +70,7 @@ namespace Api.Endpoints
                     new { projectId, laneId = lane.Id},
                     lane.ToReadDto());
             })
-            .RequireAuthorization(Policies.ProjectMember)
+            .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<LaneCreateDto>()
             .Produces<LaneReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -103,7 +103,7 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed.RowVersion)}\"";
                 return Results.Ok(renamed.ToReadDto());
             })
-            .RequireAuthorization(Policies.ProjectMember)
+            .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<LaneRenameDto>()
             .RequireIfMatch()
             .Produces<LaneReadDto>(StatusCodes.Status200OK)
@@ -139,7 +139,7 @@ namespace Api.Endpoints
                 http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(reordered.RowVersion)}\"";
                 return Results.Ok(reordered.ToReadDto());
             })
-            .RequireAuthorization(Policies.ProjectMember)
+            .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<LaneReorderDto>()
             .RequireIfMatch()
             .Produces<LaneReadDto>(StatusCodes.Status200OK)
@@ -168,7 +168,7 @@ namespace Api.Endpoints
                 var result = await laneWriteSvc.DeleteAsync(laneId, rowVersion, ct);
                 return result.ToHttp(http);
             })
-            .RequireAuthorization(Policies.ProjectMember)
+            .RequireAuthorization(Policies.ProjectAdmin)
             .RequireIfMatch()
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
