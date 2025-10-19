@@ -27,8 +27,9 @@ namespace Api.Endpoints
             {
                 var userId = (Guid)currentUserSvc.UserId!;
                 var projects = await projectReadSvc.GetAllByUserAsync(userId, filter, ct);
-                var dto = projects.Select(p => p.ToReadDto(userId)).ToList();
-                return Results.Ok(dto);
+                var responseDto = projects.Select(p => p.ToReadDto(userId)).ToList();
+
+                return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -40,14 +41,18 @@ namespace Api.Endpoints
             group.MapGet("/{projectId:guid}", async (
                 [FromRoute] Guid projectId,
                 [FromServices] ICurrentUserService currentUserSvc,
-                [FromServices] IProjectRepository repo,
+                [FromServices] IProjectRepository projectRepository,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
-                var res = await repo.GetByIdAsync(projectId, ct);
-                if (res is null) return Results.NotFound();
+                var project = await projectRepository.GetByIdAsync(projectId, ct);
+                if (project is null) return Results.NotFound();
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                return Results.Ok(res.ToReadDto(userId));
+                var responseDto = project.ToReadDto(userId);
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectReader)
             .Produces<ProjectReadDto>(StatusCodes.Status200OK)
@@ -60,16 +65,15 @@ namespace Api.Endpoints
 
             // GET /projects/me
             group.MapGet("/me", async (
-                HttpContext http,
                 [FromServices] ICurrentUserService currentUserSvc,
                 [FromServices] IProjectReadService projectReadSvc,
                 CancellationToken ct = default) =>
             {
                 var userId = (Guid)currentUserSvc.UserId!;
                 var projects = await projectReadSvc.GetAllByUserAsync(userId, filter: null, ct);
+                var responseDto = projects.Select(p => p.ToReadDto(userId)).ToList();
 
-                var dto = projects.Select(p => p.ToReadDto(userId)).ToList();
-                return Results.Ok(dto);
+                return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -84,9 +88,9 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var projects = await projectReadSvc.GetAllByUserAsync(userId, filter: null, ct);
+                var responseDto = projects.Select(p => p.ToReadDto(userId)).ToList();
 
-                var dto = projects.Select(p => p.ToReadDto(userId)).ToList();
-                return Results.Ok(dto);
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.SystemAdmin)
             .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
@@ -102,17 +106,20 @@ namespace Api.Endpoints
                 [FromServices] ICurrentUserService currentUserSvc,
                 [FromServices] IProjectWriteService projectWriteSvc,
                 [FromServices] IProjectReadService projectReadSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var userId = (Guid)currentUserSvc.UserId!;
-
                 var (result, project) = await projectWriteSvc.CreateAsync(userId, dto.Name, ct);
-                if (result != DomainMutation.Created || project is null) return result.ToHttp();
+                if (result != DomainMutation.Created || project is null) return result.ToHttp(context);
+
+                var responseDto = project.ToReadDto(userId);
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
                 return Results.CreatedAtRoute(
                     "Projects_Get_ById",
                     new { projectId = project.Id},
-                    project.ToReadDto(userId));
+                    responseDto);
             })
             .RequireValidation<ProjectCreateDto>()
             .Produces<ProjectReadDto>(StatusCodes.Status201Created)
@@ -128,24 +135,25 @@ namespace Api.Endpoints
                 [FromRoute] Guid projectId,
                 [FromBody] ProjectRenameDto dto,
                 [FromServices] ICurrentUserService currentUserSvc,
-                [FromServices] IProjectWriteService projectWriteSvc,
                 [FromServices] IProjectReadService projectReadSvc,
-                HttpContext http,
+                [FromServices] IProjectWriteService projectWriteSvc,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => projectReadSvc.GetAsync(projectId, ct), p => p.RowVersion);
+                    context, () => projectReadSvc.GetAsync(projectId, ct), p => p.RowVersion);
 
                 var result = await projectWriteSvc.RenameAsync(projectId, dto.NewName, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp(http);
+                if (result != DomainMutation.Updated) return result.ToHttp(context);
 
                 var edited = await projectReadSvc.GetAsync(projectId, ct);
                 if (edited is null) return Results.NotFound();
 
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited.RowVersion)}\"";
-
                 var userId = (Guid)currentUserSvc.UserId!;
-                return Results.Ok(edited.ToReadDto(userId));
+                var responseDto = edited.ToReadDto(userId);
+                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+
+                return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ProjectRenameDto>()
@@ -156,6 +164,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Rename project")
             .WithDescription("Renames an existing project.")
             .WithName("Projects_Rename");
@@ -165,14 +174,15 @@ namespace Api.Endpoints
                 [FromRoute] Guid projectId,
                 [FromServices] IProjectWriteService projectWriteSvc,
                 [FromServices] IProjectReadService projectReadSvc,
-                HttpContext http,
+                HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    http, () => projectReadSvc.GetAsync(projectId, ct), p => p.RowVersion);
+                    context, () => projectReadSvc.GetAsync(projectId, ct), p => p.RowVersion);
 
-                var res = await projectWriteSvc.DeleteAsync(projectId, rowVersion, ct);
-                return res.ToHttp(http);
+                var result = await projectWriteSvc.DeleteAsync(projectId, rowVersion, ct);
+
+                return result.ToHttp(context);
             })
             .RequireAuthorization(Policies.ProjectOwner)
             .RequireIfMatch()
@@ -182,6 +192,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Delete project")
             .WithDescription("Deletes the specified project.")
             .WithName("Projects_Delete");
