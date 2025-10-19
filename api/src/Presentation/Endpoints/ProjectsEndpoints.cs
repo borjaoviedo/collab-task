@@ -75,7 +75,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("List my projects")
             .WithDescription("Lists all projects the authenticated user can access.")
-            .WithName("Projects_ListMine");
+            .WithName("Projects_Get_Mine");
 
             // GET /projects/users/{userId}
             group.MapGet("/users/{userId:guid}", async (
@@ -94,7 +94,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .WithSummary("List projects by user")
             .WithDescription("Lists all projects the specified user can access.")
-            .WithName("Projects_List_ByUser");
+            .WithName("Projects_Get_ByUser");
 
             // POST /projects
             group.MapPost("/", async (

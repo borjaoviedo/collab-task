@@ -142,7 +142,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Change assignment role")
             .WithDescription("Changes the role of a task assignment using optimistic concurrency (If-Match).")
-            .WithName("Assignments_Change_Role");
+            .WithName("Assignments_ChangeRole");
 
             // DELETE /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}
             nested.MapDelete("/{userId:guid}", async (
@@ -197,7 +197,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("List my task assignments")
             .WithDescription("Lists task assignments of the authenticated user across accessible projects.")
-            .WithName("TaskAssignments_ListMine");
+            .WithName("TaskAssignments_Get_Mine");
 
             // GET /assignments/users/{userId}
             top.MapGet("/users/{userId:guid}", async (
@@ -215,7 +215,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .WithSummary("List task assignments by user")
             .WithDescription("Lists task assignments of the specified user across accessible projects.")
-            .WithName("TaskAssignments_ListByUser");
+            .WithName("TaskAssignments_Get_ByUser");
 
             return top;
         }

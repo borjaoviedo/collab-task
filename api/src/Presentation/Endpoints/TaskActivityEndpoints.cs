@@ -63,7 +63,6 @@ namespace Api.Endpoints
             .WithSummary("Get activity by id")
             .WithDescription("Returns a single activity if it belongs to the specified task.")
             .WithName("TaskActivities_Get_ById");
-
             
             var top = app.MapGroup("/activities")
                 .WithTags("Task Activities")
@@ -84,7 +83,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("List my activities")
             .WithDescription("Lists task activities performed by the authenticated user.")
-            .WithName("TaskActivities_ListMine");
+            .WithName("TaskActivities_Get_Mine");
 
             // GET /activities/users/{userId}
             top.MapGet("/users/{userId:guid}", async(
@@ -102,7 +101,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .WithSummary("List activities by user")
             .WithDescription("Lists task activities performed by the specified user.")
-            .WithName("TaskActivities_List_ByUser");
+            .WithName("TaskActivities_Get_ByUser");
 
             return top;
         }

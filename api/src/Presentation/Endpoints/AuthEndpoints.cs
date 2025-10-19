@@ -136,7 +136,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("Returns the authenticated user's profile")
             .WithDescription("User profile")
-            .WithName("Auth_GetMe");
+            .WithName("Auth_Get_Me");
 
             return group;
         }

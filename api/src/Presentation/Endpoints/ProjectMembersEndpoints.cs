@@ -71,7 +71,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get member role")
             .WithDescription("Returns the role of a user within a project.")
-            .WithName("ProjectMembers_GetRole");
+            .WithName("ProjectMembers_Get_Role");
 
             // POST /projects/{projectId}/members
             nested.MapPost("/", async (
@@ -138,7 +138,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Change role to a project member")
             .WithDescription("Changes the role of a project member.")
-            .WithName("ProjectMembers_Change_Role");
+            .WithName("ProjectMembers_ChangeRole");
 
             // PATCH /projects/{projectId}/members/{userId}/remove
             nested.MapPatch("/{userId:guid}/remove", async (
@@ -227,7 +227,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("Get total active project memberships of the authenticated user")
             .WithDescription("Returns the total number of active projects in which the authenticated user is a member.")
-            .WithName("ProjectMembers_CountActiveMine");
+            .WithName("ProjectMembers_CountActive_Mine");
 
             // GET /members/{userId}/count
             top.MapGet("/{userId:guid}/count", async (
@@ -245,7 +245,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get total active project memberships of a user")
             .WithDescription("Returns the total number of active projects in which the specified user is a member.")
-            .WithName("ProjectMembers_CountActiveByUser");
+            .WithName("ProjectMembers_CountActive_ByUser");
 
             return top;
         }

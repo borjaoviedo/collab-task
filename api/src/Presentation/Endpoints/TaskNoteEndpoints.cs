@@ -195,7 +195,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("List my notes")
             .WithDescription("Lists notes authored by the authenticated user across accessible projects.")
-            .WithName("TaskNotes_ListMine");
+            .WithName("TaskNotes_Get_Mine");
 
             // GET /notes/users/{userId}
             top.MapGet("/users/{userId:guid}", async (
@@ -213,7 +213,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .WithSummary("List notes by author")
             .WithDescription("Lists notes authored by the specified user across accessible projects.")
-            .WithName("TaskNotes_ListByUser");
+            .WithName("TaskNotes_Get_ByUser");
 
             return top;
         }

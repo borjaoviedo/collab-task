@@ -138,7 +138,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Change user role")
             .WithDescription("Changes a user's role and returns the updated user.")
-            .WithName("Users_Change_Role");
+            .WithName("Users_ChangeRole");
 
             // DELETE /users/{userId}
             group.MapDelete("/{userId:guid}", async (
