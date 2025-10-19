@@ -98,7 +98,9 @@ namespace Api.Endpoints
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var renamed = await laneReadSvc.GetAsync(laneId, ct);
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed!.RowVersion)}\"";
+                if (renamed is null) return Results.NotFound();
+
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed.RowVersion)}\"";
                 return Results.Ok(renamed.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)
@@ -132,7 +134,9 @@ namespace Api.Endpoints
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var reordered = await laneReadSvc.GetAsync(laneId, ct);
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(reordered!.RowVersion)}\"";
+                if (reordered is null) return Results.NotFound();
+
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(reordered.RowVersion)}\"";
                 return Results.Ok(reordered.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)

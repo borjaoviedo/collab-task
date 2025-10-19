@@ -88,7 +88,10 @@ namespace Api.Endpoints
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var renamed = await userReadSvc.GetAsync(userId, ct);
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed!.RowVersion)}\"";
+                if (renamed is null) return Results.NotFound();
+
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(renamed.RowVersion)}\"";
+
                 return Results.Ok(renamed.ToReadDto());
             })
             .RequireIfMatch()
@@ -118,7 +121,10 @@ namespace Api.Endpoints
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var edited = await userReadSvc.GetAsync(userId, ct);
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
+                if (edited is null) return Results.NotFound();
+
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited.RowVersion)}\"";
+
                 return Results.Ok(edited.ToReadDto());
             })
             .RequireAuthorization(Policies.SystemAdmin)

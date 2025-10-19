@@ -119,7 +119,10 @@ namespace Api.Endpoints
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var edited = await taskNoteReadSvc.GetAsync(noteId, ct);
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
+                if (edited is null) return Results.NotFound();
+
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited.RowVersion)}\"";
+
                 return Results.Ok(edited.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)

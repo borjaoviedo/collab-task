@@ -140,7 +140,9 @@ namespace Api.Endpoints
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var edited = await projectReadSvc.GetAsync(projectId, ct);
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited!.RowVersion)}\"";
+                if (edited is null) return Results.NotFound();
+
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(edited.RowVersion)}\"";
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 return Results.Ok(edited.ToReadDto(userId));

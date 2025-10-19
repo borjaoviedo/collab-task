@@ -154,7 +154,10 @@ namespace Api.Endpoints
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var moved = await taskItemReadSvc.GetAsync(taskId, ct);
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(moved!.RowVersion)}\"";
+                if (moved is null) return Results.NotFound();
+
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(moved.RowVersion)}\"";
+
                 return Results.Ok(moved.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectMember)

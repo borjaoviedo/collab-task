@@ -85,10 +85,12 @@ namespace Api.Endpoints
                 if (result != DomainMutation.Created || member is null) return result.ToHttp();
 
                 var created = await projectMemberReadSvc.GetAsync(projectId, member.UserId, ct);
+                if (created is null) return Results.NotFound();
+
                 return Results.CreatedAtRoute(
                     "ProjectMembers_Get_ById",
                     new { projectId, userId = dto.UserId },
-                    created!.ToReadDto());
+                    created.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ProjectMemberCreateDto>()
@@ -119,7 +121,10 @@ namespace Api.Endpoints
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var updated = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(updated!.RowVersion)}\"";
+                if (updated is null) return Results.NotFound();
+
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(updated.RowVersion)}\"";
+
                 return Results.Ok(updated.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectOwner)
@@ -151,7 +156,10 @@ namespace Api.Endpoints
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var removed = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(removed!.RowVersion)}\"";
+                if (removed is null) return Results.NotFound();
+
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(removed.RowVersion)}\"";
+
                 return Results.Ok(removed.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectAdmin)
@@ -182,7 +190,10 @@ namespace Api.Endpoints
                 if (result != DomainMutation.Updated) return result.ToHttp(http);
 
                 var removed = await projectMemberReadSvc.GetAsync(projectId, userId, ct);
-                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(removed!.RowVersion)}\"";
+                if (removed is null) return Results.NotFound();
+
+                http.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(removed.RowVersion)}\"";
+
                 return Results.Ok(removed.ToReadDto());
             })
             .RequireAuthorization(Policies.ProjectAdmin)
