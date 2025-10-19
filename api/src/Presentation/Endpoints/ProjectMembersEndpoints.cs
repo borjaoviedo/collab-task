@@ -238,7 +238,7 @@ namespace Api.Endpoints
                 var count = await projectMemberReadSvc.CountActiveAsync(userId, ct);
                 return Results.Ok(new { Count = count });
             })
-            .RequireAuthorization(Policies.ProjectAdmin)
+            .RequireAuthorization(Policies.SystemAdmin)
             .Produces<object>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
