@@ -93,7 +93,7 @@ namespace Api.Endpoints
                 CancellationToken ct = default) =>
             {
                 var (result, member) = await projectMemberWriteSvc.CreateAsync(projectId, dto.UserId, dto.Role, ct);
-                if (result != DomainMutation.Created || member is null) return result.ToHttp();
+                if (result != DomainMutation.Created || member is null) return result.ToHttp(context);
 
                 var created = await projectMemberReadSvc.GetAsync(projectId, member.UserId, ct);
                 if (created is null) return Results.NotFound();
