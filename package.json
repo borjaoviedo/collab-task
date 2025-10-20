@@ -1,6 +1,6 @@
 {
   "name": "collab-task",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "description": "Collaborative task management backend built with ASP.NET Core under Clean Architecture principles.",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,8 @@
     "prod": "node scripts/run.js prod",
     "test:unit": "node scripts/run.js test:unit",
     "test:infra": "node scripts/run.js test:infra",
-    "test:all": "node scripts/run.js test:all"
+    "test:all": "node scripts/run.js test:all",
+    "gen:openapi": "node scripts/run.js gen:openapi"
   },
   "repository": {
     "type": "git",
