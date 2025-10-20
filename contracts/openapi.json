@@ -10,8 +10,8 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Register new user",
-        "description": "Creates a user and returns a JWT for auto-login",
+        "summary": "Register user",
+        "description": "Creates a user and returns a JWT for immediate authentication.",
         "operationId": "Auth_Register",
         "requestBody": {
           "content": {
@@ -62,8 +62,8 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Authenticate user with email and password",
-        "description": "Returns a JWT bearer token on successful authentication",
+        "summary": "Authenticate user",
+        "description": "Validates credentials and returns a JWT on success.",
         "operationId": "Auth_Login",
         "requestBody": {
           "content": {
@@ -104,9 +104,9 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Returns the authenticated user's profile",
-        "description": "User profile",
-        "operationId": "Auth_GetMe",
+        "summary": "Get authenticated profile",
+        "description": "Returns the current user profile derived from JWT claims.",
+        "operationId": "Auth_Get_Me",
         "responses": {
           "200": {
             "description": "OK",
@@ -136,8 +136,8 @@
         "tags": [
           "Columns"
         ],
-        "summary": "Get all columns",
-        "description": "Returns columns belonging to the specified lane.",
+        "summary": "List columns",
+        "description": "Returns columns for the lane.",
         "operationId": "Columns_Get_All",
         "parameters": [
           {
@@ -192,16 +192,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       },
@@ -210,7 +200,7 @@
           "Columns"
         ],
         "summary": "Create column",
-        "description": "Creates a column in the lane and returns it.",
+        "description": "Admin-only. Creates a column in the lane. Returns the resource with ETag.",
         "operationId": "Columns_Create",
         "parameters": [
           {
@@ -302,8 +292,8 @@
           "Columns"
         ],
         "summary": "Get column",
-        "description": "Returns a column by id within a lane.",
-        "operationId": "Columns_Get",
+        "description": "Returns a column in the lane. Sets ETag.",
+        "operationId": "Columns_Get_ById",
         "parameters": [
           {
             "name": "projectId",
@@ -381,7 +371,7 @@
           "Columns"
         ],
         "summary": "Delete column",
-        "description": "Deletes a column.",
+        "description": "Admin-only. Deletes a column using optimistic concurrency (If-Match).",
         "operationId": "Columns_Delete",
         "parameters": [
           {
@@ -494,7 +484,7 @@
           "Columns"
         ],
         "summary": "Rename column",
-        "description": "Renames a column and returns the updated column.",
+        "description": "Admin-only. Renames a column using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "Columns_Rename",
         "parameters": [
           {
@@ -624,7 +614,7 @@
           "Columns"
         ],
         "summary": "Reorder column",
-        "description": "Changes column order and returns the updated column.",
+        "description": "Admin-only. Changes column order using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "Columns_Reorder",
         "parameters": [
           {
@@ -754,10 +744,21 @@
           "Health"
         ],
         "summary": "Health check",
-        "operationId": "Health",
+        "description": "Verifies API availability and basic server uptime.",
+        "operationId": "Health_Get",
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -767,8 +768,8 @@
         "tags": [
           "Lanes"
         ],
-        "summary": "Get all lanes",
-        "description": "Returns lanes belonging to the specified project.",
+        "summary": "List lanes",
+        "description": "Returns lanes for the project.",
         "operationId": "Lanes_Get_All",
         "parameters": [
           {
@@ -822,7 +823,7 @@
           "Lanes"
         ],
         "summary": "Create lane",
-        "description": "Creates a lane in the project and returns it.",
+        "description": "Admin-only. Creates a lane in the project. Returns the resource with ETag.",
         "operationId": "Lanes_Create",
         "parameters": [
           {
@@ -905,8 +906,8 @@
           "Lanes"
         ],
         "summary": "Get lane",
-        "description": "Returns a lane by id within a project.",
-        "operationId": "Lanes_Get",
+        "description": "Returns a lane in the project. Sets ETag.",
+        "operationId": "Lanes_Get_ById",
         "parameters": [
           {
             "name": "projectId",
@@ -975,7 +976,7 @@
           "Lanes"
         ],
         "summary": "Delete lane",
-        "description": "Deletes a lane in the specified project.",
+        "description": "Admin-only. Deletes a lane using optimistic concurrency (If-Match).",
         "operationId": "Lanes_Delete",
         "parameters": [
           {
@@ -1079,7 +1080,7 @@
           "Lanes"
         ],
         "summary": "Rename lane",
-        "description": "Renames a lane and returns the updated lane.",
+        "description": "Admin-only. Renames a lane using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "Lanes_Rename",
         "parameters": [
           {
@@ -1200,7 +1201,7 @@
           "Lanes"
         ],
         "summary": "Reorder lane",
-        "description": "Changes lane order and returns the updated lane.",
+        "description": "Admin-only. Changes lane order using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "Lanes_Reorder",
         "parameters": [
           {
@@ -1320,8 +1321,8 @@
         "tags": [
           "Project Members"
         ],
-        "summary": "Get all members of a project",
-        "description": "Returns all members of the project.",
+        "summary": "List project members",
+        "description": "Returns project members. Can include removed members.",
         "operationId": "ProjectMembers_Get_All",
         "parameters": [
           {
@@ -1375,16 +1376,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       },
@@ -1392,8 +1383,8 @@
         "tags": [
           "Project Members"
         ],
-        "summary": "Add new project member",
-        "description": "Adds a user to the project as a member.",
+        "summary": "Add project member",
+        "description": "Admin-only. Adds a user to the project. Returns the resource with ETag.",
         "operationId": "ProjectMembers_Create",
         "parameters": [
           {
@@ -1418,7 +1409,14 @@
         },
         "responses": {
           "201": {
-            "description": "Created"
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMemberReadDto"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -1479,8 +1477,8 @@
           "Project Members"
         ],
         "summary": "Get project member",
-        "description": "Returns a project member by project and user id.",
-        "operationId": "ProjectMembers_Get",
+        "description": "Returns a member entry. Sets ETag.",
+        "operationId": "ProjectMembers_Get_ById",
         "parameters": [
           {
             "name": "projectId",
@@ -1551,8 +1549,8 @@
           "Project Members"
         ],
         "summary": "Get member role",
-        "description": "Returns the role of a user within a project.",
-        "operationId": "ProjectMembers_GetRole",
+        "description": "Returns the role of the user in the project.",
+        "operationId": "ProjectMembers_Get_Role",
         "parameters": [
           {
             "name": "projectId",
@@ -1578,7 +1576,9 @@
             "description": "OK",
             "content": {
               "application/json": {
-                "schema": { }
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMemberRoleReadDto"
+                }
               }
             }
           },
@@ -1618,9 +1618,9 @@
         "tags": [
           "Project Members"
         ],
-        "summary": "Change role to a project member",
-        "description": "Changes the role of a project member.",
-        "operationId": "ProjectMembers_Change_Role",
+        "summary": "Change member role",
+        "description": "Admin-only. Changes role using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
+        "operationId": "ProjectMembers_ChangeRole",
         "parameters": [
           {
             "name": "projectId",
@@ -1720,77 +1720,9 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/projects/{projectId}/members/{userId}/count": {
-      "get": {
-        "tags": [
-          "Project Members"
-        ],
-        "summary": "Get count of a user’s project memberships",
-        "description": "Returns how many projects the specified user belongs to. When ‘active=true’, only active memberships are counted.",
-        "operationId": "ProjectMembers_CountByUser",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
           },
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "active",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": true
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": { }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
+          "412": {
+            "description": "Precondition Failed",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1808,7 +1740,7 @@
           "Project Members"
         ],
         "summary": "Remove project member",
-        "description": "Soft-removes a project member.",
+        "description": "Admin-only. Soft-removes a member using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "ProjectMembers_Remove",
         "parameters": [
           {
@@ -1839,16 +1771,6 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProjectMemberRemoveDto"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "200": {
             "description": "OK",
@@ -1909,6 +1831,16 @@
                 }
               }
             }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1919,7 +1851,7 @@
           "Project Members"
         ],
         "summary": "Restore project member",
-        "description": "Restores a previously removed project member.",
+        "description": "Admin-only. Restores a previously removed member using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "ProjectMembers_Restore",
         "parameters": [
           {
@@ -2010,6 +1942,101 @@
                 }
               }
             }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/members/me/count": {
+      "get": {
+        "tags": [
+          "Project Members"
+        ],
+        "summary": "Count my active memberships",
+        "description": "Returns the number of active projects for the authenticated user.",
+        "operationId": "ProjectMembers_CountActive_Mine",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMemberCountReadDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/members/{userId}/count": {
+      "get": {
+        "tags": [
+          "Project Members"
+        ],
+        "summary": "Count active memberships by user",
+        "description": "Admin-only. Returns the number of active projects for the specified user.",
+        "operationId": "ProjectMembers_CountActive_ByUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMemberCountReadDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -2019,8 +2046,8 @@
         "tags": [
           "Projects"
         ],
-        "summary": "Get all projects",
-        "description": "Returns all projects where the authenticated user has at least reader permissions.",
+        "summary": "List accessible projects",
+        "description": "Returns projects where the caller has at least reader rights. Respects optional filters.",
         "operationId": "Projects_Get_All",
         "parameters": [
           {
@@ -2098,8 +2125,8 @@
         "tags": [
           "Projects"
         ],
-        "summary": "Create new project",
-        "description": "Creates a new project owned by the authenticated user.",
+        "summary": "Create project",
+        "description": "Creates a project owned by the caller. Returns the resource with ETag.",
         "operationId": "Projects_Create",
         "requestBody": {
           "content": {
@@ -2160,8 +2187,8 @@
         "tags": [
           "Projects"
         ],
-        "summary": "Get project by id",
-        "description": "Returns the specified project if the authenticated user has at least reader permissions.",
+        "summary": "Get project",
+        "description": "Returns the project if the caller has reader rights. Sets ETag.",
         "operationId": "Projects_Get_ById",
         "parameters": [
           {
@@ -2222,7 +2249,7 @@
           "Projects"
         ],
         "summary": "Delete project",
-        "description": "Deletes the specified project.",
+        "description": "Owner-only. Deletes the project using optimistic concurrency (If-Match).",
         "operationId": "Projects_Delete",
         "parameters": [
           {
@@ -2297,6 +2324,16 @@
                 }
               }
             }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -2307,8 +2344,8 @@
           "Projects"
         ],
         "summary": "List my projects",
-        "description": "Lists all projects the authenticated user can access.",
-        "operationId": "Projects_ListMine",
+        "description": "Returns projects accessible to the authenticated user.",
+        "operationId": "Projects_Get_Mine",
         "responses": {
           "200": {
             "description": "OK",
@@ -2342,8 +2379,8 @@
           "Projects"
         ],
         "summary": "List projects by user",
-        "description": "Lists all projects the specified user can access. Admin-only if the user differs from the caller.",
-        "operationId": "Projects_List_ByUser",
+        "description": "Admin-only. Returns projects accessible to the specified user.",
+        "operationId": "Projects_Get_ByUser",
         "parameters": [
           {
             "name": "userId",
@@ -2398,7 +2435,7 @@
           "Projects"
         ],
         "summary": "Rename project",
-        "description": "Renames an existing project.",
+        "description": "Updates the project name using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "Projects_Rename",
         "parameters": [
           {
@@ -2490,6 +2527,16 @@
                 }
               }
             }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -2499,8 +2546,8 @@
         "tags": [
           "Task Activities"
         ],
-        "summary": "Get task activities",
-        "description": "Returns all activities for the task. Optional filter by type.",
+        "summary": "List task activities",
+        "description": "Returns activities for the task. Optional filter by activity type.",
         "operationId": "TaskActivities_Get_All",
         "parameters": [
           {
@@ -2540,7 +2587,7 @@
             }
           },
           {
-            "name": "type",
+            "name": "activityType",
             "in": "query",
             "schema": {
               "$ref": "#/components/schemas/TaskActivityType"
@@ -2580,134 +2627,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Task Activities"
-        ],
-        "summary": "Create task activity",
-        "description": "Appends a new activity to the task by the authenticated user.",
-        "operationId": "TaskActivities_Create",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "taskId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TaskActivityCreateDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TaskActivityReadDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable Content",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       }
@@ -2717,8 +2636,8 @@
         "tags": [
           "Task Activities"
         ],
-        "summary": "Get activity by id",
-        "description": "Returns a single activity if it belongs to the specified task.",
+        "summary": "Get task activity",
+        "description": "Returns a single activity if it belongs to the task.",
         "operationId": "TaskActivities_Get_ById",
         "parameters": [
           {
@@ -2817,8 +2736,8 @@
           "Task Activities"
         ],
         "summary": "List my activities",
-        "description": "Lists task activities performed by the authenticated user.",
-        "operationId": "TaskActivities_ListMine",
+        "description": "Returns activities performed by the authenticated user.",
+        "operationId": "TaskActivities_Get_Mine",
         "responses": {
           "200": {
             "description": "OK",
@@ -2846,13 +2765,69 @@
         }
       }
     },
+    "/activities/users/{userId}": {
+      "get": {
+        "tags": [
+          "Task Activities"
+        ],
+        "summary": "List activities by user",
+        "description": "Admin-only. Returns activities performed by the specified user.",
+        "operationId": "TaskActivities_Get_ByUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TaskActivityReadDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments": {
       "get": {
         "tags": [
           "Task Assignments"
         ],
-        "summary": "Get task assignments",
-        "description": "Returns all assignments for the specified task.",
+        "summary": "List task assignments",
+        "description": "Returns all assignments for the task.",
         "operationId": "TaskAssignments_Get_All",
         "parameters": [
           {
@@ -2925,16 +2900,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       },
@@ -2942,8 +2907,8 @@
         "tags": [
           "Task Assignments"
         ],
-        "summary": "Assign user to task",
-        "description": "Creates or updates a task assignment for a user and role.",
+        "summary": "Create or update assignment",
+        "description": "Admin-only. Creates or updates a task assignment. Returns the resource with ETag (201 if created, 200 if updated).",
         "operationId": "Assignments_Create",
         "parameters": [
           {
@@ -3063,8 +3028,8 @@
           "Task Assignments"
         ],
         "summary": "Get task assignment",
-        "description": "Returns the assignment of a given user on a task.",
-        "operationId": "TaskAssignments_Get",
+        "description": "Returns a user’s assignment for the task. Sets ETag.",
+        "operationId": "TaskAssignments_Get_ById",
         "parameters": [
           {
             "name": "projectId",
@@ -3160,7 +3125,7 @@
           "Task Assignments"
         ],
         "summary": "Remove assignment",
-        "description": "Removes a task assignment using optimistic concurrency (If-Match).",
+        "description": "Admin-only. Removes a task assignment using optimistic concurrency (If-Match).",
         "operationId": "Assignments_Remove",
         "parameters": [
           {
@@ -3242,16 +3207,6 @@
               }
             }
           },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -3281,8 +3236,8 @@
           "Task Assignments"
         ],
         "summary": "Change assignment role",
-        "description": "Changes the role of a task assignment using optimistic concurrency (If-Match).",
-        "operationId": "Assignments_Change_Role",
+        "description": "Admin-only. Changes the role using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
+        "operationId": "Assignments_ChangeRole",
         "parameters": [
           {
             "name": "projectId",
@@ -3428,9 +3383,9 @@
         "tags": [
           "Task Assignments"
         ],
-        "summary": "List my task assignments",
-        "description": "Lists task assignments of the authenticated user across accessible projects.",
-        "operationId": "TaskAssignments_ListMine",
+        "summary": "List my assignments",
+        "description": "Returns task assignments of the authenticated user across accessible projects.",
+        "operationId": "TaskAssignments_Get_Mine",
         "responses": {
           "200": {
             "description": "OK",
@@ -3463,9 +3418,9 @@
         "tags": [
           "Task Assignments"
         ],
-        "summary": "List task assignments by user",
-        "description": "Lists task assignments of the specified user across accessible projects.",
-        "operationId": "TaskAssignments_ListByUser",
+        "summary": "List assignments by user",
+        "description": "Admin-only. Returns task assignments of the specified user across accessible projects.",
+        "operationId": "TaskAssignments_Get_ByUser",
         "parameters": [
           {
             "name": "userId",
@@ -3519,8 +3474,8 @@
         "tags": [
           "Task Notes"
         ],
-        "summary": "Get all notes",
-        "description": "Returns notes belonging to the specified task.",
+        "summary": "List task notes",
+        "description": "Returns notes for the task.",
         "operationId": "Notes_Get_All",
         "parameters": [
           {
@@ -3593,16 +3548,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       },
@@ -3610,8 +3555,8 @@
         "tags": [
           "Task Notes"
         ],
-        "summary": "Create note",
-        "description": "Creates a note in the task and returns it.",
+        "summary": "Create task note",
+        "description": "Member-only. Creates a note on the task. Returns the resource with ETag.",
         "operationId": "Notes_Create",
         "parameters": [
           {
@@ -3721,8 +3666,8 @@
           "Task Notes"
         ],
         "summary": "Get task note",
-        "description": "Returns a task note by id.",
-        "operationId": "TaskNotes_Get",
+        "description": "Returns a task note. Sets ETag.",
+        "operationId": "TaskNotes_Get_ById",
         "parameters": [
           {
             "name": "projectId",
@@ -3817,8 +3762,8 @@
         "tags": [
           "Task Notes"
         ],
-        "summary": "Delete note",
-        "description": "Deletes a note.",
+        "summary": "Delete task note",
+        "description": "Member-only. Deletes a note using optimistic concurrency (If-Match).",
         "operationId": "Notes_Delete",
         "parameters": [
           {
@@ -3948,8 +3893,8 @@
         "tags": [
           "Task Notes"
         ],
-        "summary": "Edit note",
-        "description": "Edits a note and returns the updated note.",
+        "summary": "Edit task note",
+        "description": "Member-only. Updates a note using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "Notes_Edit",
         "parameters": [
           {
@@ -4097,8 +4042,8 @@
           "Task Notes"
         ],
         "summary": "List my notes",
-        "description": "Lists notes authored by the authenticated user across accessible projects.",
-        "operationId": "TaskNotes_ListMine",
+        "description": "Returns notes authored by the authenticated user.",
+        "operationId": "TaskNotes_Get_Mine",
         "responses": {
           "200": {
             "description": "OK",
@@ -4131,9 +4076,9 @@
         "tags": [
           "Task Notes"
         ],
-        "summary": "List notes by author",
-        "description": "Lists notes authored by the specified user across accessible projects.",
-        "operationId": "TaskNotes_ListByUser",
+        "summary": "List notes by user",
+        "description": "Admin-only. Returns notes authored by the specified user.",
+        "operationId": "TaskNotes_Get_ByUser",
         "parameters": [
           {
             "name": "userId",
@@ -4187,8 +4132,8 @@
         "tags": [
           "Tasks"
         ],
-        "summary": "Get all tasks",
-        "description": "Returns tasks belonging to the specified column.",
+        "summary": "List tasks",
+        "description": "Returns tasks for the column.",
         "operationId": "Tasks_Get_All",
         "parameters": [
           {
@@ -4252,16 +4197,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       },
@@ -4270,7 +4205,7 @@
           "Tasks"
         ],
         "summary": "Create task",
-        "description": "Creates a task in the column and returns it.",
+        "description": "Member-only. Creates a task in the column. Returns the resource with ETag.",
         "operationId": "Tasks_Create",
         "parameters": [
           {
@@ -4371,8 +4306,8 @@
           "Tasks"
         ],
         "summary": "Get task",
-        "description": "Returns a task by id within a column.",
-        "operationId": "Tasks_Get",
+        "description": "Returns a task in the column. Sets ETag.",
+        "operationId": "Tasks_Get_ById",
         "parameters": [
           {
             "name": "projectId",
@@ -4459,7 +4394,7 @@
           "Tasks"
         ],
         "summary": "Delete task",
-        "description": "Deletes a task.",
+        "description": "Member-only. Deletes a task using optimistic concurrency (If-Match).",
         "operationId": "Tasks_Delete",
         "parameters": [
           {
@@ -4581,7 +4516,7 @@
           "Tasks"
         ],
         "summary": "Edit task",
-        "description": "Edits a task and returns the updated task.",
+        "description": "Member-only. Updates task fields using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "Tasks_Edit",
         "parameters": [
           {
@@ -4719,8 +4654,8 @@
         "tags": [
           "Tasks"
         ],
-        "summary": "Move a task",
-        "description": "Moves a task to another column/lane in the same project.",
+        "summary": "Move task",
+        "description": "Member-only. Moves the task to another lane/column using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "Tasks_Move",
         "parameters": [
           {
@@ -4858,8 +4793,8 @@
         "tags": [
           "Users"
         ],
-        "summary": "Get all users",
-        "description": "Lists all users with summary info and active project membership counts.",
+        "summary": "List users",
+        "description": "Admin-only. Returns users with summary info and active membership counts.",
         "operationId": "Users_Get_All",
         "responses": {
           "200": {
@@ -4903,8 +4838,8 @@
         "tags": [
           "Users"
         ],
-        "summary": "Get user by id",
-        "description": "Gets a user by id. Returns summary info.",
+        "summary": "Get user",
+        "description": "Admin-only. Returns a user. Sets ETag.",
         "operationId": "Users_Get_ById",
         "parameters": [
           {
@@ -4965,7 +4900,7 @@
           "Users"
         ],
         "summary": "Delete user",
-        "description": "Deletes an existing user.",
+        "description": "Admin-only. Deletes a user using optimistic concurrency (If-Match).",
         "operationId": "Users_Delete",
         "parameters": [
           {
@@ -5040,6 +4975,16 @@
                 }
               }
             }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5050,7 +4995,7 @@
           "Users"
         ],
         "summary": "Get user by email",
-        "description": "Returns a user by email. Returns summary info.",
+        "description": "Admin-only. Returns a user by email.",
         "operationId": "Users_Get_ByEmail",
         "parameters": [
           {
@@ -5112,7 +5057,7 @@
           "Users"
         ],
         "summary": "Rename user",
-        "description": "Renames a user and returns the updated user.",
+        "description": "Updates the user name using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "Users_Rename",
         "parameters": [
           {
@@ -5194,6 +5139,16 @@
                 }
               }
             }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5204,8 +5159,8 @@
           "Users"
         ],
         "summary": "Change user role",
-        "description": "Changes a user's role and returns the updated user.",
-        "operationId": "Users_Change_Role",
+        "description": "Admin-only. Changes role using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
+        "operationId": "Users_ChangeRole",
         "parameters": [
           {
             "name": "userId",
@@ -5296,6 +5251,16 @@
                 }
               }
             }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5331,15 +5296,15 @@
             "nullable": true
           },
           "role": {
-            "type": "string",
-            "nullable": true
+            "$ref": "#/components/schemas/UserRole"
           }
         },
         "additionalProperties": false
       },
       "ColumnCreateDto": {
         "required": [
-          "name"
+          "name",
+          "order"
         ],
         "type": "object",
         "properties": {
@@ -5399,6 +5364,9 @@
         "additionalProperties": false
       },
       "ColumnReorderDto": {
+        "required": [
+          "newOrder"
+        ],
         "type": "object",
         "properties": {
           "newOrder": {
@@ -5410,7 +5378,8 @@
       },
       "LaneCreateDto": {
         "required": [
-          "name"
+          "name",
+          "order"
         ],
         "type": "object",
         "properties": {
@@ -5466,6 +5435,9 @@
         "additionalProperties": false
       },
       "LaneReorderDto": {
+        "required": [
+          "newOrder"
+        ],
         "type": "object",
         "properties": {
           "newOrder": {
@@ -5541,6 +5513,9 @@
         "additionalProperties": false
       },
       "ProjectMemberChangeRoleDto": {
+        "required": [
+          "newRole"
+        ],
         "type": "object",
         "properties": {
           "newRole": {
@@ -5549,7 +5524,25 @@
         },
         "additionalProperties": false
       },
+      "ProjectMemberCountReadDto": {
+        "required": [
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "ProjectMemberCreateDto": {
+        "required": [
+          "joinedAt",
+          "role",
+          "userId"
+        ],
         "type": "object",
         "properties": {
           "userId": {
@@ -5605,12 +5598,14 @@
         },
         "additionalProperties": false
       },
-      "ProjectMemberRemoveDto": {
+      "ProjectMemberRoleReadDto": {
+        "required": [
+          "role"
+        ],
         "type": "object",
         "properties": {
-          "removedAt": {
-            "type": "string",
-            "format": "date-time"
+          "role": {
+            "$ref": "#/components/schemas/ProjectRole"
           }
         },
         "additionalProperties": false
@@ -5668,29 +5663,12 @@
       },
       "ProjectRole": {
         "enum": [
-          0,
-          1,
-          2,
-          3
+          "Reader",
+          "Member",
+          "Admin",
+          "Owner"
         ],
-        "type": "integer",
-        "format": "int32"
-      },
-      "TaskActivityCreateDto": {
-        "required": [
-          "payload"
-        ],
-        "type": "object",
-        "properties": {
-          "type": {
-            "$ref": "#/components/schemas/TaskActivityType"
-          },
-          "payload": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
+        "type": "string"
       },
       "TaskActivityReadDto": {
         "type": "object",
@@ -5730,12 +5708,17 @@
           4,
           5,
           6,
-          7
+          7,
+          8
         ],
         "type": "integer",
         "format": "int32"
       },
       "TaskAssignmentChangeRoleDto": {
+        "required": [
+          "newRole",
+          "userId"
+        ],
         "type": "object",
         "properties": {
           "userId": {
@@ -5749,6 +5732,10 @@
         "additionalProperties": false
       },
       "TaskAssignmentCreateDto": {
+        "required": [
+          "role",
+          "userId"
+        ],
         "type": "object",
         "properties": {
           "userId": {
@@ -5786,6 +5773,7 @@
       "TaskItemCreateDto": {
         "required": [
           "description",
+          "sortKey",
           "title"
         ],
         "type": "object",
@@ -5813,15 +5801,15 @@
       "TaskItemEditDto": {
         "type": "object",
         "properties": {
-          "title": {
+          "newTitle": {
             "type": "string",
             "nullable": true
           },
-          "description": {
+          "newDescription": {
             "type": "string",
             "nullable": true
           },
-          "dueDate": {
+          "newDueDate": {
             "type": "string",
             "format": "date-time",
             "nullable": true
@@ -5830,6 +5818,11 @@
         "additionalProperties": false
       },
       "TaskItemMoveDto": {
+        "required": [
+          "targetColumnId",
+          "targetLaneId",
+          "targetSortKey"
+        ],
         "type": "object",
         "properties": {
           "targetColumnId": {
@@ -5900,6 +5893,9 @@
         "additionalProperties": false
       },
       "TaskNoteCreateDto": {
+        "required": [
+          "content"
+        ],
         "type": "object",
         "properties": {
           "content": {
@@ -5959,13 +5955,15 @@
       },
       "TaskRole": {
         "enum": [
-          0,
-          1
+          "CoOwner",
+          "Owner"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
       },
       "UserChangeRoleDto": {
+        "required": [
+          "newRole"
+        ],
         "type": "object",
         "properties": {
           "newRole": {
@@ -6068,11 +6066,10 @@
       },
       "UserRole": {
         "enum": [
-          0,
-          1
+          "User",
+          "Admin"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
       }
     },
     "securitySchemes": {
