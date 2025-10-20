@@ -63,7 +63,7 @@ namespace Api.Endpoints
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var responseDto = project.ToReadDto(userId);
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Project fetched projectId={ProjectId} etag={ETag}",
                                     projectId, context.Response.Headers.ETag.ToString());
@@ -147,7 +147,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = project.ToReadDto(userId);
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Project created projectId={ProjectId} ownerId={UserId} etag={ETag}",
                                     project.Id, userId, context.Response.Headers.ETag.ToString());
@@ -195,7 +195,7 @@ namespace Api.Endpoints
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var responseDto = edited.ToReadDto(userId);
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Project renamed projectId={ProjectId} newName={NewName} etag={ETag}",
                                     projectId, dto.NewName, context.Response.Headers.ETag.ToString());

@@ -61,7 +61,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = lane.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Lane fetched projectId={ProjectId} laneId={LaneId} etag={ETag}",
                                     projectId, laneId, context.Response.Headers.ETag.ToString());
@@ -95,7 +95,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = lane.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Lane created projectId={ProjectId} laneId={LaneId} order={Order} etag={ETag}",
                                     projectId, lane.Id, responseDto.Order, context.Response.Headers.ETag.ToString());
@@ -145,7 +145,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = renamed.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Lane renamed projectId={ProjectId} laneId={LaneId} newName={NewName} etag={ETag}",
                                     projectId, laneId, dto.NewName, context.Response.Headers.ETag.ToString());
@@ -198,7 +198,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = reordered.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Lane reordered projectId={ProjectId} laneId={LaneId} newOrder={NewOrder} etag={ETag}",
                                     projectId, laneId, dto.NewOrder, context.Response.Headers.ETag.ToString());

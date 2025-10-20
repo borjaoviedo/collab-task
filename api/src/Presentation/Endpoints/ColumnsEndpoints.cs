@@ -63,7 +63,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = column.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Column fetched projectId={ProjectId} laneId={LaneId} columnId={ColumnId} etag={ETag}",
                                     projectId, laneId, columnId, context.Response.Headers.ETag.ToString());
@@ -98,7 +98,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = column.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Column created projectId={ProjectId} laneId={LaneId} columnId={ColumnId} order={Order} etag={ETag}",
                                     projectId, laneId, column.Id, responseDto.Order, context.Response.Headers.ETag.ToString());
@@ -149,7 +149,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = renamed.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Column renamed projectId={ProjectId} laneId={LaneId} columnId={ColumnId} newName={NewName} etag={ETag}",
                                     projectId, laneId, columnId, dto.NewName, context.Response.Headers.ETag.ToString());
@@ -203,7 +203,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = reordered.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Column reordered projectId={ProjectId} laneId={LaneId} columnId={ColumnId} newOrder={NewOrder} etag={ETag}",
                                     projectId, laneId, columnId, dto.NewOrder, context.Response.Headers.ETag.ToString());

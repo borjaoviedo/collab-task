@@ -66,7 +66,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = task.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Task fetched projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} etag={ETag}",
                                     projectId, laneId, columnId, taskId, context.Response.Headers.ETag.ToString());
@@ -105,7 +105,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = task.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Task created projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} userId={UserId} title={Title} etag={ETag}",
                                     projectId, laneId, columnId, task.Id, userId, dto.Title, context.Response.Headers.ETag.ToString());
@@ -159,7 +159,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = edited.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Task edited projectId={ProjectId} taskId={TaskId} userId={UserId} newTitle={NewTitle} newDueDate={NewDueDate} etag={ETag}",
                                     projectId, taskId, userId, dto.NewTitle, dto.NewDueDate, context.Response.Headers.ETag.ToString());
@@ -217,7 +217,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = moved.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Task moved projectId={ProjectId} taskId={TaskId} userId={UserId} targetLaneId={TargetLaneId} targetColumnId={TargetColumnId} targetSortKey={TargetSortKey} etag={ETag}",
                                     projectId, taskId, userId, dto.TargetLaneId, dto.TargetColumnId, dto.TargetSortKey, context.Response.Headers.ETag.ToString());

@@ -58,7 +58,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = user.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("User fetched userId={UserId} etag={ETag}",
                                     userId, context.Response.Headers.ETag.ToString());
@@ -133,7 +133,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = renamed.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("User renamed userId={UserId} newName={NewName} etag={ETag}",
                                     userId, dto.NewName, context.Response.Headers.ETag.ToString());
@@ -181,7 +181,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = edited.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("User role changed userId={UserId} newRole={NewRole} etag={ETag}",
                                     userId, dto.NewRole, context.Response.Headers.ETag.ToString());

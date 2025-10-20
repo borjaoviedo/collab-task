@@ -63,7 +63,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = member.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Project member fetched projectId={ProjectId} userId={UserId} etag={ETag}",
                                     projectId, userId, context.Response.Headers.ETag.ToString());
@@ -138,7 +138,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = created.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Project member created projectId={ProjectId} userId={UserId} role={Role} etag={ETag}",
                                     projectId, dto.UserId, created.Role, context.Response.Headers.ETag.ToString());
@@ -189,7 +189,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = updated.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Project member role changed projectId={ProjectId} userId={UserId} newRole={NewRole} etag={ETag}",
                                     projectId, userId, dto.NewRole, context.Response.Headers.ETag.ToString());
@@ -241,7 +241,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = removed.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Project member removed projectId={ProjectId} userId={UserId} etag={ETag}",
                                     projectId, userId, context.Response.Headers.ETag.ToString());
@@ -292,7 +292,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = removed.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Project member restored projectId={ProjectId} userId={UserId} etag={ETag}",
                                     projectId, userId, context.Response.Headers.ETag.ToString());

@@ -69,7 +69,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = note.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Task note fetched projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} noteId={NoteId} etag={ETag}",
                                     projectId, laneId, columnId, taskId, noteId, context.Response.Headers.ETag.ToString());
@@ -108,7 +108,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = note.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Task note created projectId={ProjectId} taskId={TaskId} noteId={NoteId} userId={UserId} etag={ETag}",
                                     projectId, taskId, note.Id, userId, context.Response.Headers.ETag.ToString());
@@ -163,7 +163,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = edited.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Task note edited projectId={ProjectId} taskId={TaskId} noteId={NoteId} userId={UserId} etag={ETag}",
                                     projectId, taskId, noteId, userId, context.Response.Headers.ETag.ToString());

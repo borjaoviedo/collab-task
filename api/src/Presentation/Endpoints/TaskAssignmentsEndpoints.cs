@@ -68,7 +68,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = assignment.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Task assignment fetched projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} userId={UserId} etag={ETag}",
                                     projectId, laneId, columnId, taskId, userId, context.Response.Headers.ETag.ToString());
@@ -117,7 +117,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = created.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 if (result != DomainMutation.Created)
                 {
@@ -180,7 +180,7 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = updated.ToReadDto();
-                context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
+                context.Response.SetETag(responseDto.RowVersion);
 
                 log.LogInformation("Task assignment role changed projectId={ProjectId} taskId={TaskId} userId={UserId} newRole={NewRole} etag={ETag}",
                                     projectId, taskId, userId, dto.NewRole, context.Response.Headers.ETag.ToString());
