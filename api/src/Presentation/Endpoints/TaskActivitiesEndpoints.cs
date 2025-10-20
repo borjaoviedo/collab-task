@@ -43,8 +43,8 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskActivityReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .WithSummary("Get task activities")
-            .WithDescription("Returns all activities for the task. Optional filter by type.")
+            .WithSummary("List task activities")
+            .WithDescription("Returns activities for the task. Optional filter by activity type.")
             .WithName("TaskActivities_Get_All");
 
             // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities/{activityId}
@@ -78,8 +78,8 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
-            .WithSummary("Get activity by id")
-            .WithDescription("Returns a single activity if it belongs to the specified task.")
+            .WithSummary("Get task activity")
+            .WithDescription("Returns a single activity if it belongs to the task.")
             .WithName("TaskActivities_Get_ById");
             
             var top = app.MapGroup("/activities")
@@ -106,7 +106,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskActivityReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("List my activities")
-            .WithDescription("Lists task activities performed by the authenticated user.")
+            .WithDescription("Returns activities performed by the authenticated user.")
             .WithName("TaskActivities_Get_Mine");
 
             // GET /activities/users/{userId}
@@ -130,7 +130,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .WithSummary("List activities by user")
-            .WithDescription("Lists task activities performed by the specified user.")
+            .WithDescription("Admin-only. Returns activities performed by the specified user.")
             .WithName("TaskActivities_Get_ByUser");
 
             return top;

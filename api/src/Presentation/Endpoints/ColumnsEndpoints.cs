@@ -38,8 +38,8 @@ namespace Api.Endpoints
             .Produces<IEnumerable<ColumnReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .WithSummary("Get all columns")
-            .WithDescription("Returns columns belonging to the specified lane.")
+            .WithSummary("List columns")
+            .WithDescription("Returns columns for the lane.")
             .WithName("Columns_Get_All");
 
             // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}
@@ -74,7 +74,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get column")
-            .WithDescription("Returns a column by id within a lane.")
+            .WithDescription("Returns a column in the lane. Sets ETag.")
             .WithName("Columns_Get_ById");
 
             // POST /projects/{projectId}/lanes/{laneId}/columns
@@ -112,7 +112,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Create column")
-            .WithDescription("Creates a column in the lane and returns it.")
+            .WithDescription("Admin-only. Creates a column in the lane. Returns the resource with ETag.")
             .WithName("Columns_Create");
 
             // PUT /projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename
@@ -166,7 +166,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Rename column")
-            .WithDescription("Renames a column and returns the updated column.")
+            .WithDescription("Admin-only. Renames a column using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Columns_Rename");
 
             // PUT /projects/{projectId}/lanes/{laneId}/columns/{columnId}/reorder
@@ -220,7 +220,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Reorder column")
-            .WithDescription("Changes column order and returns the updated column.")
+            .WithDescription("Admin-only. Changes column order using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Columns_Reorder");
 
             // DELETE /projects/{projectId}/lanes/{laneId}/columns/{columnId}
@@ -255,7 +255,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Delete column")
-            .WithDescription("Deletes a column.")
+            .WithDescription("Admin-only. Deletes a column using optimistic concurrency (If-Match).")
             .WithName("Columns_Delete");
 
             return group;

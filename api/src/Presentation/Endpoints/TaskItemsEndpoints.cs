@@ -40,8 +40,8 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskItemReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .WithSummary("Get all tasks")
-            .WithDescription("Returns tasks belonging to the specified column.")
+            .WithSummary("List tasks")
+            .WithDescription("Returns tasks for the column.")
             .WithName("Tasks_Get_All");
 
             // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}
@@ -77,7 +77,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get task")
-            .WithDescription("Returns a task by id within a column.")
+            .WithDescription("Returns a task in the column. Sets ETag.")
             .WithName("Tasks_Get_ById");
 
             // POST /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks
@@ -119,7 +119,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Create task")
-            .WithDescription("Creates a task in the column and returns it.")
+            .WithDescription("Member-only. Creates a task in the column. Returns the resource with ETag.")
             .WithName("Tasks_Create");
 
             // PATCH /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/edit
@@ -176,7 +176,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Edit task")
-            .WithDescription("Edits a task and returns the updated task.")
+            .WithDescription("Member-only. Updates task fields using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Tasks_Edit");
 
             // PUT /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/move
@@ -233,8 +233,8 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
-            .WithSummary("Move a task")
-            .WithDescription("Moves a task to another column/lane in the same project.")
+            .WithSummary("Move task")
+            .WithDescription("Member-only. Moves the task to another lane/column using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Tasks_Move");
 
             // DELETE /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}
@@ -270,7 +270,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Delete task")
-            .WithDescription("Deletes a task.")
+            .WithDescription("Member-only. Deletes a task using optimistic concurrency (If-Match).")
             .WithName("Tasks_Delete");
 
             return group;

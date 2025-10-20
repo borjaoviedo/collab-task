@@ -57,8 +57,8 @@ namespace Api.Endpoints
             .Produces<AuthTokenReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict)
-            .WithSummary("Register new user")
-            .WithDescription("Creates a user and returns a JWT for auto-login")
+            .WithSummary("Register user")
+            .WithDescription("Creates a user and returns a JWT for immediate authentication.")
             .WithName("Auth_Register");
 
             // POST /auth/login
@@ -93,8 +93,8 @@ namespace Api.Endpoints
             .RequireValidation<UserLoginDto>()
             .Produces<AuthTokenReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .WithSummary("Authenticate user with email and password")
-            .WithDescription("Returns a JWT bearer token on successful authentication")
+            .WithSummary("Authenticate user")
+            .WithDescription("Validates credentials and returns a JWT on success.")
             .WithName("Auth_Login");
 
             // GET /auth/me
@@ -131,8 +131,8 @@ namespace Api.Endpoints
             .RequireAuthorization()
             .Produces<MeReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .WithSummary("Returns the authenticated user's profile")
-            .WithDescription("User profile")
+            .WithSummary("Get authenticated profile")
+            .WithDescription("Returns the current user profile derived from JWT claims.")
             .WithName("Auth_Get_Me");
 
             return group;

@@ -36,8 +36,8 @@ namespace Api.Endpoints
             .Produces<IEnumerable<UserReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .WithSummary("Get all users")
-            .WithDescription("Lists all users with summary info and active project membership counts.")
+            .WithSummary("List users")
+            .WithDescription("Admin-only. Returns users with summary info and active membership counts.")
             .WithName("Users_Get_All");
 
             // GET /users/{userId}
@@ -69,8 +69,8 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
-            .WithSummary("Get user by id")
-            .WithDescription("Gets a user by id. Returns summary info.")
+            .WithSummary("Get user")
+            .WithDescription("Admin-only. Returns a user. Sets ETag.")
             .WithName("Users_Get_ById");
 
             // GET /users/by-email?email=
@@ -100,7 +100,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get user by email")
-            .WithDescription("Returns a user by email. Returns summary info.")
+            .WithDescription("Admin-only. Returns a user by email.")
             .WithName("Users_Get_ByEmail");
 
             // PATCH /users/{userId}/rename
@@ -148,7 +148,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Rename user")
-            .WithDescription("Renames a user and returns the updated user.")
+            .WithDescription("Updates the user name using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Users_Rename");
 
             // PATCH /users/{userId}/role
@@ -198,7 +198,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Change user role")
-            .WithDescription("Changes a user's role and returns the updated user.")
+            .WithDescription("Admin-only. Changes role using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Users_ChangeRole");
 
             // DELETE /users/{userId}
@@ -230,7 +230,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Delete user")
-            .WithDescription("Deletes an existing user.")
+            .WithDescription("Admin-only. Deletes a user using optimistic concurrency (If-Match).")
             .WithName("Users_Delete");
 
             return group;

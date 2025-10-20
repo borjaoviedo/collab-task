@@ -42,8 +42,8 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskNoteReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .WithSummary("Get all notes")
-            .WithDescription("Returns notes belonging to the specified task.")
+            .WithSummary("List task notes")
+            .WithDescription("Returns notes for the task.")
             .WithName("Notes_Get_All");
 
             // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{noteId}
@@ -79,8 +79,8 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
-            .WithDescription("Returns a task note by id.")
             .WithSummary("Get task note")
+            .WithDescription("Returns a task note. Sets ETag.")
             .WithName("TaskNotes_Get_ById");
 
             // POST /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes
@@ -121,8 +121,8 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status409Conflict)
-            .WithSummary("Create note")
-            .WithDescription("Creates a note in the task and returns it.")
+            .WithSummary("Create task note")
+            .WithDescription("Member-only. Creates a note on the task. Returns the resource with ETag.")
             .WithName("Notes_Create");
 
             // PATCH /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{noteId}/edit
@@ -179,8 +179,8 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
-            .WithSummary("Edit note")
-            .WithDescription("Edits a note and returns the updated note.")
+            .WithSummary("Edit task note")
+            .WithDescription("Member-only. Updates a note using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Notes_Edit");
 
             // DELETE /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{noteId}
@@ -218,8 +218,8 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
-            .WithSummary("Delete note")
-            .WithDescription("Deletes a note.")
+            .WithSummary("Delete task note")
+            .WithDescription("Member-only. Deletes a note using optimistic concurrency (If-Match).")
             .WithName("Notes_Delete");
 
             // top-level: list by author
@@ -247,7 +247,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskNoteReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("List my notes")
-            .WithDescription("Lists notes authored by the authenticated user across accessible projects.")
+            .WithDescription("Returns notes authored by the authenticated user.")
             .WithName("TaskNotes_Get_Mine");
 
             // GET /notes/users/{userId}
@@ -270,8 +270,8 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskNoteReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .WithSummary("List notes by author")
-            .WithDescription("Lists notes authored by the specified user across accessible projects.")
+            .WithSummary("List notes by user")
+            .WithDescription("Admin-only. Returns notes authored by the specified user.")
             .WithName("TaskNotes_Get_ByUser");
 
             return top;

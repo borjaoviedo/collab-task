@@ -41,8 +41,8 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskAssignmentReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .WithSummary("Get task assignments")
-            .WithDescription("Returns all assignments for the specified task.")
+            .WithSummary("List task assignments")
+            .WithDescription("Returns all assignments for the task.")
             .WithName("TaskAssignments_Get_All");
 
             // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}
@@ -79,7 +79,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get task assignment")
-            .WithDescription("Returns the assignment of a given user on a task.")
+            .WithDescription("Returns a user’s assignment for the task. Sets ETag.")
             .WithName("TaskAssignments_Get_ById");
 
             // POST /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments
@@ -138,8 +138,8 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status409Conflict)
-            .WithSummary("Assign user to task")
-            .WithDescription("Creates or updates a task assignment for a user and role.")
+            .WithSummary("Create or update assignment")
+            .WithDescription("Admin-only. Creates or updates a task assignment. Returns the resource with ETag (201 if created, 200 if updated).")
             .WithName("Assignments_Create");
 
             // PATCH /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}/role
@@ -197,7 +197,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Change assignment role")
-            .WithDescription("Changes the role of a task assignment using optimistic concurrency (If-Match).")
+            .WithDescription("Admin-only. Changes the role using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Assignments_ChangeRole");
 
             // DELETE /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}
@@ -234,7 +234,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Remove assignment")
-            .WithDescription("Removes a task assignment using optimistic concurrency (If-Match).")
+            .WithDescription("Admin-only. Removes a task assignment using optimistic concurrency (If-Match).")
             .WithName("Assignments_Remove");
 
             // top-level lists
@@ -261,8 +261,8 @@ namespace Api.Endpoints
             })
             .Produces<IEnumerable<TaskAssignmentReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .WithSummary("List my task assignments")
-            .WithDescription("Lists task assignments of the authenticated user across accessible projects.")
+            .WithSummary("List my assignments")
+            .WithDescription("Returns task assignments of the authenticated user across accessible projects.")
             .WithName("TaskAssignments_Get_Mine");
 
             // GET /assignments/users/{userId}
@@ -285,8 +285,8 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskAssignmentReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .WithSummary("List task assignments by user")
-            .WithDescription("Lists task assignments of the specified user across accessible projects.")
+            .WithSummary("List assignments by user")
+            .WithDescription("Admin-only. Returns task assignments of the specified user across accessible projects.")
             .WithName("TaskAssignments_Get_ByUser");
 
             return top;

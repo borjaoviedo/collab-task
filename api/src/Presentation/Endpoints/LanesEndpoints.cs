@@ -37,8 +37,8 @@ namespace Api.Endpoints
             .Produces<IEnumerable<LaneReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .WithSummary("Get all lanes")
-            .WithDescription("Returns lanes belonging to the specified project.")
+            .WithSummary("List lanes")
+            .WithDescription("Returns lanes for the project.")
             .WithName("Lanes_Get_All");
 
             // GET /projects/{projectId}/lanes/{laneId}
@@ -72,7 +72,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get lane")
-            .WithDescription("Returns a lane by id within a project.")
+            .WithDescription("Returns a lane in the project. Sets ETag.")
             .WithName("Lanes_Get_ById");
 
             // POST /projects/{projectId}/lanes/
@@ -109,7 +109,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Create lane")
-            .WithDescription("Creates a lane in the project and returns it.")
+            .WithDescription("Admin-only. Creates a lane in the project. Returns the resource with ETag.")
             .WithName("Lanes_Create");
 
             // PUT /projects/{projectId}/lanes/{laneId}/rename
@@ -162,7 +162,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Rename lane")
-            .WithDescription("Renames a lane and returns the updated lane.")
+            .WithDescription("Admin-only. Renames a lane using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Lanes_Rename");
 
             // PUT /projects/{projectId}/lanes/{laneId}/reorder
@@ -215,7 +215,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Reorder lane")
-            .WithDescription("Changes lane order and returns the updated lane.")
+            .WithDescription("Admin-only. Changes lane order using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Lanes_Reorder");
 
             // DELETE /projects/{projectId}/lanes/{laneId}
@@ -249,7 +249,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Delete lane")
-            .WithDescription("Deletes a lane in the specified project.")
+            .WithDescription("Admin-only. Deletes a lane using optimistic concurrency (If-Match).")
             .WithName("Lanes_Delete");
 
             return group;

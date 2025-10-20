@@ -39,8 +39,8 @@ namespace Api.Endpoints
             .Produces<IEnumerable<ProjectMemberReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .WithSummary("Get all members of a project")
-            .WithDescription("Returns all members of the project.")
+            .WithSummary("List project members")
+            .WithDescription("Returns project members. Can include removed members.")
             .WithName("ProjectMembers_Get_All");
 
             // GET /projects/{projectId}/members/{userId}
@@ -74,7 +74,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get project member")
-            .WithDescription("Returns a project member by project and user id.")
+            .WithDescription("Returns a member entry. Sets ETag.")
             .WithName("ProjectMembers_Get_ById");
 
             // GET /projects/{projectId}/members/{userId}/role
@@ -106,7 +106,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Get member role")
-            .WithDescription("Returns the role of a user within a project.")
+            .WithDescription("Returns the role of the user in the project.")
             .WithName("ProjectMembers_Get_Role");
 
             // POST /projects/{projectId}/members
@@ -152,8 +152,8 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
-            .WithSummary("Add new project member")
-            .WithDescription("Adds a user to the project as a member.")
+            .WithSummary("Add project member")
+            .WithDescription("Admin-only. Adds a user to the project. Returns the resource with ETag.")
             .WithName("ProjectMembers_Create");
 
             // PATCH /projects/{projectId}/members/{userId}/role
@@ -205,8 +205,8 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
-            .WithSummary("Change role to a project member")
-            .WithDescription("Changes the role of a project member.")
+            .WithSummary("Change member role")
+            .WithDescription("Admin-only. Changes role using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("ProjectMembers_ChangeRole");
 
             // PATCH /projects/{projectId}/members/{userId}/remove
@@ -257,7 +257,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Remove project member")
-            .WithDescription("Soft-removes a project member.")
+            .WithDescription("Admin-only. Soft-removes a member using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("ProjectMembers_Remove");
 
             // PATCH /projects/{projectId}/members/{userId}/restore
@@ -308,7 +308,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Restore project member")
-            .WithDescription("Restores a previously removed project member.")
+            .WithDescription("Admin-only. Restores a previously removed member using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("ProjectMembers_Restore");
 
             var top = app.MapGroup("/members")
@@ -334,8 +334,8 @@ namespace Api.Endpoints
             })
             .Produces<ProjectMemberCountReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .WithSummary("Get total active project memberships of the authenticated user")
-            .WithDescription("Returns the total number of active projects in which the authenticated user is a member.")
+            .WithSummary("Count my active memberships")
+            .WithDescription("Returns the number of active projects for the authenticated user.")
             .WithName("ProjectMembers_CountActive_Mine");
 
             // GET /members/{userId}/count
@@ -358,8 +358,8 @@ namespace Api.Endpoints
             .Produces<ProjectMemberCountReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .WithSummary("Get total active project memberships of the specified user")
-            .WithDescription("Returns the total number of active projects in which the specified user is a member.")
+            .WithSummary("Count active memberships by user")
+            .WithDescription("Admin-only. Returns the number of active projects for the specified user.")
             .WithName("ProjectMembers_CountActive_ByUser");
 
             return top;

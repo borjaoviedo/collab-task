@@ -39,8 +39,8 @@ namespace Api.Endpoints
             })
             .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .WithSummary("Get all projects")
-            .WithDescription("Returns all projects where the authenticated user has at least reader permissions.")
+            .WithSummary("List accessible projects")
+            .WithDescription("Returns projects where the caller has at least reader rights. Respects optional filters.")
             .WithName("Projects_Get_All");
 
             // GET /projects/{projectId}
@@ -74,8 +74,8 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
-            .WithSummary("Get project by id")
-            .WithDescription("Returns the specified project if the authenticated user has at least reader permissions.")
+            .WithSummary("Get project")
+            .WithDescription("Returns the project if the caller has reader rights. Sets ETag.")
             .WithName("Projects_Get_ById");
 
             // GET /projects/me
@@ -98,7 +98,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("List my projects")
-            .WithDescription("Lists all projects the authenticated user can access.")
+            .WithDescription("Returns projects accessible to the authenticated user.")
             .WithName("Projects_Get_Mine");
 
             // GET /projects/users/{userId}
@@ -122,7 +122,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .WithSummary("List projects by user")
-            .WithDescription("Lists all projects the specified user can access.")
+            .WithDescription("Admin-only. Returns projects accessible to the specified user.")
             .WithName("Projects_Get_ByUser");
 
             // POST /projects
@@ -158,8 +158,8 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status409Conflict)
-            .WithSummary("Create new project")
-            .WithDescription("Creates a new project owned by the authenticated user.")
+            .WithSummary("Create project")
+            .WithDescription("Creates a project owned by the caller. Returns the resource with ETag.")
             .WithName("Projects_Create");
 
             // PATCH /projects/{projectId}/rename
@@ -212,7 +212,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Rename project")
-            .WithDescription("Renames an existing project.")
+            .WithDescription("Updates the project name using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Projects_Rename");
 
             // DELETE /projects/{projectId}
@@ -245,7 +245,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .WithSummary("Delete project")
-            .WithDescription("Deletes the specified project.")
+            .WithDescription("Owner-only. Deletes the project using optimistic concurrency (If-Match).")
             .WithName("Projects_Delete");
 
             return group;
