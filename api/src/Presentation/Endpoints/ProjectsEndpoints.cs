@@ -14,21 +14,27 @@ namespace Api.Endpoints
     {
         public static RouteGroupBuilder MapProjects(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/projects")
-                .WithTags("Projects")
-                .RequireAuthorization();
+            var group = app
+                        .MapGroup("/projects")
+                        .WithTags("Projects")
+                        .RequireAuthorization();
 
             // GET /projects?filter=...
             group.MapGet("/", async (
                 [AsParameters] ProjectFilter filter,
+                [FromServices] ILoggerFactory logger,
                 [FromServices] ICurrentUserService currentUserSvc,
                 [FromServices] IProjectReadService projectReadSvc,
                 CancellationToken ct = default) =>
             {
+                var log = logger.CreateLogger("Projects.Get_All");
+
                 var userId = (Guid)currentUserSvc.UserId!;
                 var projects = await projectReadSvc.GetAllByUserAsync(userId, filter, ct);
                 var responseDto = projects.Select(p => p.ToReadDto(userId)).ToList();
 
+                log.LogInformation("Projects listed userId={UserId} filter={Filter} count={Count}",
+                                    userId, filter, responseDto.Count);
                 return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
@@ -40,18 +46,27 @@ namespace Api.Endpoints
             // GET /projects/{projectId}
             group.MapGet("/{projectId:guid}", async (
                 [FromRoute] Guid projectId,
+                [FromServices] ILoggerFactory logger,
                 [FromServices] ICurrentUserService currentUserSvc,
                 [FromServices] IProjectRepository projectRepository,
                 HttpContext context,
                 CancellationToken ct = default) =>
             {
+                var log = logger.CreateLogger("Projects.Get_ById");
+
                 var project = await projectRepository.GetByIdAsync(projectId, ct);
-                if (project is null) return Results.NotFound();
+                if (project is null)
+                {
+                    log.LogInformation("Project not found projectId={ProjectId}", projectId);
+                    return Results.NotFound();
+                }
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var responseDto = project.ToReadDto(userId);
                 context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
+                log.LogInformation("Project fetched projectId={ProjectId} etag={ETag}",
+                                    projectId, context.Response.Headers.ETag.ToString());
                 return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectReader)
@@ -65,14 +80,19 @@ namespace Api.Endpoints
 
             // GET /projects/me
             group.MapGet("/me", async (
+                [FromServices] ILoggerFactory logger,
                 [FromServices] ICurrentUserService currentUserSvc,
                 [FromServices] IProjectReadService projectReadSvc,
                 CancellationToken ct = default) =>
             {
+                var log = logger.CreateLogger("Projects.Get_Mine");
+
                 var userId = (Guid)currentUserSvc.UserId!;
                 var projects = await projectReadSvc.GetAllByUserAsync(userId, filter: null, ct);
                 var responseDto = projects.Select(p => p.ToReadDto(userId)).ToList();
 
+                log.LogInformation("Projects listed for current user userId={UserId} count={Count}",
+                                    userId, responseDto.Count);
                 return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
@@ -84,12 +104,17 @@ namespace Api.Endpoints
             // GET /projects/users/{userId}
             group.MapGet("/users/{userId:guid}", async (
                 [FromRoute] Guid userId,
+                [FromServices] ILoggerFactory logger,
                 [FromServices] IProjectReadService projectReadSvc,
                 CancellationToken ct = default) =>
             {
+                var log = logger.CreateLogger("Projects.Get_ByUser");
+
                 var projects = await projectReadSvc.GetAllByUserAsync(userId, filter: null, ct);
                 var responseDto = projects.Select(p => p.ToReadDto(userId)).ToList();
 
+                log.LogInformation("Projects listed for userId={UserId} count={Count}",
+                                    userId, responseDto.Count);
                 return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.SystemAdmin)
@@ -103,23 +128,30 @@ namespace Api.Endpoints
             // POST /projects
             group.MapPost("/", async (
                 [FromBody] ProjectCreateDto dto,
+                [FromServices] ILoggerFactory logger,
                 [FromServices] ICurrentUserService currentUserSvc,
                 [FromServices] IProjectWriteService projectWriteSvc,
                 [FromServices] IProjectReadService projectReadSvc,
                 HttpContext context,
                 CancellationToken ct = default) =>
             {
+                var log = logger.CreateLogger("Projects.Create");
+
                 var userId = (Guid)currentUserSvc.UserId!;
                 var (result, project) = await projectWriteSvc.CreateAsync(userId, dto.Name, ct);
-                if (result != DomainMutation.Created || project is null) return result.ToHttp(context);
+                if (result != DomainMutation.Created || project is null)
+                {
+                    log.LogInformation("Project create rejected userId={UserId} mutation={Mutation}",
+                                        userId, result);
+                    return result.ToHttp(context);
+                }
 
                 var responseDto = project.ToReadDto(userId);
                 context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
-                return Results.CreatedAtRoute(
-                    "Projects_Get_ById",
-                    new { projectId = project.Id},
-                    responseDto);
+                log.LogInformation("Project created projectId={ProjectId} ownerId={UserId} etag={ETag}",
+                                    project.Id, userId, context.Response.Headers.ETag.ToString());
+                return Results.CreatedAtRoute("Projects_Get_ById", new { projectId = project.Id }, responseDto);
             })
             .RequireValidation<ProjectCreateDto>()
             .Produces<ProjectReadDto>(StatusCodes.Status201Created)
@@ -134,25 +166,39 @@ namespace Api.Endpoints
             group.MapPatch("/{projectId:guid}/rename", async (
                 [FromRoute] Guid projectId,
                 [FromBody] ProjectRenameDto dto,
+                [FromServices] ILoggerFactory logger,
                 [FromServices] ICurrentUserService currentUserSvc,
                 [FromServices] IProjectReadService projectReadSvc,
                 [FromServices] IProjectWriteService projectWriteSvc,
                 HttpContext context,
                 CancellationToken ct = default) =>
             {
+                var log = logger.CreateLogger("Projects.Rename");
+
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
                     context, () => projectReadSvc.GetAsync(projectId, ct), p => p.RowVersion);
 
                 var result = await projectWriteSvc.RenameAsync(projectId, dto.NewName, rowVersion, ct);
-                if (result != DomainMutation.Updated) return result.ToHttp(context);
+                if (result != DomainMutation.Updated)
+                {
+                    log.LogInformation("Project rename rejected projectId={ProjectId} mutation={Mutation}",
+                                        projectId, result);
+                    return result.ToHttp(context);
+                }
 
                 var edited = await projectReadSvc.GetAsync(projectId, ct);
-                if (edited is null) return Results.NotFound();
+                if (edited is null)
+                {
+                    log.LogInformation("Project rename readback missing projectId={ProjectId}", projectId);
+                    return Results.NotFound();
+                }
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var responseDto = edited.ToReadDto(userId);
                 context.Response.Headers.ETag = $"W/\"{Convert.ToBase64String(responseDto.RowVersion)}\"";
 
+                log.LogInformation("Project renamed projectId={ProjectId} newName={NewName} etag={ETag}",
+                                    projectId, dto.NewName, context.Response.Headers.ETag.ToString());
                 return Results.Ok(responseDto);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
@@ -172,16 +218,21 @@ namespace Api.Endpoints
             // DELETE /projects/{projectId}
             group.MapDelete("/{projectId:guid}", async (
                 [FromRoute] Guid projectId,
+                [FromServices] ILoggerFactory logger,
                 [FromServices] IProjectWriteService projectWriteSvc,
                 [FromServices] IProjectReadService projectReadSvc,
                 HttpContext context,
                 CancellationToken ct = default) =>
             {
+                var log = logger.CreateLogger("Projects.Delete");
+
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
                     context, () => projectReadSvc.GetAsync(projectId, ct), p => p.RowVersion);
 
                 var result = await projectWriteSvc.DeleteAsync(projectId, rowVersion, ct);
 
+                log.LogInformation("Project delete result projectId={ProjectId} mutation={Mutation}",
+                                    projectId, result);
                 return result.ToHttp(context);
             })
             .RequireAuthorization(Policies.ProjectOwner)
