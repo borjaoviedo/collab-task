@@ -2,13 +2,30 @@ namespace Api.Helpers
 {
     public static class ConcurrencyHelpers
     {
-        public static async Task<byte[]> ResolveRowVersionAsync<T>(HttpContext context, Func<Task<T?>> loader, Func<T, byte[]> selector) where T : class
+        private const string RowVersionItemKey = "rowVersion";
+        private const string IfMatchWildcardKey = "IfMatchWildcard";
+
+        public static async Task<byte[]?> ResolveRowVersionAsync(HttpContext context, Func<Task<byte[]?>> getCurrentRowVersion)
         {
-            if (context.Items.TryGetValue("rowVersion", out var o) && o is byte[] rv && rv.Length > 0)
+            if (context.Items.TryGetValue(RowVersionItemKey, out var fromHeader) && fromHeader is byte[] rv)
                 return rv;
 
-            var entity = await loader();
-            return entity is null ? throw new KeyNotFoundException("Entity not found.") : selector(entity);
+            if (context.Items.TryGetValue(IfMatchWildcardKey, out var wildcard) && wildcard is true)
+                return await getCurrentRowVersion();
+
+            return null;
         }
+
+        public static Task<byte[]?> ResolveRowVersionAsync<T>(
+            HttpContext context,
+            Func<CancellationToken, Task<T?>> getEntityAsync,
+            Func<T, byte[]> selectRowVersion,
+            CancellationToken ct)
+            where T : class
+            => ResolveRowVersionAsync(context, async () =>
+            {
+                var entity = await getEntityAsync(ct);
+                return entity is null ? null : selectRowVersion(entity);
+            });
     }
 }
