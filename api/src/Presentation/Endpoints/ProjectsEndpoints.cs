@@ -63,11 +63,11 @@ namespace Api.Endpoints
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var responseDto = project.ToReadDto(userId);
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Project fetched projectId={ProjectId} etag={ETag}",
-                                    projectId, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectReader)
             .Produces<ProjectReadDto>(StatusCodes.Status200OK)
@@ -147,13 +147,14 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = project.ToReadDto(userId);
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Project created projectId={ProjectId} ownerId={UserId} etag={ETag}",
-                                    project.Id, userId, context.Response.Headers.ETag.ToString());
-                return Results.CreatedAtRoute("Projects_Get_ById", new { projectId = project.Id }, responseDto);
+                                    project.Id, userId, etag);
+                return Results.CreatedAtRoute("Projects_Get_ById", new { projectId = project.Id }, responseDto).WithETag(etag);
             })
             .RequireValidation<ProjectCreateDto>()
+            .RejectIfMatch()
             .Produces<ProjectReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -176,7 +177,13 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Projects.Rename");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => projectReadSvc.GetAsync(projectId, ct), p => p.RowVersion);
+                    context, ct => projectReadSvc.GetAsync(projectId, ct), p => p.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Project not found when resolving row version projectId={ProjectId}", projectId);
+                    return Results.NotFound();
+                }
 
                 var result = await projectWriteSvc.RenameAsync(projectId, dto.NewName, rowVersion, ct);
                 if (result != DomainMutation.Updated)
@@ -195,11 +202,11 @@ namespace Api.Endpoints
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var responseDto = edited.ToReadDto(userId);
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Project renamed projectId={ProjectId} newName={NewName} etag={ETag}",
-                                    projectId, dto.NewName, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, dto.NewName, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ProjectRenameDto>()
@@ -211,6 +218,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Rename project")
             .WithDescription("Updates the project name using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Projects_Rename");
@@ -227,7 +235,13 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Projects.Delete");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => projectReadSvc.GetAsync(projectId, ct), p => p.RowVersion);
+                    context, ct => projectReadSvc.GetAsync(projectId, ct), p => p.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Project not found when resolving row version projectId={ProjectId}", projectId);
+                    return Results.NotFound();
+                }
 
                 var result = await projectWriteSvc.DeleteAsync(projectId, rowVersion, ct);
 
@@ -244,6 +258,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Delete project")
             .WithDescription("Owner-only. Deletes the project using optimistic concurrency (If-Match).")
             .WithName("Projects_Delete");

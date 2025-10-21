@@ -63,11 +63,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = member.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Project member fetched projectId={ProjectId} userId={UserId} etag={ETag}",
-                                    projectId, userId, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, userId, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .Produces<ProjectMemberReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -138,14 +138,15 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = created.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Project member created projectId={ProjectId} userId={UserId} role={Role} etag={ETag}",
-                                    projectId, dto.UserId, created.Role, context.Response.Headers.ETag.ToString());
-                return Results.CreatedAtRoute("ProjectMembers_Get_ById", new { projectId, userId = dto.UserId },responseDto);
+                                    projectId, dto.UserId, created.Role, etag);
+                return Results.CreatedAtRoute("ProjectMembers_Get_ById", new { projectId, userId = dto.UserId },responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ProjectMemberCreateDto>()
+            .RejectIfMatch()
             .Produces<ProjectMemberReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -170,7 +171,14 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("ProjectMembers.ChangeRole");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => projectMemberReadSvc.GetAsync(projectId, userId, ct), pm => pm.RowVersion);
+                    context, ct => projectMemberReadSvc.GetAsync(projectId, userId, ct), pm => pm.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Project member not found when resolving row version projectId={ProjectId} userId={UserId}",
+                                        projectId, userId);
+                    return Results.NotFound();
+                }
 
                 var result = await projectMemberWriteSvc.ChangeRoleAsync(projectId, userId, dto.NewRole, rowVersion, ct);
                 if (result != DomainMutation.Updated)
@@ -189,11 +197,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = updated.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Project member role changed projectId={ProjectId} userId={UserId} newRole={NewRole} etag={ETag}",
-                                    projectId, userId, dto.NewRole, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, userId, dto.NewRole, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ProjectMemberChangeRoleDto>()
@@ -205,6 +213,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Change member role")
             .WithDescription("Admin-only. Changes role using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("ProjectMembers_ChangeRole");
@@ -222,7 +231,14 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("ProjectMembers.Remove");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => projectMemberReadSvc.GetAsync(projectId, userId, ct), pm => pm.RowVersion);
+                    context, ct => projectMemberReadSvc.GetAsync(projectId, userId, ct), pm => pm.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Project member not found when resolving row version projectId={ProjectId} userId={UserId}",
+                                        projectId, userId);
+                    return Results.NotFound();
+                }
 
                 var result = await projectMemberWriteSvc.RemoveAsync(projectId, userId, rowVersion, ct);
                 if (result != DomainMutation.Updated)
@@ -241,11 +257,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = removed.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Project member removed projectId={ProjectId} userId={UserId} etag={ETag}",
-                                    projectId, userId, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, userId, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireIfMatch()
@@ -256,6 +272,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Remove project member")
             .WithDescription("Admin-only. Soft-removes a member using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("ProjectMembers_Remove");
@@ -273,7 +290,14 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("ProjectMembers.Restore");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => projectMemberReadSvc.GetAsync(projectId, userId, ct), pm => pm.RowVersion);
+                    context, ct => projectMemberReadSvc.GetAsync(projectId, userId, ct), pm => pm.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Project member not found when resolving row version projectId={ProjectId} userId={UserId}",
+                                        projectId, userId);
+                    return Results.NotFound();
+                }
 
                 var result = await projectMemberWriteSvc.RestoreAsync(projectId, userId, rowVersion, ct);
                 if (result != DomainMutation.Updated)
@@ -292,11 +316,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = removed.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Project member restored projectId={ProjectId} userId={UserId} etag={ETag}",
-                                    projectId, userId, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, userId, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireIfMatch()
@@ -307,6 +331,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Restore project member")
             .WithDescription("Admin-only. Restores a previously removed member using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("ProjectMembers_Restore");

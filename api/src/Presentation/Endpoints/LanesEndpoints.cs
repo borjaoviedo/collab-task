@@ -61,11 +61,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = lane.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Lane fetched projectId={ProjectId} laneId={LaneId} etag={ETag}",
-                                    projectId, laneId, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, laneId, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .Produces<LaneReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -95,14 +95,15 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = lane.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Lane created projectId={ProjectId} laneId={LaneId} order={Order} etag={ETag}",
-                                    projectId, lane.Id, responseDto.Order, context.Response.Headers.ETag.ToString());
-                return Results.CreatedAtRoute("Lanes_Get_ById", new { projectId, laneId = lane.Id }, responseDto);
+                                    projectId, lane.Id, responseDto.Order, etag);
+                return Results.CreatedAtRoute("Lanes_Get_ById", new { projectId, laneId = lane.Id }, responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<LaneCreateDto>()
+            .RejectIfMatch()
             .Produces<LaneReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -126,7 +127,14 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Lanes.Rename");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion);
+                    context, ct => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Lane not found when resolving row version projectId={ProjectId} laneId={LaneId}",
+                                        projectId, laneId);
+                    return Results.NotFound();
+                }
 
                 var result = await laneWriteSvc.RenameAsync(laneId, dto.NewName, rowVersion, ct);
                 if (result != DomainMutation.Updated)
@@ -145,11 +153,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = renamed.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Lane renamed projectId={ProjectId} laneId={LaneId} newName={NewName} etag={ETag}",
-                                    projectId, laneId, dto.NewName, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, laneId, dto.NewName, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<LaneRenameDto>()
@@ -161,6 +169,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Rename lane")
             .WithDescription("Admin-only. Renames a lane using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Lanes_Rename");
@@ -179,7 +188,14 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Lanes.Reorder");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion);
+                    context, ct => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Lane not found when resolving row version projectId={ProjectId} laneId={LaneId}",
+                                        projectId, laneId);
+                    return Results.NotFound();
+                }
 
                 var result = await laneWriteSvc.ReorderAsync(laneId, dto.NewOrder, rowVersion, ct);
                 if (result != DomainMutation.Updated)
@@ -198,11 +214,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = reordered.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Lane reordered projectId={ProjectId} laneId={LaneId} newOrder={NewOrder} etag={ETag}",
-                                    projectId, laneId, dto.NewOrder, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, laneId, dto.NewOrder, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<LaneReorderDto>()
@@ -214,6 +230,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Reorder lane")
             .WithDescription("Admin-only. Changes lane order using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Lanes_Reorder");
@@ -231,7 +248,14 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Lanes.Delete");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion);
+                    context, ct => laneReadSvc.GetAsync(laneId, ct), l => l.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Lane not found when resolving row version projectId={ProjectId} laneId={LaneId}",
+                                        projectId, laneId);
+                    return Results.NotFound();
+                }
 
                 var result = await laneWriteSvc.DeleteAsync(laneId, rowVersion, ct);
 
@@ -248,6 +272,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Delete lane")
             .WithDescription("Admin-only. Deletes a lane using optimistic concurrency (If-Match).")
             .WithName("Lanes_Delete");

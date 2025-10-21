@@ -66,11 +66,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = task.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Task fetched projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} etag={ETag}",
-                                    projectId, laneId, columnId, taskId, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, laneId, columnId, taskId, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .Produces<TaskItemReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -97,6 +97,7 @@ namespace Api.Endpoints
                 var userId = (Guid)currentUserSvc.UserId!;
                 var (result, task) = await taskItemWriteService.CreateAsync(
                     projectId, laneId, columnId, userId, dto.Title, dto.Description, dto.DueDate, dto.SortKey, ct);
+
                 if (result != DomainMutation.Created || task is null)
                 {
                     log.LogInformation("Task create rejected projectId={ProjectId} laneId={LaneId} columnId={ColumnId} userId={UserId} mutation={Mutation}",
@@ -105,14 +106,15 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = task.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Task created projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} userId={UserId} title={Title} etag={ETag}",
-                                    projectId, laneId, columnId, task.Id, userId, dto.Title, context.Response.Headers.ETag.ToString());
-                return Results.CreatedAtRoute("Tasks_Get_ById", new { projectId, laneId, columnId, taskId = task.Id }, responseDto);
+                                    projectId, laneId, columnId, task.Id, userId, dto.Title, etag);
+                return Results.CreatedAtRoute("Tasks_Get_ById", new { projectId, laneId, columnId, taskId = task.Id }, responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireValidation<TaskItemCreateDto>()
+            .RejectIfMatch()
             .Produces<TaskItemReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -139,7 +141,14 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("TaskItems.Edit");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
+                    context, ct => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Task item not found when resolving row version projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId}",
+                                        projectId, laneId, columnId, taskId);
+                    return Results.NotFound();
+                }
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var result = await taskItemWriteSvc.EditAsync(projectId, taskId, userId, dto.NewTitle, dto.NewDescription, dto.NewDueDate, rowVersion, ct);
@@ -159,11 +168,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = edited.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Task edited projectId={ProjectId} taskId={TaskId} userId={UserId} newTitle={NewTitle} newDueDate={NewDueDate} etag={ETag}",
-                                    projectId, taskId, userId, dto.NewTitle, dto.NewDueDate, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, taskId, userId, dto.NewTitle, dto.NewDueDate, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireValidation<TaskItemEditDto>()
@@ -175,6 +184,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Edit task")
             .WithDescription("Member-only. Updates task fields using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Tasks_Edit");
@@ -196,7 +206,14 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("TaskItems.Move");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
+                    context, ct => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Task item not found when resolving row version projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId}",
+                                        projectId, laneId, columnId, taskId);
+                    return Results.NotFound();
+                }
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var result = await taskItemWriteSvc.MoveAsync(
@@ -217,11 +234,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = moved.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Task moved projectId={ProjectId} taskId={TaskId} userId={UserId} targetLaneId={TargetLaneId} targetColumnId={TargetColumnId} targetSortKey={TargetSortKey} etag={ETag}",
-                                    projectId, taskId, userId, dto.TargetLaneId, dto.TargetColumnId, dto.TargetSortKey, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, taskId, userId, dto.TargetLaneId, dto.TargetColumnId, dto.TargetSortKey, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireValidation<TaskItemMoveDto>()
@@ -233,6 +250,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Move task")
             .WithDescription("Member-only. Moves the task to another lane/column using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Tasks_Move");
@@ -252,7 +270,14 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("TaskItems.Delete");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion);
+                    context, ct => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Task item not found when resolving row version projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId}",
+                                        projectId, laneId, columnId, taskId);
+                    return Results.NotFound();
+                }
 
                 var result = await taskItemWriteSvc.DeleteAsync(projectId, taskId, rowVersion, ct);
 
@@ -269,6 +294,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Delete task")
             .WithDescription("Member-only. Deletes a task using optimistic concurrency (If-Match).")
             .WithName("Tasks_Delete");

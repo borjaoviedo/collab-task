@@ -63,11 +63,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = column.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Column fetched projectId={ProjectId} laneId={LaneId} columnId={ColumnId} etag={ETag}",
-                                    projectId, laneId, columnId, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, laneId, columnId, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .Produces<ColumnReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -98,14 +98,15 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = column.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Column created projectId={ProjectId} laneId={LaneId} columnId={ColumnId} order={Order} etag={ETag}",
-                                    projectId, laneId, column.Id, responseDto.Order, context.Response.Headers.ETag.ToString());
-                return Results.CreatedAtRoute("Columns_Get_ById", new { projectId, laneId, columnId = column.Id }, responseDto);
+                                    projectId, laneId, column.Id, responseDto.Order, etag);
+                return Results.CreatedAtRoute("Columns_Get_ById", new { projectId, laneId, columnId = column.Id }, responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ColumnCreateDto>()
+            .RejectIfMatch()
             .Produces<ColumnReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -130,7 +131,14 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Columns.Rename");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => columnReadSvc.GetAsync(columnId, ct), c => c.RowVersion);
+                    context, ct => columnReadSvc.GetAsync(columnId, ct), c => c.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Column not found when resolving row version projectId={ProjectId} laneId={LaneId} columnId={ColumnId}",
+                                        projectId, laneId, columnId);
+                    return Results.NotFound();
+                }
 
                 var result = await columnWriteSvc.RenameAsync(columnId, dto.NewName, rowVersion, ct);
                 if (result != DomainMutation.Updated)
@@ -149,11 +157,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = renamed.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Column renamed projectId={ProjectId} laneId={LaneId} columnId={ColumnId} newName={NewName} etag={ETag}",
-                                    projectId, laneId, columnId, dto.NewName, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, laneId, columnId, dto.NewName, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ColumnRenameDto>()
@@ -165,6 +173,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Rename column")
             .WithDescription("Admin-only. Renames a column using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Columns_Rename");
@@ -184,7 +193,14 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Columns.Reorder");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => columnReadSvc.GetAsync(columnId, ct), c => c.RowVersion);
+                    context, ct => columnReadSvc.GetAsync(columnId, ct), c => c.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Column not found when resolving row version projectId={ProjectId} laneId={LaneId} columnId={ColumnId}",
+                                        projectId, laneId, columnId);
+                    return Results.NotFound();
+                }
 
                 var result = await columnWriteSvc.ReorderAsync(columnId, dto.NewOrder, rowVersion, ct);
                 if (result != DomainMutation.Updated)
@@ -203,11 +219,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = reordered.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Column reordered projectId={ProjectId} laneId={LaneId} columnId={ColumnId} newOrder={NewOrder} etag={ETag}",
-                                    projectId, laneId, columnId, dto.NewOrder, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, laneId, columnId, dto.NewOrder, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireValidation<ColumnReorderDto>()
@@ -219,6 +235,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Reorder column")
             .WithDescription("Admin-only. Changes column order using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Columns_Reorder");
@@ -237,7 +254,14 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Columns.Delete");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => columnReadSvc.GetAsync(columnId, ct), c => c.RowVersion);
+                    context, ct => columnReadSvc.GetAsync(columnId, ct), c => c.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Column not found when resolving row version projectId={ProjectId} laneId={LaneId} columnId={ColumnId}",
+                                        projectId, laneId, columnId);
+                    return Results.NotFound();
+                }
 
                 var result = await columnWriteSvc.DeleteAsync(columnId, rowVersion, ct);
 
@@ -254,6 +278,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Delete column")
             .WithDescription("Admin-only. Deletes a column using optimistic concurrency (If-Match).")
             .WithName("Columns_Delete");

@@ -4,8 +4,10 @@ using Api.Helpers;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
+using Domain.Entities;
 using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace Api.Endpoints
 {
@@ -58,11 +60,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = user.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("User fetched userId={UserId} etag={ETag}",
-                                    userId, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    userId, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.SystemAdmin)
             .Produces<UserReadDto>(StatusCodes.Status200OK)
@@ -116,7 +118,13 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Users.Rename");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
+                    context, ct => userReadSvc.GetAsync(userId, ct), u => u.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("User not found when resolving row version userId={UserId}", userId);
+                    return Results.NotFound();
+                }
 
                 var result = await userWriteSvc.RenameAsync(userId, dto.NewName, rowVersion, ct);
                 if (result != DomainMutation.Updated)
@@ -133,11 +141,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = renamed.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("User renamed userId={UserId} newName={NewName} etag={ETag}",
-                                    userId, dto.NewName, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    userId, dto.NewName, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireValidation<UserRenameDto>()
             .RequireIfMatch()
@@ -147,6 +155,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Rename user")
             .WithDescription("Updates the user name using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Users_Rename");
@@ -164,7 +173,13 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Users.ChangeRole");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
+                    context, ct => userReadSvc.GetAsync(userId, ct), u => u.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("User not found when resolving row version userId={UserId}", userId);
+                    return Results.NotFound();
+                }
 
                 var result = await userWriteSvc.ChangeRoleAsync(userId, dto.NewRole, rowVersion, ct);
                 if (result != DomainMutation.Updated)
@@ -181,11 +196,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = edited.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("User role changed userId={UserId} newRole={NewRole} etag={ETag}",
-                                    userId, dto.NewRole, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    userId, dto.NewRole, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.SystemAdmin)
             .RequireValidation<UserChangeRoleDto>()
@@ -197,6 +212,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Change user role")
             .WithDescription("Admin-only. Changes role using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Users_ChangeRole");
@@ -213,7 +229,13 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Users.Delete");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => userReadSvc.GetAsync(userId, ct), u => u.RowVersion);
+                    context, ct => userReadSvc.GetAsync(userId, ct), u => u.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("User not found when resolving row version userId={UserId}", userId);
+                    return Results.NotFound();
+                }
 
                 var result = await userWriteSvc.DeleteAsync(userId, rowVersion, ct);
 
@@ -229,6 +251,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Delete user")
             .WithDescription("Admin-only. Deletes a user using optimistic concurrency (If-Match).")
             .WithName("Users_Delete");

@@ -69,11 +69,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = note.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Task note fetched projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} noteId={NoteId} etag={ETag}",
-                                    projectId, laneId, columnId, taskId, noteId, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, laneId, columnId, taskId, noteId, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .Produces<TaskNoteReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -108,14 +108,15 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = note.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Task note created projectId={ProjectId} taskId={TaskId} noteId={NoteId} userId={UserId} etag={ETag}",
-                                    projectId, taskId, note.Id, userId, context.Response.Headers.ETag.ToString());
-                return Results.CreatedAtRoute("TaskNotes_Get_ById", new { projectId, laneId, columnId, taskId, noteId = note.Id }, responseDto);
+                                    projectId, taskId, note.Id, userId, etag);
+                return Results.CreatedAtRoute("TaskNotes_Get_ById", new { projectId, laneId, columnId, taskId, noteId = note.Id }, responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireValidation<TaskNoteCreateDto>()
+            .RejectIfMatch()
             .Produces<TaskNoteReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -143,7 +144,14 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("TaskNotes.Edit");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => taskNoteReadSvc.GetAsync(noteId, ct), n => n.RowVersion);
+                    context, ct => taskNoteReadSvc.GetAsync(noteId, ct), n => n.RowVersion, ct);
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Task note not found when resolving row version projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} noteId={NoteId}",
+                                        projectId, laneId, columnId, taskId, noteId);
+                    return Results.NotFound();
+                }
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var result = await taskNoteWriteSvc.EditAsync(projectId, taskId, noteId, userId, dto.NewContent, rowVersion, ct);
@@ -163,11 +171,11 @@ namespace Api.Endpoints
                 }
 
                 var responseDto = edited.ToReadDto();
-                context.Response.SetETag(responseDto.RowVersion);
+                var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
                 log.LogInformation("Task note edited projectId={ProjectId} taskId={TaskId} noteId={NoteId} userId={UserId} etag={ETag}",
-                                    projectId, taskId, noteId, userId, context.Response.Headers.ETag.ToString());
-                return Results.Ok(responseDto);
+                                    projectId, taskId, noteId, userId, etag);
+                return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectMember)
             .RequireValidation<TaskNoteEditDto>()
@@ -179,6 +187,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Edit task note")
             .WithDescription("Member-only. Updates a note using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Notes_Edit");
@@ -200,8 +209,15 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("TaskNotes.Delete");
 
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, () => taskNoteReadSvc.GetAsync(noteId, ct), n => n.RowVersion);
+                    context, ct => taskNoteReadSvc.GetAsync(noteId, ct), n => n.RowVersion, ct);
                 var userId = (Guid)currentUserSvc.UserId!;
+
+                if (rowVersion is null)
+                {
+                    log.LogInformation("Task note not found when resolving row version projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} noteId={NoteId}",
+                                        projectId, laneId, columnId, taskId, noteId);
+                    return Results.NotFound();
+                }
 
                 var result = await taskNoteWriteSvc.DeleteAsync(projectId, noteId, userId, rowVersion, ct);
 
@@ -218,6 +234,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
+            .ProducesProblem(StatusCodes.Status428PreconditionRequired)
             .WithSummary("Delete task note")
             .WithDescription("Member-only. Deletes a note using optimistic concurrency (If-Match).")
             .WithName("Notes_Delete");
