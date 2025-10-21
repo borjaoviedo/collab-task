@@ -73,5 +73,14 @@ namespace TestHelpers
             var lane = await CreateLane(client, prj!.Id, laneName, laneOrder);
             return (prj, lane);
         }
+
+        public static async Task<UserReadDto> GetUser(HttpClient client, Guid userId, string adminBearer)
+        {
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminBearer);
+            var resp = await client.GetAsync($"/users/{userId}");
+            resp.EnsureSuccessStatusCode();
+            var dto = await resp.Content.ReadFromJsonAsync<UserReadDto>(Json);
+            return dto!;
+        }
     }
 }
