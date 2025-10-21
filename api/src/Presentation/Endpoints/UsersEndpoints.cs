@@ -4,10 +4,8 @@ using Api.Helpers;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
-using Domain.Entities;
 using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
 
 namespace Api.Endpoints
 {
