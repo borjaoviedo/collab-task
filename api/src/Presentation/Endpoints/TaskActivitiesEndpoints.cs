@@ -96,7 +96,7 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("TaskActivities.Get_Mine");
 
                 var userId = (Guid)currentUserService.UserId!;
-                var activities = await taskActivityReadSvc.ListByActorAsync(userId, ct);
+                var activities = await taskActivityReadSvc.ListByUserAsync(userId, ct);
                 var responseDto = activities.Select(a => a.ToReadDto()).ToList();
 
                 log.LogInformation("Task activities listed for current user userId={UserId} count={Count}",
@@ -118,7 +118,7 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskActivities.Get_ByUser");
 
-                var activities = await taskActivityReadSvc.ListByActorAsync(userId, ct);
+                var activities = await taskActivityReadSvc.ListByUserAsync(userId, ct);
                 var responseDto = activities.Select(a => a.ToReadDto()).ToList();
 
                 log.LogInformation("Task activities listed for userId={UserId} count={Count}",

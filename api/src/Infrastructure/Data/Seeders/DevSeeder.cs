@@ -69,7 +69,7 @@ namespace Infrastructure.Data.Seeders
             var tA1n1 = TaskNote.Create(tA1.Id, admin.Id, NoteContent.Create("Add market size estimates"));
             var tA1a1 = TaskActivity.Create(
                 taskId: tA1.Id,
-                actorId: admin.Id,
+                userId: admin.Id,
                 type: TaskActivityType.NoteAdded,
                 payload: Payload(new { noteId = (Guid?)null, by = admin.Id, text = (string)NoteContent.Create("Add market size estimates") })
             ); tA1a1.CreatedAt = Now();

@@ -9,9 +9,9 @@ namespace Application.TaskActivities.Services
     public sealed class TaskActivityWriteService(ITaskActivityRepository repo, IDateTimeProvider clock) : ITaskActivityWriteService
     {
         public async Task<(DomainMutation, TaskActivity?)> CreateAsync(
-            Guid taskId, Guid actorId, TaskActivityType type, ActivityPayload payload, CancellationToken ct = default)
+            Guid taskId, Guid userId, TaskActivityType type, ActivityPayload payload, CancellationToken ct = default)
         {
-            var activity = TaskActivity.Create(taskId, actorId, type, payload);
+            var activity = TaskActivity.Create(taskId, userId, type, payload);
             activity.CreatedAt = clock.UtcNow;
 
             await repo.AddAsync(activity, ct);

@@ -14,16 +14,16 @@ namespace Domain.Entities
 
         private TaskActivity() { }
 
-        public static TaskActivity Create(Guid taskId, Guid actorId, TaskActivityType type, ActivityPayload payload)
+        public static TaskActivity Create(Guid taskId, Guid userId, TaskActivityType type, ActivityPayload payload)
         {
             if (taskId == Guid.Empty) throw new ArgumentException("TaskId cannot be empty.", nameof(taskId));
-            if (actorId == Guid.Empty) throw new ArgumentException("ActorId cannot be empty.", nameof(actorId));
+            if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty.", nameof(userId));
 
             return new TaskActivity
             {
                 Id = Guid.NewGuid(),
                 TaskId = taskId,
-                ActorId = actorId,
+                ActorId = userId,
                 Type = type,
                 Payload = payload
             };
