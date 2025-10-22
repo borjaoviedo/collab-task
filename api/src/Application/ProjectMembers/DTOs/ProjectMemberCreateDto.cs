@@ -6,6 +6,5 @@ namespace Application.ProjectMembers.DTOs
     {
         public required Guid UserId { get; init; }
         public required ProjectRole Role { get; init; }
-        public required DateTimeOffset JoinedAt { get; init; }
     }
 }

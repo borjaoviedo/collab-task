@@ -1,6 +1,5 @@
 using Domain.Enums;
 using FluentValidation;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Application.Common.Validation.Extensions
@@ -74,11 +73,6 @@ namespace Application.Common.Validation.Extensions
             rb.Must(r => Enum.IsDefined(typeof(TaskActivityType), r)).WithMessage("Invalid task activity type value.");
 
         // Dates
-        public static IRuleBuilderOptions<T, DateTimeOffset> JoinedAtRules<T>(this IRuleBuilder<T, DateTimeOffset> rb) =>
-            rb.Must(IsUtc).WithMessage("JoinedAt must be in UTC.")
-              .LessThanOrEqualTo(_ => DateTimeOffset.UtcNow).WithMessage("JoinedAt cannot be in the future.")
-              .GreaterThan(new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero)).WithMessage("JoinedAt is too old.");
-
         public static IRuleBuilderOptions<T, DateTimeOffset> RemovedAtRules<T>(this IRuleBuilder<T, DateTimeOffset> rb) =>
             rb.Must(IsUtc).WithMessage("RemovedAt must be in UTC.")
               .Must(d => d <= DateTimeOffset.UtcNow).WithMessage("RemovedAt cannot be in the future.");

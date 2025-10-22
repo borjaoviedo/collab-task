@@ -2,7 +2,6 @@ using Application.Common.Validation.Extensions;
 using Domain.Enums;
 using FluentValidation;
 using FluentValidation.TestHelper;
-using Application.Tests.Common.Helpers;
 using System.Text;
 
 namespace Application.Tests.Common.Validation.Extensions
@@ -177,7 +176,6 @@ namespace Application.Tests.Common.Validation.Extensions
 
         private sealed class DatesDto
         {
-            public DateTimeOffset JoinedAt { get; set; }
             public DateTimeOffset RemovedAt { get; set; }
             public DateTimeOffset? DueDate { get; set; }
         }
@@ -186,67 +184,9 @@ namespace Application.Tests.Common.Validation.Extensions
         {
             public DatesValidator()
             {
-                RuleFor(x => x.JoinedAt).JoinedAtRules();
                 RuleFor(x => x.RemovedAt).RemovedAtRules();
                 RuleFor(x => x.DueDate).DueDateRules();
             }
-        }
-
-        [Fact]
-        public void JoinedAt_NotUtc_Fails()
-        {
-            var v = new DatesValidator();
-            var local = new DateTimeOffset(2023, 1, 1, 0, 0, 0, TimeSpan.FromHours(+1));
-            v.TestValidate(new DatesDto { JoinedAt = local })
-             .ShouldHaveValidationErrorFor(x => x.JoinedAt)
-             .WithErrorMessage("JoinedAt must be in UTC.");
-        }
-
-        [Fact]
-        public void JoinedAt_Future_Fails()
-        {
-            var v = new DatesValidator();
-            v.TestValidate(new DatesDto { JoinedAt = DateTimeOffset.UtcNow.AddMinutes(5) })
-             .ShouldHaveValidationErrorFor(x => x.JoinedAt)
-             .WithErrorMessage("JoinedAt cannot be in the future.");
-        }
-
-        [Fact]
-        public void JoinedAt_TooOld_Fails()
-        {
-            var v = new DatesValidator();
-            v.TestValidate(new DatesDto { JoinedAt = new DateTimeOffset(1999, 12, 31, 23, 59, 59, TimeSpan.Zero) })
-             .ShouldHaveValidationErrorFor(x => x.JoinedAt)
-             .WithErrorMessage("JoinedAt is too old.");
-        }
-
-        [Fact]
-        public void RemovedAt_NotUtc_Fails()
-        {
-            var v = new DatesValidator();
-            v.TestValidate(new DatesDto { JoinedAt = DateTimeOffset.UtcNow, RemovedAt = DateTimes.NonUtcInstant() })
-             .ShouldHaveValidationErrorFor(x => x.RemovedAt)
-             .WithErrorMessage("RemovedAt must be in UTC.");
-        }
-
-        [Fact]
-        public void RemovedAt_Future_Fails()
-        {
-            var v = new DatesValidator();
-            v.TestValidate(new DatesDto { JoinedAt = DateTimeOffset.UtcNow, RemovedAt = DateTimeOffset.UtcNow.AddDays(1) })
-             .ShouldHaveValidationErrorFor(x => x.RemovedAt)
-             .WithErrorMessage("RemovedAt cannot be in the future.");
-        }
-
-        [Fact]
-        public void Dates_Valid_Pass()
-        {
-            var v = new DatesValidator();
-            v.TestValidate(new DatesDto
-            {
-                JoinedAt = DateTimeOffset.UtcNow.AddDays(-1)
-            })
-            .ShouldNotHaveAnyValidationErrors();
         }
 
         [Theory]

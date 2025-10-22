@@ -32,7 +32,7 @@ namespace Api.Tests.Endpoints
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
             var add = await client.PostAsJsonAsync(
                 $"/projects/{prj.Id}/members",
-                new ProjectMemberCreateDto() { UserId = member.UserId, Role = ProjectRole.Member, JoinedAt = DateTimeOffset.UtcNow });
+                new ProjectMemberCreateDto() { UserId = member.UserId, Role = ProjectRole.Member });
             add.StatusCode.Should().Be(HttpStatusCode.Created);
 
             // list members
@@ -109,7 +109,7 @@ namespace Api.Tests.Endpoints
             client.DefaultRequestHeaders.IfMatch.Clear();
             var add = await client.PostAsJsonAsync(
                 $"/projects/{prj.Id}/members",
-                new ProjectMemberCreateDto { UserId = user.UserId, Role = ProjectRole.Member, JoinedAt = DateTimeOffset.UtcNow });
+                new ProjectMemberCreateDto { UserId = user.UserId, Role = ProjectRole.Member });
             add.StatusCode.Should().Be(HttpStatusCode.Created);
 
             // get by id -> ETag present
@@ -136,7 +136,7 @@ namespace Api.Tests.Endpoints
 
             var add = await client.PostAsJsonAsync(
                 $"/projects/{prj.Id}/members",
-                new ProjectMemberCreateDto { UserId = user.UserId, Role = ProjectRole.Member, JoinedAt = DateTimeOffset.UtcNow });
+                new ProjectMemberCreateDto { UserId = user.UserId, Role = ProjectRole.Member });
             add.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
@@ -157,7 +157,7 @@ namespace Api.Tests.Endpoints
             client.DefaultRequestHeaders.IfMatch.Clear();
             (await client.PostAsJsonAsync(
                 $"/projects/{prj.Id}/members",
-                new ProjectMemberCreateDto { UserId = user.UserId, Role = ProjectRole.Member, JoinedAt = DateTimeOffset.UtcNow }))
+                new ProjectMemberCreateDto { UserId = user.UserId, Role = ProjectRole.Member }))
                 .EnsureSuccessStatusCode();
 
             // list to get rowversion
@@ -203,7 +203,7 @@ namespace Api.Tests.Endpoints
             client.DefaultRequestHeaders.IfMatch.Clear();
             (await client.PostAsJsonAsync(
                 $"/projects/{prj.Id}/members",
-                new ProjectMemberCreateDto { UserId = user.UserId, Role = ProjectRole.Member, JoinedAt = DateTimeOffset.UtcNow }))
+                new ProjectMemberCreateDto { UserId = user.UserId, Role = ProjectRole.Member }))
                 .EnsureSuccessStatusCode();
 
             // fetch rowversion
