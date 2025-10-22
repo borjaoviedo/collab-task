@@ -88,14 +88,14 @@ namespace Api.Endpoints
                 [FromBody] TaskItemCreateDto dto,
                 [FromServices] ILoggerFactory logger,
                 [FromServices] ICurrentUserService currentUserSvc,
-                [FromServices] ITaskItemWriteService taskItemWriteService,
+                [FromServices] ITaskItemWriteService taskItemWriteSvc,
                 HttpContext context,
                 CancellationToken ct = default) =>
             {
                 var log = logger.CreateLogger("TaskItems.Create");
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var (result, task) = await taskItemWriteService.CreateAsync(
+                var (result, task) = await taskItemWriteSvc.CreateAsync(
                     projectId, laneId, columnId, userId, dto.Title, dto.Description, dto.DueDate, dto.SortKey, ct);
 
                 if (result != DomainMutation.Created || task is null)
