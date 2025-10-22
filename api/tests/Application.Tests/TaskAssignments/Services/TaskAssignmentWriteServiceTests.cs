@@ -1,5 +1,7 @@
 using Application.TaskActivities.Services;
 using Application.TaskAssignments.Services;
+using Application.Tests.Common.Fixtures;
+using Application.Tests.Common.Helpers;
 using Domain.Enums;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
@@ -9,7 +11,7 @@ using TestHelpers;
 
 namespace Application.Tests.TaskAssignments.Services
 {
-    public sealed class TaskAssignmentWriteServiceTests
+    public sealed class TaskAssignmentWriteServiceTests : BaseTest
     {
         [Fact]
         public async Task CreateAsync_Persists_Assignment_As_Created()
@@ -19,8 +21,9 @@ namespace Application.Tests.TaskAssignments.Services
 
             var repo = new TaskAssignmentRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo);
+            var actSvc = new TaskActivityWriteService(actRepo, Clock);
             var mediator = new Mock<IMediator>();
+
             var svc = new TaskAssignmentWriteService(repo, actSvc, mediator.Object);
 
             var (_, userId) = TestDataFactory.SeedUserWithProject(db);
@@ -43,8 +46,9 @@ namespace Application.Tests.TaskAssignments.Services
 
             var repo = new TaskAssignmentRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo);
+            var actSvc = new TaskActivityWriteService(actRepo, Clock);
             var mediator = new Mock<IMediator>();
+
             var svc = new TaskAssignmentWriteService(repo, actSvc, mediator.Object);
 
             var (_, userA) = TestDataFactory.SeedUserWithProject(db);
@@ -66,8 +70,9 @@ namespace Application.Tests.TaskAssignments.Services
 
             var repo = new TaskAssignmentRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo);
+            var actSvc = new TaskActivityWriteService(actRepo, Clock);
             var mediator = new Mock<IMediator>();
+
             var svc = new TaskAssignmentWriteService(repo, actSvc, mediator.Object);
 
             var (_, userId) = TestDataFactory.SeedUserWithProject(db);
@@ -86,8 +91,9 @@ namespace Application.Tests.TaskAssignments.Services
 
             var repo = new TaskAssignmentRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo);
+            var actSvc = new TaskActivityWriteService(actRepo, Clock);
             var mediator = new Mock<IMediator>();
+
             var svc = new TaskAssignmentWriteService(repo, actSvc, mediator.Object);
 
             var (_, userId) = TestDataFactory.SeedUserWithProject(db);
