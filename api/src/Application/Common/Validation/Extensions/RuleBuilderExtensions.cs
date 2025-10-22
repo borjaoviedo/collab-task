@@ -17,8 +17,6 @@ namespace Application.Common.Validation.Extensions
               .Must(s => !TwoOrMoreSpaces.IsMatch(s!.Trim()))
                 .WithMessage($"{field} cannot contain consecutive spaces.");
 
-        private static bool IsUtc(DateTimeOffset d) => d.Offset == TimeSpan.Zero;
-
         private static bool BeNullOrFutureUtc(DateTimeOffset? due)
         {
             if (due is null) return true;
@@ -73,10 +71,6 @@ namespace Application.Common.Validation.Extensions
             rb.Must(r => Enum.IsDefined(typeof(TaskActivityType), r)).WithMessage("Invalid task activity type value.");
 
         // Dates
-        public static IRuleBuilderOptions<T, DateTimeOffset> RemovedAtRules<T>(this IRuleBuilder<T, DateTimeOffset> rb) =>
-            rb.Must(IsUtc).WithMessage("RemovedAt must be in UTC.")
-              .Must(d => d <= DateTimeOffset.UtcNow).WithMessage("RemovedAt cannot be in the future.");
-
         public static IRuleBuilderOptions<T, DateTimeOffset?> DueDateRules<T>(this IRuleBuilder<T, DateTimeOffset?> rb)
             => rb.Must(BeNullOrFutureUtc).WithMessage("DueDate must be null or a UTC date/time in the future.");
 

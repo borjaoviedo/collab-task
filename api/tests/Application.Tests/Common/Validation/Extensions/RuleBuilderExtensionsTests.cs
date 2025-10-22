@@ -176,7 +176,6 @@ namespace Application.Tests.Common.Validation.Extensions
 
         private sealed class DatesDto
         {
-            public DateTimeOffset RemovedAt { get; set; }
             public DateTimeOffset? DueDate { get; set; }
         }
 
@@ -184,7 +183,6 @@ namespace Application.Tests.Common.Validation.Extensions
         {
             public DatesValidator()
             {
-                RuleFor(x => x.RemovedAt).RemovedAtRules();
                 RuleFor(x => x.DueDate).DueDateRules();
             }
         }
