@@ -13,30 +13,30 @@ namespace Application.TaskAssignments.Services
         ITaskAssignmentRepository repo, ITaskActivityWriteService activityWriter, IMediator mediator) : ITaskAssignmentWriteService
     {
         public async Task<(DomainMutation, TaskAssignment?)> CreateAsync(
-            Guid projectId, Guid taskId, Guid affectedUserId, TaskRole role, Guid performedBy, CancellationToken ct = default)
+            Guid projectId, Guid taskId, Guid targetUserId, TaskRole role, Guid executedBy, CancellationToken ct = default)
         {
-            var (m, change) = await repo.AssignAsync(taskId, affectedUserId, role, ct);
+            var (m, change) = await repo.AssignAsync(taskId, targetUserId, role, ct);
             switch (m)
             {
                 case DomainMutation.Created:
-                    await activityWriter.CreateAsync(taskId, performedBy, TaskActivityType.AssignmentCreated,
-                        ActivityPayloadFactory.AssignmentCreated(affectedUserId, role), ct);
+                    await activityWriter.CreateAsync(taskId, executedBy, TaskActivityType.AssignmentCreated,
+                        ActivityPayloadFactory.AssignmentCreated(targetUserId, role), ct);
                     await repo.SaveCreateChangesAsync(ct);
-                    var created = await repo.GetAsync(taskId, affectedUserId, ct);
+                    var created = await repo.GetAsync(taskId, targetUserId, ct);
                     await mediator.Publish(
                         new TaskAssignmentCreated(projectId,
-                            new TaskAssignmentCreatedPayload(taskId, affectedUserId, role)), ct);
+                            new TaskAssignmentCreatedPayload(taskId, targetUserId, role)), ct);
                     return (DomainMutation.Created, created);
 
                 case DomainMutation.Updated:
                     var c = (AssignmentRoleChangedChange)change!;
-                    await activityWriter.CreateAsync(taskId, performedBy, TaskActivityType.AssignmentRoleChanged,
-                        ActivityPayloadFactory.AssignmentRoleChanged(affectedUserId, c.OldRole, c.NewRole), ct);
+                    await activityWriter.CreateAsync(taskId, executedBy, TaskActivityType.AssignmentRoleChanged,
+                        ActivityPayloadFactory.AssignmentRoleChanged(targetUserId, c.OldRole, c.NewRole), ct);
                     await repo.SaveUpdateChangesAsync(ct);
-                    var updated = await repo.GetAsync(taskId, affectedUserId, ct);
+                    var updated = await repo.GetAsync(taskId, targetUserId, ct);
                     await mediator.Publish(
                         new TaskAssignmentUpdated(projectId,
-                            new TaskAssignmentUpdatedPayload(taskId, affectedUserId, c.NewRole)), ct);
+                            new TaskAssignmentUpdatedPayload(taskId, targetUserId, c.NewRole)), ct);
 
                     return (DomainMutation.Updated, updated);
 
@@ -46,66 +46,66 @@ namespace Application.TaskAssignments.Services
         }
 
         public async Task<DomainMutation> AssignAsync(
-            Guid projectId, Guid taskId, Guid affectedUserId, TaskRole role, Guid performedBy, CancellationToken ct = default)
+            Guid projectId, Guid taskId, Guid targetUserId, TaskRole role, Guid executedBy, CancellationToken ct = default)
         {
-            var (m, change) = await repo.AssignAsync(taskId, affectedUserId, role, ct);
+            var (m, change) = await repo.AssignAsync(taskId, targetUserId, role, ct);
             if (m == DomainMutation.Created)
             {
-                await activityWriter.CreateAsync(taskId, performedBy, TaskActivityType.AssignmentCreated,
-                    ActivityPayloadFactory.AssignmentCreated(affectedUserId, role), ct);
+                await activityWriter.CreateAsync(taskId, executedBy, TaskActivityType.AssignmentCreated,
+                    ActivityPayloadFactory.AssignmentCreated(targetUserId, role), ct);
                 await repo.SaveCreateChangesAsync(ct);
                 await mediator.Publish(
                 new TaskAssignmentCreated(projectId,
-                    new TaskAssignmentCreatedPayload(taskId, affectedUserId, role)), ct);
+                    new TaskAssignmentCreatedPayload(taskId, targetUserId, role)), ct);
             }
             else if (m == DomainMutation.Updated)
             {
                 var c = (AssignmentRoleChangedChange)change!;
-                await activityWriter.CreateAsync(taskId, performedBy, TaskActivityType.AssignmentRoleChanged,
-                    ActivityPayloadFactory.AssignmentRoleChanged(affectedUserId, c.OldRole, c.NewRole), ct);
+                await activityWriter.CreateAsync(taskId, executedBy, TaskActivityType.AssignmentRoleChanged,
+                    ActivityPayloadFactory.AssignmentRoleChanged(targetUserId, c.OldRole, c.NewRole), ct);
                 await repo.SaveUpdateChangesAsync(ct);
                 await mediator.Publish(
                 new TaskAssignmentUpdated(projectId,
-                    new TaskAssignmentUpdatedPayload(taskId, affectedUserId, c.NewRole)), ct);
+                    new TaskAssignmentUpdatedPayload(taskId, targetUserId, c.NewRole)), ct);
             }
             return m;
         }
 
         public async Task<DomainMutation> ChangeRoleAsync(
-            Guid projectId, Guid taskId, Guid affectedUserId, TaskRole newRole, Guid performedBy, byte[] rowVersion, CancellationToken ct = default)
+            Guid projectId, Guid taskId, Guid targetUserId, TaskRole newRole, Guid executedBy, byte[] rowVersion, CancellationToken ct = default)
         {
-            var (m, change) = await repo.ChangeRoleAsync(taskId, affectedUserId, newRole, rowVersion, ct);
+            var (m, change) = await repo.ChangeRoleAsync(taskId, targetUserId, newRole, rowVersion, ct);
             if (m != DomainMutation.Updated) return m;
 
             var c = (AssignmentRoleChangedChange)change!;
-            await activityWriter.CreateAsync(taskId, performedBy, TaskActivityType.AssignmentRoleChanged,
-                ActivityPayloadFactory.AssignmentRoleChanged(affectedUserId, c.OldRole, c.NewRole), ct);
+            await activityWriter.CreateAsync(taskId, executedBy, TaskActivityType.AssignmentRoleChanged,
+                ActivityPayloadFactory.AssignmentRoleChanged(targetUserId, c.OldRole, c.NewRole), ct);
 
             var saved = await repo.SaveUpdateChangesAsync(ct);
             if (saved == DomainMutation.Updated)
             {
                 await mediator.Publish(
                     new TaskAssignmentUpdated(projectId,
-                        new TaskAssignmentUpdatedPayload(taskId, affectedUserId, newRole)), ct);
+                        new TaskAssignmentUpdatedPayload(taskId, targetUserId, newRole)), ct);
             }
             return saved;
         }
 
         public async Task<DomainMutation> RemoveAsync(
-            Guid projectId, Guid taskId, Guid affectedUserId, Guid performedBy, byte[] rowVersion, CancellationToken ct = default)
+            Guid projectId, Guid taskId, Guid targetUserId, Guid executedBy, byte[] rowVersion, CancellationToken ct = default)
         {
-            var m = await repo.RemoveAsync(taskId, affectedUserId, rowVersion, ct);
+            var m = await repo.RemoveAsync(taskId, targetUserId, rowVersion, ct);
             if (m != DomainMutation.Deleted) return m;
 
-            await activityWriter.CreateAsync(taskId, performedBy, TaskActivityType.AssignmentRemoved,
-                ActivityPayloadFactory.AssignmentRemoved(affectedUserId), ct);
+            await activityWriter.CreateAsync(taskId, executedBy, TaskActivityType.AssignmentRemoved,
+                ActivityPayloadFactory.AssignmentRemoved(targetUserId), ct);
 
             var saved = await repo.SaveRemoveChangesAsync(ct);
             if (saved == DomainMutation.Deleted)
             {
                 await mediator.Publish(
                     new TaskAssignmentRemoved(projectId,
-                        new TaskAssignmentRemovedPayload(taskId, affectedUserId)), ct);
+                        new TaskAssignmentRemovedPayload(taskId, targetUserId)), ct);
             }
             return saved;
         }

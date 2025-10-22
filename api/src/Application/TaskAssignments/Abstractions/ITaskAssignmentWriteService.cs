@@ -8,30 +8,30 @@ namespace Application.TaskAssignments.Abstractions
         Task<(DomainMutation, TaskAssignment?)> CreateAsync(
             Guid projectId,
             Guid taskId,
-            Guid affectedUserId,
+            Guid targetUserId,
             TaskRole role,
-            Guid performedBy,
+            Guid executedBy,
             CancellationToken ct = default);
         Task<DomainMutation> AssignAsync(
             Guid projectId,
             Guid taskId,
-            Guid affectedUserId,
+            Guid targetUserId,
             TaskRole role,
-            Guid performedBy,
+            Guid executedBy,
             CancellationToken ct = default);
         Task<DomainMutation> ChangeRoleAsync(
             Guid projectId,
             Guid taskId,
-            Guid affectedUserId,
+            Guid targetUserId,
             TaskRole newRole,
-            Guid performedBy,
+            Guid executedBy,
             byte[] rowVersion,
             CancellationToken ct = default);
         Task<DomainMutation> RemoveAsync(
             Guid projectId,
             Guid taskId,
-            Guid affectedUserId,
-            Guid performedBy,
+            Guid targetUserId,
+            Guid executedBy,
             byte[] rowVersion,
             CancellationToken ct = default);
     }
