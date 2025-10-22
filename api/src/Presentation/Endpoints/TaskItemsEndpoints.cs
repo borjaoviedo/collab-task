@@ -217,11 +217,11 @@ namespace Api.Endpoints
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var result = await taskItemWriteSvc.MoveAsync(
-                    projectId, taskId, dto.TargetColumnId, dto.TargetLaneId, userId, dto.TargetSortKey, rowVersion, ct);
+                    projectId, taskId, dto.NewColumnId, dto.NewLaneId, userId, dto.NewSortKey, rowVersion, ct);
                 if (result != DomainMutation.Updated)
                 {
-                    log.LogInformation("Task move rejected projectId={ProjectId} taskId={TaskId} userId={UserId} targetLaneId={TargetLaneId} targetColumnId={TargetColumnId} mutation={Mutation}",
-                                        projectId, taskId, userId, dto.TargetLaneId, dto.TargetColumnId, result);
+                    log.LogInformation("Task move rejected projectId={ProjectId} taskId={TaskId} userId={UserId} newLaneId={NewLaneId} newColumnId={NewColumnId} newSortKey={NewSortKey} mutation={Mutation}",
+                                        projectId, taskId, userId, dto.NewLaneId, dto.NewColumnId, dto.NewSortKey, result);
                     return result.ToHttp(context);
                 }
 
@@ -236,8 +236,8 @@ namespace Api.Endpoints
                 var responseDto = moved.ToReadDto();
                 var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
-                log.LogInformation("Task moved projectId={ProjectId} taskId={TaskId} userId={UserId} targetLaneId={TargetLaneId} targetColumnId={TargetColumnId} targetSortKey={TargetSortKey} etag={ETag}",
-                                    projectId, taskId, userId, dto.TargetLaneId, dto.TargetColumnId, dto.TargetSortKey, etag);
+                log.LogInformation("Task moved projectId={ProjectId} taskId={TaskId} userId={UserId} newLaneId={NewLaneId} newColumnId={NewColumnId} newSortKey={NewSortKey} etag={ETag}",
+                                    projectId, taskId, userId, dto.NewLaneId, dto.NewColumnId, dto.NewSortKey, etag);
                 return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectMember)

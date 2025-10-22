@@ -40,14 +40,14 @@ namespace Application.Tests.TaskItems.Validation
             var v = new TaskItemMoveDtoValidator();
             var dto = new TaskItemMoveDto
             {
-                TargetLaneId = Guid.Empty,
-                TargetColumnId = Guid.Empty,
-                TargetSortKey = -1m,
+                NewLaneId = Guid.Empty,
+                NewColumnId = Guid.Empty,
+                NewSortKey = -1m,
             };
             var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(x => x.TargetLaneId);
-            r.ShouldHaveValidationErrorFor(x => x.TargetColumnId);
-            r.ShouldHaveValidationErrorFor(x => x.TargetSortKey);
+            r.ShouldHaveValidationErrorFor(x => x.NewLaneId);
+            r.ShouldHaveValidationErrorFor(x => x.NewColumnId);
+            r.ShouldHaveValidationErrorFor(x => x.NewSortKey);
         }
     }
 }

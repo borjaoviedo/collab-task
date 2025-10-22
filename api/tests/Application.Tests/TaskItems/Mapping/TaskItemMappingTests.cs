@@ -35,15 +35,15 @@ namespace Application.Tests.TaskItems.Mapping
                 TaskTitle.Create("Title"), TaskDescription.Create("Description"), null, 0m);
             var dto = new TaskItemMoveDto
             {
-                TargetLaneId = Guid.NewGuid(),
-                TargetColumnId = Guid.NewGuid(),
-                TargetSortKey = 123.45m
+                NewLaneId = Guid.NewGuid(),
+                NewColumnId = Guid.NewGuid(),
+                NewSortKey = 123.45m
             };
 
-            e.Move(dto.TargetLaneId, dto.TargetColumnId, dto.TargetSortKey);
-            e.LaneId.Should().Be(dto.TargetLaneId);
-            e.ColumnId.Should().Be(dto.TargetColumnId);
-            e.SortKey.Should().Be(dto.TargetSortKey);
+            e.Move(dto.NewLaneId, dto.NewColumnId, dto.NewSortKey);
+            e.LaneId.Should().Be(dto.NewLaneId);
+            e.ColumnId.Should().Be(dto.NewColumnId);
+            e.SortKey.Should().Be(dto.NewSortKey);
         }
     }
 }
