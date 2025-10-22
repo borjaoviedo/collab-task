@@ -277,7 +277,7 @@ namespace Api.Tests.Endpoints
             del.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
 
-        private static async Task<string> MintToken(TestApiFactory app, Guid userId, string email, string name, UserRole role)
+        public static async Task<string> MintToken(TestApiFactory app, Guid userId, string email, string name, UserRole role)
         {
             await using var scope = app.Services.CreateAsyncScope();
             var jwt = scope.ServiceProvider.GetRequiredService<IJwtTokenService>();
