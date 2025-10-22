@@ -67,13 +67,10 @@ namespace Api.Tests.Endpoints
                 .Single(p => p.Name == "ToRename");
 
             // If-Match header from current RowVersion
-            var base64 = Convert.ToBase64String(prj.RowVersion);
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", $"W/\"{base64}\"");
+            EndpointsTestHelper.SetIfMatchFromRowVersion(client, prj.RowVersion);
 
             // Align DTO and route
-            var resp = await client.PatchAsJsonAsync($"/projects/{prj.Id}/rename",
-                new ProjectRenameDto() { NewName =  "Renamed"});
+            var resp = await client.PatchAsJsonAsync($"/projects/{prj.Id}/rename", new ProjectRenameDto() { NewName =  "Renamed"});
 
             resp.StatusCode.Should().Be(HttpStatusCode.OK);
             var body = await resp.Content.ReadFromJsonAsync<ProjectReadDto>();

@@ -88,10 +88,7 @@ namespace Api.Tests.Endpoints
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", u.AccessToken);
 
-            var base64 = Convert.ToBase64String(get.RowVersion);
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", $"W/\"{base64}\"");
-
+            EndpointsTestHelper.SetIfMatchFromRowVersion(client, get.RowVersion);
             var payload = new UserRenameDto() { NewName = "Renamed User"};
             var resp = await client.PatchAsJsonAsync($"/users/{u.UserId}/rename", payload);
 
@@ -112,10 +109,7 @@ namespace Api.Tests.Endpoints
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminBearer);
 
-            var base64 = Convert.ToBase64String(current.RowVersion);
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", $"W/\"{base64}\"");
-
+            EndpointsTestHelper.SetIfMatchFromRowVersion(client, current.RowVersion);
             var payload = new UserChangeRoleDto() { NewRole = UserRole.Admin };
             var resp = await client.PatchAsJsonAsync($"/users/{target.UserId}/role", payload);
 

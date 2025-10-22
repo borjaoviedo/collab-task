@@ -44,10 +44,7 @@ namespace Api.Tests.Endpoints
             var (prj, lane) = await EndpointsTestHelper.CreateProjectAndLane(client, laneName: "Backlog");
 
             // rename (If-Match)
-            var etag1 = $"W/\"{Convert.ToBase64String(lane.RowVersion)}\"";
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", etag1);
-
+            EndpointsTestHelper.SetIfMatchFromRowVersion(client, lane.RowVersion);
             var rename = await client.PutAsJsonAsync($"/projects/{prj.Id}/lanes/{lane.Id}/rename", new LaneRenameDto { NewName = "Todo" });
             rename.StatusCode.Should().Be(HttpStatusCode.OK);
             var lane2 = await rename.Content.ReadFromJsonAsync<LaneReadDto>(EndpointsTestHelper.Json);
@@ -60,20 +57,14 @@ namespace Api.Tests.Endpoints
             await EndpointsTestHelper.CreateLane(client, prj.Id, "Review", 1);
 
             // reorder (If-Match)
-            var etag2 = $"W/\"{Convert.ToBase64String(lane2.RowVersion)}\"";
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", etag2);
-
+            EndpointsTestHelper.SetIfMatchFromRowVersion(client, lane2.RowVersion);
             var reorder = await client.PutAsJsonAsync($"/projects/{prj.Id}/lanes/{lane.Id}/reorder", new LaneReorderDto { NewOrder = 1 });
             reorder.StatusCode.Should().Be(HttpStatusCode.OK);
             var lane3 = await reorder.Content.ReadFromJsonAsync<LaneReadDto>(EndpointsTestHelper.Json);
             lane3!.Order.Should().Be(1);
 
             // delete (If-Match)
-            var etag3 = $"W/\"{Convert.ToBase64String(lane3.RowVersion)}\"";
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", etag3);
-
+            EndpointsTestHelper.SetIfMatchFromRowVersion(client, lane3.RowVersion);
             var del = await client.DeleteAsync($"/projects/{prj.Id}/lanes/{lane.Id}");
             del.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }

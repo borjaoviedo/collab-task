@@ -42,10 +42,7 @@ namespace Api.Tests.Endpoints
             var m = items!.Single(x => x.UserId == member.UserId);
 
             // change role to Admin (Requires ProjectOwner) -> send If-Match
-            var etag1 = $"W/\"{Convert.ToBase64String(m.RowVersion)}\"";
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", etag1);
-
+            EndpointsTestHelper.SetIfMatchFromRowVersion(client, m.RowVersion);
             var change = await client.PatchAsJsonAsync(
                 $"/projects/{prj.Id}/members/{member.UserId}/role",
                 new ProjectMemberChangeRoleDto() { NewRole = ProjectRole.Admin});
@@ -59,10 +56,7 @@ namespace Api.Tests.Endpoints
             m = items!.Single(x => x.UserId == member.UserId);
 
             // remove (Requires ProjectAdmin) -> If-Match
-            var etag2 = $"W/\"{Convert.ToBase64String(m.RowVersion)}\"";
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", etag2);
-
+            EndpointsTestHelper.SetIfMatchFromRowVersion(client, m.RowVersion);
             var rem = await client.PatchAsJsonAsync(
                 $"/projects/{prj.Id}/members/{member.UserId}/remove", new object());
             rem.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -79,9 +73,7 @@ namespace Api.Tests.Endpoints
 
             // restore (Requires ProjectAdmin) -> If-Match
             var removed = listRemoved!.Single(x => x.UserId == member.UserId);
-            var etag3 = $"W/\"{Convert.ToBase64String(removed.RowVersion)}\"";
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", etag3);
+            EndpointsTestHelper.SetIfMatchFromRowVersion(client, removed.RowVersion);
 
             var restore = await client.PatchAsJsonAsync(
                 $"/projects/{prj.Id}/members/{member.UserId}/restore",

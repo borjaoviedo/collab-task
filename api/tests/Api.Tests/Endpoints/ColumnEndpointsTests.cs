@@ -35,10 +35,7 @@ namespace Api.Tests.Endpoints
             var col = await create.Content.ReadFromJsonAsync<ColumnReadDto>(EndpointsTestHelper.Json);
 
             // rename (If-Match)
-            var etag1 = $"W/\"{Convert.ToBase64String(col!.RowVersion)}\"";
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", etag1);
-
+            EndpointsTestHelper.SetIfMatchFromRowVersion(client, col!.RowVersion);
             var rename = await client.PutAsJsonAsync($"/projects/{prj.Id}/lanes/{lane.Id}/columns/{col.Id}/rename", new ColumnRenameDto { NewName = "In Progress" });
             rename.StatusCode.Should().Be(HttpStatusCode.OK);
             var col2 = await rename.Content.ReadFromJsonAsync<ColumnReadDto>(EndpointsTestHelper.Json);
@@ -54,20 +51,14 @@ namespace Api.Tests.Endpoints
             await create2.Content.ReadFromJsonAsync<ColumnReadDto>(EndpointsTestHelper.Json);
 
             // reorder (If-Match)
-            var etag2 = $"W/\"{Convert.ToBase64String(col2.RowVersion)}\"";
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", etag2);
-
+            EndpointsTestHelper.SetIfMatchFromRowVersion(client, col2.RowVersion);
             var reorder = await client.PutAsJsonAsync($"/projects/{prj.Id}/lanes/{lane.Id}/columns/{col.Id}/reorder", new ColumnReorderDto { NewOrder = 1 });
             reorder.StatusCode.Should().Be(HttpStatusCode.OK);
             var col3 = await reorder.Content.ReadFromJsonAsync<ColumnReadDto>(EndpointsTestHelper.Json);
             col3!.Order.Should().Be(1);
 
             // delete (If-Match)
-            var etag3 = $"W/\"{Convert.ToBase64String(col3.RowVersion)}\"";
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", etag3);
-
+            EndpointsTestHelper.SetIfMatchFromRowVersion(client, col3.RowVersion);
             var del = await client.DeleteAsync($"/projects/{prj.Id}/lanes/{lane.Id}/columns/{col.Id}");
             del.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
