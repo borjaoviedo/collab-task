@@ -227,8 +227,8 @@ namespace Api.Endpoints
             group.MapDelete("/{projectId:guid}", async (
                 [FromRoute] Guid projectId,
                 [FromServices] ILoggerFactory logger,
-                [FromServices] IProjectWriteService projectWriteSvc,
                 [FromServices] IProjectReadService projectReadSvc,
+                [FromServices] IProjectWriteService projectWriteSvc,
                 HttpContext context,
                 CancellationToken ct = default) =>
             {
