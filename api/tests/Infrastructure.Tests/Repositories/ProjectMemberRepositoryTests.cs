@@ -77,7 +77,7 @@ namespace Infrastructure.Tests.Repositories
 
             var (pId, _) = TestDataFactory.SeedUserWithProject(db);
             var newUser = TestDataFactory.SeedUser(db);
-            var newProjectMember = ProjectMember.Create(pId, newUser.Id, ProjectRole.Member, DateTimeOffset.UtcNow);
+            var newProjectMember = ProjectMember.Create(pId, newUser.Id, ProjectRole.Member);
 
             await repo.AddAsync(newProjectMember);
             await repo.SaveChangesAsync();
@@ -125,16 +125,14 @@ namespace Infrastructure.Tests.Repositories
             var current = await repo.GetAsync(pId, uId);
 
             // remove
-            var removedAt = DateTimeOffset.UtcNow.AddMinutes(5);
-            var removeResult = await repo.SetRemovedAsync(pId, uId, removedAt, current!.RowVersion);
+            var removeResult = await repo.SetRemovedAsync(pId, uId, current!.RowVersion);
             removeResult.Should().Be(DomainMutation.Updated);
 
             var removed = await repo.GetAsync(pId, uId);
             removed!.RemovedAt.Should().NotBeNull();
-            removed!.RemovedAt.Should().Be(removedAt);
 
             // restore with stale token should fail on SaveChanges
-            var restoreResult = await repo.SetRemovedAsync(pId, uId, null, removed!.RowVersion);
+            var restoreResult = await repo.SetRestoredAsync(pId, uId, removed!.RowVersion);
             restoreResult.Should().Be(DomainMutation.Updated);
 
             var restored = await repo.GetAsync(pId, uId);
@@ -151,7 +149,7 @@ namespace Infrastructure.Tests.Repositories
             var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
 
             // remove
-            var removeResult = await repo.SetRemovedAsync(pId, uId, DateTimeOffset.UtcNow.AddMinutes(5), [1, 2, 3]);
+            var removeResult = await repo.SetRemovedAsync(pId, uId, [1, 2, 3]);
             removeResult.Should().Be(DomainMutation.Conflict);
         }
 

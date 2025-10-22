@@ -50,7 +50,7 @@ namespace Domain.Tests.Entities
         {
             var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Demo Member"), Bytes(32), Bytes(16));
 
-            var pm = ProjectMember.Create(Guid.NewGuid(), u.Id, ProjectRole.Owner, DateTimeOffset.UtcNow);
+            var pm = ProjectMember.Create(Guid.NewGuid(), u.Id, ProjectRole.Owner);
 
             u.ProjectMemberships.Add(pm);
 

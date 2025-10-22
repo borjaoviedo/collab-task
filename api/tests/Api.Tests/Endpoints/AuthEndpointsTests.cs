@@ -2,6 +2,7 @@ using Api.Auth.DTOs;
 using Api.Tests.Testing;
 using Application.Common.Abstractions.Security;
 using Application.Users.DTOs;
+using Domain.Enums;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,7 +35,7 @@ namespace Api.Tests.Endpoints
             var resp = await client.PostAsJsonAsync("/auth/login", new { email, password });
             resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var dto = await resp.Content.ReadFromJsonAsync<AuthTokenReadDto>(AuthTestHelper.Json);
+            var dto = await resp.Content.ReadFromJsonAsync<AuthTokenReadDto>(EndpointsTestHelper.Json);
             dto.Should().NotBeNull();
 
             dto!.AccessToken.Should().NotBeNullOrWhiteSpace();
@@ -61,7 +62,7 @@ namespace Api.Tests.Endpoints
             var resp = await client.PostAsJsonAsync("/auth/login", new { email, password });
             resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var dto = await resp.Content.ReadFromJsonAsync<AuthTokenReadDto>(AuthTestHelper.Json);
+            var dto = await resp.Content.ReadFromJsonAsync<AuthTokenReadDto>(EndpointsTestHelper.Json);
             dto.Should().NotBeNull();
 
             var jwt = new JwtSecurityTokenHandler().ReadJwtToken(dto!.AccessToken);
@@ -86,7 +87,7 @@ namespace Api.Tests.Endpoints
             resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             resp.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
 
-            var problem = await resp.Content.ReadFromJsonAsync<ProblemDetailsLike>(AuthTestHelper.Json);
+            var problem = await resp.Content.ReadFromJsonAsync<ProblemDetailsLike>(EndpointsTestHelper.Json);
             problem!.Status.Should().Be(401);
             problem.Title.Should().Be("Unauthorized");
             problem.Detail.Should().NotBeNullOrWhiteSpace();
@@ -111,7 +112,7 @@ namespace Api.Tests.Endpoints
             resp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             resp.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
 
-            var problem = await resp.Content.ReadFromJsonAsync<ProblemDetailsLike>(AuthTestHelper.Json);
+            var problem = await resp.Content.ReadFromJsonAsync<ProblemDetailsLike>(EndpointsTestHelper.Json);
             problem!.Status.Should().Be(401);
             problem.Title.Should().Be("Unauthorized");
             problem.Detail.Should().NotBeNullOrWhiteSpace();
@@ -318,14 +319,14 @@ namespace Api.Tests.Endpoints
 
             var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
             login.StatusCode.Should().Be(HttpStatusCode.OK);
-            var auth = await login.Content.ReadFromJsonAsync<AuthTokenReadDto>(AuthTestHelper.Json);
+            var auth = await login.Content.ReadFromJsonAsync<AuthTokenReadDto>(EndpointsTestHelper.Json);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth!.AccessToken);
 
             var resp = await client.GetAsync("/auth/me");
             resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var dto = await resp.Content.ReadFromJsonAsync<MeReadDto>(AuthTestHelper.Json);
+            var dto = await resp.Content.ReadFromJsonAsync<MeReadDto>(EndpointsTestHelper.Json);
             dto.Should().NotBeNull();
             dto.Email.Should().Be(email.ToLowerInvariant());
             dto.Name.Should().Be(name);
@@ -352,7 +353,7 @@ namespace Api.Tests.Endpoints
             var jwt = scope.ServiceProvider.GetRequiredService<IJwtTokenService>();
 
             var randomUserId = Guid.NewGuid(); // not in DB
-            var (token, _) = jwt.CreateToken(randomUserId, "ghost@demo.com", "Ghost Name", "User");
+            var (token, _) = jwt.CreateToken(randomUserId, "ghost@demo.com", "Ghost Name", UserRole.User);
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 

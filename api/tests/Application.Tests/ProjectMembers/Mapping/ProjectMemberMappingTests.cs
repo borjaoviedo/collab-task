@@ -16,8 +16,7 @@ namespace Application.Tests.ProjectMembers.Mapping
             var projectId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var role = ProjectRole.Member;
-            var joinedAt = DateTimeOffset.UtcNow.AddDays(-1);
-            var projectMember = ProjectMember.Create(projectId, userId, role, joinedAt);
+            var projectMember = ProjectMember.Create(projectId, userId, role);
 
             var dto = projectMember.ToReadDto();
 
@@ -34,7 +33,7 @@ namespace Application.Tests.ProjectMembers.Mapping
         [Fact]
         public void ToReadDto_Maps_UserName_And_Email_When_User_Is_Present()
         {
-            var projectMember = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Admin, DateTimeOffset.UtcNow);
+            var projectMember = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Admin);
             projectMember.User = User.Create(Email.Create("test@demo.com"), UserName.Create("Test User"), Bytes(32), Bytes(16), UserRole.User);
 
             var dto = projectMember.ToReadDto();
@@ -46,7 +45,7 @@ namespace Application.Tests.ProjectMembers.Mapping
         [Fact]
         public void ToReadDto_Maps_RemovedAt_When_ProjectMember_Is_Removed()
         {
-            var projectMember = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Reader, DateTimeOffset.UtcNow.AddDays(-3));
+            var projectMember = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Reader);
             var removedAt = DateTimeOffset.UtcNow;
             projectMember.Remove(removedAt);
             var dto = projectMember.ToReadDto();

@@ -20,7 +20,7 @@ namespace Application.Tests.Projects.Services
 
             var owner = TestDataFactory.SeedUser(db);
 
-            var (res, id) = await svc.CreateAsync(owner.Id, "Alpha Board", DateTimeOffset.UtcNow);
+            var (res, id) = await svc.CreateAsync(owner.Id, "Alpha Board");
 
             res.Should().Be(DomainMutation.Created);
             id.Should().NotBeNull();

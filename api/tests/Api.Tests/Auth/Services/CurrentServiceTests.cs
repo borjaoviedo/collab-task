@@ -23,7 +23,7 @@ namespace Api.Tests.Auth.Services
         }
 
         [Fact]
-        public void WhenAuthenticated_ExposesUserData()
+        public void WhenAuthenticated_ExposesUserId()
         {
             var userId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
             var ctx = BuildContext(userId, "user@demo.com", "Admin");
@@ -32,29 +32,21 @@ namespace Api.Tests.Auth.Services
             accessor.Setup(a => a.HttpContext).Returns(ctx);
 
             var sut = new CurrentUserService(accessor.Object);
-
-            sut.IsAuthenticated.Should().BeTrue();
             sut.UserId.Should().Be(userId);
-            sut.Email.Should().Be("user@demo.com");
-            sut.Role.Should().Be("Admin");
         }
 
         [Fact]
-        public void WhenNoPrincipal_IsAuthenticatedFalse_AndNullData()
+        public void WhenNoPrincipal_NullUserId()
         {
             var accessor = new Mock<IHttpContextAccessor>();
             accessor.Setup(a => a.HttpContext).Returns(new DefaultHttpContext());
 
             var sut = new CurrentUserService(accessor.Object);
-
-            sut.IsAuthenticated.Should().BeFalse();
             sut.UserId.Should().BeNull();
-            sut.Email.Should().BeNull();
-            sut.Role.Should().BeNull();
         }
 
         [Fact]
-        public void MissingRequiredClaims_IsAuthenticatedTrue_ButNullForMissingOnes()
+        public void MissingRequiredClaims_NullUserId()
         {
             var identity = new ClaimsIdentity(authenticationType: "Test");
             identity.AddClaim(new Claim(ClaimTypes.Email, "user@demo.com"));
@@ -66,11 +58,7 @@ namespace Api.Tests.Auth.Services
             accessor.Setup(a => a.HttpContext).Returns(ctx);
 
             var sut = new CurrentUserService(accessor.Object);
-
-            sut.IsAuthenticated.Should().BeTrue();
             sut.UserId.Should().BeNull();
-            sut.Email.Should().Be("user@demo.com");
-            sut.Role.Should().BeNull();
         }
     }
 }

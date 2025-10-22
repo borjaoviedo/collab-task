@@ -1,32 +1,88 @@
+using Microsoft.Extensions.Primitives;
 
 namespace Api.Filters
 {
     public sealed class IfMatchRowVersionFilter : IEndpointFilter
     {
+        private const string RowVersionItemKey = "rowVersion";
+        private const string IfMatchWildcardKey = "IfMatchWildcard";
+
         public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
         {
-            var ifMatch = context.HttpContext.Request.Headers.IfMatch.ToString();
+            var http = context.HttpContext;
 
-            if (!string.IsNullOrWhiteSpace(ifMatch))
+            var required = IsIfMatchRequired(http);
+
+            StringValues ifMatch = http.Request.Headers.IfMatch;
+
+            if (StringValues.IsNullOrEmpty(ifMatch))
             {
-                if (ifMatch.Trim() == "*")
-                {
-                    context.HttpContext.Items["IfMatchWildcard"] = true;
-                    return next(context);
-                }
+                if (required) return Results.StatusCode(StatusCodes.Status428PreconditionRequired);
+                return await next(context);
+            }
 
-                var first = ifMatch.Split(',')[0].Trim();
-                if (first.StartsWith("W/")) first = first[2..].Trim();
-                if (first.StartsWith("\"") && first.EndsWith("\""))
+            var all = string.Join(",", ifMatch.ToArray())
+                             .Split(',')
+                             .Select(s => s.Trim())
+                             .Where(s => !string.IsNullOrEmpty(s))
+                             .ToList();
+
+            if (all.Count == 0)
+                return Results.StatusCode(StatusCodes.Status400BadRequest);
+
+            if (all.Contains("*"))
+            {
+                http.Items[IfMatchWildcardKey] = true;
+                return await next(context);
+            }
+
+            foreach (var raw in all)
+            {
+                var token = NormalizeEtag(raw);
+                if (string.IsNullOrWhiteSpace(token)) continue;
+
+                try
                 {
-                    try
+                    var rv = Convert.FromBase64String(token);
+                    if (rv.Length > 0)
                     {
-                        context.HttpContext.Items["rowVersion"] = Convert.FromBase64String(first.Trim('"'));
+                        http.Items[RowVersionItemKey] = rv;
+                        return await next(context);
                     }
-                    catch { /* ignore invalid */ }
+                }
+                catch { /* probar siguiente candidato */ }
+            }
+
+            return Results.StatusCode(StatusCodes.Status400BadRequest);
+        }
+
+        private static bool IsIfMatchRequired(HttpContext http)
+        {
+            var metadata = http.GetEndpoint()?.Metadata;
+            if (metadata is null) return false;
+
+            foreach (var m in metadata)
+            {
+                var t = m?.GetType();
+                if (t is null) continue;
+                if (t.Name == "IfMatchRequirementMetadata")
+                {
+                    var prop = t.GetProperty("Required");
+                    if (prop is null) return false;
+                    var val = prop.GetValue(m);
+                    if (val is bool b) return b;
+                    return false;
                 }
             }
-            return await next(context);
+            return false;
+        }
+
+        private static string NormalizeEtag(string value)
+        {
+            var s = value.Trim();
+            if (s.StartsWith("W/", StringComparison.Ordinal)) s = s[2..].Trim();
+            if (s.Length >= 2 && s[0] == '"' && s[^1] == '"') s = s[1..^1];
+            return s;
         }
     }
 }

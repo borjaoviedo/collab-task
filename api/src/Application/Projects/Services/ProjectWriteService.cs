@@ -7,11 +7,11 @@ namespace Application.Projects.Services
 {
     public sealed class ProjectWriteService(IProjectRepository repo) : IProjectWriteService
     {
-        public async Task<(DomainMutation, Project?)> CreateAsync(Guid ownerId, string name, DateTimeOffset now, CancellationToken ct = default)
+        public async Task<(DomainMutation, Project?)> CreateAsync(Guid ownerId, string name, CancellationToken ct = default)
         {
             if (await repo.ExistsByNameAsync(ownerId, name, ct)) return (DomainMutation.NotFound, null);
 
-            var project = Project.Create(ownerId, ProjectName.Create(name), now);
+            var project = Project.Create(ownerId, ProjectName.Create(name));
             await repo.AddAsync(project, ct);
             await repo.SaveChangesAsync(ct);
 

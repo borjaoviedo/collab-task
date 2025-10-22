@@ -110,7 +110,7 @@ namespace Api.Tests.Fakes
             return Task.FromResult(DomainMutation.Updated);
         }
 
-        public Task<DomainMutation> SetRemovedAsync(Guid projectId, Guid userId, DateTimeOffset? removedAt, byte[] rowVersion, CancellationToken ct = default)
+        public Task<DomainMutation> SetRemovedAsync(Guid projectId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
         {
             if (rowVersion is null || rowVersion.Length == 0)
                 return Task.FromResult(DomainMutation.Conflict);
@@ -119,13 +119,34 @@ namespace Api.Tests.Fakes
             if (!_byKey.TryGetValue(key, out var current))
                 return Task.FromResult(DomainMutation.NotFound);
 
-            if (current.RemovedAt == removedAt)
+            var now = DateTimeOffset.UtcNow;
+            if (current.RemovedAt == now)
                 return Task.FromResult(DomainMutation.NoOp);
 
             if (!RowVersionEquals(current.RowVersion, rowVersion))
                 return Task.FromResult(DomainMutation.Conflict);
 
-            current.Remove(removedAt);
+            current.Remove(now);
+            current.RowVersion = NextRowVersion();
+            return Task.FromResult(DomainMutation.Updated);
+        }
+
+        public Task<DomainMutation> SetRestoredAsync(Guid projectId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
+        {
+            if (rowVersion is null || rowVersion.Length == 0)
+                return Task.FromResult(DomainMutation.Conflict);
+
+            var key = (projectId, userId);
+            if (!_byKey.TryGetValue(key, out var current))
+                return Task.FromResult(DomainMutation.NotFound);
+
+            if (current.RemovedAt == null)
+                return Task.FromResult(DomainMutation.NoOp);
+
+            if (!RowVersionEquals(current.RowVersion, rowVersion))
+                return Task.FromResult(DomainMutation.Conflict);
+
+            current.Restore();
             current.RowVersion = NextRowVersion();
             return Task.FromResult(DomainMutation.Updated);
         }
@@ -142,7 +163,7 @@ namespace Api.Tests.Fakes
 
         private static ProjectMember Clone(ProjectMember m, bool includeUser, User? user = null)
         {
-            var clone = ProjectMember.Create(m.ProjectId, m.UserId, m.Role, m.JoinedAt);
+            var clone = ProjectMember.Create(m.ProjectId, m.UserId, m.Role);
             clone.RowVersion = (m.RowVersion is null) ? [] : m.RowVersion.ToArray();
             clone.Remove(m.RemovedAt);
 

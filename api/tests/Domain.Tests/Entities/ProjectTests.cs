@@ -13,9 +13,8 @@ namespace Domain.Tests.Entities
         public void Defaults_Members_Initialized()
         {
             var ownerId = Guid.NewGuid();
-            var utcNow = DateTimeOffset.UtcNow;
             var projectName = ProjectName.Create("A Project");
-            var p = Project.Create(ownerId, projectName, utcNow);
+            var p = Project.Create(ownerId, projectName);
 
             p.Members.Should().NotBeNull();
             p.Members.Count.Should().Be(1);
@@ -25,12 +24,11 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Set_All_Core_Properties_Assigns_Correctly()
         {
-            var utcNow = DateTimeOffset.UtcNow;
             var ownerId = Guid.NewGuid();
             var name = ProjectName.Create("kanban board");
             var slug = ProjectSlug.Create(name);
 
-            var p = Project.Create(ownerId, name, utcNow);
+            var p = Project.Create(ownerId, name);
 
             p.Id.Should().NotBeEmpty();
             p.OwnerId.Should().Be(ownerId);
@@ -41,7 +39,7 @@ namespace Domain.Tests.Entities
         [Fact]
         public void UpdatedAt_Not_Before_CreatedAt()
         {
-            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"), DateTimeOffset.UtcNow);
+            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"));
 
             (p.UpdatedAt >= p.CreatedAt).Should().BeTrue();
         }
@@ -52,16 +50,15 @@ namespace Domain.Tests.Entities
             var utcNow = DateTimeOffset.UtcNow;
             var ownerId = Guid.NewGuid();
 
-            var p = Project.Create(ownerId, ProjectName.Create("Project Name"), utcNow);
+            var p = Project.Create(ownerId, ProjectName.Create("Project Name"));
             p.Members.Should().HaveCount(1);
             p.Members.Single().UserId.Should().Be(ownerId);
 
             var newMemberId = Guid.NewGuid();
-            var joinedAt = utcNow.AddHours(1);
-            p.AddMember(newMemberId, ProjectRole.Reader, joinedAt);
+            p.AddMember(newMemberId, ProjectRole.Reader);
             p.Members.Should().HaveCount(2);
             p.Members.ElementAt(1).UserId.Should().Be(newMemberId);
-            p.Members.ElementAt(1).JoinedAt.Should().Be(joinedAt);
+            p.Members.ElementAt(1).JoinedAt.Should().NotBe(null);
 
             var removedAt = utcNow.AddHours(2);
             p.RemoveMember(newMemberId, removedAt);
@@ -71,23 +68,19 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Add_Existing_Member_Throws()
         {
-            var utcNow = DateTimeOffset.UtcNow;
-
-            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"), utcNow);
+            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"));
 
             var newMemberId = Guid.NewGuid();
-            p.AddMember(newMemberId, ProjectRole.Reader, utcNow);
-            Assert.Throws<DuplicateEntityException>(() => p.AddMember(newMemberId, ProjectRole.Reader, utcNow));
-            Assert.Throws<DuplicateEntityException>(() => p.AddMember(newMemberId, ProjectRole.Member, utcNow));
+            p.AddMember(newMemberId, ProjectRole.Reader);
+            Assert.Throws<DuplicateEntityException>(() => p.AddMember(newMemberId, ProjectRole.Reader));
+            Assert.Throws<DuplicateEntityException>(() => p.AddMember(newMemberId, ProjectRole.Member));
         }
 
         [Fact]
         public void Add_Owner_Member_Throws()
         {
-            var utcNow = DateTimeOffset.UtcNow;
-
-            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"), utcNow);
-            Assert.Throws<DomainRuleViolationException>(() => p.AddMember(Guid.NewGuid(), ProjectRole.Owner, utcNow));
+            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"));
+            Assert.Throws<DomainRuleViolationException>(() => p.AddMember(Guid.NewGuid(), ProjectRole.Owner));
         }
 
         [Fact]
@@ -95,7 +88,7 @@ namespace Domain.Tests.Entities
         {
             var utcNow = DateTimeOffset.UtcNow;
 
-            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"), utcNow);
+            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"));
             Assert.Throws<EntityNotFoundException>(() => p.RemoveMember(Guid.NewGuid(), utcNow));
         }
 
@@ -105,21 +98,19 @@ namespace Domain.Tests.Entities
             var utcNow = DateTimeOffset.UtcNow;
             var ownerId = Guid.NewGuid();
 
-            var p = Project.Create(ownerId, ProjectName.Create("Project Name"), utcNow);
+            var p = Project.Create(ownerId, ProjectName.Create("Project Name"));
 
-            p.AddMember(Guid.NewGuid(), ProjectRole.Reader, utcNow.AddHours(1));
+            p.AddMember(Guid.NewGuid(), ProjectRole.Reader);
             Assert.Throws<DomainRuleViolationException>(() => p.RemoveMember(ownerId, utcNow.AddHours(2)));
         }
 
         [Fact]
         public void ChangeMemberRole_Works()
         {
-            var utcNow = DateTimeOffset.UtcNow;
-
-            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"), utcNow);
+            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"));
 
             var newMemberId = Guid.NewGuid();
-            p.AddMember(newMemberId, ProjectRole.Reader, utcNow.AddHours(1));
+            p.AddMember(newMemberId, ProjectRole.Reader);
             p.Members.ElementAt(1).Role.Should().Be(ProjectRole.Reader);
             p.ChangeMemberRole(newMemberId, ProjectRole.Member);
             p.Members.ElementAt(1).Role.Should().Be(ProjectRole.Member);
@@ -134,7 +125,7 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Change_Not_Found_Member_Role_Throws()
         {
-            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"), DateTimeOffset.UtcNow);
+            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"));
 
             Assert.Throws<EntityNotFoundException>(() => p.ChangeMemberRole(Guid.NewGuid(), ProjectRole.Admin));
         }
@@ -142,25 +133,22 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Change_Owner_Role_Without_Transfering_Ownership_Throws()
         {
-            var utcNow = DateTimeOffset.UtcNow;
             var ownerId = Guid.NewGuid();
 
-            var p = Project.Create(ownerId, ProjectName.Create("Project Name"), utcNow);
+            var p = Project.Create(ownerId, ProjectName.Create("Project Name"));
             Assert.Throws<DomainRuleViolationException>(() => p.ChangeMemberRole(ownerId, ProjectRole.Member));
 
-            p.AddMember(Guid.NewGuid(), ProjectRole.Reader, utcNow.AddHours(1));
+            p.AddMember(Guid.NewGuid(), ProjectRole.Reader);
             Assert.Throws<DomainRuleViolationException>(() => p.ChangeMemberRole(ownerId, ProjectRole.Admin));
         }
 
         [Fact]
         public void ChangeMemberRole_To_Owner_When_There_Is_An_Owner_Throws()
         {
-            var utcNow = DateTimeOffset.UtcNow;
-
-            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"), utcNow);
+            var p = Project.Create(Guid.NewGuid(), ProjectName.Create("Project Name"));
 
             var newMemberId = Guid.NewGuid();
-            p.AddMember(newMemberId, ProjectRole.Reader, utcNow);
+            p.AddMember(newMemberId, ProjectRole.Reader);
 
             Assert.Throws<DomainRuleViolationException>(() => p.ChangeMemberRole(newMemberId, ProjectRole.Owner));
         }
@@ -168,13 +156,12 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Change_Exowner_Role_After_Transfering_Ownership_Works()
         {
-            var utcNow = DateTimeOffset.UtcNow;
             var ownerId = Guid.NewGuid();
 
-            var p = Project.Create(ownerId, ProjectName.Create("Project Name"), utcNow);
+            var p = Project.Create(ownerId, ProjectName.Create("Project Name"));
 
             var newMemberId = Guid.NewGuid();
-            p.AddMember(newMemberId, ProjectRole.Reader, utcNow);
+            p.AddMember(newMemberId, ProjectRole.Reader);
 
             p.TransferOwnership(newMemberId);
             p.ChangeMemberRole(ownerId, ProjectRole.Member);
@@ -184,13 +171,12 @@ namespace Domain.Tests.Entities
         [Fact]
         public void TransferOwnership_Works()
         {
-            var utcNow = DateTimeOffset.UtcNow;
             var ownerId = Guid.NewGuid();
 
-            var p = Project.Create(ownerId, ProjectName.Create("Project Name"), utcNow);
+            var p = Project.Create(ownerId, ProjectName.Create("Project Name"));
 
             var newMemberId = Guid.NewGuid();
-            p.AddMember(newMemberId, ProjectRole.Reader, utcNow);
+            p.AddMember(newMemberId, ProjectRole.Reader);
 
             p.TransferOwnership(newMemberId);
             p.Members.ElementAt(1).Role.Should().Be(ProjectRole.Owner);
@@ -199,15 +185,14 @@ namespace Domain.Tests.Entities
         [Fact]
         public void TransferOwnership_To_Inactive_Member_Throws()
         {
-            var utcNow = DateTimeOffset.UtcNow;
             var ownerId = Guid.NewGuid();
 
-            var p = Project.Create(ownerId, ProjectName.Create("Project Name"), utcNow);
+            var p = Project.Create(ownerId, ProjectName.Create("Project Name"));
 
             var newMemberId = Guid.NewGuid();
-            p.AddMember(newMemberId, ProjectRole.Reader, utcNow);
+            p.AddMember(newMemberId, ProjectRole.Reader);
 
-            p.RemoveMember(newMemberId, utcNow.AddHours(1));
+            p.RemoveMember(newMemberId, DateTimeOffset.UtcNow.AddHours(1));
             Assert.Throws<DomainRuleViolationException>(() => p.TransferOwnership(newMemberId));
         }
     }

@@ -84,36 +84,5 @@ namespace Application.Tests.ProjectMembers.Validation
             };
             v.TestValidate(dto).ShouldNotHaveAnyValidationErrors();
         }
-
-        [Fact]
-        public void Remove_Invalid_Fails()
-        {
-            var v = new ProjectMemberRemoveDtoValidator();
-
-            // Not UTC
-            var r1 = v.TestValidate(new ProjectMemberRemoveDto
-            {
-                RemovedAt = DateTimes.NonUtcInstant(), // not UTC
-            });
-            r1.ShouldHaveValidationErrorFor(x => x.RemovedAt).WithErrorMessage("RemovedAt must be in UTC.");
-
-            // Future
-            var r2 = v.TestValidate(new ProjectMemberRemoveDto
-            {
-                RemovedAt = DateTimeOffset.UtcNow.AddMinutes(1)
-            });
-            r2.ShouldHaveValidationErrorFor(x => x.RemovedAt).WithErrorMessage("RemovedAt cannot be in the future.");
-        }
-
-        [Fact]
-        public void Remove_Valid_Passes()
-        {
-            var v = new ProjectMemberRemoveDtoValidator();
-            var dto = new ProjectMemberRemoveDto
-            {
-                RemovedAt = DateTimeOffset.UtcNow
-            };
-            v.TestValidate(dto).ShouldNotHaveAnyValidationErrors();
-        }
     }
 }

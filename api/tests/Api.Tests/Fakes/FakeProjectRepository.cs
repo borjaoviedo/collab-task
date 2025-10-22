@@ -99,7 +99,7 @@ namespace Api.Tests.Fakes
 
             foreach (var m in project.Members)
             {
-                var cm = ProjectMember.Create(m.ProjectId, m.UserId, m.Role, m.JoinedAt);
+                var cm = ProjectMember.Create(m.ProjectId, m.UserId, m.Role);
                 cm.RowVersion = (m.RowVersion is null) ? Array.Empty<byte>() : m.RowVersion.ToArray();
                 cm.Remove(m.RemovedAt);
                 _ = _pmRepo.AddAsync(cm, ct);
@@ -170,7 +170,7 @@ namespace Api.Tests.Fakes
         private static Project CloneProject(Project p, bool includeRemovedMembers)
         {
             // shallow clone of core fields
-            var clone = Project.Create(p.OwnerId, p.Name, p.CreatedAt);
+            var clone = Project.Create(p.OwnerId, p.Name);
             clone.Id = p.Id;
             clone.CreatedAt = p.CreatedAt;
             clone.UpdatedAt = p.UpdatedAt;
@@ -181,7 +181,7 @@ namespace Api.Tests.Fakes
             {
                 if (!includeRemovedMembers && m.RemovedAt is not null) continue;
 
-                var cm = ProjectMember.Create(m.ProjectId, m.UserId, m.Role, m.JoinedAt);
+                var cm = ProjectMember.Create(m.ProjectId, m.UserId, m.Role);
                 cm.RowVersion = (m.RowVersion is null) ? [] : m.RowVersion.ToArray();
                 cm.Remove(m.RemovedAt);
                 clone.Members.Add(cm);

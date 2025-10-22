@@ -18,7 +18,7 @@ namespace Domain.Entities
 
         private Project() { }
 
-        public static Project Create(Guid ownerId, ProjectName name, DateTimeOffset nowUtc)
+        public static Project Create(Guid ownerId, ProjectName name)
         {
             if (ownerId == Guid.Empty) throw new ArgumentException("OwnerId cannot be empty.", nameof(ownerId));
 
@@ -30,7 +30,7 @@ namespace Domain.Entities
                 Slug = ProjectSlug.Create(name)
             };
 
-            p.AddMember(ownerId, ProjectRole.Owner, nowUtc);
+            p.AddMember(ownerId, ProjectRole.Owner);
             return p;
         }
 
@@ -42,7 +42,7 @@ namespace Domain.Entities
             Slug = ProjectSlug.Create(newName);
         }
 
-        public void AddMember(Guid userId, ProjectRole role, DateTimeOffset joinedAtUtc)
+        public void AddMember(Guid userId, ProjectRole role)
         {
             if (Members.Any(m => m.UserId == userId && m.RemovedAt == null))
                 throw new DuplicateEntityException("User already member.");
@@ -50,7 +50,7 @@ namespace Domain.Entities
             if (role == ProjectRole.Owner && Members.Any(m => m.Role == ProjectRole.Owner && m.RemovedAt == null))
                 throw new DomainRuleViolationException("Project already has an owner.");
 
-            Members.Add(ProjectMember.Create(Id, userId, role, joinedAtUtc));
+            Members.Add(ProjectMember.Create(Id, userId, role));
         }
 
         public void RemoveMember(Guid userId, DateTimeOffset removedAtUtc)

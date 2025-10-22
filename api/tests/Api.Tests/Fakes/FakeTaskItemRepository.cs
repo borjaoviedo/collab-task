@@ -9,16 +9,10 @@ namespace Api.Tests.Fakes
     public sealed class FakeTaskItemRepository : ITaskItemRepository
     {
         private readonly Dictionary<Guid, TaskItem> _tasks = [];
-        private readonly Func<Guid, object?> _getColumn;
-        private readonly Func<Guid, object?> _getLane;
+        private long _rv = 1;
 
-        public FakeTaskItemRepository(Func<Guid, object?> getColumn, Func<Guid, object?> getLane)
-        {
-            _getColumn = getColumn;
-            _getLane = getLane;
-        }
-
-        private static byte[] NextRowVersion() => Guid.NewGuid().ToByteArray();
+        private byte[] NextRowVersion()
+            => BitConverter.GetBytes(Interlocked.Increment(ref _rv));
 
         public Task<TaskItem?> GetByIdAsync(Guid taskId, CancellationToken ct = default)
             => Task.FromResult(_tasks.TryGetValue(taskId, out var t) ? Clone(t) : null);
@@ -76,14 +70,6 @@ namespace Api.Tests.Fakes
             if (task is null) return (DomainMutation.NotFound, null);
             if (!task.RowVersion.SequenceEqual(rowVersion)) return (DomainMutation.Conflict, null);
 
-            var targetColumn = (Column?)_getColumn(targetColumnId);
-            if (targetColumn is null) return (DomainMutation.NotFound, null);
-            var targetLane = (Lane?)_getLane(targetLaneId);
-            if (targetLane is null) return (DomainMutation.NotFound, null);
-
-            if (targetColumn.LaneId != targetLaneId) return (DomainMutation.Conflict, null);
-            if (targetColumn.ProjectId != task.ProjectId || targetLane.ProjectId != task.ProjectId) return (DomainMutation.Conflict, null);
-
             if (task.ColumnId == targetColumnId && task.LaneId == targetLaneId && task.SortKey == targetSortKey)
                 return (DomainMutation.NoOp, null);
 
@@ -124,10 +110,13 @@ namespace Api.Tests.Fakes
                 t.ColumnId,
                 t.LaneId,
                 t.ProjectId,
-                TaskTitle.Create(t.Title),
-                TaskDescription.Create(t.Description),
+                t.Title,
+                t.Description,
                 t.DueDate,
                 t.SortKey);
+            clone.Id = t.Id;
+            clone.CreatedAt = t.CreatedAt;
+            clone.UpdatedAt = t.UpdatedAt;
             clone.RowVersion = (t.RowVersion is null) ? Array.Empty<byte>() : t.RowVersion.ToArray();
             return clone;
         }

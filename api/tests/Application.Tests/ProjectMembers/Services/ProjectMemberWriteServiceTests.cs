@@ -20,7 +20,7 @@ namespace Application.Tests.ProjectMembers.Services
             var (pId, _) = TestDataFactory.SeedUserWithProject(db);
             var user = TestDataFactory.SeedUser(db);
 
-            var (res, projectMember) = await svc.CreateAsync(pId, user.Id, ProjectRole.Member, DateTimeOffset.UtcNow);
+            var (res, projectMember) = await svc.CreateAsync(pId, user.Id, ProjectRole.Member);
             res.Should().Be(DomainMutation.Created);
             projectMember.Should().NotBeNull();
         }
@@ -47,15 +47,14 @@ namespace Application.Tests.ProjectMembers.Services
             var repo = new ProjectMemberRepository(db);
             var svc = new ProjectMemberWriteService(repo);
 
-            var removedAt = DateTimeOffset.UtcNow.AddMinutes(1);
             var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
             var member = await db.ProjectMembers.SingleAsync(m => m.ProjectId == pId && m.UserId == uId);
 
-            var removeResult = await svc.RemoveAsync(member.ProjectId, member.UserId, member.RowVersion, removedAt);
+            var removeResult = await svc.RemoveAsync(member.ProjectId, member.UserId, member.RowVersion);
             removeResult.Should().Be(DomainMutation.Updated);
 
             var removed = await db.ProjectMembers.SingleAsync(m => m.ProjectId == pId && m.UserId == uId);
-            member.RemovedAt.Should().Be(removedAt);
+            member.RemovedAt.Should().NotBe(null);
 
             var restoreResult = await svc.RestoreAsync(member.ProjectId, member.UserId, removed.RowVersion);
             restoreResult.Should().Be(DomainMutation.Updated);

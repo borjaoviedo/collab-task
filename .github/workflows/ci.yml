@@ -18,14 +18,15 @@ jobs:
         run: dotnet build api/CollabTask.sln --configuration Release --no-restore --nologo
 
       - name: Test (with coverage + threshold)
+        env:
+          ASPNETCORE_ENVIRONMENT: Testing
+          DISABLE_DB_INIT: "true"
+          TESTCONTAINERS_RYUK_DISABLED: "true"
         run: |
           dotnet test api/CollabTask.sln \
             --configuration Release --no-build --nologo \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=cobertura
-        env:
-          ASPNETCORE_ENVIRONMENT: Testing
-          DISABLE_DB_INIT: "true"
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

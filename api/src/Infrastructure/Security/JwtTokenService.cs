@@ -1,5 +1,6 @@
 using Application.Common.Abstractions.Security;
 using Application.Common.Abstractions.Time;
+using Domain.Enums;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -20,7 +21,7 @@ namespace Infrastructure.Security
             _options = options.Value;
         }
 
-        public (string Token, DateTime ExpiresAtUtc) CreateToken(Guid userId, string email, string name, string role)
+        public (string Token, DateTime ExpiresAtUtc) CreateToken(Guid userId, string email, string name, UserRole role)
         {
             var key = GetSigningKey(_options.Key);
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -30,7 +31,7 @@ namespace Infrastructure.Security
                 new(JwtRegisteredClaimNames.Sub, userId.ToString()),
                 new(JwtRegisteredClaimNames.Email, email),
                 new(ClaimTypes.Name, name),
-                new(ClaimTypes.Role, role),
+                new(ClaimTypes.Role, role.ToString()),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 

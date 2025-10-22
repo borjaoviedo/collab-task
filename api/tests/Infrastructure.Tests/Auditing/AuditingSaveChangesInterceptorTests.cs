@@ -20,7 +20,7 @@ namespace Infrastructure.Tests.Auditing
             var (_, db) = DbHelper.BuildDb(_cs);
 
             var u = User.Create(Email.Create($"{Guid.NewGuid()}@demo.com"), UserName.Create("Project user"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            var p = Project.Create(u.Id, ProjectName.Create("Audit Test"), DateTimeOffset.UtcNow);
+            var p = Project.Create(u.Id, ProjectName.Create("Audit Test"));
 
             db.AddRange(u, p);
             await db.SaveChangesAsync();
@@ -37,7 +37,7 @@ namespace Infrastructure.Tests.Auditing
             var (_, db) = DbHelper.BuildDb(_cs);
 
             var u = User.Create(Email.Create($"{Guid.NewGuid()}@demo.com"), UserName.Create("Project user"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            var p = Project.Create(u.Id, ProjectName.Create("Audit Test 2"), DateTimeOffset.UtcNow);
+            var p = Project.Create(u.Id, ProjectName.Create("Audit Test 2"));
 
             db.AddRange(u, p);
             await db.SaveChangesAsync();

@@ -22,21 +22,20 @@ namespace Infrastructure.Tests.Persistence.Contracts
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var now = DateTimeOffset.UtcNow;
             var owner = User.Create(Email.Create("o@demo.com"), UserName.Create("Owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Member"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            var p = Project.Create(owner.Id, ProjectName.Create("Alpha"), now);
+            var p = Project.Create(owner.Id, ProjectName.Create("Alpha"));
 
             db.AddRange(owner, u, p);
             await db.SaveChangesAsync();
 
-            var m1 = ProjectMember.Create(p.Id, u.Id, ProjectRole.Member, now);
+            var m1 = ProjectMember.Create(p.Id, u.Id, ProjectRole.Member);
             db.ProjectMembers.Add(m1);
             await db.SaveChangesAsync();
             db.ChangeTracker.Clear();
 
             // duplicate key for (ProjectId, UserId)
-            var m2 = ProjectMember.Create(p.Id, u.Id, ProjectRole.Member, now.AddMinutes(1));
+            var m2 = ProjectMember.Create(p.Id, u.Id, ProjectRole.Member);
             db.ProjectMembers.Add(m2);
             await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
 
@@ -48,7 +47,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
             db.Users.Add(other);
             await db.SaveChangesAsync();
 
-            var m3 = ProjectMember.Create(p.Id, other.Id, ProjectRole.Member, now);
+            var m3 = ProjectMember.Create(p.Id, other.Id, ProjectRole.Member);
             db.ProjectMembers.Add(m3);
             await db.SaveChangesAsync();
 
@@ -62,11 +61,10 @@ namespace Infrastructure.Tests.Persistence.Contracts
             await _fx.ResetAsync();
             var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var now = DateTimeOffset.UtcNow;
             var owner = User.Create(Email.Create("o@demo.com"), UserName.Create("Owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Member"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            var p = Project.Create(owner.Id, ProjectName.Create("Alpha"), now);
-            p.AddMember(u.Id, ProjectRole.Member, now);
+            var p = Project.Create(owner.Id, ProjectName.Create("Alpha"));
+            p.AddMember(u.Id, ProjectRole.Member);
 
             db.AddRange(owner, u, p);
             await db.SaveChangesAsync();
@@ -104,8 +102,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
             var now = DateTimeOffset.UtcNow;
             var owner = User.Create(Email.Create("o@demo.com"), UserName.Create("Owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Member"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            var p = Project.Create(owner.Id, ProjectName.Create("Alpha"), now);
-            p.AddMember(u.Id, ProjectRole.Member, now);
+            var p = Project.Create(owner.Id, ProjectName.Create("Alpha"));
+            p.AddMember(u.Id, ProjectRole.Member);
 
             db.AddRange(owner, u, p);
             await db.SaveChangesAsync();
@@ -124,7 +122,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
 
             // clear RemovedAt
             var tracked = await db.ProjectMembers.SingleAsync(x => x.ProjectId == p.Id && x.UserId == u.Id);
-            tracked.Remove(null);
+            tracked.Restore();
             db.Entry(tracked).Property(x => x.RemovedAt).IsModified = true;
             await db.SaveChangesAsync();
 
@@ -143,11 +141,11 @@ namespace Infrastructure.Tests.Persistence.Contracts
             var owner = User.Create(Email.Create("o@d.com"), UserName.Create("Owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             var u = User.Create(Email.Create("m@d.com"), UserName.Create("Member"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             var now = DateTimeOffset.UtcNow;
-            var p = Project.Create(owner.Id, ProjectName.Create("Alpha"), now);
+            var p = Project.Create(owner.Id, ProjectName.Create("Alpha"));
             db.AddRange(owner, u, p);
             await db.SaveChangesAsync();
 
-            var pm = ProjectMember.Create(p.Id, u.Id, ProjectRole.Member, now);
+            var pm = ProjectMember.Create(p.Id, u.Id, ProjectRole.Member);
             pm.RemovedAt = now.AddMinutes(-5);
             db.ProjectMembers.Add(pm);
 
