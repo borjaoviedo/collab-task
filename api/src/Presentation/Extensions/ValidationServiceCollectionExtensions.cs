@@ -1,4 +1,4 @@
-using Application;
+using Application.Common.Validation;
 using FluentValidation;
 
 namespace Api.Extensions
