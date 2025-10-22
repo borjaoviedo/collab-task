@@ -379,46 +379,6 @@ namespace Application.Tests.Common.Validation.Extensions
             .ShouldNotHaveAnyValidationErrors();
         }
 
-        private sealed class ActivityDto
-        {
-            public string Payload { get; set; } = "";
-        }
-
-        private sealed class ActivityValidator : AbstractValidator<ActivityDto>
-        {
-            public ActivityValidator()
-            {
-                RuleFor(x => x.Payload).ActivityPayloadRules();
-            }
-        }
-
-        [Theory]
-        [InlineData("")]
-        [InlineData("   ")]
-        public void ActivityPayload_EmptyOrWhitespace_Fails(string s)
-        {
-            var v = new ActivityValidator();
-            v.TestValidate(new ActivityDto { Payload = s })
-             .ShouldHaveValidationErrorFor(x => x.Payload);
-        }
-
-        [Fact]
-        public void ActivityPayload_InvalidJson_Fails()
-        {
-            var v = new ActivityValidator();
-            v.TestValidate(new ActivityDto { Payload = "{not-json}" })
-             .ShouldHaveValidationErrorFor(x => x.Payload)
-             .WithErrorMessage("Activity payload must be valid JSON.");
-        }
-
-        [Fact]
-        public void ActivityPayload_ValidJson_Passes()
-        {
-            var v = new ActivityValidator();
-            v.TestValidate(new ActivityDto { Payload = "{\"k\":1}" })
-             .ShouldNotHaveValidationErrorFor(x => x.Payload);
-        }
-
         private sealed class ConcurrencyDto
         {
             public byte[] RowVersion { get; set; } = Array.Empty<byte>();

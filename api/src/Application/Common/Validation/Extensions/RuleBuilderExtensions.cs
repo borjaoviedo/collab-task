@@ -20,13 +20,6 @@ namespace Application.Common.Validation.Extensions
 
         private static bool IsUtc(DateTimeOffset d) => d.Offset == TimeSpan.Zero;
 
-        private static bool IsValidJson(string? s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return false;
-            try { using var _ = JsonDocument.Parse(s); return true; }
-            catch (JsonException) { return false; }
-        }
-
         private static bool BeNullOrFutureUtc(DateTimeOffset? due)
         {
             if (due is null) return true;
@@ -112,11 +105,6 @@ namespace Application.Common.Validation.Extensions
             rb.NotEmpty().WithMessage("Note content is required.")
               .Must(s => s!.Trim().Length <= 500)
               .WithMessage("Note content length must be at most 500 characters.");
-
-        public static IRuleBuilderOptions<T, string> ActivityPayloadRules<T>(this IRuleBuilder<T, string> rb) =>
-            rb.NotEmpty().WithMessage("Activity payload is required.")
-              .Must(s => !string.IsNullOrWhiteSpace(s)).WithMessage("Activity payload cannot be whitespace.")
-              .Must(IsValidJson).WithMessage("Activity payload must be valid JSON.");
 
         // Orders and SortKeys
         public static IRuleBuilderOptions<T, int> NonNegativeOrder<T>(this IRuleBuilder<T, int> rb, string field = "Order") =>
