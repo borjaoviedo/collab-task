@@ -5,8 +5,8 @@ namespace Application.Projects.Abstractions
 {
     public interface IProjectWriteService
     {
-        Task<(DomainMutation, Project?)> CreateAsync(Guid ownerId, string name, CancellationToken ct = default);
-        Task<DomainMutation> RenameAsync(Guid id, string newName, byte[] rowVersion, CancellationToken ct = default);
-        Task<DomainMutation> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default);
+        Task<(DomainMutation, Project?)> CreateAsync(Guid userId, string name, CancellationToken ct = default);
+        Task<DomainMutation> RenameAsync(Guid projectId, string newName, byte[] rowVersion, CancellationToken ct = default);
+        Task<DomainMutation> DeleteAsync(Guid projectId, byte[] rowVersion, CancellationToken ct = default);
     }
 }
