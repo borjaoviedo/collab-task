@@ -1,4 +1,5 @@
 using Application.Projects.Abstractions;
+using Application.Projects.Filters;
 using Domain.Entities;
 
 namespace Application.Projects.Services

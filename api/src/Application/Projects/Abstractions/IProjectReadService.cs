@@ -1,3 +1,4 @@
+using Application.Projects.Filters;
 using Domain.Entities;
 
 namespace Application.Projects.Abstractions

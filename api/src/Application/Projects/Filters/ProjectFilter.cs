@@ -1,7 +1,6 @@
-using Application.Projects.Filters;
 using Domain.Enums;
 
-namespace Application.Projects.Abstractions
+namespace Application.Projects.Filters
 {
     public sealed class ProjectFilter
     {

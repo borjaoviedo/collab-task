@@ -4,6 +4,7 @@ using Api.Helpers;
 using Application.Common.Abstractions.Auth;
 using Application.Projects.Abstractions;
 using Application.Projects.DTOs;
+using Application.Projects.Filters;
 using Application.Projects.Mapping;
 using Domain.Enums;
 using Domain.ValueObjects;
