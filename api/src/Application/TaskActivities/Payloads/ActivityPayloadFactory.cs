@@ -1,7 +1,7 @@
 using Domain.Enums;
 using Domain.ValueObjects;
 
-namespace Application.TaskActivities
+namespace Application.TaskActivities.Payloads
 {
     public static class ActivityPayloadFactory
     {
