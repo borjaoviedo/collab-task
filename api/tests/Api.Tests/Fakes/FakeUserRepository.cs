@@ -42,13 +42,13 @@ namespace Api.Tests.Fakes
             return Task.FromResult((IReadOnlyList<User>)list);
         }
 
-        public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
+        public Task<User?> GetByEmailAsync(Email email, CancellationToken ct = default)
         {
             if (email is null) return Task.FromResult<User?>(null);
             return Task.FromResult(TryGetByEmail(email, out var u) ? Clone(u) : null);
         }
 
-        public Task<User?> GetByNameAsync(string name, CancellationToken ct = default)
+        public Task<User?> GetByNameAsync(UserName name, CancellationToken ct = default)
         {
             if (name is null) return Task.FromResult<User?>(null);
             return Task.FromResult(TryGetByName(name, out var u) ? Clone(u) : null);
@@ -60,7 +60,7 @@ namespace Api.Tests.Fakes
         public Task<User?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default)
             => Task.FromResult(_byId.TryGetValue(id, out var u) ? u : null);
 
-        public Task<DomainMutation> RenameAsync(Guid id, string newName, byte[] rowVersion, CancellationToken ct = default)
+        public Task<DomainMutation> RenameAsync(Guid id, UserName newName, byte[] rowVersion, CancellationToken ct = default)
         {
             if (rowVersion is null || rowVersion.Length == 0) return Task.FromResult(DomainMutation.Conflict);
             if (!_byId.TryGetValue(id, out var user)) return Task.FromResult(DomainMutation.NotFound);
@@ -113,7 +113,7 @@ namespace Api.Tests.Fakes
             return Task.FromResult(DomainMutation.Deleted);
         }
 
-        public Task<bool> ExistsWithEmailAsync(string email, Guid? excludeUserId = null, CancellationToken ct = default)
+        public Task<bool> ExistsWithEmailAsync(Email email, Guid? excludeUserId = null, CancellationToken ct = default)
         {
             if (email is null) return Task.FromResult(false);
             var exists = _idByEmail.TryGetValue(email, out var id);
@@ -121,7 +121,7 @@ namespace Api.Tests.Fakes
             return Task.FromResult(!excludeUserId.HasValue || excludeUserId.Value != id);
         }
 
-        public Task<bool> ExistsWithNameAsync(string name, Guid? excludeUserId = null, CancellationToken ct = default)
+        public Task<bool> ExistsWithNameAsync(UserName name, Guid? excludeUserId = null, CancellationToken ct = default)
         {
             if (name is null) return Task.FromResult(false);
             var exists = _idByName.TryGetValue(name, out var id);

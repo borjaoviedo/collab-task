@@ -8,8 +8,8 @@ namespace Application.Users.Services
     public sealed class UserWriteService(IUserRepository repo) : IUserWriteService
     {
         public async Task<(DomainMutation, User?)> CreateAsync(
-            string email,
-            string name,
+            Email email,
+            UserName name,
             byte[] hash,
             byte[] salt,
             UserRole role,
@@ -20,7 +20,7 @@ namespace Application.Users.Services
             var userExists = await repo.ExistsWithEmailAsync(email, excludeUserId: null, ct) || await repo.ExistsWithNameAsync(name, excludeUserId: null, ct);
             if (userExists) return (DomainMutation.Conflict, null);
 
-            var user = User.Create(Email.Create(email), UserName.Create(name), hash, salt, role);
+            var user = User.Create(email, name, hash, salt, role);
             await repo.AddAsync(user, ct);
 
             try
@@ -34,7 +34,7 @@ namespace Application.Users.Services
             }
         }
 
-        public async Task<DomainMutation> RenameAsync(Guid id, string newName, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> RenameAsync(Guid id, UserName newName, byte[] rowVersion, CancellationToken ct = default)
             => await repo.RenameAsync(id, newName, rowVersion, ct);
 
         public async Task<DomainMutation> ChangeRoleAsync(Guid id, UserRole newRole, byte[] rowVersion, CancellationToken ct = default)

@@ -5,6 +5,7 @@ using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
 using Domain.Enums;
+using Domain.ValueObjects;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
@@ -82,7 +83,7 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("Users.Get_ByEmail");
 
-                var user = await userReadSvc.GetByEmailAsync(email, ct);
+                var user = await userReadSvc.GetByEmailAsync(Email.Create(email), ct);
                 if (user is null)
                 {
                     log.LogInformation("User not found by email email={Email}", email);
@@ -124,7 +125,7 @@ namespace Api.Endpoints
                     return Results.NotFound();
                 }
 
-                var result = await userWriteSvc.RenameAsync(userId, dto.NewName, rowVersion, ct);
+                var result = await userWriteSvc.RenameAsync(userId, UserName.Create(dto.NewName), rowVersion, ct);
                 if (result != DomainMutation.Updated)
                 {
                     log.LogInformation("User rename rejected userId={UserId} mutation={Mutation}", userId, result);
