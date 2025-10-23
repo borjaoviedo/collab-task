@@ -1,6 +1,6 @@
 using Domain.Enums;
 
-namespace Application.Common.Changes
+namespace Application.TaskAssignments.Changes
 {
     public enum AssignmentChangeKind { RoleChanged }
     public abstract record AssignmentChange(AssignmentChangeKind Kind);

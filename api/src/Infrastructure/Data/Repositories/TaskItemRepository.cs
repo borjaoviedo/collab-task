@@ -1,5 +1,5 @@
-using Application.Common.Changes;
 using Application.TaskItems.Abstractions;
+using Application.TaskItems.Changes;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;

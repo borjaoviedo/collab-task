@@ -1,5 +1,4 @@
-
-namespace Application.Common.Changes
+namespace Application.TaskItems.Changes
 {
     public enum TaskItemChangeKind { Edited, Moved }
 
