@@ -254,7 +254,7 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("TaskNotes.Get_Mine");
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var notes = await taskNoteReadSvc.ListByAuthorAsync(userId, ct);
+                var notes = await taskNoteReadSvc.ListByUserAsync(userId, ct);
                 var responseDto = notes.Select(n => n.ToReadDto()).ToList();
 
                 log.LogInformation("Task notes listed for current user userId={UserId} count={Count}",
@@ -276,7 +276,7 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskNotes.Get_ByUser");
 
-                var notes = await taskNoteReadSvc.ListByAuthorAsync(userId, ct);
+                var notes = await taskNoteReadSvc.ListByUserAsync(userId, ct);
                 var responseDto = notes.Select(n => n.ToReadDto()).ToList();
 
                 log.LogInformation("Task notes listed for userId={UserId} count={Count}",
