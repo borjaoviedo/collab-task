@@ -67,7 +67,7 @@ namespace Infrastructure.Data.Repositories
         public async Task AddAsync(Project project, CancellationToken ct = default)
             => await _db.Projects.AddAsync(project, ct);
 
-        public async Task<DomainMutation> RenameAsync(Guid id, string newName, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> RenameAsync(Guid id, ProjectName newName, byte[] rowVersion, CancellationToken ct = default)
         {
             var project = await GetTrackedByIdAsync(id, ct);
             if (project is null) return DomainMutation.NotFound;
@@ -75,7 +75,7 @@ namespace Infrastructure.Data.Repositories
 
             _db.Entry(project).Property(p => p.RowVersion).OriginalValue = rowVersion;
 
-            project.Rename(ProjectName.Create(newName));
+            project.Rename(newName);
             _db.Entry(project).Property(p => p.Name).IsModified = true;
             _db.Entry(project).Property(p => p.Slug).IsModified = true;
 
@@ -113,7 +113,7 @@ namespace Infrastructure.Data.Repositories
             }
         }
 
-        public async Task<bool> ExistsByNameAsync(Guid ownerId, string name, CancellationToken ct = default)
+        public async Task<bool> ExistsByNameAsync(Guid ownerId, ProjectName name, CancellationToken ct = default)
             => await _db.Projects
                         .AsNoTracking()
                         .AnyAsync(p => p.OwnerId == ownerId && p.Name == name, ct);

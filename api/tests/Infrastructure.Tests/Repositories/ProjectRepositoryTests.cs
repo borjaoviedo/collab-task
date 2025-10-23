@@ -203,7 +203,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var projectName = "New Project";
+            var projectName = ProjectName.Create("New Project");
             var owner = TestDataFactory.SeedUser(db);
             var project = Project.Create(owner.Id, ProjectName.Create(projectName));
 
@@ -221,7 +221,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var projectName = "Unique";
+            var projectName = ProjectName.Create("Unique");
             var owner = TestDataFactory.SeedUser(db);
             TestDataFactory.SeedProject(db, owner.Id, projectName);
 
@@ -236,8 +236,8 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var firstProjectName = "First name";
-            var secondProjectName = "Second name";
+            var firstProjectName = ProjectName.Create("First name");
+            var secondProjectName = ProjectName.Create("Second name");
 
             var (_, firstUserId) = TestDataFactory.SeedUserWithProject(db, projectName: firstProjectName);
             var (_, secondUserId) = TestDataFactory.SeedUserWithProject(db, projectName: secondProjectName);
@@ -253,7 +253,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var projectName = "Project name";
+            var projectName = ProjectName.Create("Project name");
             var user = TestDataFactory.SeedUser(db);
             var project = TestDataFactory.SeedProject(db, user.Id, projectName);
 
@@ -269,8 +269,8 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var oldProjectName = "Old name";
-            var newProjectName = "New name";
+            var oldProjectName = ProjectName.Create("Old name");
+            var newProjectName = ProjectName.Create("New name");
             var user = TestDataFactory.SeedUser(db);
             var project = TestDataFactory.SeedProject(db, user.Id, oldProjectName);
 
@@ -289,8 +289,8 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var oldProjectName = "Old name";
-            var newProjectName = "New name";
+            var oldProjectName = ProjectName.Create("Old name");
+            var newProjectName = ProjectName.Create("New name");
             var (pId, _) = TestDataFactory.SeedUserWithProject(db, projectName: oldProjectName);
 
             var res = await repo.RenameAsync(pId, newProjectName, [1, 2, 3, 4]);

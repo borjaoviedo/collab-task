@@ -108,7 +108,7 @@ namespace Api.Tests.Fakes
             return Task.CompletedTask;
         }
 
-        public Task<DomainMutation> RenameAsync(Guid id, string newName, byte[] rowVersion, CancellationToken ct = default)
+        public Task<DomainMutation> RenameAsync(Guid id, ProjectName newName, byte[] rowVersion, CancellationToken ct = default)
         {
             if (rowVersion is null || rowVersion.Length == 0)
                 return Task.FromResult(DomainMutation.Conflict);
@@ -154,7 +154,7 @@ namespace Api.Tests.Fakes
             return Task.FromResult(DomainMutation.Deleted);
         }
 
-        public Task<bool> ExistsByNameAsync(Guid ownerId, string name, CancellationToken ct = default)
+        public Task<bool> ExistsByNameAsync(Guid ownerId, ProjectName name, CancellationToken ct = default)
             => Task.FromResult(_nameIndex.ContainsKey((ownerId, name)));
 
         public Task<int> SaveChangesAsync(CancellationToken ct = default) => Task.FromResult(0);

@@ -1,5 +1,6 @@
 using Application.Projects.Services;
 using Domain.Enums;
+using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +21,7 @@ namespace Application.Tests.Projects.Services
 
             var owner = TestDataFactory.SeedUser(db);
 
-            var (res, id) = await svc.CreateAsync(owner.Id, "Alpha Board");
+            var (res, id) = await svc.CreateAsync(owner.Id, ProjectName.Create("Alpha Board"));
 
             res.Should().Be(DomainMutation.Created);
             id.Should().NotBeNull();
@@ -37,7 +38,7 @@ namespace Application.Tests.Projects.Services
             var user = TestDataFactory.SeedUser(db);
             var project = TestDataFactory.SeedProject(db, user.Id);
 
-            var res = await svc.RenameAsync(project.Id, "New Name", project.RowVersion);
+            var res = await svc.RenameAsync(project.Id, ProjectName.Create("New Name"), project.RowVersion);
             res.Should().Be(DomainMutation.Updated);
 
             var fromDb = await db.Projects.AsNoTracking().SingleAsync();

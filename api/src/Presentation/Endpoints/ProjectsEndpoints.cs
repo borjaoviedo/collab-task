@@ -6,6 +6,7 @@ using Application.Projects.Abstractions;
 using Application.Projects.DTOs;
 using Application.Projects.Mapping;
 using Domain.Enums;
+using Domain.ValueObjects;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
@@ -138,7 +139,7 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Projects.Create");
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var (result, project) = await projectWriteSvc.CreateAsync(userId, dto.Name, ct);
+                var (result, project) = await projectWriteSvc.CreateAsync(userId, ProjectName.Create(dto.Name), ct);
                 if (result != DomainMutation.Created || project is null)
                 {
                     log.LogInformation("Project create rejected userId={UserId} mutation={Mutation}",
@@ -185,7 +186,7 @@ namespace Api.Endpoints
                     return Results.NotFound();
                 }
 
-                var result = await projectWriteSvc.RenameAsync(projectId, dto.NewName, rowVersion, ct);
+                var result = await projectWriteSvc.RenameAsync(projectId, ProjectName.Create(dto.NewName), rowVersion, ct);
                 if (result != DomainMutation.Updated)
                 {
                     log.LogInformation("Project rename rejected projectId={ProjectId} mutation={Mutation}",
