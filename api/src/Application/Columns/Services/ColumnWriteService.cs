@@ -14,7 +14,6 @@ namespace Application.Columns.Services
             int? order = null,
             CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(name)) return (DomainMutation.NoOp, null);
             if (await repo.ExistsWithNameAsync(laneId, name, excludeColumnId: null, ct)) return (DomainMutation.Conflict, null);
 
             var isValidOrder = order.HasValue && order.Value >= 0;
@@ -40,10 +39,7 @@ namespace Application.Columns.Services
             ColumnName newName,
             byte[] rowVersion,
             CancellationToken ct = default)
-        {
-            if (string.IsNullOrWhiteSpace(newName)) return DomainMutation.NoOp;
-            return await repo.RenameAsync(columnId, newName, rowVersion, ct);
-        }
+            => await repo.RenameAsync(columnId, newName, rowVersion, ct);
 
         public async Task<DomainMutation> ReorderAsync(
             Guid columnId,

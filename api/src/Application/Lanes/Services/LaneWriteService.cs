@@ -13,7 +13,6 @@ namespace Application.Lanes.Services
             int? order = null,
             CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(name)) return (DomainMutation.NoOp, null);
             if (await repo.ExistsWithNameAsync(projectId, name, excludeLaneId: null, ct)) return (DomainMutation.Conflict, null);
 
             var isValidOrder = order.HasValue && order.Value >= 0;
@@ -39,10 +38,7 @@ namespace Application.Lanes.Services
             LaneName newName,
             byte[] rowVersion,
             CancellationToken ct = default)
-        {
-            if (string.IsNullOrWhiteSpace(newName)) return DomainMutation.NoOp;
-            return await repo.RenameAsync(laneId, newName, rowVersion, ct);
-        }
+            => await repo.RenameAsync(laneId, newName, rowVersion, ct);
 
         public async Task<DomainMutation> ReorderAsync(
             Guid laneId,

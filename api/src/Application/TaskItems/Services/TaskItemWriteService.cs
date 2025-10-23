@@ -23,7 +23,6 @@ namespace Application.TaskItems.Services
             decimal? sortKey = null,
             CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(title)) return (DomainMutation.NoOp, null);
             if (await repo.ExistsWithTitleAsync(columnId, title, excludeTaskId: null, ct)) return (DomainMutation.Conflict, null);
 
             var key = sortKey ?? await repo.GetNextSortKeyAsync(columnId, ct);

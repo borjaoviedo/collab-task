@@ -18,8 +18,6 @@ namespace Application.TaskNotes.Services
             NoteContent content,
             CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(content)) return (DomainMutation.NoOp, null);
-
             var note = TaskNote.Create(taskId, userId, content);
             await repo.AddAsync(note, ct);
 
