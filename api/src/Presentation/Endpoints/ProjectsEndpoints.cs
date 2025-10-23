@@ -30,7 +30,7 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Projects.Get_All");
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var projects = await projectReadSvc.GetAllByUserAsync(userId, filter, ct);
+                var projects = await projectReadSvc.ListByUserAsync(userId, filter, ct);
                 var responseDto = projects.Select(p => p.ToReadDto(userId)).ToList();
 
                 log.LogInformation("Projects listed userId={UserId} filter={Filter} count={Count}",
@@ -88,7 +88,7 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Projects.Get_Mine");
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var projects = await projectReadSvc.GetAllByUserAsync(userId, filter: null, ct);
+                var projects = await projectReadSvc.ListByUserAsync(userId, filter: null, ct);
                 var responseDto = projects.Select(p => p.ToReadDto(userId)).ToList();
 
                 log.LogInformation("Projects listed for current user userId={UserId} count={Count}",
@@ -110,7 +110,7 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("Projects.Get_ByUser");
 
-                var projects = await projectReadSvc.GetAllByUserAsync(userId, filter: null, ct);
+                var projects = await projectReadSvc.ListByUserAsync(userId, filter: null, ct);
                 var responseDto = projects.Select(p => p.ToReadDto(userId)).ToList();
 
                 log.LogInformation("Projects listed for userId={UserId} count={Count}",
