@@ -24,29 +24,28 @@ namespace Infrastructure.Data.Repositories
                         .Where(n => n.TaskId == taskId)
                         .OrderBy(n => n.CreatedAt)
                         .ToListAsync(ct);
-        public async Task<IReadOnlyList<TaskNote>> ListByAuthorAsync(Guid authorId, CancellationToken ct = default)
+        public async Task<IReadOnlyList<TaskNote>> ListByUserAsync(Guid userId, CancellationToken ct = default)
             => await _db.TaskNotes
                         .AsNoTracking()
-                        .Where(n => n.AuthorId == authorId)
+                        .Where(n => n.AuthorId == userId)
                         .ToListAsync(ct);
 
         public async Task AddAsync(TaskNote note, CancellationToken ct = default)
             => await _db.TaskNotes.AddAsync(note, ct);
 
-        public async Task<DomainMutation> EditAsync(Guid noteId, string newContent, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> EditAsync(Guid noteId, NoteContent newContent, byte[] rowVersion, CancellationToken ct = default)
         {
             var note = await GetTrackedByIdAsync(noteId, ct);
             if (note is null) return DomainMutation.NotFound;
 
             if (string.IsNullOrWhiteSpace(newContent)) return DomainMutation.NoOp;
-            var trimmed = newContent.Trim();
 
-            if (string.Equals(note.Content.Value, trimmed, StringComparison.Ordinal))
+            if (string.Equals(note.Content.Value, newContent.Value, StringComparison.Ordinal))
                 return DomainMutation.NoOp;
 
             _db.Entry(note).Property(t => t.RowVersion).OriginalValue = rowVersion;
 
-            note.Edit(NoteContent.Create(trimmed));
+            note.Edit(newContent);
             _db.Entry(note).Property(p => p.Content).IsModified = true;
 
             try

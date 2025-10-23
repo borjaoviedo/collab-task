@@ -12,6 +12,6 @@ namespace Application.TaskNotes.Services
             => await repo.ListByTaskAsync(taskId, ct);
 
         public async Task<IReadOnlyList<TaskNote>> ListByUserAsync(Guid userId, CancellationToken ct = default)
-            => await repo.ListByAuthorAsync(userId, ct);
+            => await repo.ListByUserAsync(userId, ct);
     }
 }

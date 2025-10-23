@@ -15,12 +15,12 @@ namespace Application.TaskNotes.Services
             Guid projectId,
             Guid taskId,
             Guid userId,
-            string content,
+            NoteContent content,
             CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(content)) return (DomainMutation.NoOp, null);
 
-            var note = TaskNote.Create(taskId, userId, NoteContent.Create(content));
+            var note = TaskNote.Create(taskId, userId, content);
             await repo.AddAsync(note, ct);
 
             var payload = ActivityPayloadFactory.NoteAdded(note.Id);
@@ -40,7 +40,7 @@ namespace Application.TaskNotes.Services
             Guid taskId,
             Guid noteId,
             Guid userId,
-            string content,
+            NoteContent content,
             byte[] rowVersion,
             CancellationToken ct = default)
         {

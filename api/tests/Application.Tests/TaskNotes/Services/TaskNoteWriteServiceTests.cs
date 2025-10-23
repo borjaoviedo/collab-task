@@ -3,6 +3,7 @@ using Application.TaskNotes.Realtime;
 using Application.TaskNotes.Services;
 using Application.Tests.Common.Fixtures;
 using Domain.Enums;
+using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
 using MediatR;
@@ -29,7 +30,7 @@ namespace Application.Tests.TaskNotes.Services
 
             var (pId, _, _, tId, _, uId) = TestDataFactory.SeedFullBoard(db);
 
-            var (res, note) = await svc.CreateAsync(pId, tId, uId, "content");
+            var (res, note) = await svc.CreateAsync(pId, tId, uId, NoteContent.Create("content"));
 
             res.Should().Be(DomainMutation.Created);
             note.Should().NotBeNull();
@@ -61,7 +62,7 @@ namespace Application.Tests.TaskNotes.Services
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
             var user = TestDataFactory.SeedUser(db);
 
-            const string newContent = "New Content";
+            var newContent = NoteContent.Create("New Content");
 
             mediator
                 .Setup(m => m.Publish(
@@ -100,7 +101,7 @@ namespace Application.Tests.TaskNotes.Services
 
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
 
-            var original = "Note content";
+            var original = NoteContent.Create("Note content");
             var (pId, _, _, tId, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: original);
             var note = await db.TaskNotes.AsNoTracking().SingleAsync();
             var user = TestDataFactory.SeedUser(db);
@@ -124,11 +125,11 @@ namespace Application.Tests.TaskNotes.Services
 
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
 
-            var original = "Note content";
+            var original = NoteContent.Create("Note content");
             var (pId, _, _, tId, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: original);
             var user = TestDataFactory.SeedUser(db);
 
-            var res = await svc.EditAsync(pId, tId, nId, user.Id, "New Content", [1, 2]);
+            var res = await svc.EditAsync(pId, tId, nId, user.Id, NoteContent.Create("New Content"), [1, 2]);
             res.Should().Be(DomainMutation.Conflict);
 
             var note = await db.TaskNotes.AsNoTracking().SingleAsync();

@@ -19,8 +19,8 @@ namespace Infrastructure.Tests.Repositories
 
             var (_, _, _, tId, _, uId) = TestDataFactory.SeedFullBoard(db);
 
-            var noteContent = "Note content";
-            var note = TaskNote.Create(tId, uId, NoteContent.Create(noteContent));
+            var noteContent = NoteContent.Create("Note content");
+            var note = TaskNote.Create(tId, uId, noteContent);
             await repo.AddAsync(note);
             await repo.SaveCreateChangesAsync();
 
@@ -38,7 +38,7 @@ namespace Infrastructure.Tests.Repositories
             var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
 
-            var newContent = "New Content";
+            var newContent = NoteContent.Create("New Content");
             var res = await repo.EditAsync(nId, newContent, noteFromDb.RowVersion);
             res.Should().Be(DomainMutation.Updated);
 
@@ -53,7 +53,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var originalNoteContent = "Note content";
+            var originalNoteContent = NoteContent.Create("Note content");
             var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: originalNoteContent);
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
 
@@ -71,10 +71,10 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var originalNoteContent = "Note content";
+            var originalNoteContent = NoteContent.Create("Note content");
             var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: originalNoteContent);
 
-            var res = await repo.EditAsync(nId, "New Content", [1, 2]);
+            var res = await repo.EditAsync(nId, NoteContent.Create("New Content"), [1, 2]);
             res.Should().Be(DomainMutation.Conflict);
 
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
@@ -196,7 +196,7 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task ListByAuthorAsync_Returns_Author_TaskNotes()
+        public async Task ListByUserAsync_Returns_Author_TaskNotes()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -204,17 +204,17 @@ namespace Infrastructure.Tests.Repositories
 
             var (_, _, _, tId, _, uId) = TestDataFactory.SeedFullBoard(db);
 
-            var list = await repo.ListByAuthorAsync(uId);
+            var list = await repo.ListByUserAsync(uId);
             list.Should().NotBeNull();
             list.Count.Should().Be(1);
 
             TestDataFactory.SeedTaskNote(db, tId, uId);
-            list = await repo.ListByAuthorAsync(uId);
+            list = await repo.ListByUserAsync(uId);
             list.Count.Should().Be(2);
         }
 
         [Fact]
-        public async Task ListByAuthorAsync_Returns_Empty_List_When_Author_Without_Tasks()
+        public async Task ListByUserAsync_Returns_Empty_List_When_Author_Without_Tasks()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -222,18 +222,18 @@ namespace Infrastructure.Tests.Repositories
 
             var (_, _, _, tId) = TestDataFactory.SeedColumnWithTask(db);
 
-            var list = await repo.ListByAuthorAsync(tId);
+            var list = await repo.ListByUserAsync(tId);
             list.Should().BeEmpty();
         }
 
         [Fact]
-        public async Task ListByAuthorAsync_Returns_Empty_List_When_NotFound_Author()
+        public async Task ListByUserAsync_Returns_Empty_List_When_NotFound_Author()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var list = await repo.ListByAuthorAsync(Guid.NewGuid());
+            var list = await repo.ListByUserAsync(Guid.NewGuid());
             list.Should().BeEmpty();
         }
     }

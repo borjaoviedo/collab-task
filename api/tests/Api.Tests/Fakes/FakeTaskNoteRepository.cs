@@ -21,8 +21,8 @@ namespace Api.Tests.Fakes
             => Task.FromResult<IReadOnlyList<TaskNote>>(_notes.Values.Where(n => n.TaskId == taskId)
                 .OrderBy(n => n.CreatedAt).Select(Clone).ToList());
 
-        public Task<IReadOnlyList<TaskNote>> ListByAuthorAsync(Guid authorId, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<TaskNote>>(_notes.Values.Where(n => n.AuthorId == authorId).Select(Clone).ToList());
+        public Task<IReadOnlyList<TaskNote>> ListByUserAsync(Guid userId, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<TaskNote>>(_notes.Values.Where(n => n.AuthorId == userId).Select(Clone).ToList());
 
         public Task AddAsync(TaskNote note, CancellationToken ct = default)
         {
@@ -31,18 +31,17 @@ namespace Api.Tests.Fakes
             return Task.CompletedTask;
         }
 
-        public async Task<DomainMutation> EditAsync(Guid noteId, string newContent, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> EditAsync(Guid noteId, NoteContent newContent, byte[] rowVersion, CancellationToken ct = default)
         {
             var note = await GetTrackedByIdAsync(noteId, ct);
             if (note is null) return DomainMutation.NotFound;
 
-            var trimmed = newContent?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(trimmed)) return DomainMutation.NoOp;
-            if (string.Equals(note.Content.Value, trimmed, StringComparison.Ordinal)) return DomainMutation.NoOp;
+            if (string.IsNullOrWhiteSpace(newContent)) return DomainMutation.NoOp;
+            if (string.Equals(note.Content.Value, newContent.Value, StringComparison.Ordinal)) return DomainMutation.NoOp;
 
             if (!note.RowVersion.SequenceEqual(rowVersion)) return DomainMutation.Conflict;
 
-            note.Edit(NoteContent.Create(trimmed));
+            note.Edit(newContent);
             note.RowVersion = NextRowVersion();
             return DomainMutation.Updated;
         }

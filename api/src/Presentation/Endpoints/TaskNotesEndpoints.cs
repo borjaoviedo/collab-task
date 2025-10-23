@@ -6,6 +6,7 @@ using Application.TaskNotes.Abstractions;
 using Application.TaskNotes.DTOs;
 using Application.TaskNotes.Mapping;
 using Domain.Enums;
+using Domain.ValueObjects;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
@@ -99,7 +100,12 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("TaskNotes.Create");
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var (result, note) = await taskNoteWriteSvc.CreateAsync(projectId, taskId, userId, dto.Content, ct);
+                var (result, note) = await taskNoteWriteSvc.CreateAsync(
+                    projectId,
+                    taskId,
+                    userId,
+                    NoteContent.Create(dto.Content),
+                    ct);
                 if (result != DomainMutation.Created || note is null)
                 {
                     log.LogInformation("Task note create rejected projectId={ProjectId} taskId={TaskId} userId={UserId} mutation={Mutation}",
@@ -154,7 +160,14 @@ namespace Api.Endpoints
                 }
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var result = await taskNoteWriteSvc.EditAsync(projectId, taskId, noteId, userId, dto.NewContent, rowVersion, ct);
+                var result = await taskNoteWriteSvc.EditAsync(
+                    projectId,
+                    taskId,
+                    noteId,
+                    userId,
+                    NoteContent.Create(dto.NewContent),
+                    rowVersion,
+                    ct);
                 if (result != DomainMutation.Updated)
                 {
                     log.LogInformation("Task note edit rejected projectId={ProjectId} taskId={TaskId} noteId={NoteId} userId={UserId} mutation={Mutation}",

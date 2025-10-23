@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ValueObjects;
 
 namespace Application.TaskNotes.Abstractions
 {
@@ -9,14 +10,14 @@ namespace Application.TaskNotes.Abstractions
             Guid projectId,
             Guid taskId,
             Guid userId,
-            string content,
+            NoteContent content,
             CancellationToken ct = default);
         Task<DomainMutation> EditAsync(
             Guid projectId,
             Guid taskId,
             Guid noteId,
             Guid userId,
-            string content,
+            NoteContent content,
             byte[] rowVersion,
             CancellationToken ct = default);
         Task<DomainMutation> DeleteAsync(
