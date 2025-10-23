@@ -5,11 +5,11 @@ namespace Application.Projects.Abstractions
 {
     public sealed class ProjectFilter
     {
-        public string? NameContains { get; set; }
-        public ProjectRole? Role { get; set; }
-        public bool? IncludeRemoved { get; set; }
-        public int? Skip { get; set; }
-        public int? Take { get; set; }
-        public ProjectOrderBy? OrderBy { get; set; }
+        public string? NameContains { get; init; }
+        public ProjectRole? Role { get; init; }
+        public bool? IncludeRemoved { get; init; }
+        public int? Skip { get; init; }
+        public int? Take { get; init; }
+        public ProjectOrderBy? OrderBy { get; init; }
     }
 }
