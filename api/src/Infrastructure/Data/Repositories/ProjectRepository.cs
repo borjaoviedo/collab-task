@@ -1,4 +1,5 @@
 using Application.Projects.Abstractions;
+using Application.Projects.Filters;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -27,11 +28,11 @@ namespace Infrastructure.Data.Repositories
             filter ??= new ProjectFilter();
             var includeRemoved = filter.IncludeRemoved == true;
 
-            IQueryable<Project> q = _db.Projects
-                                        .AsNoTracking()
-                                        .AsSplitQuery()
-                                        .Include(p => p.Members.Where(m => includeRemoved || m.RemovedAt == null))
-                                        .Where(p => p.OwnerId == userId || p.Members.Any(m => m.UserId == userId && (includeRemoved || m.RemovedAt == null)));
+            var q = _db.Projects
+                        .AsNoTracking()
+                        .AsSplitQuery()
+                        .Include(p => p.Members.Where(m => includeRemoved || m.RemovedAt == null))
+                        .Where(p => p.OwnerId == userId || p.Members.Any(m => m.UserId == userId && (includeRemoved || m.RemovedAt == null)));
 
             if (!string.IsNullOrWhiteSpace(filter.NameContains))
             {
@@ -46,14 +47,25 @@ namespace Infrastructure.Data.Repositories
             }
 
             // Ordering
-            q = filter.OrderBy?.ToLowerInvariant() switch
+            q = filter.OrderBy switch
             {
-                "name" => q.OrderBy(p => p.Name).ThenBy(p => p.Id),
-                "name_desc" => q.OrderByDescending(p => p.Name).ThenBy(p => p.Id),
-                "createdat" => q.OrderBy(p => p.CreatedAt).ThenBy(p => p.Name),
-                "createdat_desc" => q.OrderByDescending(p => p.CreatedAt).ThenBy(p => p.Name),
-                "updatedat" => q.OrderBy(p => p.UpdatedAt).ThenBy(p => p.Name),
-                _ => q.OrderByDescending(p => p.UpdatedAt).ThenBy(p => p.Name) // default
+                ProjectOrderBy.NameAsc =>
+                    q.OrderBy(p => p.Name).ThenBy(p => p.Id),
+
+                ProjectOrderBy.NameDesc =>
+                    q.OrderByDescending(p => p.Name).ThenBy(p => p.Id),
+
+                ProjectOrderBy.CreatedAtAsc =>
+                    q.OrderBy(p => p.CreatedAt).ThenBy(p => p.Name),
+
+                ProjectOrderBy.CreatedAtDesc =>
+                    q.OrderByDescending(p => p.CreatedAt).ThenBy(p => p.Name),
+
+                ProjectOrderBy.UpdatedAtAsc =>
+                    q.OrderBy(p => p.UpdatedAt).ThenBy(p => p.Name),
+
+                ProjectOrderBy.UpdatedAtDesc or _ =>
+                    q.OrderByDescending(p => p.UpdatedAt).ThenBy(p => p.Name)
             };
 
             // Paging

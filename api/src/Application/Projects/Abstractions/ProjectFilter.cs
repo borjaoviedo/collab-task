@@ -1,3 +1,4 @@
+using Application.Projects.Filters;
 using Domain.Enums;
 
 namespace Application.Projects.Abstractions
@@ -9,6 +10,6 @@ namespace Application.Projects.Abstractions
         public bool? IncludeRemoved { get; set; }
         public int? Skip { get; set; }
         public int? Take { get; set; }
-        public string? OrderBy { get; set; }
+        public ProjectOrderBy? OrderBy { get; set; }
     }
 }

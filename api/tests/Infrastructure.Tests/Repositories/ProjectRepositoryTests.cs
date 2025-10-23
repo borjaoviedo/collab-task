@@ -1,4 +1,5 @@
 using Application.Projects.Abstractions;
+using Application.Projects.Filters;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -146,7 +147,7 @@ namespace Infrastructure.Tests.Repositories
             var thirdProject = TestDataFactory.SeedProject(db, secondUserId, thirdProjectName);
 
             TestDataFactory.SeedProjectMember(db, thirdProject.Id, firstUserId);
-            var list = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { NameContains = "Board", OrderBy = "name" });
+            var list = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { NameContains = "Board", OrderBy = ProjectOrderBy.NameAsc });
 
             list.Select(p => p.Name.Value).Should().Equal("Alpha Board", "Gamma Board");
         }
@@ -165,10 +166,10 @@ namespace Infrastructure.Tests.Repositories
 
             TestDataFactory.SeedProjectMember(db, secondProjectId, firstUserId, ProjectRole.Member);
 
-            var onlyOwner = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { Role = ProjectRole.Owner, OrderBy = "name" });
+            var onlyOwner = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { Role = ProjectRole.Owner, OrderBy = ProjectOrderBy.NameAsc });
             onlyOwner.Select(p => p.Name.Value).Should().Equal(firstProjectName);
 
-            var onlyMember = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { Role = ProjectRole.Member, OrderBy = "name" });
+            var onlyMember = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { Role = ProjectRole.Member, OrderBy = ProjectOrderBy.NameAsc });
             onlyMember.Select(p => p.Name.Value).Should().Equal(secondProjectName);
         }
 
@@ -189,10 +190,10 @@ namespace Infrastructure.Tests.Repositories
             TestDataFactory.SeedProjectMember(db, secondProjectId, firstUserId);
             TestDataFactory.SeedProjectMember(db, thirdProjectId, firstUserId);
 
-            var page1 = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { OrderBy = "name", Skip = 0, Take = 2 });
+            var page1 = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { OrderBy = ProjectOrderBy.NameAsc, Skip = 0, Take = 2 });
             page1.Select(p => p.Name.Value).Should().Equal(firstProjectName, secondProjectName);
 
-            var page2 = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { OrderBy = "name", Skip = 2, Take = 2 });
+            var page2 = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { OrderBy = ProjectOrderBy.NameAsc, Skip = 2, Take = 2 });
             page2.Select(p => p.Name.Value).Should().Equal(thirdProjectName);
         }
 
