@@ -29,10 +29,18 @@ namespace Application.ProjectMembers.Services
             CancellationToken ct = default)
             => await repo.UpdateRoleAsync(projectId, userId, newRole, rowVersion, ct);
 
-        public async Task<DomainMutation> RemoveAsync(Guid projectId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> RemoveAsync(
+            Guid projectId,
+            Guid userId,
+            byte[] rowVersion,
+            CancellationToken ct = default)
             => await repo.SetRemovedAsync(projectId, userId, rowVersion, ct);
 
-        public async Task<DomainMutation> RestoreAsync(Guid projectId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> RestoreAsync(
+            Guid projectId,
+            Guid userId,
+            byte[] rowVersion,
+            CancellationToken ct = default)
             => await repo.SetRestoredAsync(projectId, userId, rowVersion, ct);
     }
 }

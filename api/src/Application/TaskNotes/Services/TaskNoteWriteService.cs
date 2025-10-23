@@ -24,7 +24,12 @@ namespace Application.TaskNotes.Services
             await repo.AddAsync(note, ct);
 
             var payload = ActivityPayloadFactory.NoteAdded(note.Id);
-            await activityWriter.CreateAsync(taskId, userId, TaskActivityType.NoteAdded, payload, ct);
+            await activityWriter.CreateAsync(
+                taskId,
+                userId,
+                TaskActivityType.NoteAdded,
+                payload,
+                ct);
             await repo.SaveCreateChangesAsync(ct);
 
             var notification = new TaskNoteCreated(
@@ -48,13 +53,20 @@ namespace Application.TaskNotes.Services
             if (editResult != DomainMutation.Updated) return editResult;
 
             var payload = ActivityPayloadFactory.NoteEdited(noteId);
-            await activityWriter.CreateAsync(taskId, userId, TaskActivityType.NoteEdited, payload, ct);
+            await activityWriter.CreateAsync(
+                taskId,
+                userId,
+                TaskActivityType.NoteEdited,
+                payload,
+                ct);
 
             var saveUpdateResult = await repo.SaveUpdateChangesAsync(ct);
 
             if (saveUpdateResult == DomainMutation.Updated)
             {
-                var notification = new TaskNoteUpdated(projectId, new TaskNoteUpdatedPayload(noteId, content));
+                var notification = new TaskNoteUpdated(
+                    projectId,
+                    new TaskNoteUpdatedPayload(noteId, content));
                 await mediator.Publish(notification, ct);
             }
 
@@ -75,7 +87,12 @@ namespace Application.TaskNotes.Services
             if (deleteResult != DomainMutation.Deleted) return deleteResult;
             
             var payload = ActivityPayloadFactory.NoteRemoved(noteId);
-            await activityWriter.CreateAsync(note.TaskId, userId, TaskActivityType.NoteRemoved, payload, ct);
+            await activityWriter.CreateAsync(
+                note.TaskId,
+                userId,
+                TaskActivityType.NoteRemoved,
+                payload,
+                ct);
 
             var saveDeleteResult = await repo.SaveDeleteChangesAsync(ct);
 

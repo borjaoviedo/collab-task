@@ -43,7 +43,13 @@ namespace Application.TaskItems.Services
 
             var notification = new TaskItemCreated(
                 projectId,
-                new TaskItemCreatedPayload(task.Id, task.ColumnId, task.LaneId, task.Title.Value, task.Description.Value, task.SortKey));
+                new TaskItemCreatedPayload(
+                    task.Id,
+                    task.ColumnId,
+                    task.LaneId,
+                    task.Title.Value,
+                    task.Description.Value,
+                    task.SortKey));
             await mediator.Publish(notification, ct);
 
             return (DomainMutation.Created, task);
@@ -59,7 +65,13 @@ namespace Application.TaskItems.Services
             byte[] rowVersion,
             CancellationToken ct = default)
         {
-            var (editResult, change) = await repo.EditAsync(taskId, newTitle, newDescription, newDueDate, rowVersion, ct);
+            var (editResult, change) = await repo.EditAsync(
+                taskId,
+                newTitle,
+                newDescription,
+                newDueDate,
+                rowVersion,
+                ct);
             if (editResult != DomainMutation.Updated || change is null) return editResult;
 
             var taskItemChange = (TaskItemEditedChange)change;
@@ -76,7 +88,11 @@ namespace Application.TaskItems.Services
             {
                 var notification = new TaskItemUpdated(
                     projectId,
-                    new TaskItemUpdatedPayload(taskId, taskItemChange.NewTitle, taskItemChange.NewDescription, newDueDate));
+                    new TaskItemUpdatedPayload(
+                        taskId,
+                        taskItemChange.NewTitle,
+                        taskItemChange.NewDescription,
+                        newDueDate));
                 await mediator.Publish(notification, ct);
             }
 
@@ -93,7 +109,13 @@ namespace Application.TaskItems.Services
             byte[] rowVersion,
             CancellationToken ct = default)
         {
-            var (moveResult, change) = await repo.MoveAsync(taskId, targetColumnId, targetLaneId, targetSortKey, rowVersion, ct);
+            var (moveResult, change) = await repo.MoveAsync(
+                taskId,
+                targetColumnId,
+                targetLaneId,
+                targetSortKey,
+                rowVersion,
+                ct);
             if (moveResult != DomainMutation.Updated || change is null) return moveResult;
 
             var taskItemChange = (TaskItemMovedChange)change;
@@ -110,14 +132,24 @@ namespace Application.TaskItems.Services
             {
                 var notification = new TaskItemMoved(
                     projectId,
-                    new TaskItemMovedPayload(taskId, taskItemChange.FromLaneId, taskItemChange.FromColumnId, taskItemChange.ToLaneId, taskItemChange.ToColumnId, targetSortKey));
+                    new TaskItemMovedPayload(
+                        taskId,
+                        taskItemChange.FromLaneId,
+                        taskItemChange.FromColumnId,
+                        taskItemChange.ToLaneId,
+                        taskItemChange.ToColumnId,
+                        targetSortKey));
                 await mediator.Publish(notification, ct);
             }
 
             return saveUpdateResult;
         }
 
-        public async Task<DomainMutation> DeleteAsync(Guid projectId, Guid taskId, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> DeleteAsync(
+            Guid projectId,
+            Guid taskId,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var deleteResult = await repo.DeleteAsync(taskId, rowVersion, ct);
 

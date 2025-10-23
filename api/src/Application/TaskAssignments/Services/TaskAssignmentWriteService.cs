@@ -28,7 +28,12 @@ namespace Application.TaskAssignments.Services
             {
                 var payload = ActivityPayloadFactory.AssignmentCreated(targetUserId, role);
 
-                await activityWriter.CreateAsync(taskId, executedBy, TaskActivityType.AssignmentCreated, payload, ct);
+                await activityWriter.CreateAsync(
+                    taskId,
+                    executedBy,
+                    TaskActivityType.AssignmentCreated,
+                    payload,
+                    ct);
                 await repo.SaveCreateChangesAsync(ct);
 
                 var created = await repo.GetAsync(taskId, targetUserId, ct);
@@ -74,7 +79,12 @@ namespace Application.TaskAssignments.Services
             {
                 var payload = ActivityPayloadFactory.AssignmentCreated(targetUserId, role);
 
-                await activityWriter.CreateAsync(taskId, executedBy, TaskActivityType.AssignmentCreated, payload, ct);
+                await activityWriter.CreateAsync(
+                    taskId,
+                    executedBy,
+                    TaskActivityType.AssignmentCreated,
+                    payload,
+                    ct);
                 await repo.SaveCreateChangesAsync(ct);
 
                 var notification = new TaskAssignmentCreated(
@@ -88,7 +98,12 @@ namespace Application.TaskAssignments.Services
                 var roleChange = (AssignmentRoleChangedChange)change!;
                 var payload = ActivityPayloadFactory.AssignmentRoleChanged(targetUserId, roleChange.OldRole, roleChange.NewRole);
 
-                await activityWriter.CreateAsync(taskId, executedBy, TaskActivityType.AssignmentRoleChanged, payload, ct);
+                await activityWriter.CreateAsync(
+                    taskId,
+                    executedBy,
+                    TaskActivityType.AssignmentRoleChanged,
+                    payload,
+                    ct);
                 await repo.SaveUpdateChangesAsync(ct);
 
                 var notification = new TaskAssignmentUpdated(
@@ -114,7 +129,12 @@ namespace Application.TaskAssignments.Services
 
             var roleChange = (AssignmentRoleChangedChange)change;
             var payload = ActivityPayloadFactory.AssignmentRoleChanged(targetUserId, roleChange.OldRole, roleChange.NewRole);
-            await activityWriter.CreateAsync(taskId, executedBy, TaskActivityType.AssignmentRoleChanged, payload, ct);
+            await activityWriter.CreateAsync(
+                taskId,
+                executedBy,
+                TaskActivityType.AssignmentRoleChanged,
+                payload,
+                ct);
 
             var saveUpdateResult = await repo.SaveUpdateChangesAsync(ct);
 
@@ -141,13 +161,20 @@ namespace Application.TaskAssignments.Services
             if (removeResult != DomainMutation.Deleted) return removeResult;
 
             var payload = ActivityPayloadFactory.AssignmentRemoved(targetUserId);
-            await activityWriter.CreateAsync(taskId, executedBy, TaskActivityType.AssignmentRemoved, payload, ct);
+            await activityWriter.CreateAsync(
+                taskId,
+                executedBy,
+                TaskActivityType.AssignmentRemoved,
+                payload,
+                ct);
 
             var saveRemoveResult = await repo.SaveRemoveChangesAsync(ct);
 
             if (saveRemoveResult == DomainMutation.Deleted)
             {
-                var notification = new TaskAssignmentRemoved(projectId, new TaskAssignmentRemovedPayload(taskId, targetUserId));
+                var notification = new TaskAssignmentRemoved(
+                    projectId,
+                    new TaskAssignmentRemovedPayload(taskId, targetUserId));
                 await mediator.Publish(notification, ct);
             }
 
