@@ -8,7 +8,6 @@ namespace Application.TaskAssignments.Validation
     {
         public TaskAssignmentChangeRoleDtoValidator()
         {
-            RuleFor(a => a.UserId).RequiredGuid();
             RuleFor(a => a.NewRole).TaskRoleRules();
         }
     }
