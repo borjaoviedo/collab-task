@@ -6,6 +6,7 @@ using Application.TaskItems.Abstractions;
 using Application.TaskItems.DTOs;
 using Application.TaskItems.Mapping;
 using Domain.Enums;
+using Domain.ValueObjects;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
@@ -96,7 +97,15 @@ namespace Api.Endpoints
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var (result, task) = await taskItemWriteSvc.CreateAsync(
-                    projectId, laneId, columnId, userId, dto.Title, dto.Description, dto.DueDate, dto.SortKey, ct);
+                    projectId,
+                    laneId,
+                    columnId,
+                    userId,
+                    TaskTitle.Create(dto.Title),
+                    TaskDescription.Create(dto.Description),
+                    dto.DueDate,
+                    dto.SortKey,
+                    ct);
 
                 if (result != DomainMutation.Created || task is null)
                 {
@@ -151,7 +160,15 @@ namespace Api.Endpoints
                 }
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var result = await taskItemWriteSvc.EditAsync(projectId, taskId, userId, dto.NewTitle, dto.NewDescription, dto.NewDueDate, rowVersion, ct);
+                var result = await taskItemWriteSvc.EditAsync(
+                    projectId,
+                    taskId,
+                    userId,
+                    TaskTitle.Create(dto.NewTitle!),
+                    TaskDescription.Create(dto.NewDescription!),
+                    dto.NewDueDate,
+                    rowVersion,
+                    ct);
                 if (result != DomainMutation.Updated)
                 {
                     log.LogInformation("Task edit rejected projectId={ProjectId} taskId={TaskId} userId={UserId} mutation={Mutation}",

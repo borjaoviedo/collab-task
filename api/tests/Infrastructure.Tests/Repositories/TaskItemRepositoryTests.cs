@@ -38,7 +38,7 @@ namespace Infrastructure.Tests.Repositories
             var repo = new TaskItemRepository(db);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
-            var taskTitle = "Dup";
+            var taskTitle = TaskTitle.Create("Dup");
             TestDataFactory.SeedTaskItem(db, pId, lId, cId, TaskTitle.Create(taskTitle));
 
             var exists = await repo.ExistsWithTitleAsync(cId, taskTitle);
@@ -53,12 +53,12 @@ namespace Infrastructure.Tests.Repositories
             var repo = new TaskItemRepository(db);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
-            var firstTaskTitle = "Task Title A";
-            var secondTaskTitle = "Task Title B";
-            var thirdTaskTitle = "Task Title C";
-            TestDataFactory.SeedTaskItem(db, pId, lId, cId, TaskTitle.Create(firstTaskTitle), sortKey: 0m);
-            TestDataFactory.SeedTaskItem(db, pId, lId, cId, TaskTitle.Create(secondTaskTitle), sortKey: 1m);
-            TestDataFactory.SeedTaskItem(db, pId, lId, cId, TaskTitle.Create(thirdTaskTitle), sortKey: 2m);
+            var firstTaskTitle = TaskTitle.Create("Task Title A");
+            var secondTaskTitle = TaskTitle.Create("Task Title B");
+            var thirdTaskTitle = TaskTitle.Create("Task Title C");
+            TestDataFactory.SeedTaskItem(db, pId, lId, cId, firstTaskTitle, sortKey: 0m);
+            TestDataFactory.SeedTaskItem(db, pId, lId, cId, secondTaskTitle, sortKey: 1m);
+            TestDataFactory.SeedTaskItem(db, pId, lId, cId, thirdTaskTitle, sortKey: 2m);
 
             var list = await repo.ListByColumnAsync(cId);
             list.Select(t => t.Title.Value).Should().Equal(firstTaskTitle, secondTaskTitle, thirdTaskTitle);
@@ -76,7 +76,7 @@ namespace Infrastructure.Tests.Repositories
 
             var tracked = await db.TaskItems.SingleAsync(t => t.Id == task.Id);
             var newDueDate = DateTimeOffset.UtcNow.AddDays(1);
-            var (res, change) = await repo.EditAsync(task.Id, "New", "NewD", newDueDate, tracked.RowVersion!);
+            var (res, change) = await repo.EditAsync(task.Id, TaskTitle.Create("New"), TaskDescription.Create("NewD"), newDueDate, tracked.RowVersion!);
             res.Should().Be(DomainMutation.Updated);
             change.Should().NotBeNull();
 

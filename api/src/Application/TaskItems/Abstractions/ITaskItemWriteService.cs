@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ValueObjects;
 
 namespace Application.TaskItems.Abstractions
 {
@@ -10,8 +11,8 @@ namespace Application.TaskItems.Abstractions
             Guid laneId,
             Guid columnId,
             Guid userId,
-            string title,
-            string description,
+            TaskTitle title,
+            TaskDescription description,
             DateTimeOffset? dueDate = null,
             decimal? sortKey = null,
             CancellationToken ct = default);
@@ -20,8 +21,8 @@ namespace Application.TaskItems.Abstractions
             Guid projectId,
             Guid taskId,
             Guid userId,
-            string? newTitle,
-            string? newDescription,
+            TaskTitle? newTitle,
+            TaskDescription? newDescription,
             DateTimeOffset? newDueDate,
             byte[] rowVersion,
             CancellationToken ct = default);

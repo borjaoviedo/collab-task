@@ -20,7 +20,7 @@ namespace Api.Tests.Fakes
         public Task<TaskItem?> GetTrackedByIdAsync(Guid taskId, CancellationToken ct = default)
             => Task.FromResult(_tasks.TryGetValue(taskId, out var t) ? t : null);
 
-        public Task<bool> ExistsWithTitleAsync(Guid columnId, string title, Guid? excludeTaskId = null, CancellationToken ct = default)
+        public Task<bool> ExistsWithTitleAsync(Guid columnId, TaskTitle title, Guid? excludeTaskId = null, CancellationToken ct = default)
         {
             var q = _tasks.Values.Where(t => t.ColumnId == columnId && t.Title == title);
             if (excludeTaskId is Guid id) q = q.Where(t => t.Id != id);
@@ -39,22 +39,23 @@ namespace Api.Tests.Fakes
         }
 
         public async Task<(DomainMutation Mutation, TaskItemChange? Change)> EditAsync(
-            Guid taskId, string? newTitle, string? newDescription, DateTimeOffset? newDueDate, byte[] rowVersion, CancellationToken ct = default)
+            Guid taskId,
+            TaskTitle? newTitle,
+            TaskDescription? newDescription,
+            DateTimeOffset? newDueDate,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var task = await GetTrackedByIdAsync(taskId, ct);
             if (task is null) return (DomainMutation.NotFound, null);
             if (!task.RowVersion.SequenceEqual(rowVersion)) return (DomainMutation.Conflict, null);
-
             if (newTitle != null && await ExistsWithTitleAsync(task.ColumnId, newTitle, task.Id, ct)) return (DomainMutation.Conflict, null);
 
             var beforeTitle = task.Title;
             var beforeDesc = task.Description;
             var beforeDue = task.DueDate;
 
-            var titleVO = newTitle is null ? null : TaskTitle.Create(newTitle);
-            var descVO = newDescription is null ? null : TaskDescription.Create(newDescription);
-
-            task.Edit(titleVO, descVO, newDueDate);
+            task.Edit(newTitle, newDescription, newDueDate);
 
             if (Equals(beforeTitle, task.Title) && Equals(beforeDesc, task.Description) && Nullable.Equals(beforeDue, task.DueDate))
                 return (DomainMutation.NoOp, null);
@@ -64,12 +65,16 @@ namespace Api.Tests.Fakes
         }
 
         public async Task<(DomainMutation Mutation, TaskItemChange? Change)> MoveAsync(
-            Guid taskId, Guid targetColumnId, Guid targetLaneId, decimal targetSortKey, byte[] rowVersion, CancellationToken ct = default)
+            Guid taskId,
+            Guid targetColumnId,
+            Guid targetLaneId,
+            decimal targetSortKey,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var task = await GetTrackedByIdAsync(taskId, ct);
             if (task is null) return (DomainMutation.NotFound, null);
             if (!task.RowVersion.SequenceEqual(rowVersion)) return (DomainMutation.Conflict, null);
-
             if (task.ColumnId == targetColumnId && task.LaneId == targetLaneId && task.SortKey == targetSortKey)
                 return (DomainMutation.NoOp, null);
 
@@ -90,7 +95,11 @@ namespace Api.Tests.Fakes
 
         public Task<decimal> GetNextSortKeyAsync(Guid columnId, CancellationToken ct = default)
         {
-            var max = _tasks.Values.Where(t => t.ColumnId == columnId).Select(t => (decimal?)t.SortKey).DefaultIfEmpty(null).Max();
+            var max = _tasks.Values
+                            .Where(t => t.ColumnId == columnId)
+                            .Select(t => (decimal?)t.SortKey)
+                            .DefaultIfEmpty(null)
+                            .Max();
             return Task.FromResult((max ?? -1m) + 1m);
         }
 

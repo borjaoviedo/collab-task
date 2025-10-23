@@ -3,6 +3,7 @@ using Application.TaskItems.Realtime;
 using Application.TaskItems.Services;
 using Application.Tests.Common.Fixtures;
 using Domain.Enums;
+using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
 using MediatR;
@@ -27,8 +28,8 @@ namespace Application.Tests.TaskItems.Services
 
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
 
-            var taskTitle = "Task Title";
-            var taskDescription = "Description";
+            var taskTitle = TaskTitle.Create("Task Title");
+            var taskDescription = TaskDescription.Create("Description");
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
 
@@ -60,7 +61,7 @@ namespace Application.Tests.TaskItems.Services
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
 
-            var newTitle = "New Title";
+            var newTitle = TaskTitle.Create("New Title");
             var res = await svc.EditAsync(pId, task.Id, user.Id, newTitle, newDescription: null, newDueDate: null, task.RowVersion);
             res.Should().Be(DomainMutation.Updated);
 
@@ -72,7 +73,7 @@ namespace Application.Tests.TaskItems.Services
                 It.IsAny<CancellationToken>()),
                 Times.Once);
 
-            var newDescription = "New Description";
+            var newDescription = TaskDescription.Create("New Description");
             res = await svc.EditAsync(pId, task.Id, user.Id, newTitle: null, newDescription, newDueDate: null, fromDb.RowVersion);
             res.Should().Be(DomainMutation.Updated);
 
@@ -96,8 +97,8 @@ namespace Application.Tests.TaskItems.Services
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
 
-            var sameTitle = "Title";
-            var sameDescription = "Description";
+            var sameTitle = TaskTitle.Create("Title");
+            var sameDescription = TaskDescription.Create("Description");
             var sameDueDate = DateTimeOffset.UtcNow.AddDays(10);
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId, sameTitle, sameDescription, sameDueDate);
 
@@ -128,8 +129,8 @@ namespace Application.Tests.TaskItems.Services
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
 
-            var oldTitle = "Old";
-            var newTitle = "New";
+            var oldTitle = TaskTitle.Create("Old");
+            var newTitle = TaskTitle.Create("New");
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId, oldTitle);
 
             var res = await svc.EditAsync(pId, task.Id, user.Id, newTitle, newDescription: null, newDueDate: null, rowVersion: [1, 2]);

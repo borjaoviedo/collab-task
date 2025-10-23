@@ -17,8 +17,8 @@ namespace Application.TaskItems.Services
             Guid laneId,
             Guid columnId,
             Guid userId,
-            string title,
-            string description,
+            TaskTitle title,
+            TaskDescription description,
             DateTimeOffset? dueDate = null,
             decimal? sortKey = null,
             CancellationToken ct = default)
@@ -31,8 +31,8 @@ namespace Application.TaskItems.Services
                 columnId,
                 laneId,
                 projectId,
-                TaskTitle.Create(title),
-                TaskDescription.Create(description),
+                title,
+                description,
                 dueDate,
                 key);
             await repo.AddAsync(task, ct);
@@ -53,8 +53,8 @@ namespace Application.TaskItems.Services
             Guid projectId,
             Guid taskId,
             Guid userId,
-            string? newTitle,
-            string? newDescription,
+            TaskTitle? newTitle,
+            TaskDescription? newDescription,
             DateTimeOffset? newDueDate,
             byte[] rowVersion,
             CancellationToken ct = default)
