@@ -5,6 +5,7 @@ using Application.Columns.Abstractions;
 using Application.Columns.DTOs;
 using Application.Columns.Mapping;
 using Domain.Enums;
+using Domain.ValueObjects;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
@@ -89,7 +90,12 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("Columns.Create");
 
-                var (result, column) = await columnWriteSvc.CreateAsync(projectId, laneId, dto.Name, dto.Order, ct);
+                var (result, column) = await columnWriteSvc.CreateAsync(
+                    projectId,
+                    laneId,
+                    ColumnName.Create(dto.Name),
+                    dto.Order,
+                    ct);
                 if (result != DomainMutation.Created || column is null)
                 {
                     log.LogInformation("Column create rejected projectId={ProjectId} laneId={LaneId} mutation={Mutation}",
@@ -140,7 +146,7 @@ namespace Api.Endpoints
                     return Results.NotFound();
                 }
 
-                var result = await columnWriteSvc.RenameAsync(columnId, dto.NewName, rowVersion, ct);
+                var result = await columnWriteSvc.RenameAsync(columnId, ColumnName.Create(dto.NewName), rowVersion, ct);
                 if (result != DomainMutation.Updated)
                 {
                     log.LogInformation("Column rename rejected projectId={ProjectId} laneId={LaneId} columnId={ColumnId} mutation={Mutation}",

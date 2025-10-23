@@ -10,7 +10,7 @@ namespace Application.Columns.Services
         public async Task<(DomainMutation, Column?)> CreateAsync(
             Guid projectId,
             Guid laneId,
-            string name,
+            ColumnName name,
             int? order = null,
             CancellationToken ct = default)
         {
@@ -22,7 +22,7 @@ namespace Application.Columns.Services
                 Math.Min(order!.Value, await repo.GetMaxOrderAsync(laneId, ct) + 1)
                 : await repo.GetMaxOrderAsync(laneId, ct) + 1;
 
-            var column = Column.Create(projectId, laneId, ColumnName.Create(name), finalOrder);
+            var column = Column.Create(projectId, laneId, name, finalOrder);
             await repo.AddAsync(column, ct);
             await repo.SaveChangesAsync(ct);
 
@@ -37,7 +37,7 @@ namespace Application.Columns.Services
 
         public async Task<DomainMutation> RenameAsync(
             Guid columnId,
-            string newName,
+            ColumnName newName,
             byte[] rowVersion,
             CancellationToken ct = default)
         {

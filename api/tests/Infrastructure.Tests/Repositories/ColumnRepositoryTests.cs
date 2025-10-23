@@ -54,10 +54,10 @@ namespace Infrastructure.Tests.Repositories
             var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
             var column = TestDataFactory.SeedColumn(db, pId, lId);
 
-            var existing = await repo.ExistsWithNameAsync(lId, column.Name.Value);
+            var existing = await repo.ExistsWithNameAsync(lId, column.Name);
             existing.Should().Be(true);
 
-            var notFound = await repo.ExistsWithNameAsync(lId, "other name");
+            var notFound = await repo.ExistsWithNameAsync(lId, ColumnName.Create("other name"));
             notFound.Should().Be(false);
         }
 
@@ -152,7 +152,7 @@ namespace Infrastructure.Tests.Repositories
 
             var newName = "new name";
 
-            var res = await repo.RenameAsync(column.Id, newName, column.RowVersion ?? []);
+            var res = await repo.RenameAsync(column.Id, ColumnName.Create(newName), column.RowVersion ?? []);
             res.Should().Be(DomainMutation.Updated);
             var fromDb = await db.Columns.AsNoTracking().SingleAsync(c => c.Id == column.Id);
             fromDb.Name.Value.Should().Be(newName);
@@ -169,7 +169,7 @@ namespace Infrastructure.Tests.Repositories
             var sameName = "Same Column Name";
             var column = TestDataFactory.SeedColumn(db, pId, lId, sameName);
 
-            var res = await repo.RenameAsync(column.Id, sameName, column.RowVersion!);
+            var res = await repo.RenameAsync(column.Id, ColumnName.Create(sameName), column.RowVersion!);
             res.Should().Be(DomainMutation.NoOp);
         }
 
@@ -187,7 +187,7 @@ namespace Infrastructure.Tests.Repositories
 
             var defaultNameColumn = TestDataFactory.SeedColumn(db, pId, lId, order: 1);
 
-            var res = await repo.RenameAsync(defaultNameColumn.Id, sameName, defaultNameColumn.RowVersion!);
+            var res = await repo.RenameAsync(defaultNameColumn.Id, ColumnName.Create(sameName), defaultNameColumn.RowVersion!);
             res.Should().Be(DomainMutation.Conflict);
         }
 
