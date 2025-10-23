@@ -23,7 +23,6 @@ namespace Application.TaskAssignments.Services
             CancellationToken ct = default)
         {
             var (assignResult, change) = await repo.AssignAsync(taskId, targetUserId, role, ct);
-            if (change is null) return (assignResult, null);
 
             if (assignResult == DomainMutation.Created)
             {
@@ -43,7 +42,7 @@ namespace Application.TaskAssignments.Services
 
             if (assignResult == DomainMutation.Updated)
             {
-                var roleChange = (AssignmentRoleChangedChange)change;
+                var roleChange = (AssignmentRoleChangedChange)change!;
                 var payload = ActivityPayloadFactory.AssignmentRoleChanged(targetUserId, roleChange.OldRole, roleChange.NewRole);
 
                 await activityWriter.CreateAsync(taskId, executedBy, TaskActivityType.AssignmentRoleChanged, payload, ct);
@@ -70,7 +69,6 @@ namespace Application.TaskAssignments.Services
             CancellationToken ct = default)
         {
             var (assignResult, change) = await repo.AssignAsync(taskId, targetUserId, role, ct);
-            if (change is null) return assignResult;
 
             if (assignResult == DomainMutation.Created)
             {
@@ -87,7 +85,7 @@ namespace Application.TaskAssignments.Services
 
             else if (assignResult == DomainMutation.Updated)
             {
-                var roleChange = (AssignmentRoleChangedChange)change;
+                var roleChange = (AssignmentRoleChangedChange)change!;
                 var payload = ActivityPayloadFactory.AssignmentRoleChanged(targetUserId, roleChange.OldRole, roleChange.NewRole);
 
                 await activityWriter.CreateAsync(taskId, executedBy, TaskActivityType.AssignmentRoleChanged, payload, ct);
