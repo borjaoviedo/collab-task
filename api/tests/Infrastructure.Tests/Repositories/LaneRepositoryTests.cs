@@ -57,7 +57,7 @@ namespace Infrastructure.Tests.Repositories
             var existing = await repo.ExistsWithNameAsync(pId, lane.Name);
             existing.Should().BeTrue();
 
-            var notFound = await repo.ExistsWithNameAsync(pId, "diff");
+            var notFound = await repo.ExistsWithNameAsync(pId, LaneName.Create("diff"));
             notFound.Should().BeFalse();
         }
 
@@ -147,7 +147,7 @@ namespace Infrastructure.Tests.Repositories
             var (pId, _) = TestDataFactory.SeedUserWithProject(db);
             var lane = TestDataFactory.SeedLane(db, pId);
 
-            var res = await repo.RenameAsync(lane.Id, "In Progress", lane.RowVersion ?? Array.Empty<byte>());
+            var res = await repo.RenameAsync(lane.Id, LaneName.Create("In Progress"), lane.RowVersion ?? Array.Empty<byte>());
             res.Should().Be(DomainMutation.Updated);
             var fromDb = await db.Lanes.AsNoTracking().SingleAsync(l => l.Id == lane.Id);
             fromDb.Name.Value.Should().Be("In Progress");
@@ -160,7 +160,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
 
-            var sameName = "Todo";
+            var sameName = LaneName.Create("Todo");
             var (pId, _) = TestDataFactory.SeedUserWithProject(db);
             var lane = TestDataFactory.SeedLane(db, pId, sameName, 1);
 
@@ -175,7 +175,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
 
-            var sameName = "Todo";
+            var sameName = LaneName.Create("Todo");
             var (pId, _) = TestDataFactory.SeedProjectWithLane(db, laneName: sameName);
             var doingLane = TestDataFactory.SeedLane(db, pId, "Doing", 1);
 

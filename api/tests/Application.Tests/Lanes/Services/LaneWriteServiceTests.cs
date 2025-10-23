@@ -34,7 +34,7 @@ namespace Application.Tests.Lanes.Services
             var repo = new LaneRepository(db);
             var svc = new LaneWriteService(repo);
 
-            var sameName = "Dup";
+            var sameName = LaneName.Create("Dup");
             var (pId, _) = TestDataFactory.SeedUserWithProject(db);
             var (m1, _) = await svc.CreateAsync(pId, sameName);
             m1.Should().Be(DomainMutation.Created);

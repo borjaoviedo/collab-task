@@ -22,7 +22,7 @@ namespace Api.Tests.Fakes
             => Task.FromResult<IReadOnlyList<Lane>>(_lanes.Values.Where(l => l.ProjectId == projectId)
                 .OrderBy(l => l.Order).Select(Clone).ToList());
 
-        public Task<bool> ExistsWithNameAsync(Guid projectId, string name, Guid? excludeLaneId = null, CancellationToken ct = default)
+        public Task<bool> ExistsWithNameAsync(Guid projectId, LaneName name, Guid? excludeLaneId = null, CancellationToken ct = default)
         {
             var q = _lanes.Values.Where(l => l.ProjectId == projectId && l.Name == name);
             if (excludeLaneId is Guid id) q = q.Where(l => l.Id != id);
@@ -45,7 +45,7 @@ namespace Api.Tests.Fakes
             return Task.CompletedTask;
         }
 
-        public async Task<DomainMutation> RenameAsync(Guid laneId, string newName, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> RenameAsync(Guid laneId, LaneName newName, byte[] rowVersion, CancellationToken ct = default)
         {
             var lane = await GetTrackedByIdAsync(laneId, ct);
             if (lane is null) return DomainMutation.NotFound;

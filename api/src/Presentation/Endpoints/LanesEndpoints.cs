@@ -5,6 +5,7 @@ using Application.Lanes.Abstractions;
 using Application.Lanes.DTOs;
 using Application.Lanes.Mapping;
 using Domain.Enums;
+using Domain.ValueObjects;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
@@ -86,7 +87,7 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("Lanes.Create");
 
-                var (result, lane) = await laneWriteSvc.CreateAsync(projectId, dto.Name, dto.Order, ct);
+                var (result, lane) = await laneWriteSvc.CreateAsync(projectId, LaneName.Create(dto.Name), dto.Order, ct);
                 if (result != DomainMutation.Created || lane is null)
                 {
                     log.LogInformation("Lane create rejected projectId={ProjectId} mutation={Mutation}",
@@ -136,7 +137,7 @@ namespace Api.Endpoints
                     return Results.NotFound();
                 }
 
-                var result = await laneWriteSvc.RenameAsync(laneId, dto.NewName, rowVersion, ct);
+                var result = await laneWriteSvc.RenameAsync(laneId, LaneName.Create(dto.NewName), rowVersion, ct);
                 if (result != DomainMutation.Updated)
                 {
                     log.LogInformation("Lane rename rejected projectId={ProjectId} laneId={LaneId} mutation={Mutation}",

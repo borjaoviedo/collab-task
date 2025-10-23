@@ -9,7 +9,7 @@ namespace Application.Lanes.Services
     {
         public async Task<(DomainMutation, Lane?)> CreateAsync(
             Guid projectId,
-            string name,
+            LaneName name,
             int? order = null,
             CancellationToken ct = default)
         {
@@ -21,7 +21,7 @@ namespace Application.Lanes.Services
                 Math.Min(order!.Value, await repo.GetMaxOrderAsync(projectId, ct) + 1)
                 : await repo.GetMaxOrderAsync(projectId, ct) + 1;
 
-            var lane = Lane.Create(projectId, LaneName.Create(name), finalOrder);
+            var lane = Lane.Create(projectId, name, finalOrder);
             await repo.AddAsync(lane, ct);
             await repo.SaveChangesAsync(ct);
 
@@ -36,7 +36,7 @@ namespace Application.Lanes.Services
 
         public async Task<DomainMutation> RenameAsync(
             Guid laneId,
-            string newName,
+            LaneName newName,
             byte[] rowVersion,
             CancellationToken ct = default)
         {
