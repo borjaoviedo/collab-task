@@ -13,8 +13,10 @@ namespace Domain.Entities
 
         public static TaskAssignment Create(Guid taskId, Guid userId, TaskRole role)
         {
-            if (taskId == Guid.Empty) throw new ArgumentException("TaskId cannot be empty.", nameof(taskId));
-            if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty.", nameof(userId));
+            CheckTaskAndUserId(taskId, userId);
+
+            if (!Enum.IsDefined(typeof(TaskRole), role))
+                throw new ArgumentOutOfRangeException(nameof(role), "Invalid task role.");
 
             return new TaskAssignment
             {
@@ -25,10 +27,22 @@ namespace Domain.Entities
         }
 
         public static TaskAssignment AssignOwner(Guid taskId, Guid userId)
-            => Create(taskId, userId, TaskRole.Owner);
+        {
+            CheckTaskAndUserId(taskId, userId);
+            return Create(taskId, userId, TaskRole.Owner);
+        }
 
         public static TaskAssignment AssignCoOwner(Guid taskId, Guid userId)
-            => Create(taskId, userId, TaskRole.CoOwner);
+        {
+            CheckTaskAndUserId(taskId, userId);
+            return Create(taskId, userId, TaskRole.CoOwner);
+        }
+
+        private static void CheckTaskAndUserId(Guid taskId, Guid userId)
+        {
+            if (taskId == Guid.Empty) throw new ArgumentException("TaskId cannot be empty.", nameof(taskId));
+            if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty.", nameof(userId));
+        }
 
         internal void SetRowVersion(byte[] value)
             => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
