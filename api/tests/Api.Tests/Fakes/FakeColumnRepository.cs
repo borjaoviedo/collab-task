@@ -39,7 +39,7 @@ namespace Api.Tests.Fakes
         {
             lock (_lock)
             {
-                column.RowVersion = NextRowVersion();
+                column.SetRowVersion(NextRowVersion());
                 _columns[column.Id] = column;
             }
             return Task.CompletedTask;
@@ -56,7 +56,7 @@ namespace Api.Tests.Fakes
             if (await ExistsWithNameAsync(col.LaneId, newName, col.Id, ct)) return DomainMutation.Conflict;
 
             col.Rename(newName);
-            col.RowVersion = NextRowVersion();
+            col.SetRowVersion(NextRowVersion());
             return DomainMutation.Updated;
         }
 
@@ -82,7 +82,7 @@ namespace Api.Tests.Fakes
                 if (cols[i].Order != i)
                 {
                     cols[i].Reorder(i);
-                    cols[i].RowVersion = NextRowVersion();
+                    cols[i].SetRowVersion(NextRowVersion());
                 }
             }
             return DomainMutation.Updated;
@@ -103,7 +103,8 @@ namespace Api.Tests.Fakes
         private static Column Clone(Column c)
         {
             var clone = Column.Create(c.ProjectId, c.LaneId, ColumnName.Create(c.Name), c.Order);
-            clone.RowVersion = (c.RowVersion is null) ? Array.Empty<byte>() : c.RowVersion.ToArray();
+            var rowVersion = (c.RowVersion is null) ? Array.Empty<byte>() : c.RowVersion.ToArray();
+            clone.SetRowVersion(rowVersion);
             return clone;
         }
     }
