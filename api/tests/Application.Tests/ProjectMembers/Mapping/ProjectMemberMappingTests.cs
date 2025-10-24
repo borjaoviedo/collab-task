@@ -2,12 +2,14 @@ using Application.ProjectMembers.Mapping;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
+using TestHelpers;
 
 namespace Application.Tests.ProjectMembers.Mapping
 {
     public sealed class ProjectMemberMappingTests
     {
-        private static byte[] Bytes(int n) => Enumerable.Repeat((byte)0x5A, n).ToArray();
+        private readonly byte[] _validHash = TestDataFactory.Bytes(32);
+        private readonly byte[] _validSalt = TestDataFactory.Bytes(16);
 
         [Fact]
         public void ToReadDto_Maps_All_Fields()
@@ -33,7 +35,7 @@ namespace Application.Tests.ProjectMembers.Mapping
         public void ToReadDto_Maps_UserName_And_Email_When_User_Is_Present()
         {
             var projectMember = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Admin);
-            projectMember.User = User.Create(Email.Create("test@demo.com"), UserName.Create("Test User"), Bytes(32), Bytes(16), UserRole.User);
+            projectMember.User = User.Create(Email.Create("test@demo.com"), UserName.Create("Test User"), _validHash, _validSalt, UserRole.User);
 
             var dto = projectMember.ToReadDto();
 

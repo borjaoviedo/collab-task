@@ -10,6 +10,9 @@ namespace Application.Tests.Users.Services
 {
     public sealed class UserWriteServiceTests
     {
+        private readonly byte[] _validHash = TestDataFactory.Bytes(32);
+        private readonly byte[] _validSalt = TestDataFactory.Bytes(16);
+
         [Fact]
         public async Task CreateAsync_Returns_Created_And_User()
         {
@@ -21,8 +24,8 @@ namespace Application.Tests.Users.Services
             var (created, user) = await svc.CreateAsync(
                 Email.Create("email@e.com"),
                 UserName.Create("user name"),
-                TestDataFactory.Bytes(32),
-                TestDataFactory.Bytes(16),
+                _validHash,
+                _validSalt,
                 UserRole.Admin);
 
             created.Should().Be(DomainMutation.Created);

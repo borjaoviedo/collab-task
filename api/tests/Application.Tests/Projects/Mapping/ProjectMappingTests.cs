@@ -2,17 +2,19 @@ using Application.Projects.Mapping;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
+using TestHelpers;
 
 namespace Application.Tests.Projects.Mapping
 {
     public sealed class ProjectMappingTests
     {
-        private static byte[] Bytes(int n) => Enumerable.Repeat((byte)0x5A, n).ToArray();
+        private readonly byte[] _validHash = TestDataFactory.Bytes(32);
+        private readonly byte[] _validSalt = TestDataFactory.Bytes(16);
 
         [Fact]
         public void ToReadDto_Maps_All_Fields()
         {
-            var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Demo User"), Bytes(32), Bytes(16));
+            var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Demo User"), _validHash, _validSalt);
             var p = Project.Create(u.Id, ProjectName.Create("Project Name"));
 
             var dto = p.ToReadDto(u.Id);
@@ -30,16 +32,16 @@ namespace Application.Tests.Projects.Mapping
         [Fact]
         public void ToReadDto_CurrentUserRole_Depends_On_User_Role()
         {
-            var u1 = User.Create(Email.Create("user@demo.com"), UserName.Create("Owner User"), Bytes(32), Bytes(16));
+            var u1 = User.Create(Email.Create("user@demo.com"), UserName.Create("Owner User"), _validHash, _validSalt);
             var p = Project.Create(u1.Id, ProjectName.Create("Project Name"));
 
-            var u2 = User.Create(Email.Create("user2@demo.com"), UserName.Create("Member User"), Bytes(32), Bytes(16));
+            var u2 = User.Create(Email.Create("user2@demo.com"), UserName.Create("Member User"), _validHash, _validSalt);
             p.AddMember(u2.Id, ProjectRole.Member);
 
-            var u3 = User.Create(Email.Create("user3@demo.com"), UserName.Create("Reader User"), Bytes(32), Bytes(16));
+            var u3 = User.Create(Email.Create("user3@demo.com"), UserName.Create("Reader User"), _validHash, _validSalt);
             p.AddMember(u3.Id, ProjectRole.Reader);
 
-            var u4 = User.Create(Email.Create("user4@demo.com"), UserName.Create("Admin User"), Bytes(32), Bytes(16));
+            var u4 = User.Create(Email.Create("user4@demo.com"), UserName.Create("Admin User"), _validHash, _validSalt);
             p.AddMember(u4.Id, ProjectRole.Admin);
 
             var dto1 = p.ToReadDto(u1.Id);
@@ -55,10 +57,10 @@ namespace Application.Tests.Projects.Mapping
         [Fact]
         public void ToReadDto_Ignores_Removed_Members()
         {
-            var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Owner User"), Bytes(32), Bytes(16));
+            var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Owner User"), _validHash, _validSalt);
             var p = Project.Create(u.Id, ProjectName.Create("Project Name"));
 
-            var m = User.Create(Email.Create("removed@demo.com"), UserName.Create("Removed User"), Bytes(32), Bytes(16));
+            var m = User.Create(Email.Create("removed@demo.com"), UserName.Create("Removed User"), _validHash, _validSalt);
             p.AddMember(m.Id, ProjectRole.Member);
             p.Members.First(x => x.UserId == m.Id).Remove(DateTimeOffset.UtcNow);
 
