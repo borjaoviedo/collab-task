@@ -4,11 +4,11 @@ namespace Domain.Entities
 {
     public sealed class Lane
     {
-        public Guid Id { get; set; }
-        public Guid ProjectId { get; set; }
-        public required LaneName Name { get; set; }
-        public int Order { get; set; }
-        public byte[] RowVersion { get; set; } = default!;
+        public Guid Id { get; private set; }
+        public Guid ProjectId { get; private set; }
+        public LaneName Name { get; private set; } = default!;
+        public int Order { get; private set; }
+        public byte[] RowVersion { get; private set; } = default!;
 
         private Lane() { }
 
@@ -37,5 +37,8 @@ namespace Domain.Entities
             if (Order == order) return;
             Order = order;
         }
+
+        internal void SetRowVersion(byte[] value)
+            => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
     }
 }
