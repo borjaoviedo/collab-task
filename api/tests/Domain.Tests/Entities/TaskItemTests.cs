@@ -27,7 +27,12 @@ namespace Domain.Tests.Entities
         [Fact]
         public void TaskItem_Id_Is_Initialized()
         {
-            var t = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"));
+            var t = TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"));
 
             t.Id.Should().NotBeEmpty();
             t.Id.Should().NotBe(Guid.Empty);
@@ -36,7 +41,12 @@ namespace Domain.Tests.Entities
         [Fact]
         public void TaskItem_SortKey_Has_Default_Value_When_No_Value_Given()
         {
-            var t = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"));
+            var t = TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"));
 
             t.SortKey.Should().Be(0m);
         }
@@ -44,7 +54,13 @@ namespace Domain.Tests.Entities
         [Fact]
         public void TaskItem_SortKey_Has_Different_Value_When_Value_Given()
         {
-            var t = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"), sortKey: 5m);
+            var t = TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"),
+                sortKey: 5m);
 
             t.SortKey.Should().Be(5m);
         }
@@ -52,7 +68,12 @@ namespace Domain.Tests.Entities
         [Fact]
         public void TaskItem_DueDate_Is_Null_When_No_Value_Given()
         {
-            var t = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"));
+            var t = TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"));
 
             t.DueDate.Should().Be(null);
         }
@@ -61,7 +82,13 @@ namespace Domain.Tests.Entities
         public void TaskItem_DueDate_Has_Value_When_Value_Given()
         {
             var dueDate = DateTimeOffset.UtcNow.AddDays(2);
-            var t = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"), dueDate);
+            var t = TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"),
+                dueDate);
 
             t.DueDate.Should().Be(dueDate);
         }
@@ -72,7 +99,13 @@ namespace Domain.Tests.Entities
         [InlineData("a")]
         public void Invalid_TaskTitle_Throws(string input)
         {
-            Action act = () => TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create(input), TaskDescription.Create("Description"));
+            Action act = () => TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create(input),
+                TaskDescription.Create("Description"));
+
             act.Should().Throw<ArgumentException>();
         }
 
@@ -82,14 +115,27 @@ namespace Domain.Tests.Entities
         [InlineData("a")]
         public void Invalid_TaskDescription_Throws(string input)
         {
-            Action act = () => TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create(input));
+            Action act = () => TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create(input));
+
             act.Should().Throw<ArgumentException>();
         }
 
         [Fact]
         public void Past_DueDate_Throws()
         {
-            Action act = () => TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"), DateTimeOffset.UtcNow.AddDays(-1));
+            Action act = () => TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"),
+                DateTimeOffset.UtcNow.AddDays(-1));
+
             act.Should().Throw<ArgumentException>();
         }
 
@@ -97,7 +143,13 @@ namespace Domain.Tests.Entities
         public void ColumnId_With_Guid_Empty_Throws()
         {
             var columnId = Guid.Empty;
-            Action act = () => TaskItem.Create(columnId, Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"));
+            Action act = () => TaskItem.Create(
+                columnId,
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"));
+
             act.Should().Throw<ArgumentException>();
         }
 
@@ -105,7 +157,13 @@ namespace Domain.Tests.Entities
         public void LaneId_With_Guid_Empty_Throws()
         {
             var laneId = Guid.Empty;
-            Action act = () => TaskItem.Create(Guid.NewGuid(), laneId, Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"));
+            Action act = () => TaskItem.Create(
+                Guid.NewGuid(),
+                laneId,
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"));
+
             act.Should().Throw<ArgumentException>();
         }
 
@@ -113,14 +171,26 @@ namespace Domain.Tests.Entities
         public void ProjectId_With_Guid_Empty_Throws()
         {
             var projectId = Guid.Empty;
-            Action act = () => TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), projectId, TaskTitle.Create("Title"), TaskDescription.Create("Description"));
+            Action act = () => TaskItem.Create
+            (Guid.NewGuid(),
+                Guid.NewGuid(),
+                projectId,
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"));
+
             act.Should().Throw<ArgumentException>();
         }
 
         [Fact]
         public void Edit_Changes_Title()
         {
-            var t = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"));
+            var t = TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"));
+
             t.Edit(TaskTitle.Create("New title"), null, null);
             t.Title.Value.Should().Be("New title");
         }
@@ -128,7 +198,13 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Edit_Changes_Description()
         {
-            var t = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"));
+            var t = TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"));
+
             t.Edit(null, TaskDescription.Create("New description"), null);
             t.Description.Value.Should().Be("New description");
         }
@@ -136,11 +212,19 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Edit_Changes_DueDate()
         {
-            var t = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"), dueDate: DateTimeOffset.UtcNow.AddDays(10));
+            var t = TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"),
+                dueDate: DateTimeOffset.UtcNow.AddDays(10));
+
             t.Edit(null, null, null);
             t.DueDate.Should().Be(null);
 
             var newDueDate = DateTimeOffset.UtcNow.AddDays(5);
+
             t.Edit(null, null, newDueDate);
             t.DueDate.Should().Be(newDueDate);
         }
@@ -181,12 +265,21 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Move_Changes_LaneId_ColumnId_SortKey()
         {
-            var t = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"), sortKey: 1m);
+            var t = TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"),
+                sortKey: 1m);
+            var newProjectId = t.ProjectId;
             var newLaneId = Guid.NewGuid();
             var newColumnId = Guid.NewGuid();
             var newSortKey = 5m;
 
-            t.Move(newLaneId, newColumnId, newSortKey);
+            t.Move(newProjectId, newLaneId, newColumnId, newSortKey);
+
+            t.ProjectId.Should().Be(newProjectId);
             t.LaneId.Should().Be(newLaneId);
             t.ColumnId.Should().Be(newColumnId);
             t.SortKey.Should().Be(newSortKey);
@@ -195,33 +288,74 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Move_With_Guid_Empty_LaneId_Throws()
         {
-            var t = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"), sortKey: 1m);
+            var t = TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"),
+                sortKey: 1m);
+            var newProjectId = t.ProjectId;
             var newLaneId = Guid.Empty;
             var newColumnId = Guid.NewGuid();
             var newSortKey = 5m;
-            Action act = () => t.Move(newLaneId, newColumnId, newSortKey);
+
+            Action act = () => t.Move(newProjectId, newLaneId, newColumnId, newSortKey);
             act.Should().Throw<ArgumentException>();
         }
 
         [Fact]
         public void Move_With_Guid_Empty_ColumnId_Throws()
         {
-            var t = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"), sortKey: 1m);
+            var t = TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"),
+                sortKey: 1m);
+            var newProjectId = t.ProjectId;
             var newLaneId = Guid.NewGuid();
             var newColumnId = Guid.Empty;
             var newSortKey = 5m;
-            Action act = () => t.Move(newLaneId, newColumnId, newSortKey);
+
+            Action act = () => t.Move(newProjectId, newLaneId, newColumnId, newSortKey);
+            act.Should().Throw<ArgumentException>();
+        }
+
+        [Fact]
+        public void Move_With_Different_Project_Id_Throws()
+        {
+            var projectId = Guid.NewGuid();
+            var t = TaskItem.Create(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                projectId,
+                TaskTitle.Create("Title"),
+                TaskDescription.Create("Description"),
+                sortKey: 1m);
+
+            var newProjectId = Guid.NewGuid();
+            var newLaneId = Guid.NewGuid();
+            var newColumnId = Guid.NewGuid();
+            var newSortKey = 5m;
+
+            Action act = () => t.Move(newProjectId, newLaneId, newColumnId, newSortKey);
             act.Should().Throw<ArgumentException>();
         }
 
         [Fact]
         public void Move_With_Same_Values_Does_Not_Change_Entity_Values()
         {
+            var projectId = Guid.NewGuid();
             var laneId = Guid.NewGuid();
             var columnId = Guid.NewGuid();
             var sortKey = 1m;
-            var t = TaskItem.Create(columnId, laneId, Guid.NewGuid(), TaskTitle.Create("Title"), TaskDescription.Create("Description"), sortKey: sortKey);
-            t.Move(laneId, columnId, sortKey);
+
+            var t = TaskItem.Create(columnId, laneId, projectId, TaskTitle.Create("Title"), TaskDescription.Create("Description"), sortKey: sortKey);
+            t.Move(projectId, laneId, columnId, sortKey);
+
+            t.ProjectId.Should().Be(projectId);
             t.LaneId.Should().Be(laneId);
             t.ColumnId.Should().Be(columnId);
             t.SortKey.Should().Be(sortKey);
