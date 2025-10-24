@@ -43,7 +43,10 @@ namespace Infrastructure.Tests.Persistence.Contracts
             var stale = t.RowVersion!.ToArray();
 
             // first update
-            t.Title = TaskTitle.Create("Title B");
+            t.Edit(
+                title: TaskTitle.Create("Title B"),
+                description: t.Description,
+                dueDate: t.DueDate);
             db.Entry(t).Property(x => x.Title).IsModified = true;
             await db.SaveChangesAsync();
 
@@ -52,7 +55,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
             var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
             var same = await db2.TaskItems.SingleAsync(x => x.Id == t.Id);
             db2.Entry(same).Property(x => x.RowVersion).OriginalValue = stale;
-            same.Title = TaskTitle.Create("Other title");
+            same.Edit(TaskTitle.Create("Other title"), description: t.Description, dueDate: t.DueDate);
             db2.Entry(same).Property(x => x.Title).IsModified = true;
 
             await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => db2.SaveChangesAsync());
@@ -70,7 +73,10 @@ namespace Infrastructure.Tests.Persistence.Contracts
             var stale = t.RowVersion!.ToArray();
 
             // mutate to bump RowVersion
-            t.Description = TaskDescription.Create("upd");
+            t.Edit(
+                title: t.Title,
+                description: TaskDescription.Create("upd"),
+                dueDate: t.DueDate);
             db.Entry(t).Property(x => x.Description).IsModified = true;
             await db.SaveChangesAsync();
 
