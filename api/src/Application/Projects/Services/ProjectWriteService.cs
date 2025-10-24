@@ -9,7 +9,7 @@ namespace Application.Projects.Services
     {
         public async Task<(DomainMutation, Project?)> CreateAsync(Guid userId, ProjectName name, CancellationToken ct = default)
         {
-            if (await repo.ExistsByNameAsync(userId, name, ct)) return (DomainMutation.NotFound, null);
+            if (await repo.ExistsByNameAsync(userId, name, ct)) return (DomainMutation.Conflict, null);
 
             var project = Project.Create(userId, name);
             await repo.AddAsync(project, ct);
