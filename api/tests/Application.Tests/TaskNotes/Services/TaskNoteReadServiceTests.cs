@@ -59,7 +59,7 @@ namespace Application.Tests.TaskNotes.Services
         }
 
         [Fact]
-        public async Task ListByColumnAsync_Returns_Empty_List_When_NotFound_Column()
+        public async Task ListByTaskAsync_Returns_Empty_List_When_NotFound_Task()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
