@@ -10,8 +10,8 @@ namespace Domain.Entities
         public DateTimeOffset JoinedAt { get; private set; }
         public DateTimeOffset? RemovedAt { get; private set; }
         public byte[] RowVersion { get; private set; } = default!;
-        public Project Project { get; private set; } = null!;
-        public User User { get; private set; } = null!;
+        public Project Project { get; private set; } = default!;
+        public User User { get; private set; } = default!;
 
         private ProjectMember() { }
 
