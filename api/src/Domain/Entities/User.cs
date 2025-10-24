@@ -21,6 +21,8 @@ namespace Domain.Entities
 
         public static User Create(Email email, UserName name, byte[] hash, byte[] salt, UserRole role = UserRole.User)
         {
+            CheckRole(role);
+
             return new User
             {
                 Id = Guid.NewGuid(),
@@ -34,9 +36,21 @@ namespace Domain.Entities
 
         public void Rename(UserName newName) => Name = newName;
 
-        public void ChangeRole(UserRole newRole) => Role = newRole;
+        public void ChangeRole(UserRole newRole)
+        {
+            CheckRole(newRole);
+            if (Role == newRole) return;
+
+            Role = newRole;
+        }
 
         internal void SetRowVersion(byte[] value)
             => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
+
+        private static void CheckRole(UserRole role)
+        {
+            if (!Enum.IsDefined(typeof(UserRole), role))
+                throw new ArgumentOutOfRangeException(nameof(role), "Invalid user role.");
+        }
     }
 }
