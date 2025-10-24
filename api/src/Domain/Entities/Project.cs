@@ -7,14 +7,14 @@ namespace Domain.Entities
 {
     public sealed class Project : IAuditable
     {
-        public Guid Id { get; set; }
-        public Guid OwnerId { get; set; }
-        public required ProjectName Name { get; set; }
-        public ProjectSlug Slug { get; set; } = default!;
-        public DateTimeOffset CreatedAt { get; set; }
-        public DateTimeOffset UpdatedAt { get; set; }
-        public byte[] RowVersion { get; set; } = default!;
-        public ICollection<ProjectMember> Members { get; set; } = [];
+        public Guid Id { get; private set; }
+        public Guid OwnerId { get; private set; }
+        public ProjectName Name { get; private set; } = default!;
+        public ProjectSlug Slug { get; private set; } = default!;
+        public DateTimeOffset CreatedAt { get; private set; }
+        public DateTimeOffset UpdatedAt { get; private set; }
+        public byte[] RowVersion { get; private set; } = default!;
+        public ICollection<ProjectMember> Members { get; private set; } = [];
 
         private Project() { }
 
@@ -96,5 +96,8 @@ namespace Domain.Entities
             target.ChangeRole(ProjectRole.Owner);
             OwnerId = newOwnerId;
         }
+
+        internal void SetRowVersion(byte[] value)
+            => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
     }
 }
