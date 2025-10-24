@@ -1,15 +1,18 @@
+using Application.Common.Abstractions.Time;
 using Application.TaskActivities.Services;
-using Application.Tests.Common.Fixtures;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
 using TestHelpers;
+using TestHelpers.Time;
 
 namespace Application.Tests.TaskActivities.Services
 {
-    public sealed class TaskActivityWriteServiceTests : BaseTest
+    public sealed class TaskActivityWriteServiceTests
     {
+        private readonly IDateTimeProvider _clock = TestTime.FixedClock();
+
         [Fact]
         public async Task CreateAsync_Creates_And_Persists_Activity()
         {
@@ -17,7 +20,7 @@ namespace Application.Tests.TaskActivities.Services
             await using var db = dbh.CreateContext();
 
             var repo = new TaskActivityRepository(db);
-            var svc = new TaskActivityWriteService(repo, Clock);
+            var svc = new TaskActivityWriteService(repo, _clock);
 
             var (_, _, _, taskId, _, actor) = TestDataFactory.SeedFullBoard(db);
 
