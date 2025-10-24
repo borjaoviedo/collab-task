@@ -112,7 +112,8 @@ namespace Api.Tests.Fakes
             foreach (var m in project.Members)
             {
                 var cm = ProjectMember.Create(m.ProjectId, m.UserId, m.Role);
-                cm.RowVersion = (m.RowVersion is null) ? [] : m.RowVersion.ToArray();
+                var rowVersion = (m.RowVersion is null) ? [] : m.RowVersion.ToArray();
+                cm.SetRowVersion(rowVersion);
                 cm.Remove(m.RemovedAt);
                 _pmRepo.AddAsync(cm, ct);
             }
@@ -194,7 +195,8 @@ namespace Api.Tests.Fakes
                 if (!includeRemovedMembers && m.RemovedAt is not null) continue;
 
                 var cm = ProjectMember.Create(m.ProjectId, m.UserId, m.Role);
-                cm.RowVersion = (m.RowVersion is null) ? [] : m.RowVersion.ToArray();
+                var rowVersion = (m.RowVersion is null) ? [] : m.RowVersion.ToArray();
+                cm.SetRowVersion(rowVersion);
                 cm.Remove(m.RemovedAt);
                 clone.Members.Add(cm);
             }
