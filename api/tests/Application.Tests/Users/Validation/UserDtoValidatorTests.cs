@@ -1,5 +1,6 @@
 using Application.Users.DTOs;
 using Application.Users.Validation;
+using Domain.Enums;
 using FluentValidation.TestHelper;
 
 namespace Application.Tests.Users.Validation
@@ -17,10 +18,10 @@ namespace Application.Tests.Users.Validation
                 Password = "weak"
             };
             var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(x => x.Email).WithErrorMessage("Invalid email format.");
-            r.ShouldHaveValidationErrorFor(x => x.Name).WithErrorMessage("User name must contain only letters.");
-            r.ShouldHaveValidationErrorFor(x => x.Name).WithErrorMessage("User name cannot contain consecutive spaces.");
-            r.ShouldHaveValidationErrorFor(x => x.Password); // any of the password rules
+            r.ShouldHaveValidationErrorFor(u => u.Email).WithErrorMessage("Invalid email format.");
+            r.ShouldHaveValidationErrorFor(u => u.Name).WithErrorMessage("User name must contain only letters.");
+            r.ShouldHaveValidationErrorFor(u => u.Name).WithErrorMessage("User name cannot contain consecutive spaces.");
+            r.ShouldHaveValidationErrorFor(u => u.Password); // any of the password rules
         }
 
         [Fact]
@@ -29,11 +30,11 @@ namespace Application.Tests.Users.Validation
             var v = new UserRegisterDtoValidator();
 
             v.TestValidate(new UserRegisterDto { Email = "a@b.com", Name = "A", Password = "GoodPwd1!" })
-             .ShouldHaveValidationErrorFor(x => x.Name)
+             .ShouldHaveValidationErrorFor(u => u.Name)
              .WithErrorMessage("User name must be at least 2 characters long.");
 
             v.TestValidate(new UserRegisterDto { Email = "a@b.com", Name = new string('a', 101), Password = "GoodPwd1!" })
-             .ShouldHaveValidationErrorFor(x => x.Name)
+             .ShouldHaveValidationErrorFor(u => u.Name)
              .WithErrorMessage("User name length must be at most 100 characters.");
         }
 
@@ -44,7 +45,7 @@ namespace Application.Tests.Users.Validation
             var local = new string('a', 251);
             var dto = new UserRegisterDto { Email = $"{local}@x.com", Name = "John", Password = "GoodPwd1!" };
             v.TestValidate(dto)
-             .ShouldHaveValidationErrorFor(x => x.Email)
+             .ShouldHaveValidationErrorFor(u => u.Email)
              .WithErrorMessage("Email length must be less than 256 characters.");
         }
 
@@ -71,7 +72,7 @@ namespace Application.Tests.Users.Validation
         {
             var v = new UserLoginDtoValidator();
             v.TestValidate(new UserLoginDto { Email = "john@demo.com", Password = pwd })
-             .ShouldHaveValidationErrorFor(x => x.Password);
+             .ShouldHaveValidationErrorFor(u => u.Password);
         }
 
         [Fact]
@@ -79,7 +80,7 @@ namespace Application.Tests.Users.Validation
         {
             var v = new UserLoginDtoValidator();
             v.TestValidate(new UserLoginDto { Email = "not-an-email", Password = "GoodPwd1!" })
-             .ShouldHaveValidationErrorFor(x => x.Email)
+             .ShouldHaveValidationErrorFor(u => u.Email)
              .WithErrorMessage("Invalid email format.");
         }
 
@@ -89,6 +90,48 @@ namespace Application.Tests.Users.Validation
             var v = new UserLoginDtoValidator();
             v.TestValidate(new UserLoginDto { Email = "john@demo.com", Password = "GoodPwd1!" })
              .ShouldNotHaveAnyValidationErrors();
+        }
+
+        [Fact]
+        public void Rename_Valid_Passes()
+        {
+            var v = new UserRenameDtoValidator();
+            v.TestValidate(new UserRenameDto { NewName = "Valid" })
+                .ShouldNotHaveAnyValidationErrors();
+        }
+
+        [Fact]
+        public void Rename_Invalid_Fails()
+        {
+            var v = new UserRenameDtoValidator();
+            v.TestValidate(new UserRenameDto { NewName = $"{Guid.NewGuid()}" })
+                .ShouldHaveValidationErrorFor(u => u.NewName)
+                .WithErrorMessage("User name must contain only letters.");
+
+            v.TestValidate(new UserRenameDto { NewName = "x" })
+                .ShouldHaveValidationErrorFor(u => u.NewName)
+                .WithErrorMessage("User name must be at least 2 characters long.");
+
+            v.TestValidate(new UserRenameDto { NewName = new string('x', 101)})
+                .ShouldHaveValidationErrorFor(u => u.NewName)
+                .WithErrorMessage("User name length must be at most 100 characters.");
+        }
+
+        [Fact]
+        public void ChangeRole_Valid_Passes()
+        {
+            var v = new UserChangeRoleDtoValidator();
+            v.TestValidate(new UserChangeRoleDto { NewRole = UserRole.User })
+                .ShouldNotHaveAnyValidationErrors();
+        }
+
+        [Fact]
+        public void ChangeRole_Invalid_Fails()
+        {
+            var v = new UserChangeRoleDtoValidator();
+            v.TestValidate(new UserChangeRoleDto { NewRole = (UserRole)2 })
+                .ShouldHaveValidationErrorFor(u => u.NewRole)
+                .WithErrorMessage("Invalid user role value.");
         }
     }
 }
