@@ -8,7 +8,7 @@ using System.Collections.Concurrent;
 
 namespace Api.Tests.Fakes
 {
-    public sealed class FakeProjectRepository : IProjectRepository
+    public sealed class FakeProjectRepository(IProjectMemberRepository pmRepo) : IProjectRepository
     {
         // ProjectId -> tracked Project
         private readonly ConcurrentDictionary<Guid, Project> _byId = new();
@@ -19,17 +19,12 @@ namespace Api.Tests.Fakes
         // simple rowversion counter
         private long _rv = 1;
 
-        private readonly IProjectMemberRepository _pmRepo;
-
-        public FakeProjectRepository(IProjectMemberRepository pmRepo)
-        {
-            _pmRepo = pmRepo;
-        }
+        private readonly IProjectMemberRepository _pmRepo = pmRepo;
 
         public Task<Project?> GetByIdAsync(Guid id, CancellationToken ct = default)
         {
             if (_byId.TryGetValue(id, out var p))
-                return Task.FromResult<Project?>(CloneProject(p, includeRemovedMembers: false));
+                return Task.FromResult<Project?>(p);
 
             return Task.FromResult<Project?>(null);
         }
@@ -38,7 +33,7 @@ namespace Api.Tests.Fakes
         {
             _byId.TryGetValue(id, out var p);
             // return tracked instance to simulate EF tracking
-            return Task.FromResult<Project?>(p);
+            return Task.FromResult(p);
         }
 
         public Task<IReadOnlyList<Project>> GetAllByUserAsync(Guid userId, ProjectFilter? filter = null, CancellationToken ct = default)
@@ -88,7 +83,7 @@ namespace Api.Tests.Fakes
             if (filter.Skip is > 0) q = q.Skip(filter.Skip.Value);
             q = q.Take(take);
 
-            var list = q.Select(p => CloneProject(p, includeRemoved)).ToList().AsReadOnly();
+            var list = q.ToList().AsReadOnly();
             return Task.FromResult<IReadOnlyList<Project>>(list);
         }
 
@@ -96,14 +91,11 @@ namespace Api.Tests.Fakes
         {
             ArgumentNullException.ThrowIfNull(project);
 
-            // ensure rowversion and slug like EF side-effects
+            // ensure rowversion like EF side-effect
             if (project.RowVersion is null || project.RowVersion.Length == 0)
-                project.RowVersion = NextRowVersion();
+                project.SetRowVersion(NextRowVersion());
 
-            if (string.IsNullOrWhiteSpace(project.Slug))
-                project.Slug = ProjectSlug.Create(project.Name.Value);
-
-            if (!_byId.TryAdd(project.Id, CloneProject(project, includeRemovedMembers: true)))
+            if (!_byId.TryAdd(project.Id, project))
                 throw new InvalidOperationException("Duplicate project id.");
 
             if (!_nameIndex.TryAdd((project.OwnerId, project.Name.Value), 0))
@@ -141,8 +133,7 @@ namespace Api.Tests.Fakes
 
             // mutate tracked instance to simulate EF
             current.Rename(ProjectName.Create(newName));
-            current.Slug = ProjectSlug.Create(newName);
-            current.RowVersion = NextRowVersion();
+            current.SetRowVersion(NextRowVersion());
 
             // update name index
             _nameIndex.TryRemove((current.OwnerId, current.Name.Value), out _);
@@ -179,29 +170,5 @@ namespace Api.Tests.Fakes
 
         private byte[] NextRowVersion()
             => BitConverter.GetBytes(Interlocked.Increment(ref _rv));
-
-        private static Project CloneProject(Project p, bool includeRemovedMembers)
-        {
-            // shallow clone of core fields
-            var clone = Project.Create(p.OwnerId, p.Name);
-            clone.Id = p.Id;
-            clone.CreatedAt = p.CreatedAt;
-            clone.UpdatedAt = p.UpdatedAt;
-            clone.Slug = p.Slug;
-            clone.RowVersion = (p.RowVersion is null) ? [] : p.RowVersion.ToArray();
-
-            foreach (var m in p.Members)
-            {
-                if (!includeRemovedMembers && m.RemovedAt is not null) continue;
-
-                var cm = ProjectMember.Create(m.ProjectId, m.UserId, m.Role);
-                var rowVersion = (m.RowVersion is null) ? [] : m.RowVersion.ToArray();
-                cm.SetRowVersion(rowVersion);
-                cm.Remove(m.RemovedAt);
-                clone.Members.Add(cm);
-            }
-
-            return clone;
-        }
     }
 }
