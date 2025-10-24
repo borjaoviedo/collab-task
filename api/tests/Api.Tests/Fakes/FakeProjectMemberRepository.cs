@@ -177,7 +177,8 @@ namespace Api.Tests.Fakes
         private static User Clone(User u)
         {
             var clone = User.Create(u.Email, u.Name, u.PasswordHash, u.PasswordSalt, u.Role);
-            clone.RowVersion = (u.RowVersion is null) ? [] : u.RowVersion.ToArray();
+            var rowVersion = (u.RowVersion is null) ? [] : u.RowVersion;
+            clone.SetRowVersion(rowVersion);
             return clone;
         }
     }
