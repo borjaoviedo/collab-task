@@ -19,8 +19,8 @@ namespace Domain.Tests.Entities
             var rv = Bytes(8);
 
             var pm = ProjectMember.Create(projectId, userId, role);
-            pm.RemovedAt = removedAt;
-            pm.RowVersion = rv;
+            pm.Remove(removedAt);
+            pm.SetRowVersion(rv);
 
             pm.ProjectId.Should().Be(projectId);
             pm.UserId.Should().Be(userId);
@@ -37,8 +37,8 @@ namespace Domain.Tests.Entities
             var p = Project.Create(user.Id, ProjectName.Create("A Project Name"));
 
             var pm = ProjectMember.Create(p.Id, user.Id, ProjectRole.Reader);
-            pm.User = user;
-            pm.Project = p;
+            pm.SetUser(user);
+            pm.SetProject(p);
 
             pm.Project.Should().BeSameAs(p);
             pm.User.Should().BeSameAs(user);
