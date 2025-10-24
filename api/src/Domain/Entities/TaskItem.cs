@@ -5,17 +5,17 @@ namespace Domain.Entities
 {
     public sealed class TaskItem : IAuditable
     {
-        public Guid Id { get; set; }
-        public Guid ColumnId { get; set; }
-        public Guid LaneId { get; set; }
-        public Guid ProjectId { get; set; }
-        public required TaskTitle Title { get; set; }
-        public required TaskDescription Description { get; set; }
-        public DateTimeOffset CreatedAt { get; set; }
-        public DateTimeOffset UpdatedAt { get; set; }
-        public DateTimeOffset? DueDate { get; set; }
-        public decimal SortKey { get; set; }
-        public byte[] RowVersion { get; set; } = default!;
+        public Guid Id { get; private set; }
+        public Guid ColumnId { get; private set; }
+        public Guid LaneId { get; private set; }
+        public Guid ProjectId { get; private set; }
+        public TaskTitle Title { get; private set; } = default!;
+        public TaskDescription Description { get; private set; } = default!;
+        public DateTimeOffset CreatedAt { get; private set; }
+        public DateTimeOffset UpdatedAt { get; private set; }
+        public DateTimeOffset? DueDate { get; private set; }
+        public decimal SortKey { get; private set; }
+        public byte[] RowVersion { get; private set; } = default!;
 
         private TaskItem() { }
 
@@ -67,5 +67,8 @@ namespace Domain.Entities
             ColumnId = targetColumnId;
             SortKey = targetSortKey;
         }
+
+        internal void SetRowVersion(byte[] value)
+            => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
     }
 }
