@@ -3,7 +3,6 @@ using Application.TaskItems.Changes;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
-using System.Reflection;
 
 namespace Api.Tests.Fakes
 {
@@ -107,8 +106,7 @@ namespace Api.Tests.Fakes
         public Task RebalanceSortKeysAsync(Guid columnId, CancellationToken ct = default)
         {
             var list = _tasks.Values.Where(t => t.ColumnId == columnId).OrderBy(t => t.SortKey).ToList();
-            for (int i = 0; i < list.Count; i++)
-                SetProp(list[i], nameof(TaskItem.SortKey), (decimal)i);
+            for (int i = 0; i < list.Count; i++) list[i].SetSortKey(i);
             return Task.CompletedTask;
         }
 
@@ -129,9 +127,5 @@ namespace Api.Tests.Fakes
             clone.SetRowVersion(rowVersion);
             return clone;
         }
-        private static void SetProp<T>(TaskItem t, string name, T value)
-        => typeof(TaskItem)
-            .GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
-            .SetValue(t, value);
     }
 }
