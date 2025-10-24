@@ -19,6 +19,7 @@ namespace Domain.Entities
         {
             if (projectId == Guid.Empty) throw new ArgumentException("ProjectId cannot be empty.", nameof(projectId));
             if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty.", nameof(userId));
+            CheckRole(role);
 
             return new ProjectMember
             {
@@ -29,9 +30,20 @@ namespace Domain.Entities
             };
         }
 
-        public void ChangeRole(ProjectRole newRole) => Role = newRole;
+        public void ChangeRole(ProjectRole newRole)
+        {
+            CheckRole(newRole);
+            if (Role == newRole) return;
 
-        public void Remove(DateTimeOffset? removedAtUtc) => RemovedAt = removedAtUtc;
+            Role = newRole;
+        }
+
+        public void Remove(DateTimeOffset? removedAtUtc)
+        {
+            if (RemovedAt.HasValue) return;
+            
+            RemovedAt = removedAtUtc;
+        }
 
         public void Restore() => RemovedAt = null;
 
@@ -41,5 +53,11 @@ namespace Domain.Entities
         internal void SetUser(User user) => User = user;
 
         internal void SetProject(Project project) => Project = project;
+
+        private static void CheckRole(ProjectRole role)
+        {
+            if (!Enum.IsDefined(typeof(ProjectRole), role))
+                throw new ArgumentOutOfRangeException(nameof(role), "Invalid project role.");
+        }
     }
 }
