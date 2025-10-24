@@ -6,15 +6,15 @@ namespace Domain.Entities
 {
     public sealed class User : IAuditable
     {
-        public Guid Id { get; set; }
-        public required Email Email { get; set; }
-        public required UserName Name { get; set; }
-        public byte[] PasswordHash { get; set; } = default!;
-        public byte[] PasswordSalt { get; set; } = default!;
-        public UserRole Role { get; set; } = UserRole.User;
-        public DateTimeOffset CreatedAt { get; set; }
-        public DateTimeOffset UpdatedAt { get; set; }
-        public byte[] RowVersion { get; set; } = default!;
+        public Guid Id { get; private set; }
+        public Email Email { get; private set; } = default!;
+        public UserName Name { get; private set; } = default!;
+        public byte[] PasswordHash { get; private set; } = default!;
+        public byte[] PasswordSalt { get; private set; } = default!;
+        public UserRole Role { get; private set; } = UserRole.User;
+        public DateTimeOffset CreatedAt { get; private set; }
+        public DateTimeOffset UpdatedAt { get; private set; }
+        public byte[] RowVersion { get; private set; } = default!;
         public ICollection<ProjectMember> ProjectMemberships { get; private set; } = [];
 
         private User() { }
@@ -35,5 +35,8 @@ namespace Domain.Entities
         public void Rename(UserName newName) => Name = newName;
 
         public void ChangeRole(UserRole newRole) => Role = newRole;
+
+        internal void SetRowVersion(byte[] value)
+            => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
     }
 }
