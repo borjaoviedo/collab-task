@@ -41,7 +41,7 @@ namespace Domain.Tests.Entities
             var u = User.Create(Email.Create("owner@demo.com"), UserName.Create("Demo Owner"), Bytes(32), Bytes(16));
 
             u.Role.Should().Be(UserRole.User);
-            u.Role = UserRole.Admin;
+            u.ChangeRole(UserRole.Admin);
             u.Role.Should().Be(UserRole.Admin);
         }
 
