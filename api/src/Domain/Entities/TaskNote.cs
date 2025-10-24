@@ -1,6 +1,5 @@
 using Domain.Common.Abstractions;
 using Domain.ValueObjects;
-using System.ComponentModel.DataAnnotations;
 
 namespace Domain.Entities
 {
@@ -12,7 +11,7 @@ namespace Domain.Entities
         public required NoteContent Content { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
-        [Timestamp] public byte[] RowVersion { get; set; } = default!;
+        public byte[] RowVersion { get; set; } = default!;
 
         private TaskNote() { }
 

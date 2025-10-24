@@ -1,6 +1,5 @@
 using Domain.Common.Abstractions;
 using Domain.ValueObjects;
-using System.ComponentModel.DataAnnotations;
 
 namespace Domain.Entities
 {
@@ -16,7 +15,7 @@ namespace Domain.Entities
         public DateTimeOffset UpdatedAt { get; set; }
         public DateTimeOffset? DueDate { get; set; }
         public decimal SortKey { get; set; }
-        [Timestamp] public byte[] RowVersion { get; set; } = default!;
+        public byte[] RowVersion { get; set; } = default!;
 
         private TaskItem() { }
 
