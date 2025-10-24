@@ -23,6 +23,8 @@ namespace Domain.Entities
         {
             if (taskId == Guid.Empty) throw new ArgumentException("TaskId cannot be empty.", nameof(taskId));
             if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty.", nameof(userId));
+            if (!Enum.IsDefined(typeof(TaskActivityType), type))
+                throw new ArgumentOutOfRangeException(nameof(type), "Invalid task activity type.");
 
             return new TaskActivity
             {
