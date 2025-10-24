@@ -7,6 +7,20 @@ namespace Application.Tests.TaskItems.Validation
     public sealed class TaskItemDtoValidatorTests
     {
         [Fact]
+        public void Create_Valid_Passes()
+        {
+            var v = new TaskItemCreateDtoValidator();
+            var dto = new TaskItemCreateDto
+            {
+                Title = "Title",
+                Description = "Description",
+                DueDate = null,
+                SortKey = 0m
+            };
+            v.TestValidate(dto).ShouldNotHaveAnyValidationErrors();
+        }
+
+        [Fact]
         public void Create_Past_DueDate_Fails()
         {
             var v = new TaskItemCreateDtoValidator();
@@ -17,7 +31,7 @@ namespace Application.Tests.TaskItems.Validation
                 DueDate = DateTimeOffset.UtcNow.AddMinutes(-1),
                 SortKey = 0m
             };
-            v.TestValidate(dto).ShouldHaveValidationErrorFor(x => x.DueDate);
+            v.TestValidate(dto).ShouldHaveValidationErrorFor(t => t.DueDate);
         }
 
         [Fact]
@@ -28,10 +42,12 @@ namespace Application.Tests.TaskItems.Validation
             {
                 NewTitle = null, // optional
                 NewDescription = "", // invalid if provided
+                NewDueDate = null // valid
             };
             var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(x => x.NewDescription);
-            r.ShouldNotHaveValidationErrorFor(x => x.NewTitle);
+            r.ShouldHaveValidationErrorFor(t => t.NewDescription);
+            r.ShouldNotHaveValidationErrorFor(t => t.NewTitle);
+            r.ShouldNotHaveValidationErrorFor(t => t.NewDueDate);
         }
 
         [Fact]
@@ -45,9 +61,9 @@ namespace Application.Tests.TaskItems.Validation
                 NewSortKey = -1m,
             };
             var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(x => x.NewLaneId);
-            r.ShouldHaveValidationErrorFor(x => x.NewColumnId);
-            r.ShouldHaveValidationErrorFor(x => x.NewSortKey);
+            r.ShouldHaveValidationErrorFor(t => t.NewLaneId);
+            r.ShouldHaveValidationErrorFor(t => t.NewColumnId);
+            r.ShouldHaveValidationErrorFor(t => t.NewSortKey);
         }
     }
 }
