@@ -234,7 +234,14 @@ namespace Api.Endpoints
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var result = await taskItemWriteSvc.MoveAsync(
-                    projectId, taskId, dto.NewColumnId, dto.NewLaneId, userId, dto.NewSortKey, rowVersion, ct);
+                    projectId,
+                    taskId,
+                    dto.NewColumnId,
+                    dto.NewLaneId,
+                    userId,
+                    dto.NewSortKey,
+                    rowVersion,
+                    ct);
                 if (result != DomainMutation.Updated)
                 {
                     log.LogInformation("Task move rejected projectId={ProjectId} taskId={TaskId} userId={UserId} newLaneId={NewLaneId} newColumnId={NewColumnId} newSortKey={NewSortKey} mutation={Mutation}",
