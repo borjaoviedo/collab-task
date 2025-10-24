@@ -70,5 +70,7 @@ namespace Domain.Entities
 
         internal void SetRowVersion(byte[] value)
             => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
+
+        internal void SetSortKey(decimal sortKey) => SortKey = sortKey;
     }
 }
