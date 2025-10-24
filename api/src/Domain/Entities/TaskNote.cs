@@ -5,13 +5,13 @@ namespace Domain.Entities
 {
     public sealed class TaskNote : IAuditable
     {
-        public Guid Id { get; set; }
-        public Guid TaskId { get; set; }
-        public Guid AuthorId { get; set; }
-        public required NoteContent Content { get; set; }
-        public DateTimeOffset CreatedAt { get; set; }
-        public DateTimeOffset UpdatedAt { get; set; }
-        public byte[] RowVersion { get; set; } = default!;
+        public Guid Id { get; private set; }
+        public Guid TaskId { get; private set; }
+        public Guid AuthorId { get; private set; }
+        public NoteContent Content { get; private set; } = default!;
+        public DateTimeOffset CreatedAt { get; private set; }
+        public DateTimeOffset UpdatedAt { get; private set; }
+        public byte[] RowVersion { get; private set; } = default!;
 
         private TaskNote() { }
 
@@ -34,5 +34,8 @@ namespace Domain.Entities
             if (Content.Equals(content)) return;
             Content = content;
         }
+
+        internal void SetRowVersion(byte[] value)
+            => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
     }
 }
