@@ -1,3 +1,4 @@
+using Domain.Common;
 using Domain.Enums;
 
 namespace Domain.Entities
@@ -17,12 +18,9 @@ namespace Domain.Entities
 
         public static ProjectMember Create(Guid projectId, Guid userId, ProjectRole role)
         {
-            if (projectId == Guid.Empty)
-                throw new ArgumentException("ProjectId cannot be empty.", nameof(projectId));
-            if (userId == Guid.Empty)
-                throw new ArgumentException("UserId cannot be empty.", nameof(userId));
-
-            CheckRole(role);
+            Guards.NotEmpty(projectId, nameof(projectId));
+            Guards.NotEmpty(userId, nameof(userId));
+            Guards.EnumDefined(role, nameof(role));
 
             return new ProjectMember
             {
@@ -35,7 +33,7 @@ namespace Domain.Entities
 
         public void ChangeRole(ProjectRole newRole)
         {
-            CheckRole(newRole);
+            Guards.EnumDefined(newRole, nameof(newRole));
             if (Role == newRole) return;
 
             Role = newRole;
@@ -44,23 +42,27 @@ namespace Domain.Entities
         public void Remove(DateTimeOffset? removedAtUtc)
         {
             if (RemovedAt.HasValue) return;
-            
             RemovedAt = removedAtUtc;
         }
 
         public void Restore() => RemovedAt = null;
 
-        internal void SetRowVersion(byte[] value)
-            => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
-
-        internal void SetUser(User user) => User = user;
-
-        internal void SetProject(Project project) => Project = project;
-
-        private static void CheckRole(ProjectRole role)
+        internal void SetRowVersion(byte[] rowVersion)
         {
-            if (!Enum.IsDefined(typeof(ProjectRole), role))
-                throw new ArgumentOutOfRangeException(nameof(role), "Invalid project role.");
+            Guards.NotNull(rowVersion, nameof(rowVersion));
+            RowVersion = rowVersion;
+        }
+
+        internal void SetUser(User user)
+        {
+            Guards.NotNull(user, nameof(user));
+            User = user;
+        }
+
+        internal void SetProject(Project project)
+        {
+            Guards.NotNull(project, nameof(project));
+            Project = project;
         }
     }
 }

@@ -1,3 +1,4 @@
+using Domain.Common;
 using Domain.Enums;
 using Domain.ValueObjects;
 
@@ -21,10 +22,9 @@ namespace Domain.Entities
             ActivityPayload payload,
             DateTimeOffset createdAt)
         {
-            if (taskId == Guid.Empty) throw new ArgumentException("TaskId cannot be empty.", nameof(taskId));
-            if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty.", nameof(userId));
-            if (!Enum.IsDefined(typeof(TaskActivityType), type))
-                throw new ArgumentOutOfRangeException(nameof(type), "Invalid task activity type.");
+            Guards.NotEmpty(taskId, nameof(taskId));
+            Guards.NotEmpty(userId, nameof(userId));
+            Guards.EnumDefined(type, nameof(type));
 
             return new TaskActivity
             {

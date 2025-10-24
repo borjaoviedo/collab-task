@@ -1,3 +1,4 @@
+using Domain.Common;
 using Domain.ValueObjects;
 
 namespace Domain.Entities
@@ -14,7 +15,7 @@ namespace Domain.Entities
 
         public static Lane Create(Guid projectId, LaneName name, int? order)
         {
-            if (projectId == Guid.Empty) throw new ArgumentException("ProjectId cannot be empty.", nameof(projectId));
+            Guards.NotEmpty(projectId, nameof(projectId));
 
             return new()
             {
@@ -28,19 +29,21 @@ namespace Domain.Entities
         public void Rename(LaneName name)
         {
             if (Name.Equals(name)) return;
-
             Name = name;
         }
 
         public void Reorder(int order)
         {
-            if (order < 0) throw new ArgumentOutOfRangeException(nameof(order), "Order must be equal or greater than 0.");
+            Guards.NonNegative(order, nameof(order));
             if (Order == order) return;
 
             Order = order;
         }
 
-        internal void SetRowVersion(byte[] value)
-            => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
+        internal void SetRowVersion(byte[] rowVersion)
+        {
+            Guards.NotNull(rowVersion, nameof(rowVersion));
+            RowVersion = rowVersion;
+        }
     }
 }

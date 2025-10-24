@@ -1,3 +1,4 @@
+using Domain.Common;
 using Domain.Common.Abstractions;
 using Domain.ValueObjects;
 
@@ -17,8 +18,8 @@ namespace Domain.Entities
 
         public static TaskNote Create(Guid taskId, Guid authorId, NoteContent content)
         {
-            if (taskId == Guid.Empty) throw new ArgumentException("TaskId cannot be empty.", nameof(taskId));
-            if (authorId == Guid.Empty) throw new ArgumentException("AuthorId cannot be empty.", nameof(authorId));
+            Guards.NotEmpty(taskId, nameof(taskId));
+            Guards.NotEmpty(authorId, nameof(authorId));
 
             return new TaskNote
             {
@@ -32,11 +33,13 @@ namespace Domain.Entities
         public void Edit(NoteContent content)
         {
             if (Content.Equals(content)) return;
-
             Content = content;
         }
 
-        internal void SetRowVersion(byte[] value)
-            => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
+        internal void SetRowVersion(byte[] rowVersion)
+        {
+            Guards.NotNull(rowVersion, nameof(rowVersion));
+            RowVersion = rowVersion;
+        }
     }
 }

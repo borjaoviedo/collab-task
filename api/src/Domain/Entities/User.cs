@@ -1,3 +1,4 @@
+using Domain.Common;
 using Domain.Common.Abstractions;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -19,9 +20,14 @@ namespace Domain.Entities
 
         private User() { }
 
-        public static User Create(Email email, UserName name, byte[] hash, byte[] salt, UserRole role = UserRole.User)
+        public static User Create(
+            Email email,
+            UserName name,
+            byte[] hash,
+            byte[] salt,
+            UserRole role = UserRole.User)
         {
-            CheckRole(role);
+            Guards.EnumDefined(role, nameof(role));
 
             return new User
             {
@@ -38,19 +44,16 @@ namespace Domain.Entities
 
         public void ChangeRole(UserRole newRole)
         {
-            CheckRole(newRole);
+            Guards.EnumDefined(newRole, nameof(newRole));
             if (Role == newRole) return;
 
             Role = newRole;
         }
 
-        internal void SetRowVersion(byte[] value)
-            => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
-
-        private static void CheckRole(UserRole role)
+        internal void SetRowVersion(byte[] rowVersion)
         {
-            if (!Enum.IsDefined(typeof(UserRole), role))
-                throw new ArgumentOutOfRangeException(nameof(role), "Invalid user role.");
+            Guards.NotNull(rowVersion, nameof(rowVersion));
+            RowVersion = rowVersion;
         }
     }
 }

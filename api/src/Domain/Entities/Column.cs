@@ -1,4 +1,5 @@
 using Domain.ValueObjects;
+using Domain.Common;
 
 namespace Domain.Entities
 {
@@ -15,8 +16,8 @@ namespace Domain.Entities
 
         public static Column Create(Guid projectId, Guid laneId, ColumnName name, int? order)
         {
-            if (projectId == Guid.Empty) throw new ArgumentException("ProjectId cannot be empty.", nameof(projectId));
-            if (laneId == Guid.Empty) throw new ArgumentException("LaneId cannot be empty.", nameof(laneId));
+            Guards.NotEmpty(projectId, nameof(projectId));
+            Guards.NotEmpty(laneId, nameof(laneId));
 
             return new()
             {
@@ -31,19 +32,21 @@ namespace Domain.Entities
         public void Rename(ColumnName name)
         {
             if (Name.Equals(name)) return;
-
             Name = name;
         }
 
         public void Reorder(int order)
         {
-            if (order < 0) throw new ArgumentOutOfRangeException(nameof(order), "Order must be equal or greater than 0.");
+            Guards.NonNegative(order, nameof(order));
             if (Order == order) return;
 
             Order = order;
         }
 
-        internal void SetRowVersion(byte[] value)
-            => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
+        internal void SetRowVersion(byte[] rowVersion)
+        {
+            Guards.NotNull(rowVersion, nameof(rowVersion));
+            RowVersion = rowVersion;
+        }
     }
 }

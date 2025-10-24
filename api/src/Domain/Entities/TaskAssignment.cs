@@ -1,3 +1,4 @@
+using Domain.Common;
 using Domain.Enums;
 
 namespace Domain.Entities
@@ -13,10 +14,9 @@ namespace Domain.Entities
 
         public static TaskAssignment Create(Guid taskId, Guid userId, TaskRole role)
         {
-            CheckTaskAndUserId(taskId, userId);
-
-            if (!Enum.IsDefined(typeof(TaskRole), role))
-                throw new ArgumentOutOfRangeException(nameof(role), "Invalid task role.");
+            Guards.NotEmpty(taskId, nameof(taskId));
+            Guards.NotEmpty(userId, nameof(userId));
+            Guards.EnumDefined(role, nameof(role));
 
             return new TaskAssignment
             {
@@ -28,27 +28,30 @@ namespace Domain.Entities
 
         public static TaskAssignment AssignOwner(Guid taskId, Guid userId)
         {
-            CheckTaskAndUserId(taskId, userId);
+            Guards.NotEmpty(taskId, nameof(taskId));
+            Guards.NotEmpty(userId, nameof(userId));
 
             return Create(taskId, userId, TaskRole.Owner);
         }
 
         public static TaskAssignment AssignCoOwner(Guid taskId, Guid userId)
         {
-            CheckTaskAndUserId(taskId, userId);
+            Guards.NotEmpty(taskId, nameof(taskId));
+            Guards.NotEmpty(userId, nameof(userId));
 
             return Create(taskId, userId, TaskRole.CoOwner);
         }
 
-        internal void SetRowVersion(byte[] value)
-            => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
-
-        internal void SetRole(TaskRole role) => Role = role;
-
-        private static void CheckTaskAndUserId(Guid taskId, Guid userId)
+        internal void SetRowVersion(byte[] rowVersion)
         {
-            if (taskId == Guid.Empty) throw new ArgumentException("TaskId cannot be empty.", nameof(taskId));
-            if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty.", nameof(userId));
+            Guards.NotNull(rowVersion, nameof(rowVersion));
+            RowVersion = rowVersion;
+        }
+
+        internal void SetRole(TaskRole role)
+        {
+            Guards.EnumDefined(role, nameof(role));
+            Role = role;
         }
     }
 }
