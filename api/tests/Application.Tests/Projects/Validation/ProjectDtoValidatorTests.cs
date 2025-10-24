@@ -1,38 +1,37 @@
-using Application.Common.Validation.Extensions;
-using FluentValidation;
+using Application.Projects.DTOs;
+using Application.Projects.Validation;
 using FluentValidation.TestHelper;
 
 namespace Application.Tests.Projects.Validation
 {
     public sealed class ProjectDtoValidatorTests
     {
-        private sealed class ProjectCreateDto
+        [Fact]
+        public void Project_Valid_Passes()
         {
-            public string Name { get; set; } = "";
-        }
+            var v = new ProjectCreateDtoValidator();
+            var dto = new ProjectCreateDto { Name = "My Project" };
 
-        private sealed class ProjectCreateDtoValidator : AbstractValidator<ProjectCreateDto>
-        {
-            public ProjectCreateDtoValidator()
-            {
-                RuleFor(p => p.Name).ProjectNameRules();
-            }
+            var r = v.TestValidate(dto);
+            r.ShouldNotHaveValidationErrorFor(p => p.Name);
         }
 
         [Fact]
-        public void ProjectName_Invalid_Fails()
+        public void Project_Invalid_Fails()
         {
             var v = new ProjectCreateDtoValidator();
-            v.TestValidate(new ProjectCreateDto { Name = "  " })
-             .ShouldHaveValidationErrorFor(x => x.Name);
-        }
 
-        [Fact]
-        public void ProjectName_Valid_Passes()
-        {
-            var v = new ProjectCreateDtoValidator();
-            v.TestValidate(new ProjectCreateDto { Name = "My Project" })
-             .ShouldNotHaveValidationErrorFor(x => x.Name);
+            v.TestValidate(new ProjectCreateDto { Name = "" })
+             .ShouldHaveValidationErrorFor(p => p.Name)
+             .WithErrorMessage("Project name cannot be whitespace.");
+
+            v.TestValidate(new ProjectCreateDto { Name = "in  valid" })
+             .ShouldHaveValidationErrorFor(p => p.Name)
+             .WithErrorMessage("Project name cannot contain consecutive spaces.");
+
+            v.TestValidate(new ProjectCreateDto { Name = new string('x', 101) })
+             .ShouldHaveValidationErrorFor(p => p.Name)
+             .WithErrorMessage("Project name length must be at most 100 characters.");
         }
     }
 }
