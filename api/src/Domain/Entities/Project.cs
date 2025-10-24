@@ -20,7 +20,7 @@ namespace Domain.Entities
 
         public static Project Create(Guid ownerId, ProjectName name)
         {
-            if (ownerId == Guid.Empty) throw new ArgumentException("OwnerId cannot be empty.", nameof(ownerId));
+            CheckUserId(ownerId);
 
             var p = new Project()
             {
@@ -44,6 +44,9 @@ namespace Domain.Entities
 
         public void AddMember(Guid userId, ProjectRole role)
         {
+            CheckUserId(userId);
+            CheckRole(role);
+
             if (Members.Any(m => m.UserId == userId && m.RemovedAt == null))
                 throw new DuplicateEntityException("User already member.");
 
@@ -55,18 +58,23 @@ namespace Domain.Entities
 
         public void RemoveMember(Guid userId, DateTimeOffset removedAtUtc)
         {
-            var m = Members.FirstOrDefault(m => m.UserId == userId && m.RemovedAt == null)
+            CheckUserId(userId);
+
+            var member = Members.FirstOrDefault(m => m.UserId == userId && m.RemovedAt == null)
                 ?? throw new EntityNotFoundException("Member not found.");
 
-            if (m.Role == ProjectRole.Owner)
+            if (member.Role == ProjectRole.Owner)
                 throw new DomainRuleViolationException("Transfer ownership before removing the owner.");
 
-            m.Remove(removedAtUtc);
+            member.Remove(removedAtUtc);
         }
 
         public void ChangeMemberRole(Guid userId, ProjectRole newRole)
         {
-            var m = Members.FirstOrDefault(m => m.UserId == userId && m.RemovedAt == null)
+            CheckUserId(userId);
+            CheckRole(newRole);
+
+            var member = Members.FirstOrDefault(m => m.UserId == userId && m.RemovedAt == null)
                 ?? throw new EntityNotFoundException("Member not found.");
 
             if (newRole == ProjectRole.Owner)
@@ -75,16 +83,17 @@ namespace Domain.Entities
                     throw new DomainRuleViolationException("Project already has an owner.");
                 OwnerId = userId;
             }
-            else if (m.Role == ProjectRole.Owner && newRole != ProjectRole.Owner)
+            else if (member.Role == ProjectRole.Owner && newRole != ProjectRole.Owner)
             {
                 throw new DomainRuleViolationException("Cannot demote current owner. Transfer first.");
             }
 
-            m.ChangeRole(newRole);
+            member.ChangeRole(newRole);
         }
 
         public void TransferOwnership(Guid newOwnerId)
         {
+            CheckUserId(newOwnerId);
             if (OwnerId == newOwnerId) return;
 
             var target = Members.FirstOrDefault(m => m.UserId == newOwnerId && m.RemovedAt == null)
@@ -99,5 +108,17 @@ namespace Domain.Entities
 
         internal void SetRowVersion(byte[] value)
             => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
+
+        private static void CheckUserId(Guid userId)
+        {
+            if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty.", nameof(userId));
+        }
+
+        private static void CheckRole(ProjectRole role)
+        {
+            if (!Enum.IsDefined(typeof(ProjectRole), role))
+                throw new ArgumentOutOfRangeException(nameof(role), "Invalid project role.");
+        }
+
     }
 }
