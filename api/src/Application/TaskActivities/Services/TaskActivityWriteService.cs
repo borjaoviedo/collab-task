@@ -15,8 +15,7 @@ namespace Application.TaskActivities.Services
             ActivityPayload payload,
             CancellationToken ct = default)
         {
-            var activity = TaskActivity.Create(taskId, userId, type, payload);
-            activity.CreatedAt = clock.UtcNow;
+            var activity = TaskActivity.Create(taskId, userId, type, payload, clock.UtcNow);
 
             await repo.AddAsync(activity, ct);
             return (DomainMutation.Created, activity);
