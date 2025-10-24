@@ -146,7 +146,8 @@ namespace Infrastructure.Tests.Persistence.Contracts
             await db.SaveChangesAsync();
 
             var pm = ProjectMember.Create(p.Id, u.Id, ProjectRole.Member);
-            pm.RemovedAt = now.AddMinutes(-5);
+            var removedAt = now.AddMinutes(-5);
+            pm.Remove(removedAt);
             db.ProjectMembers.Add(pm);
 
             await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
