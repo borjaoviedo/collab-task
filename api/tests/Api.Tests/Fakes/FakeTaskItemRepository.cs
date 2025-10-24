@@ -68,6 +68,7 @@ namespace Api.Tests.Fakes
             Guid taskId,
             Guid targetColumnId,
             Guid targetLaneId,
+            Guid targetProjectId,
             decimal targetSortKey,
             byte[] rowVersion,
             CancellationToken ct = default)
@@ -78,7 +79,7 @@ namespace Api.Tests.Fakes
             if (task.ColumnId == targetColumnId && task.LaneId == targetLaneId && task.SortKey == targetSortKey)
                 return (DomainMutation.NoOp, null);
 
-            task.Move(targetLaneId, targetColumnId, targetSortKey);
+            task.Move(targetProjectId, targetLaneId, targetColumnId, targetSortKey);
             task.SetRowVersion(NextRowVersion());
             return (DomainMutation.Updated, null);
         }

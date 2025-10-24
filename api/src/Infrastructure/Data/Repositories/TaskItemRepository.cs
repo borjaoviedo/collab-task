@@ -77,6 +77,7 @@ namespace Infrastructure.Data.Repositories
             Guid taskId,
             Guid targetColumnId,
             Guid targetLaneId,
+            Guid targetProjectId,
             decimal targetSortKey,
             byte[] rowVersion,
             CancellationToken ct = default)
@@ -107,7 +108,7 @@ namespace Infrastructure.Data.Repositories
                 task.SortKey, targetSortKey
             );
 
-            task.Move(targetLaneId, targetColumnId, targetSortKey);
+            task.Move(targetProjectId, targetLaneId, targetColumnId, targetSortKey);
             _db.Entry(task).Property(t => t.ColumnId).IsModified = true;
             _db.Entry(task).Property(t => t.LaneId).IsModified = true;
             _db.Entry(task).Property(t => t.SortKey).IsModified = true;

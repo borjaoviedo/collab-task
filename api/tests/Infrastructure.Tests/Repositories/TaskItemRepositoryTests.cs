@@ -138,7 +138,7 @@ namespace Infrastructure.Tests.Repositories
             var task = TestDataFactory.SeedTaskItem(db, pId, firstLaneId, firstColumnId);
 
             var tracked = await db.TaskItems.SingleAsync(t => t.Id == task.Id);
-            var (res, change) = await repo.MoveAsync(task.Id, secondColumn.Id, secondLane.Id, 5m, tracked.RowVersion!);
+            var (res, change) = await repo.MoveAsync(task.Id, secondColumn.Id, secondLane.Id, pId, 5m, tracked.RowVersion!);
             res.Should().Be(DomainMutation.Updated);
             change.Should().NotBeNull();
 
@@ -164,7 +164,7 @@ namespace Infrastructure.Tests.Repositories
             var task = TestDataFactory.SeedTaskItem(db, firstProjectId, firstLaneId, firstColumnId);
 
             var tracked = await db.TaskItems.SingleAsync(t => t.Id == task.Id);
-            var (res, change) = await repo.MoveAsync(task.Id, secondProjectColumnId, secondProjectLaneId, 1m, tracked.RowVersion!);
+            var (res, change) = await repo.MoveAsync(task.Id, secondProjectColumnId, secondProjectLaneId, firstProjectId, 1m, tracked.RowVersion!);
             res.Should().Be(DomainMutation.Conflict);
             change.Should().BeNull();
         }
