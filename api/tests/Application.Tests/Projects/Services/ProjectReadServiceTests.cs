@@ -25,7 +25,7 @@ namespace Application.Tests.Projects.Services
         }
 
         [Fact]
-        public async Task GetAllByUserAsync_Returns_All_Projects_By_User()
+        public async Task ListByUserAsync_Returns_All_Projects_By_User()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -36,38 +36,38 @@ namespace Application.Tests.Projects.Services
             var secondProjectName = "Second";
             var (_, firstUserId) = TestDataFactory.SeedUserWithProject(db, projectName: firstProjectName);
 
-            var firstUserList = await svc.GetAllByUserAsync(firstUserId);
+            var firstUserList = await svc.ListByUserAsync(firstUserId);
             firstUserList.Should().NotBeNull();
             firstUserList.Should().HaveCount(1);
             var (_, secondUserId) = TestDataFactory.SeedUserWithProject(db, projectName: secondProjectName);
 
-            var secondUserList = await svc.GetAllByUserAsync(secondUserId);
+            var secondUserList = await svc.ListByUserAsync(secondUserId);
             secondUserList.Should().NotBeNull();
             secondUserList.Should().HaveCount(1);
 
             var thirdProjectName = "Third";
             TestDataFactory.SeedProject(db, firstUserId, thirdProjectName);
-            firstUserList = await svc.GetAllByUserAsync(firstUserId);
+            firstUserList = await svc.ListByUserAsync(firstUserId);
             firstUserList.Should().HaveCount(2);
 
-            secondUserList = await svc.GetAllByUserAsync(secondUserId);
+            secondUserList = await svc.ListByUserAsync(secondUserId);
             secondUserList.Should().HaveCount(1);
         }
 
         [Fact]
-        public async Task GetAllByUserAsync_Returns_Empty_List_When_Not_Found_User()
+        public async Task ListByUserAsync_Returns_Empty_List_When_Not_Found_User()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
             var svc = new ProjectReadService(repo);
 
-            var list = await svc.GetAllByUserAsync(Guid.NewGuid());
+            var list = await svc.ListByUserAsync(Guid.NewGuid());
             list.Should().BeEmpty();
         }
 
         [Fact]
-        public async Task GetAllByUserAsync_Returns_Empty_List_When_User_Have_No_Projects()
+        public async Task ListByUserAsync_Returns_Empty_List_When_User_Have_No_Projects()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -75,7 +75,7 @@ namespace Application.Tests.Projects.Services
             var svc = new ProjectReadService(repo);
 
             var user = TestDataFactory.SeedUser(db);
-            var list = await svc.GetAllByUserAsync(user.Id);
+            var list = await svc.ListByUserAsync(user.Id);
             list.Should().BeEmpty();
         }
     }

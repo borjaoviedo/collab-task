@@ -1,5 +1,5 @@
-using Application.Common.Changes;
 using Application.TaskItems.Abstractions;
+using Application.TaskItems.Changes;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -18,7 +18,7 @@ namespace Infrastructure.Data.Repositories
         public async Task<TaskItem?> GetTrackedByIdAsync(Guid taskId, CancellationToken ct = default)
             => await _db.TaskItems.FirstOrDefaultAsync(t => t.Id == taskId, ct);
 
-        public async Task<bool> ExistsWithTitleAsync(Guid columnId, string title, Guid? excludeTaskId = null, CancellationToken ct = default)
+        public async Task<bool> ExistsWithTitleAsync(Guid columnId, TaskTitle title, Guid? excludeTaskId = null, CancellationToken ct = default)
         {
             var q = _db.TaskItems.AsNoTracking().Where(t => t.ColumnId == columnId && t.Title == title);
             if (excludeTaskId.HasValue) q = q.Where(t => t.Id != excludeTaskId.Value);
@@ -35,8 +35,13 @@ namespace Infrastructure.Data.Repositories
         public async Task AddAsync(TaskItem task, CancellationToken ct = default)
             => await _db.TaskItems.AddAsync(task, ct);
 
-        public async Task<(DomainMutation Mutation, TaskItemChange? Change)> EditAsync(Guid taskId, string? newTitle,
-            string? newDescription, DateTimeOffset? newDueDate, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<(DomainMutation Mutation, TaskItemChange? Change)> EditAsync(
+            Guid taskId,
+            TaskTitle? newTitle,
+            TaskDescription? newDescription,
+            DateTimeOffset? newDueDate,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var task = await GetTrackedByIdAsync(taskId, ct);
             if (task is null) return (DomainMutation.NotFound, null);
@@ -51,10 +56,7 @@ namespace Infrastructure.Data.Repositories
             var descriptionBefore = task.Description;
             var dueDateBefore = task.DueDate;
 
-            var titleVO = newTitle is null ? null : TaskTitle.Create(newTitle);
-            var descVO = newDescription is null ? null : TaskDescription.Create(newDescription);
-
-            task.Edit(titleVO, descVO, newDueDate);
+            task.Edit(newTitle, newDescription, newDueDate);
 
             var changed = false;
             if (!Equals(titleBefore, task.Title)) { _db.Entry(task).Property(t => t.Title).IsModified = true; changed = true; }
@@ -71,8 +73,13 @@ namespace Infrastructure.Data.Repositories
             return (DomainMutation.Updated, change);
         }
 
-        public async Task<(DomainMutation Mutation, TaskItemChange? Change)> MoveAsync(Guid taskId, Guid targetColumnId, Guid targetLaneId,
-            decimal targetSortKey, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<(DomainMutation Mutation, TaskItemChange? Change)> MoveAsync(
+            Guid taskId,
+            Guid targetColumnId,
+            Guid targetLaneId,
+            decimal targetSortKey,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var task = await GetTrackedByIdAsync(taskId, ct);
             if (task is null) return (DomainMutation.NotFound, null);

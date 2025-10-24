@@ -18,7 +18,7 @@ namespace Infrastructure.Data.Repositories
         public async Task<Column?> GetTrackedByIdAsync(Guid columnId, CancellationToken ct = default)
             => await _db.Columns.FirstOrDefaultAsync(c => c.Id == columnId, ct);
 
-        public async Task<bool> ExistsWithNameAsync(Guid laneId, string name, Guid? excludeColumnId = null, CancellationToken ct = default)
+        public async Task<bool> ExistsWithNameAsync(Guid laneId, ColumnName name, Guid? excludeColumnId = null, CancellationToken ct = default)
         {
             var q = _db.Columns.AsNoTracking().Where(c => c.LaneId == laneId && c.Name == name);
             if (excludeColumnId.HasValue) q = q.Where(c => c.Id != excludeColumnId.Value);
@@ -41,7 +41,7 @@ namespace Infrastructure.Data.Repositories
         public async Task AddAsync(Column column, CancellationToken ct = default)
             => await _db.AddAsync(column, ct);
 
-        public async Task<DomainMutation> RenameAsync(Guid columnId, string newName, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> RenameAsync(Guid columnId, ColumnName newName, byte[] rowVersion, CancellationToken ct = default)
         {
             var column = await GetTrackedByIdAsync(columnId, ct);
             if (column is null) return DomainMutation.NotFound;
@@ -57,7 +57,7 @@ namespace Infrastructure.Data.Repositories
             if (await ExistsWithNameAsync(column.LaneId, newName, column.Id, ct))
                 return DomainMutation.Conflict;
 
-            column.Rename(ColumnName.Create(newName));
+            column.Rename(newName);
             _db.Entry(column).Property(c => c.Name).IsModified = true;
 
             try

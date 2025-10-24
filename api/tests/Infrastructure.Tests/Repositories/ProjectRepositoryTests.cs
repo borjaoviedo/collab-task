@@ -1,4 +1,5 @@
 using Application.Projects.Abstractions;
+using Application.Projects.Filters;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -146,7 +147,7 @@ namespace Infrastructure.Tests.Repositories
             var thirdProject = TestDataFactory.SeedProject(db, secondUserId, thirdProjectName);
 
             TestDataFactory.SeedProjectMember(db, thirdProject.Id, firstUserId);
-            var list = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { NameContains = "Board", OrderBy = "name" });
+            var list = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { NameContains = "Board", OrderBy = ProjectOrderBy.NameAsc });
 
             list.Select(p => p.Name.Value).Should().Equal("Alpha Board", "Gamma Board");
         }
@@ -165,10 +166,10 @@ namespace Infrastructure.Tests.Repositories
 
             TestDataFactory.SeedProjectMember(db, secondProjectId, firstUserId, ProjectRole.Member);
 
-            var onlyOwner = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { Role = ProjectRole.Owner, OrderBy = "name" });
+            var onlyOwner = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { Role = ProjectRole.Owner, OrderBy = ProjectOrderBy.NameAsc });
             onlyOwner.Select(p => p.Name.Value).Should().Equal(firstProjectName);
 
-            var onlyMember = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { Role = ProjectRole.Member, OrderBy = "name" });
+            var onlyMember = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { Role = ProjectRole.Member, OrderBy = ProjectOrderBy.NameAsc });
             onlyMember.Select(p => p.Name.Value).Should().Equal(secondProjectName);
         }
 
@@ -189,10 +190,10 @@ namespace Infrastructure.Tests.Repositories
             TestDataFactory.SeedProjectMember(db, secondProjectId, firstUserId);
             TestDataFactory.SeedProjectMember(db, thirdProjectId, firstUserId);
 
-            var page1 = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { OrderBy = "name", Skip = 0, Take = 2 });
+            var page1 = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { OrderBy = ProjectOrderBy.NameAsc, Skip = 0, Take = 2 });
             page1.Select(p => p.Name.Value).Should().Equal(firstProjectName, secondProjectName);
 
-            var page2 = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { OrderBy = "name", Skip = 2, Take = 2 });
+            var page2 = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { OrderBy = ProjectOrderBy.NameAsc, Skip = 2, Take = 2 });
             page2.Select(p => p.Name.Value).Should().Equal(thirdProjectName);
         }
 
@@ -203,7 +204,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var projectName = "New Project";
+            var projectName = ProjectName.Create("New Project");
             var owner = TestDataFactory.SeedUser(db);
             var project = Project.Create(owner.Id, ProjectName.Create(projectName));
 
@@ -221,7 +222,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var projectName = "Unique";
+            var projectName = ProjectName.Create("Unique");
             var owner = TestDataFactory.SeedUser(db);
             TestDataFactory.SeedProject(db, owner.Id, projectName);
 
@@ -236,8 +237,8 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var firstProjectName = "First name";
-            var secondProjectName = "Second name";
+            var firstProjectName = ProjectName.Create("First name");
+            var secondProjectName = ProjectName.Create("Second name");
 
             var (_, firstUserId) = TestDataFactory.SeedUserWithProject(db, projectName: firstProjectName);
             var (_, secondUserId) = TestDataFactory.SeedUserWithProject(db, projectName: secondProjectName);
@@ -253,7 +254,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var projectName = "Project name";
+            var projectName = ProjectName.Create("Project name");
             var user = TestDataFactory.SeedUser(db);
             var project = TestDataFactory.SeedProject(db, user.Id, projectName);
 
@@ -269,8 +270,8 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var oldProjectName = "Old name";
-            var newProjectName = "New name";
+            var oldProjectName = ProjectName.Create("Old name");
+            var newProjectName = ProjectName.Create("New name");
             var user = TestDataFactory.SeedUser(db);
             var project = TestDataFactory.SeedProject(db, user.Id, oldProjectName);
 
@@ -289,8 +290,8 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var oldProjectName = "Old name";
-            var newProjectName = "New name";
+            var oldProjectName = ProjectName.Create("Old name");
+            var newProjectName = ProjectName.Create("New name");
             var (pId, _) = TestDataFactory.SeedUserWithProject(db, projectName: oldProjectName);
 
             var res = await repo.RenameAsync(pId, newProjectName, [1, 2, 3, 4]);

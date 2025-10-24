@@ -7,7 +7,7 @@ namespace Application.TaskActivities.Abstractions
     {
         Task<TaskActivity?> GetAsync(Guid activityId, CancellationToken ct = default);
         Task<IReadOnlyList<TaskActivity>> ListByTaskAsync(Guid taskId, CancellationToken ct = default);
-        Task<IReadOnlyList<TaskActivity>> ListByActorAsync(Guid actorId, CancellationToken ct = default);
+        Task<IReadOnlyList<TaskActivity>> ListByUserAsync(Guid userId, CancellationToken ct = default);
         Task<IReadOnlyList<TaskActivity>> ListByTypeAsync(Guid taskId, TaskActivityType type, CancellationToken ct = default);
     }
 }

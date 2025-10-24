@@ -5,10 +5,10 @@ namespace Application.Lanes.Services
 {
     public sealed class LaneReadService(ILaneRepository repo) : ILaneReadService
     {
-        public Task<Lane?> GetAsync(Guid laneId, CancellationToken ct = default)
-            => repo.GetByIdAsync(laneId, ct);
+        public async Task<Lane?> GetAsync(Guid laneId, CancellationToken ct = default)
+            => await repo.GetByIdAsync(laneId, ct);
 
-        public Task<IReadOnlyList<Lane>> ListByProjectAsync(Guid projectId, CancellationToken ct = default)
-            => repo.ListByProjectAsync(projectId, ct);
+        public async Task<IReadOnlyList<Lane>> ListByProjectAsync(Guid projectId, CancellationToken ct = default)
+            => await repo.ListByProjectAsync(projectId, ct);
     }
 }

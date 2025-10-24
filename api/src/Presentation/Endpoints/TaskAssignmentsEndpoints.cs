@@ -98,9 +98,9 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskAssignments.Create");
 
-                var performedById = (Guid)currentUserSvc.UserId!;
+                var executedBy = (Guid)currentUserSvc.UserId!;
 
-                var (result, assignment) = await taskAssignmentWriteSvc.CreateAsync(projectId, taskId, dto.UserId, dto.Role, performedById, ct);
+                var (result, assignment) = await taskAssignmentWriteSvc.CreateAsync(projectId, taskId, targetUserId: dto.UserId, dto.Role, executedBy, ct);
                 if (result == DomainMutation.Conflict || assignment is null)
                 {
                     log.LogInformation("Task assignment create conflict projectId={ProjectId} taskId={TaskId} userId={UserId}",
@@ -170,8 +170,8 @@ namespace Api.Endpoints
                     return Results.NotFound();
                 }
 
-                var performedById = (Guid)currentUserSvc.UserId!;
-                var result = await taskAssignmentWriteSvc.ChangeRoleAsync(projectId, taskId, userId, dto.NewRole, performedById, rowVersion, ct);
+                var executedBy = (Guid)currentUserSvc.UserId!;
+                var result = await taskAssignmentWriteSvc.ChangeRoleAsync(projectId, taskId, targetUserId: userId, dto.NewRole, executedBy, rowVersion, ct);
                 if (result != DomainMutation.Updated)
                 {
                     log.LogInformation("Task assignment role change rejected projectId={ProjectId} taskId={TaskId} userId={UserId} mutation={Mutation}",
@@ -235,8 +235,8 @@ namespace Api.Endpoints
                     return Results.NotFound();
                 }
 
-                var performedById = (Guid)currentUserSvc.UserId!;
-                var result = await taskAssignmentWriteSvc.RemoveAsync(projectId, taskId, userId, performedById, rowVersion, ct);
+                var executedBy = (Guid)currentUserSvc.UserId!;
+                var result = await taskAssignmentWriteSvc.RemoveAsync(projectId, taskId, targetUserId: userId, executedBy, rowVersion, ct);
 
                 log.LogInformation("Task assignment removed projectId={ProjectId} taskId={TaskId} userId={UserId} mutation={Mutation}",
                                     projectId, taskId, userId, result);

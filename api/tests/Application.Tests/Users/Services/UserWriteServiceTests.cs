@@ -1,5 +1,6 @@
 using Application.Users.Services;
 using Domain.Enums;
+using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,9 @@ namespace Application.Tests.Users.Services
 {
     public sealed class UserWriteServiceTests
     {
+        private readonly byte[] _validHash = TestDataFactory.Bytes(32);
+        private readonly byte[] _validSalt = TestDataFactory.Bytes(16);
+
         [Fact]
         public async Task CreateAsync_Returns_Created_And_User()
         {
@@ -17,7 +21,12 @@ namespace Application.Tests.Users.Services
             var repo = new UserRepository(db);
             var svc = new UserWriteService(repo);
 
-            var (created, user) = await svc.CreateAsync("email@e.com", "user name", TestDataFactory.Bytes(32), TestDataFactory.Bytes(16), UserRole.Admin);
+            var (created, user) = await svc.CreateAsync(
+                Email.Create("email@e.com"),
+                UserName.Create("user name"),
+                _validHash,
+                _validSalt,
+                UserRole.Admin);
 
             created.Should().Be(DomainMutation.Created);
             user.Should().NotBeNull();
@@ -34,7 +43,7 @@ namespace Application.Tests.Users.Services
             var user = TestDataFactory.SeedUser(db);
 
             var current = await db.Users.FirstAsync(u => u.Id == user!.Id);
-            var result = await svc.RenameAsync(user!.Id, "new name", current.RowVersion);
+            var result = await svc.RenameAsync(user!.Id, UserName.Create("new name"), current.RowVersion);
             result.Should().Be(DomainMutation.Updated);
         }
 
@@ -46,7 +55,7 @@ namespace Application.Tests.Users.Services
             var repo = new UserRepository(db);
             var svc = new UserWriteService(repo);
 
-            var sameName = "same name";
+            var sameName = UserName.Create("same name");
             var u = TestDataFactory.SeedUser(db, name: sameName);
 
             var res = await svc.RenameAsync(u!.Id, sameName, u.RowVersion);

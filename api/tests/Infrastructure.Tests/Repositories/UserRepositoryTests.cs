@@ -17,8 +17,8 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var email = "a@b.com";
-            var u = User.Create(Email.Create(email), UserName.Create("User Name"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            var email = Email.Create("a@b.com");
+            var u = User.Create(email, UserName.Create("User Name"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
 
             await repo.AddAsync(u);
             await repo.SaveChangesAsync();
@@ -28,7 +28,7 @@ namespace Infrastructure.Tests.Repositories
 
             var fromDb = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
             fromDb.Should().NotBeNull();
-            fromDb!.Email.Should().Be(Email.Create(email));
+            fromDb!.Email.Should().Be(email);
         }
 
         [Fact]
@@ -38,7 +38,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var email = "user1@example.com";
+            var email = Email.Create("user1@example.com");
             var u = TestDataFactory.SeedUser(db, email);
 
             var found = await repo.GetByEmailAsync(email);
@@ -54,7 +54,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var found = await repo.GetByEmailAsync("missing@example.com");
+            var found = await repo.GetByEmailAsync(Email.Create("missing@example.com"));
 
             found.Should().BeNull();
         }
@@ -66,7 +66,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var name = "User Name";
+            var name = UserName.Create("User Name");
             var u = TestDataFactory.SeedUser(db, name: name);
             var found = await repo.GetByNameAsync(name);
 
@@ -81,7 +81,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var found = await repo.GetByNameAsync("Not Found User Name");
+            var found = await repo.GetByNameAsync(UserName.Create("Not Found User Name"));
 
             found.Should().BeNull();
         }
@@ -142,11 +142,11 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var email = "existing@e.com";
+            var email = Email.Create("existing@e.com");
             TestDataFactory.SeedUser(db, email);
 
             (await repo.ExistsWithEmailAsync(email)).Should().BeTrue();
-            (await repo.ExistsWithEmailAsync("nope@example.com")).Should().BeFalse();
+            (await repo.ExistsWithEmailAsync(Email.Create("nope@example.com"))).Should().BeFalse();
         }
 
         [Fact]
@@ -156,11 +156,11 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var name = "Name";
+            var name = UserName.Create("Name");
             TestDataFactory.SeedUser(db, name: name);
 
             (await repo.ExistsWithNameAsync(name)).Should().BeTrue();
-            (await repo.ExistsWithNameAsync("Diff User Name")).Should().BeFalse();
+            (await repo.ExistsWithNameAsync(UserName.Create("Diff User Name"))).Should().BeFalse();
         }
 
         [Fact]
@@ -188,7 +188,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var name = "Same";
+            var name = UserName.Create("Same");
             var u = TestDataFactory.SeedUser(db, name: name);
 
             var res = await repo.RenameAsync(u.Id, name, u.RowVersion);
@@ -205,7 +205,7 @@ namespace Infrastructure.Tests.Repositories
 
             var user = TestDataFactory.SeedUser(db);
 
-            var res = await repo.RenameAsync(user.Id, "New", user.RowVersion);
+            var res = await repo.RenameAsync(user.Id, UserName.Create("New"), user.RowVersion);
             res.Should().Be(DomainMutation.Updated);
 
             var fromDb = await db.Users.AsNoTracking().SingleAsync(u => u.Id == user.Id);
@@ -322,9 +322,9 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var u =TestDataFactory.SeedUser(db, "SaMe@e.CoM");
+            var u = TestDataFactory.SeedUser(db, "SaMe@e.CoM");
 
-            var found = await repo.GetByEmailAsync("same@e.com");
+            var found = await repo.GetByEmailAsync(Email.Create("same@e.com"));
 
             found.Should().NotBeNull();
             found!.Id.Should().Be(u.Id);

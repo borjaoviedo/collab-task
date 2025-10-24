@@ -6,6 +6,7 @@ using Application.TaskItems.Abstractions;
 using Application.TaskItems.DTOs;
 using Application.TaskItems.Mapping;
 using Domain.Enums;
+using Domain.ValueObjects;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
@@ -96,7 +97,15 @@ namespace Api.Endpoints
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var (result, task) = await taskItemWriteSvc.CreateAsync(
-                    projectId, laneId, columnId, userId, dto.Title, dto.Description, dto.DueDate, dto.SortKey, ct);
+                    projectId,
+                    laneId,
+                    columnId,
+                    userId,
+                    TaskTitle.Create(dto.Title),
+                    TaskDescription.Create(dto.Description),
+                    dto.DueDate,
+                    dto.SortKey,
+                    ct);
 
                 if (result != DomainMutation.Created || task is null)
                 {
@@ -151,7 +160,15 @@ namespace Api.Endpoints
                 }
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var result = await taskItemWriteSvc.EditAsync(projectId, taskId, userId, dto.NewTitle, dto.NewDescription, dto.NewDueDate, rowVersion, ct);
+                var result = await taskItemWriteSvc.EditAsync(
+                    projectId,
+                    taskId,
+                    userId,
+                    TaskTitle.Create(dto.NewTitle!),
+                    TaskDescription.Create(dto.NewDescription!),
+                    dto.NewDueDate,
+                    rowVersion,
+                    ct);
                 if (result != DomainMutation.Updated)
                 {
                     log.LogInformation("Task edit rejected projectId={ProjectId} taskId={TaskId} userId={UserId} mutation={Mutation}",
@@ -217,11 +234,11 @@ namespace Api.Endpoints
 
                 var userId = (Guid)currentUserSvc.UserId!;
                 var result = await taskItemWriteSvc.MoveAsync(
-                    projectId, taskId, dto.TargetColumnId, dto.TargetLaneId, userId, dto.TargetSortKey, rowVersion, ct);
+                    projectId, taskId, dto.NewColumnId, dto.NewLaneId, userId, dto.NewSortKey, rowVersion, ct);
                 if (result != DomainMutation.Updated)
                 {
-                    log.LogInformation("Task move rejected projectId={ProjectId} taskId={TaskId} userId={UserId} targetLaneId={TargetLaneId} targetColumnId={TargetColumnId} mutation={Mutation}",
-                                        projectId, taskId, userId, dto.TargetLaneId, dto.TargetColumnId, result);
+                    log.LogInformation("Task move rejected projectId={ProjectId} taskId={TaskId} userId={UserId} newLaneId={NewLaneId} newColumnId={NewColumnId} newSortKey={NewSortKey} mutation={Mutation}",
+                                        projectId, taskId, userId, dto.NewLaneId, dto.NewColumnId, dto.NewSortKey, result);
                     return result.ToHttp(context);
                 }
 
@@ -236,8 +253,8 @@ namespace Api.Endpoints
                 var responseDto = moved.ToReadDto();
                 var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
-                log.LogInformation("Task moved projectId={ProjectId} taskId={TaskId} userId={UserId} targetLaneId={TargetLaneId} targetColumnId={TargetColumnId} targetSortKey={TargetSortKey} etag={ETag}",
-                                    projectId, taskId, userId, dto.TargetLaneId, dto.TargetColumnId, dto.TargetSortKey, etag);
+                log.LogInformation("Task moved projectId={ProjectId} taskId={TaskId} userId={UserId} newLaneId={NewLaneId} newColumnId={NewColumnId} newSortKey={NewSortKey} etag={ETag}",
+                                    projectId, taskId, userId, dto.NewLaneId, dto.NewColumnId, dto.NewSortKey, etag);
                 return Results.Ok(responseDto).WithETag(etag);
             })
             .RequireAuthorization(Policies.ProjectMember)

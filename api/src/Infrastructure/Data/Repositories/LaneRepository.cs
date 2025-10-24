@@ -26,7 +26,7 @@ namespace Infrastructure.Data.Repositories
                         .ToListAsync(ct)
                         .ContinueWith(t => (IReadOnlyList<Lane>)t.Result, ct);
 
-        public async Task<bool> ExistsWithNameAsync(Guid projectId, string name, Guid? excludeLaneId = null, CancellationToken ct = default)
+        public async Task<bool> ExistsWithNameAsync(Guid projectId, LaneName name, Guid? excludeLaneId = null, CancellationToken ct = default)
         {
             var q = _db.Lanes.AsNoTracking().Where(l => l.ProjectId == projectId && l.Name == name);
             if (excludeLaneId.HasValue) q = q.Where(l => l.Id != excludeLaneId.Value);
@@ -42,7 +42,7 @@ namespace Infrastructure.Data.Repositories
         public async Task AddAsync(Lane lane, CancellationToken ct = default)
             => await _db.Lanes.AddAsync(lane, ct);
 
-        public async Task<DomainMutation> RenameAsync(Guid laneId, string newName, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> RenameAsync(Guid laneId, LaneName newName, byte[] rowVersion, CancellationToken ct = default)
         {
             var lane = await GetTrackedByIdAsync(laneId, ct);
             if (lane is null) return DomainMutation.NotFound;

@@ -7,6 +7,7 @@ using Application.Users.Abstractions;
 using Application.Users.DTOs;
 using Application.Users.Mapping;
 using Domain.Enums;
+using Domain.ValueObjects;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
@@ -37,7 +38,13 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Auth.Register");
 
                 var (hash, salt) = hasher.Hash(dto.Password);
-                var (result, user) = await userWriteSvc.CreateAsync(dto.Email, dto.Name, hash, salt, UserRole.User, ct);
+                var (result, user) = await userWriteSvc.CreateAsync(
+                    Email.Create(dto.Email),
+                    UserName.Create(dto.Name),
+                    hash,
+                    salt,
+                    UserRole.User,
+                    ct);
 
                 if (result != DomainMutation.Created || user is null)
                 {
@@ -74,7 +81,7 @@ namespace Api.Endpoints
 
                 await Task.Delay(Random.Shared.Next(10, 30), ct); // small jitter to reduce timing attacks
 
-                var user = await userReadSvc.GetByEmailAsync(dto.Email, ct);
+                var user = await userReadSvc.GetByEmailAsync(Email.Create(dto.Email), ct);
 
                 if (user is null || !hasher.Verify(dto.Password, user.PasswordSalt, user.PasswordHash))
                 {

@@ -1,5 +1,6 @@
 using Application.ProjectMembers.Abstractions;
 using Application.Projects.Abstractions;
+using Application.Projects.Filters;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -62,14 +63,25 @@ namespace Api.Tests.Fakes
                 q = q.Where(p => p.Members.Any(m => m.UserId == userId && m.Role == role && (includeRemoved || m.RemovedAt is null)));
             }
 
-            q = filter.OrderBy?.ToLowerInvariant() switch
+            q = filter.OrderBy switch
             {
-                "name" => q.OrderBy(p => p.Name.Value).ThenBy(p => p.Id),
-                "name_desc" => q.OrderByDescending(p => p.Name.Value).ThenBy(p => p.Id),
-                "createdat" => q.OrderBy(p => p.CreatedAt).ThenBy(p => p.Name.Value),
-                "createdat_desc" => q.OrderByDescending(p => p.CreatedAt).ThenBy(p => p.Name.Value),
-                "updatedat" => q.OrderBy(p => p.UpdatedAt).ThenBy(p => p.Name.Value),
-                _ => q.OrderByDescending(p => p.UpdatedAt).ThenBy(p => p.Name.Value)
+                ProjectOrderBy.NameAsc =>
+                    q.OrderBy(p => p.Name.Value).ThenBy(p => p.Id),
+
+                ProjectOrderBy.NameDesc =>
+                    q.OrderByDescending(p => p.Name.Value).ThenBy(p => p.Id),
+
+                ProjectOrderBy.CreatedAtAsc =>
+                    q.OrderBy(p => p.CreatedAt).ThenBy(p => p.Name.Value),
+
+                ProjectOrderBy.CreatedAtDesc =>
+                    q.OrderByDescending(p => p.CreatedAt).ThenBy(p => p.Name.Value),
+
+                ProjectOrderBy.UpdatedAtAsc =>
+                    q.OrderBy(p => p.UpdatedAt).ThenBy(p => p.Name.Value),
+
+                ProjectOrderBy.UpdatedAtDesc or _ =>
+                    q.OrderByDescending(p => p.UpdatedAt).ThenBy(p => p.Name.Value)
             };
 
             var take = filter.Take is > 0 ? filter.Take.Value : 50;
@@ -100,15 +112,15 @@ namespace Api.Tests.Fakes
             foreach (var m in project.Members)
             {
                 var cm = ProjectMember.Create(m.ProjectId, m.UserId, m.Role);
-                cm.RowVersion = (m.RowVersion is null) ? Array.Empty<byte>() : m.RowVersion.ToArray();
+                cm.RowVersion = (m.RowVersion is null) ? [] : m.RowVersion.ToArray();
                 cm.Remove(m.RemovedAt);
-                _ = _pmRepo.AddAsync(cm, ct);
+                _pmRepo.AddAsync(cm, ct);
             }
 
             return Task.CompletedTask;
         }
 
-        public Task<DomainMutation> RenameAsync(Guid id, string newName, byte[] rowVersion, CancellationToken ct = default)
+        public Task<DomainMutation> RenameAsync(Guid id, ProjectName newName, byte[] rowVersion, CancellationToken ct = default)
         {
             if (rowVersion is null || rowVersion.Length == 0)
                 return Task.FromResult(DomainMutation.Conflict);
@@ -154,7 +166,7 @@ namespace Api.Tests.Fakes
             return Task.FromResult(DomainMutation.Deleted);
         }
 
-        public Task<bool> ExistsByNameAsync(Guid ownerId, string name, CancellationToken ct = default)
+        public Task<bool> ExistsByNameAsync(Guid ownerId, ProjectName name, CancellationToken ct = default)
             => Task.FromResult(_nameIndex.ContainsKey((ownerId, name)));
 
         public Task<int> SaveChangesAsync(CancellationToken ct = default) => Task.FromResult(0);

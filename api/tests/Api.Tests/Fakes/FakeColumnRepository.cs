@@ -18,7 +18,7 @@ namespace Api.Tests.Fakes
         public Task<Column?> GetTrackedByIdAsync(Guid columnId, CancellationToken ct = default)
             => Task.FromResult(_columns.TryGetValue(columnId, out var c) ? c : null);
 
-        public Task<bool> ExistsWithNameAsync(Guid laneId, string name, Guid? excludeColumnId = null, CancellationToken ct = default)
+        public Task<bool> ExistsWithNameAsync(Guid laneId, ColumnName name, Guid? excludeColumnId = null, CancellationToken ct = default)
         {
             var q = _columns.Values.Where(c => c.LaneId == laneId && c.Name == name);
             if (excludeColumnId is Guid id) q = q.Where(c => c.Id != id);
@@ -45,7 +45,7 @@ namespace Api.Tests.Fakes
             return Task.CompletedTask;
         }
 
-        public async Task<DomainMutation> RenameAsync(Guid columnId, string newName, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> RenameAsync(Guid columnId, ColumnName newName, byte[] rowVersion, CancellationToken ct = default)
         {
             var col = await GetTrackedByIdAsync(columnId, ct);
             if (col is null) return DomainMutation.NotFound;
@@ -55,7 +55,7 @@ namespace Api.Tests.Fakes
 
             if (await ExistsWithNameAsync(col.LaneId, newName, col.Id, ct)) return DomainMutation.Conflict;
 
-            col.Rename(ColumnName.Create(newName));
+            col.Rename(newName);
             col.RowVersion = NextRowVersion();
             return DomainMutation.Updated;
         }

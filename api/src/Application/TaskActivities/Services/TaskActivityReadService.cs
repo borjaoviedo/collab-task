@@ -12,8 +12,8 @@ namespace Application.TaskActivities.Services
         public async Task<IReadOnlyList<TaskActivity>> ListByTaskAsync(Guid taskId, CancellationToken ct = default)
             => await repo.ListByTaskAsync(taskId, ct);
 
-        public async Task<IReadOnlyList<TaskActivity>> ListByActorAsync(Guid actorId, CancellationToken ct = default)
-            => await repo.ListByActorAsync(actorId, ct);
+        public async Task<IReadOnlyList<TaskActivity>> ListByUserAsync(Guid userId, CancellationToken ct = default)
+            => await repo.ListByUserAsync(userId, ct);
 
         public async Task<IReadOnlyList<TaskActivity>> ListByTypeAsync(Guid taskId, TaskActivityType type, CancellationToken ct = default)
             => await repo.ListByTypeAsync(taskId, type, ct);

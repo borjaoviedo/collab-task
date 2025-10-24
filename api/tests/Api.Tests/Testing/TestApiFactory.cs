@@ -2,6 +2,7 @@ using Api.Filters;
 using Api.Tests.Fakes;
 using Application.Columns.Abstractions;
 using Application.Columns.Services;
+using Application.Common.Abstractions.Time;
 using Application.Lanes.Abstractions;
 using Application.Lanes.Services;
 using Application.ProjectMembers.Abstractions;
@@ -129,7 +130,8 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(ITaskActivityReadService));
                 services.AddScoped<ITaskActivityReadService>(sp => new TaskActivityReadService(sp.GetRequiredService<ITaskActivityRepository>()));
                 services.RemoveAll(typeof(ITaskActivityWriteService));
-                services.AddScoped<ITaskActivityWriteService>(sp => new TaskActivityWriteService(sp.GetRequiredService<ITaskActivityRepository>()));
+                services.AddScoped<ITaskActivityWriteService>(sp
+                    => new TaskActivityWriteService(sp.GetRequiredService<ITaskActivityRepository>(), sp.GetRequiredService<IDateTimeProvider>()));
 
                 // ===== Endpoint filter para If-Match =====
                 services.RemoveAll(typeof(IfMatchRowVersionFilter));

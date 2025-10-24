@@ -10,7 +10,6 @@ namespace Application.ProjectMembers.Validation
         {
             RuleFor(pm => pm.UserId).RequiredGuid();
             RuleFor(pm => pm.Role).ProjectRoleRules();
-            RuleFor(pm => pm.JoinedAt).JoinedAtRules();
         }
     }
 }

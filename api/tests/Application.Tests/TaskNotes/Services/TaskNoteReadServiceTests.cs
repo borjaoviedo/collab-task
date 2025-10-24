@@ -59,7 +59,7 @@ namespace Application.Tests.TaskNotes.Services
         }
 
         [Fact]
-        public async Task ListByColumnAsync_Returns_Empty_List_When_NotFound_Column()
+        public async Task ListByTaskAsync_Returns_Empty_List_When_NotFound_Task()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -71,7 +71,7 @@ namespace Application.Tests.TaskNotes.Services
         }
 
         [Fact]
-        public async Task ListByAuthorAsync_Returns_Author_TaskNotes()
+        public async Task ListByUserAsync_Returns_User_TaskNotes()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -80,17 +80,17 @@ namespace Application.Tests.TaskNotes.Services
 
             var (_, _, _, tId, _, uId) = TestDataFactory.SeedFullBoard(db);
 
-            var list = await svc.ListByAuthorAsync(uId);
+            var list = await svc.ListByUserAsync(uId);
             list.Should().NotBeNull();
             list.Count.Should().Be(1);
 
             TestDataFactory.SeedTaskNote(db, tId, uId);
-            list = await svc.ListByAuthorAsync(uId);
+            list = await svc.ListByUserAsync(uId);
             list.Count.Should().Be(2);
         }
 
         [Fact]
-        public async Task ListByAuthorAsync_Returns_Empty_List_When_Author_Without_Tasks()
+        public async Task ListByUserAsync_Returns_Empty_List_When_User_Without_Tasks()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -99,19 +99,19 @@ namespace Application.Tests.TaskNotes.Services
 
             var (_, _, _, tId) = TestDataFactory.SeedColumnWithTask(db);
 
-            var list = await svc.ListByAuthorAsync(tId);
+            var list = await svc.ListByUserAsync(tId);
             list.Should().BeEmpty();
         }
 
         [Fact]
-        public async Task ListByAuthorAsync_Returns_Empty_List_When_NotFound_Author()
+        public async Task ListByUserAsync_Returns_Empty_List_When_NotFound_User()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
             var svc = new TaskNoteReadService(repo);
 
-            var list = await svc.ListByAuthorAsync(Guid.NewGuid());
+            var list = await svc.ListByUserAsync(Guid.NewGuid());
             list.Should().BeEmpty();
         }
     }

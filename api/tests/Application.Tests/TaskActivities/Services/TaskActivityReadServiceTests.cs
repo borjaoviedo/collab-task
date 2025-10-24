@@ -16,9 +16,9 @@ namespace Application.Tests.TaskActivities.Services
             var repo = new TaskActivityRepository(db);
             var svc = new TaskActivityReadService(repo);
 
-            var (_, _, _, taskId, _, actor) = TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
             var payload = "{\"k\":\"v\"}";
-            var activity = TestDataFactory.SeedTaskActivity(db, taskId, actor, TaskActivityType.TaskCreated, payload);
+            var activity = TestDataFactory.SeedTaskActivity(db, taskId, userId, TaskActivityType.TaskCreated, payload);
 
             var found = await svc.GetAsync(activity.Id);
             found.Should().NotBeNull();
@@ -33,34 +33,34 @@ namespace Application.Tests.TaskActivities.Services
             var repo = new TaskActivityRepository(db);
             var svc = new TaskActivityReadService(repo);
 
-            var (_, _, _, taskId, _, actor) = TestDataFactory.SeedFullBoard(db);
-            TestDataFactory.SeedTaskActivity(db, taskId, actor, TaskActivityType.TaskMoved, "{\"i\":1}");
-            TestDataFactory.SeedTaskActivity(db, taskId, actor, TaskActivityType.TaskMoved, "{\"i\":2}");
+            var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
+            TestDataFactory.SeedTaskActivity(db, taskId, userId, TaskActivityType.TaskMoved, "{\"i\":1}");
+            TestDataFactory.SeedTaskActivity(db, taskId, userId, TaskActivityType.TaskMoved, "{\"i\":2}");
 
             var list = await svc.ListByTaskAsync(taskId);
             list.Should().HaveCount(2);
         }
 
         [Fact]
-        public async Task ListByActorAsync_Returns_All_For_Actor()
+        public async Task ListByUserAsync_Returns_All_For_Actor()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskActivityRepository(db);
             var svc = new TaskActivityReadService(repo);
 
-            var (_, _, _, taskId, _, actor1) = TestDataFactory.SeedFullBoard(db);
-            var actor2 = TestDataFactory.SeedUser(db).Id;
+            var (_, _, _, taskId, _, userId1) = TestDataFactory.SeedFullBoard(db);
+            var userId2 = TestDataFactory.SeedUser(db).Id;
 
             // use new assignment-related types
-            TestDataFactory.SeedTaskActivity(db, taskId, actor1, TaskActivityType.AssignmentCreated, "{\"a\":1}");
-            TestDataFactory.SeedTaskActivity(db, taskId, actor2, TaskActivityType.AssignmentRoleChanged, "{\"a\":2}");
+            TestDataFactory.SeedTaskActivity(db, taskId, userId1, TaskActivityType.AssignmentCreated, "{\"a\":1}");
+            TestDataFactory.SeedTaskActivity(db, taskId, userId2, TaskActivityType.AssignmentRoleChanged, "{\"a\":2}");
 
-            var list1 = await svc.ListByActorAsync(actor1);
-            list1.Should().OnlyContain(x => x.ActorId == actor1);
+            var list1 = await svc.ListByUserAsync(userId1);
+            list1.Should().OnlyContain(x => x.ActorId == userId1);
 
-            var list2 = await svc.ListByActorAsync(actor2);
-            list2.Should().OnlyContain(x => x.ActorId == actor2);
+            var list2 = await svc.ListByUserAsync(userId2);
+            list2.Should().OnlyContain(x => x.ActorId == userId2);
         }
 
         [Fact]
@@ -71,10 +71,10 @@ namespace Application.Tests.TaskActivities.Services
             var repo = new TaskActivityRepository(db);
             var svc = new TaskActivityReadService(repo);
 
-            var (_, _, _, taskId, _, actor) = TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
 
-            TestDataFactory.SeedTaskActivity(db, taskId, actor, TaskActivityType.TaskCreated, "{\"t\":\"c\"}");
-            TestDataFactory.SeedTaskActivity(db, taskId, actor, TaskActivityType.NoteAdded, "{\"t\":\"m\"}");
+            TestDataFactory.SeedTaskActivity(db, taskId, userId, TaskActivityType.TaskCreated, "{\"t\":\"c\"}");
+            TestDataFactory.SeedTaskActivity(db, taskId, userId, TaskActivityType.NoteAdded, "{\"t\":\"m\"}");
 
             var onlyCreated = await svc.ListByTypeAsync(taskId, TaskActivityType.TaskCreated);
             onlyCreated.Should().ContainSingle();

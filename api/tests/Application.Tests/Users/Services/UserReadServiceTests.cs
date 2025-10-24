@@ -1,4 +1,5 @@
 using Application.Users.Services;
+using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
 using TestHelpers;
@@ -55,7 +56,7 @@ namespace Application.Tests.Users.Services
             var repo = new UserRepository(db);
             var svc = new UserReadService(repo);
 
-            var found = await svc.GetByEmailAsync("email@e.com");
+            var found = await svc.GetByEmailAsync(Email.Create("email@e.com"));
             found.Should().BeNull();
         }
 

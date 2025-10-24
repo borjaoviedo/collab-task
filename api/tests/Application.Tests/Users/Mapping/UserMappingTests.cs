@@ -2,12 +2,14 @@ using Application.Users.Mapping;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
+using TestHelpers;
 
 namespace Application.Tests.Users.Mapping
 {
     public sealed class UserMappingTests
     {
-        private static byte[] Bytes(int n) => Enumerable.Repeat((byte)0x5A, n).ToArray();
+        private readonly byte[] _validHash = TestDataFactory.Bytes(32);
+        private readonly byte[] _validSalt = TestDataFactory.Bytes(16);
 
         [Fact]
         public void ToReadDto_Maps_All_Fields_And_ProjectMembershipsCount()
@@ -16,7 +18,7 @@ namespace Application.Tests.Users.Mapping
             var userId = Guid.NewGuid();
             var projectRole = ProjectRole.Member;
 
-            var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Demo User"), Bytes(32), Bytes(16));
+            var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Demo User"), _validHash, _validSalt);
             u.ProjectMemberships.Add(ProjectMember.Create(projectId, userId, projectRole));
             u.ProjectMemberships.Add(ProjectMember.Create(projectId, userId, projectRole));
 

@@ -6,6 +6,6 @@ namespace Application.TaskNotes.Abstractions
     {
         Task<TaskNote?> GetAsync(Guid noteId, CancellationToken ct = default);
         Task<IReadOnlyList<TaskNote>> ListByTaskAsync(Guid taskId, CancellationToken ct = default);
-        Task<IReadOnlyList<TaskNote>> ListByAuthorAsync(Guid authorId, CancellationToken ct = default);
+        Task<IReadOnlyList<TaskNote>> ListByUserAsync(Guid userId, CancellationToken ct = default);
     }
 }

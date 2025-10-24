@@ -21,10 +21,10 @@ namespace Infrastructure.Data.Repositories
                         .OrderBy(a => a.CreatedAt)
                         .ToListAsync(ct);
 
-        public async Task<IReadOnlyList<TaskActivity>> ListByActorAsync(Guid actorId, CancellationToken ct = default)
+        public async Task<IReadOnlyList<TaskActivity>> ListByUserAsync(Guid userId, CancellationToken ct = default)
             => await _db.TaskActivities
                         .AsNoTracking()
-                        .Where(a => a.ActorId == actorId)
+                        .Where(a => a.ActorId == userId)
                         .OrderBy(a => a.CreatedAt)
                         .ToListAsync(ct);
 

@@ -20,15 +20,15 @@ namespace Infrastructure.Data.Repositories
                         .Include(u => u.ProjectMemberships)
                         .ToListAsync(ct);
 
-        public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
+        public async Task<User?> GetByEmailAsync(Email email, CancellationToken ct = default)
             => await _db.Users
                         .AsNoTracking()
-                        .FirstOrDefaultAsync(u => u.Email == Email.Create(email), ct);
+                        .FirstOrDefaultAsync(u => u.Email == email, ct);
 
-        public async Task<User?> GetByNameAsync(string name, CancellationToken ct = default)
+        public async Task<User?> GetByNameAsync(UserName name, CancellationToken ct = default)
             => await _db.Users
                         .AsNoTracking()
-                        .FirstOrDefaultAsync(u => u.Name == UserName.Create(name), ct);
+                        .FirstOrDefaultAsync(u => u.Name == name, ct);
 
         public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
             => await _db.Users
@@ -39,7 +39,7 @@ namespace Infrastructure.Data.Repositories
         public async Task<User?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default)
             => await _db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
 
-        public async Task<DomainMutation> RenameAsync(Guid id, string newName, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<DomainMutation> RenameAsync(Guid id, UserName newName, byte[] rowVersion, CancellationToken ct = default)
         {
             var user = await GetTrackedByIdAsync(id, ct);
             if (user is null) return DomainMutation.NotFound;
@@ -55,7 +55,7 @@ namespace Infrastructure.Data.Repositories
             if (await ExistsWithNameAsync(newName, user.Id, ct))
                 return DomainMutation.Conflict;
 
-            user.Rename(UserName.Create(newName));
+            user.Rename(newName);
             _db.Entry(user).Property(u => u.Name).IsModified = true;
 
             try
@@ -119,14 +119,14 @@ namespace Infrastructure.Data.Repositories
             }
         }
 
-        public async Task<bool> ExistsWithEmailAsync(string email, Guid? excludeUserId = null, CancellationToken ct = default)
+        public async Task<bool> ExistsWithEmailAsync(Email email, Guid? excludeUserId = null, CancellationToken ct = default)
         {
             var q = _db.Users.AsNoTracking().Where(u => u.Email == email);
             if (excludeUserId.HasValue) q = q.Where(u => u.Id != excludeUserId.Value);
             return await q.AnyAsync(ct);
         }
 
-        public async Task<bool> ExistsWithNameAsync(string name, Guid? excludeUserId = null, CancellationToken ct = default)
+        public async Task<bool> ExistsWithNameAsync(UserName name, Guid? excludeUserId = null, CancellationToken ct = default)
         {
             var q = _db.Users.AsNoTracking().Where(u => u.Name == name);
             if (excludeUserId.HasValue) q = q.Where(u => u.Id != excludeUserId.Value);

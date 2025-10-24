@@ -2,7 +2,6 @@ using Application.ProjectMembers.Services;
 using Domain.Enums;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
-using System.Data;
 using TestHelpers;
 
 namespace Application.Tests.ProjectMembers.Services

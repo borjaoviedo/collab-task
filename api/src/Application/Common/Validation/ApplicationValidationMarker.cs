@@ -1,5 +1,4 @@
-
-namespace Application
+namespace Application.Common.Validation
 {
     public sealed class ApplicationValidationMarker { }
 }

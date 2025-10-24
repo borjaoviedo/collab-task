@@ -135,13 +135,13 @@ namespace TestHelpers
             return assignment;
         }
 
-        public static TaskActivity SeedTaskActivity(AppDbContext db, Guid taskId, Guid actorId,
+        public static TaskActivity SeedTaskActivity(AppDbContext db, Guid taskId, Guid userId,
             TaskActivityType type = TaskActivityType.TaskCreated, string? payloadData = null)
         {
             payloadData ??= $"{{\"message\":\"{GetRandomString(20)}\"}}";
 
             var payload = ActivityPayload.Create(payloadData);
-            var activity = TaskActivity.Create(taskId, actorId, type, payload);
+            var activity = TaskActivity.Create(taskId, userId, type, payload);
 
             db.TaskActivities.Add(activity);
             db.SaveChanges();

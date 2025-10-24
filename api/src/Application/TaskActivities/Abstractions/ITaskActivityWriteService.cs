@@ -8,7 +8,7 @@ namespace Application.TaskActivities.Abstractions
     {
         Task<(DomainMutation, TaskActivity?)> CreateAsync(
             Guid taskId,
-            Guid actorId,
+            Guid userId,
             TaskActivityType type,
             ActivityPayload payload,
             CancellationToken ct = default);

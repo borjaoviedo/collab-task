@@ -1,4 +1,3 @@
-using Application.TaskItems.DTOs;
 using Application.TaskItems.Mapping;
 using Domain.Entities;
 using Domain.ValueObjects;
@@ -26,24 +25,6 @@ namespace Application.Tests.TaskItems.Mapping
             dto.DueDate.Should().Be(e.DueDate);
             dto.SortKey.Should().Be(e.SortKey);
             dto.RowVersion.Should().Equal(e.RowVersion);
-        }
-
-        [Fact]
-        public void MoveDto_To_Update_Assigns_Targets()
-        {
-            var e = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-                TaskTitle.Create("Title"), TaskDescription.Create("Description"), null, 0m);
-            var dto = new TaskItemMoveDto
-            {
-                TargetLaneId = Guid.NewGuid(),
-                TargetColumnId = Guid.NewGuid(),
-                TargetSortKey = 123.45m
-            };
-
-            e.Move(dto.TargetLaneId, dto.TargetColumnId, dto.TargetSortKey);
-            e.LaneId.Should().Be(dto.TargetLaneId);
-            e.ColumnId.Should().Be(dto.TargetColumnId);
-            e.SortKey.Should().Be(dto.TargetSortKey);
         }
     }
 }

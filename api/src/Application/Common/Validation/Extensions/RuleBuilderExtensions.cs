@@ -1,6 +1,5 @@
 using Domain.Enums;
 using FluentValidation;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Application.Common.Validation.Extensions
@@ -17,15 +16,6 @@ namespace Application.Common.Validation.Extensions
               .Must(s => s!.Trim().Length <= maxLen).WithMessage($"{field} length must be at most {maxLen} characters.")
               .Must(s => !TwoOrMoreSpaces.IsMatch(s!.Trim()))
                 .WithMessage($"{field} cannot contain consecutive spaces.");
-
-        private static bool IsUtc(DateTimeOffset d) => d.Offset == TimeSpan.Zero;
-
-        private static bool IsValidJson(string? s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return false;
-            try { using var _ = JsonDocument.Parse(s); return true; }
-            catch (JsonException) { return false; }
-        }
 
         private static bool BeNullOrFutureUtc(DateTimeOffset? due)
         {
@@ -81,15 +71,6 @@ namespace Application.Common.Validation.Extensions
             rb.Must(r => Enum.IsDefined(typeof(TaskActivityType), r)).WithMessage("Invalid task activity type value.");
 
         // Dates
-        public static IRuleBuilderOptions<T, DateTimeOffset> JoinedAtRules<T>(this IRuleBuilder<T, DateTimeOffset> rb) =>
-            rb.Must(IsUtc).WithMessage("JoinedAt must be in UTC.")
-              .LessThanOrEqualTo(_ => DateTimeOffset.UtcNow).WithMessage("JoinedAt cannot be in the future.")
-              .GreaterThan(new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero)).WithMessage("JoinedAt is too old.");
-
-        public static IRuleBuilderOptions<T, DateTimeOffset> RemovedAtRules<T>(this IRuleBuilder<T, DateTimeOffset> rb) =>
-            rb.Must(IsUtc).WithMessage("RemovedAt must be in UTC.")
-              .Must(d => d <= DateTimeOffset.UtcNow).WithMessage("RemovedAt cannot be in the future.");
-
         public static IRuleBuilderOptions<T, DateTimeOffset?> DueDateRules<T>(this IRuleBuilder<T, DateTimeOffset?> rb)
             => rb.Must(BeNullOrFutureUtc).WithMessage("DueDate must be null or a UTC date/time in the future.");
 
@@ -112,11 +93,6 @@ namespace Application.Common.Validation.Extensions
             rb.NotEmpty().WithMessage("Note content is required.")
               .Must(s => s!.Trim().Length <= 500)
               .WithMessage("Note content length must be at most 500 characters.");
-
-        public static IRuleBuilderOptions<T, string> ActivityPayloadRules<T>(this IRuleBuilder<T, string> rb) =>
-            rb.NotEmpty().WithMessage("Activity payload is required.")
-              .Must(s => !string.IsNullOrWhiteSpace(s)).WithMessage("Activity payload cannot be whitespace.")
-              .Must(IsValidJson).WithMessage("Activity payload must be valid JSON.");
 
         // Orders and SortKeys
         public static IRuleBuilderOptions<T, int> NonNegativeOrder<T>(this IRuleBuilder<T, int> rb, string field = "Order") =>

@@ -4,8 +4,10 @@ using Api.Helpers;
 using Application.Common.Abstractions.Auth;
 using Application.Projects.Abstractions;
 using Application.Projects.DTOs;
+using Application.Projects.Filters;
 using Application.Projects.Mapping;
 using Domain.Enums;
+using Domain.ValueObjects;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
@@ -30,7 +32,7 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Projects.Get_All");
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var projects = await projectReadSvc.GetAllByUserAsync(userId, filter, ct);
+                var projects = await projectReadSvc.ListByUserAsync(userId, filter, ct);
                 var responseDto = projects.Select(p => p.ToReadDto(userId)).ToList();
 
                 log.LogInformation("Projects listed userId={UserId} filter={Filter} count={Count}",
@@ -88,7 +90,7 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Projects.Get_Mine");
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var projects = await projectReadSvc.GetAllByUserAsync(userId, filter: null, ct);
+                var projects = await projectReadSvc.ListByUserAsync(userId, filter: null, ct);
                 var responseDto = projects.Select(p => p.ToReadDto(userId)).ToList();
 
                 log.LogInformation("Projects listed for current user userId={UserId} count={Count}",
@@ -110,7 +112,7 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("Projects.Get_ByUser");
 
-                var projects = await projectReadSvc.GetAllByUserAsync(userId, filter: null, ct);
+                var projects = await projectReadSvc.ListByUserAsync(userId, filter: null, ct);
                 var responseDto = projects.Select(p => p.ToReadDto(userId)).ToList();
 
                 log.LogInformation("Projects listed for userId={UserId} count={Count}",
@@ -138,7 +140,7 @@ namespace Api.Endpoints
                 var log = logger.CreateLogger("Projects.Create");
 
                 var userId = (Guid)currentUserSvc.UserId!;
-                var (result, project) = await projectWriteSvc.CreateAsync(userId, dto.Name, ct);
+                var (result, project) = await projectWriteSvc.CreateAsync(userId, ProjectName.Create(dto.Name), ct);
                 if (result != DomainMutation.Created || project is null)
                 {
                     log.LogInformation("Project create rejected userId={UserId} mutation={Mutation}",
@@ -185,7 +187,7 @@ namespace Api.Endpoints
                     return Results.NotFound();
                 }
 
-                var result = await projectWriteSvc.RenameAsync(projectId, dto.NewName, rowVersion, ct);
+                var result = await projectWriteSvc.RenameAsync(projectId, ProjectName.Create(dto.NewName), rowVersion, ct);
                 if (result != DomainMutation.Updated)
                 {
                     log.LogInformation("Project rename rejected projectId={ProjectId} mutation={Mutation}",

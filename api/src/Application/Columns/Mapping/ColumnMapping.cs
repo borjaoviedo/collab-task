@@ -1,6 +1,5 @@
 using Application.Columns.DTOs;
 using Domain.Entities;
-using Domain.ValueObjects;
 
 namespace Application.Columns.Mapping
 {

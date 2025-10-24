@@ -1,5 +1,6 @@
 using Application.Columns.Services;
 using Domain.Enums;
+using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,7 @@ namespace Application.Tests.Columns.Services
             var laneId = TestDataFactory.SeedLane(db, projectId).Id;
             var columnName = "Column name";
 
-            await svc.CreateAsync(projectId, laneId, columnName);
+            await svc.CreateAsync(projectId, laneId, ColumnName.Create(columnName));
             await repo.SaveChangesAsync();
 
             var fromDb = await db.Columns.AsNoTracking().SingleAsync(c => c.Name == columnName);
@@ -42,7 +43,7 @@ namespace Application.Tests.Columns.Services
 
             var newName = "new name";
 
-            var res = await svc.RenameAsync(column.Id, newName, column.RowVersion ?? []);
+            var res = await svc.RenameAsync(column.Id, ColumnName.Create(newName), column.RowVersion ?? []);
             res.Should().Be(DomainMutation.Updated);
             var fromDb = await db.Columns.AsNoTracking().SingleAsync(c => c.Id == column.Id);
             fromDb.Name.Value.Should().Be(newName);
@@ -60,7 +61,7 @@ namespace Application.Tests.Columns.Services
             var sameName = "Same Column Name";
             var column = TestDataFactory.SeedColumn(db, pId, lId, sameName);
 
-            var res = await svc.RenameAsync(column.Id, sameName, column.RowVersion!);
+            var res = await svc.RenameAsync(column.Id, ColumnName.Create(sameName), column.RowVersion!);
             res.Should().Be(DomainMutation.NoOp);
         }
 
@@ -79,7 +80,7 @@ namespace Application.Tests.Columns.Services
 
             var defaultNameColumn = TestDataFactory.SeedColumn(db, pId, lId, order: 1);
 
-            var res = await svc.RenameAsync(defaultNameColumn.Id, sameName, defaultNameColumn.RowVersion!);
+            var res = await svc.RenameAsync(defaultNameColumn.Id, ColumnName.Create(sameName), defaultNameColumn.RowVersion!);
             res.Should().Be(DomainMutation.Conflict);
         }
 

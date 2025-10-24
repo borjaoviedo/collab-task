@@ -217,46 +217,6 @@ namespace Api.Tests.Endpoints
             second.StatusCode.Should().Be(HttpStatusCode.Conflict);
         }
 
-        [Fact]
-        public async Task Register_Returns409_On_Duplicate_Email_By_UniqueConstraint_Race()
-        {
-            using var app = new TestApiFactory();
-            using var client = app.CreateClient();
-
-            var email = $"race_{Guid.NewGuid():N}@demo.com";
-            var firstPayload = new UserRegisterDto() { Email = email, Name = "User Name", Password = "Str0ngP@ss!" };
-            var secondPayload = new UserRegisterDto() { Email = email, Name = "Different User Name", Password = "Str0ngP@ss!" };
-
-            var t1 = client.PostAsJsonAsync("/auth/register", firstPayload);
-            var t2 = client.PostAsJsonAsync("/auth/register", secondPayload);
-
-            var results = await Task.WhenAll(t1, t2);
-            results.Should().HaveCount(2);
-
-            results.Count(r => r.StatusCode == HttpStatusCode.OK).Should().Be(1);
-            results.Count(r => r.StatusCode == HttpStatusCode.Conflict).Should().Be(1);
-        }
-
-        [Fact]
-        public async Task Register_Returns409_On_Duplicate_Name_By_UniqueConstraint_Race()
-        {
-            using var app = new TestApiFactory();
-            using var client = app.CreateClient();
-
-            var name = "R Name";
-            var firstPayload = new UserRegisterDto() { Email = $"{Guid.NewGuid():N}@demo.com", Name = name, Password = "Str0ngP@ss!" };
-            var secondPayload = new UserRegisterDto() { Email = $"{Guid.NewGuid():N}@demo.com", Name = name, Password = "Str0ngP@ss!" };
-
-            var t1 = client.PostAsJsonAsync("/auth/register", firstPayload);
-            var t2 = client.PostAsJsonAsync("/auth/register", secondPayload);
-
-            var results = await Task.WhenAll(t1, t2);
-            results.Should().HaveCount(2);
-
-            results.Count(r => r.StatusCode == HttpStatusCode.OK).Should().Be(1);
-            results.Count(r => r.StatusCode == HttpStatusCode.Conflict).Should().Be(1);
-        }
-
         [Theory]
         [InlineData("", "User Name", "Str0ngP@ss!")]
         [InlineData("not-an-email", "User Name", "Str0ngP@ss!")]

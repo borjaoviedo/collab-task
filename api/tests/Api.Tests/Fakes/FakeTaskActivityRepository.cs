@@ -16,8 +16,8 @@ namespace Api.Tests.Fakes
             => Task.FromResult<IReadOnlyList<TaskActivity>>(_store.Values.Where(a => a.TaskId == taskId)
                 .OrderBy(a => a.CreatedAt).Select(Clone).ToList());
 
-        public Task<IReadOnlyList<TaskActivity>> ListByActorAsync(Guid actorId, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<TaskActivity>>(_store.Values.Where(a => a.ActorId == actorId)
+        public Task<IReadOnlyList<TaskActivity>> ListByUserAsync(Guid userId, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<TaskActivity>>(_store.Values.Where(a => a.ActorId == userId)
                 .OrderBy(a => a.CreatedAt).Select(Clone).ToList());
 
         public Task<IReadOnlyList<TaskActivity>> ListByTypeAsync(Guid taskId, TaskActivityType type, CancellationToken ct = default)
