@@ -80,7 +80,7 @@ namespace Domain.Entities
                 throw new DomainRuleViolationException("Cannot demote current owner. Transfer first.");
             }
 
-            m.Role = newRole;
+            m.ChangeRole(newRole);
         }
 
         public void TransferOwnership(Guid newOwnerId)
@@ -92,8 +92,8 @@ namespace Domain.Entities
 
             var current = Members.First(x => x.Role == ProjectRole.Owner && x.RemovedAt == null);
 
-            current.Role = ProjectRole.Admin;
-            target.Role = ProjectRole.Owner;
+            current.ChangeRole(ProjectRole.Admin);
+            target.ChangeRole(ProjectRole.Owner);
             OwnerId = newOwnerId;
         }
     }
