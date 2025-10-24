@@ -22,7 +22,7 @@ namespace Domain.Entities
         {
             CheckUserId(ownerId);
 
-            var p = new Project()
+            var project = new Project()
             {
                 Id = Guid.NewGuid(),
                 OwnerId = ownerId,
@@ -30,8 +30,8 @@ namespace Domain.Entities
                 Slug = ProjectSlug.Create(name)
             };
 
-            p.AddMember(ownerId, ProjectRole.Owner);
-            return p;
+            project.AddMember(ownerId, ProjectRole.Owner);
+            return project;
         }
 
         public void Rename(ProjectName newName)
@@ -60,8 +60,7 @@ namespace Domain.Entities
         {
             CheckUserId(userId);
 
-            var member = Members.FirstOrDefault(m => m.UserId == userId && m.RemovedAt == null)
-                ?? throw new EntityNotFoundException("Member not found.");
+            var member = GetMember(userId);
 
             if (member.Role == ProjectRole.Owner)
                 throw new DomainRuleViolationException("Transfer ownership before removing the owner.");
@@ -74,12 +73,11 @@ namespace Domain.Entities
             CheckUserId(userId);
             CheckRole(newRole);
 
-            var member = Members.FirstOrDefault(m => m.UserId == userId && m.RemovedAt == null)
-                ?? throw new EntityNotFoundException("Member not found.");
+            var member = GetMember(userId);
 
             if (newRole == ProjectRole.Owner)
             {
-                if (Members.Any(x => x.Role == ProjectRole.Owner && x.RemovedAt == null))
+                if (Members.Any(m => m.Role == ProjectRole.Owner && m.RemovedAt == null))
                     throw new DomainRuleViolationException("Project already has an owner.");
                 OwnerId = userId;
             }
@@ -120,5 +118,8 @@ namespace Domain.Entities
                 throw new ArgumentOutOfRangeException(nameof(role), "Invalid project role.");
         }
 
+        private ProjectMember GetMember(Guid userId)
+            => Members.FirstOrDefault(m => m.UserId == userId && m.RemovedAt == null)
+                ?? throw new EntityNotFoundException("Member not found.");
     }
 }
