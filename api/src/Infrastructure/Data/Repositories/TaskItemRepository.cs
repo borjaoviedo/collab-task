@@ -164,7 +164,7 @@ namespace Infrastructure.Data.Repositories
                 {
                     if (tasks[i].SortKey != i)
                     {
-                        tasks[i].SortKey = i;
+                        _db.Entry(tasks[i]).Property(t => t.SortKey).CurrentValue = i;
                         _db.Entry(tasks[i]).Property(t => t.SortKey).IsModified = true;
                     }
                 }
