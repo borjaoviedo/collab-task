@@ -5,6 +5,7 @@ using FluentAssertions;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers;
+using TestHelpers.Time;
 
 namespace Infrastructure.Tests.Persistence.Contracts
 {
@@ -21,7 +22,12 @@ namespace Infrastructure.Tests.Persistence.Contracts
             var (_, db) = DbHelper.BuildDb(_cs);
 
             var (_, _, _, taskId, _, actorId) = TestDataFactory.SeedFullBoard(db);
-            var a = TaskActivity.Create(taskId, actorId, TaskActivityType.TaskCreated, ActivityPayload.Create("{\"e\":\"c\"}"));
+            var a = TaskActivity.Create(
+                taskId,
+                actorId,
+                TaskActivityType.TaskCreated,
+                ActivityPayload.Create("{\"e\":\"c\"}"),
+                createdAt: TestTime.FixedNow);
             db.TaskActivities.Add(a);
             await db.SaveChangesAsync();
 
@@ -39,13 +45,24 @@ namespace Infrastructure.Tests.Persistence.Contracts
 
             var (_, _, _, taskId, _, actor) = TestDataFactory.SeedFullBoard(db);
 
-            var a1 = TaskActivity.Create(taskId, actor, TaskActivityType.NoteAdded, ActivityPayload.Create("{\"m\":\"1\"}"));
-            var a2 = TaskActivity.Create(taskId, actor, TaskActivityType.NoteEdited, ActivityPayload.Create("{\"m\":\"2\"}"));
-            var a3 = TaskActivity.Create(taskId, actor, TaskActivityType.NoteRemoved, ActivityPayload.Create("{\"m\":\"3\"}"));
-
-            a1.CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-3);
-            a2.CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-2);
-            a3.CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-1);
+            var a1 = TaskActivity.Create(
+                taskId,
+                actor,
+                TaskActivityType.NoteAdded,
+                ActivityPayload.Create("{\"m\":\"1\"}"),
+                createdAt: TestTime.OffsetFromFixed(-3));
+            var a2 = TaskActivity.Create(
+                taskId,
+                actor,
+                TaskActivityType.NoteEdited,
+                ActivityPayload.Create("{\"m\":\"2\"}"),
+                createdAt: TestTime.OffsetFromFixed(-2));
+            var a3 = TaskActivity.Create(
+                taskId,
+                actor,
+                TaskActivityType.NoteRemoved,
+                ActivityPayload.Create("{\"m\":\"3\"}"),
+                createdAt: TestTime.OffsetFromFixed(-1));
 
             db.TaskActivities.AddRange(a2, a3, a1);
             await db.SaveChangesAsync();
