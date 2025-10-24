@@ -61,7 +61,7 @@ namespace Infrastructure.Data.Repositories
                 }
 
                 var change = new AssignmentRoleChangedChange(existing.Role, role);
-                existing.Role = role;
+                _db.Entry(existing).Property(a => a.Role).CurrentValue = role;
                 _db.Entry(existing).Property(a => a.Role).IsModified = true;
 
                 return (DomainMutation.Updated, change);
@@ -94,10 +94,10 @@ namespace Infrastructure.Data.Repositories
             _db.Entry(existing).Property(a => a.RowVersion).OriginalValue = rowVersion;
 
             var change = new AssignmentRoleChangedChange(existing.Role, newRole);
-            existing.Role = newRole;
+            _db.Entry(existing).Property(a => a.Role).CurrentValue = newRole;
             _db.Entry(existing).Property(a => a.Role).IsModified = true;
-            return (DomainMutation.Updated, change);
 
+            return (DomainMutation.Updated, change);
         }
 
         public async Task<DomainMutation> RemoveAsync(Guid taskId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
