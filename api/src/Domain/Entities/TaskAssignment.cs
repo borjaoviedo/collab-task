@@ -4,10 +4,10 @@ namespace Domain.Entities
 {
     public sealed class TaskAssignment
     {
-        public Guid TaskId { get; set; }
-        public Guid UserId { get; set; }
-        public TaskRole Role { get; set; }
-        public byte[] RowVersion { get; set; } = default!;
+        public Guid TaskId { get; private set; }
+        public Guid UserId { get; private set; }
+        public TaskRole Role { get; private set; }
+        public byte[] RowVersion { get; private set; } = default!;
 
         private TaskAssignment() { }
 
@@ -29,5 +29,10 @@ namespace Domain.Entities
 
         public static TaskAssignment AssignCoOwner(Guid taskId, Guid userId)
             => Create(taskId, userId, TaskRole.CoOwner);
+
+        internal void SetRowVersion(byte[] value)
+            => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
+
+        internal void SetRole(TaskRole role) => Role = role;
     }
 }
