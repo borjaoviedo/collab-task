@@ -4,12 +4,12 @@ namespace Domain.Entities
 {
     public sealed class Column
     {
-        public Guid Id { get; set; }
-        public Guid LaneId { get; set; }
-        public Guid ProjectId { get; set; }
-        public required ColumnName Name { get; set; }
-        public int Order { get; set; }
-        public byte[] RowVersion { get; set; } = default!;
+        public Guid Id { get; private set; }
+        public Guid LaneId { get; private set; }
+        public Guid ProjectId { get; private set; }
+        public ColumnName Name { get; private set; } = default!;
+        public int Order { get; private set; }
+        public byte[] RowVersion { get; private set; } = default!;
 
         private Column() { }
 
@@ -40,5 +40,8 @@ namespace Domain.Entities
             if (Order == order) return;
             Order = order;
         }
+
+        internal void SetRowVersion(byte[] value)
+            => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
     }
 }
