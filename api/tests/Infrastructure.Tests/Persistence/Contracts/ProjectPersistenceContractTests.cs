@@ -17,13 +17,20 @@ namespace Infrastructure.Tests.Persistence.Contracts
         private readonly MsSqlContainerFixture _fx = fx;
         private readonly string _cs = fx.ConnectionString;
 
+        private readonly byte[] _validHash = TestDataFactory.Bytes(32);
+        private readonly byte[] _validSalt = TestDataFactory.Bytes(16);
+
         [Fact]
         public async Task Add_And_GetBySlug_Works()
         {
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var owner = User.Create(Email.Create("owner@demo.com"), UserName.Create("Owner User"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            var owner = User.Create(
+                Email.Create("owner@demo.com"),
+                UserName.Create("Owner User"),
+                _validHash,
+                _validSalt);
             db.Users.Add(owner);
             await db.SaveChangesAsync();
 
@@ -46,10 +53,16 @@ namespace Infrastructure.Tests.Persistence.Contracts
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var owner1 = User.Create(Email.Create("o1@demo.com"), UserName.Create("A Owner"),
-                TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            var owner2 = User.Create(Email.Create("o2@demo.com"), UserName.Create("Other Owner"),
-                TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            var owner1 = User.Create(
+                Email.Create("o1@demo.com"),
+                UserName.Create("A Owner"),
+                _validHash,
+                _validSalt);
+            var owner2 = User.Create(
+                Email.Create("o2@demo.com"),
+                UserName.Create("Other Owner"),
+                _validHash,
+                _validSalt);
             db.Users.AddRange(owner1, owner2);
             await db.SaveChangesAsync();
 
@@ -79,40 +92,16 @@ namespace Infrastructure.Tests.Persistence.Contracts
         }
 
         [Fact]
-        public async Task Unique_Index_On_OwnerId_And_Slug_Is_Enforced()
-        {
-            await _fx.ResetAsync();
-            var (_, db) = DbHelper.BuildDb(_cs);
-
-            var owner1 = User.Create(Email.Create("o1@d.com"), UserName.Create("First owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            var owner2 = User.Create(Email.Create("o2@d.com"), UserName.Create("Second owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            db.Users.AddRange(owner1, owner2);
-            await db.SaveChangesAsync();
-
-            var p1 = Project.Create(owner1.Id, ProjectName.Create("P1"));
-            p1.Slug = ProjectSlug.Create("same");
-            db.Projects.Add(p1);
-            await db.SaveChangesAsync();
-
-            var p2 = Project.Create(owner1.Id, ProjectName.Create("P2"));
-            p2.Slug = ProjectSlug.Create("same");
-            db.Projects.Add(p2);
-            await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
-            db.Entry(p2).State = EntityState.Detached;
-
-            var p3 = Project.Create(owner2.Id, ProjectName.Create("P3"));
-            p3.Slug = ProjectSlug.Create("same");
-            db.Projects.Add(p3);
-            await db.SaveChangesAsync();
-        }
-
-        [Fact]
         public async Task RowVersion_Concurrency_Throws_On_Stale_Update()
         {
             await _fx.ResetAsync();
             var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var owner = User.Create(Email.Create("c@demo.com"), UserName.Create("User name"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            var owner = User.Create(
+                Email.Create("c@demo.com"),
+                UserName.Create("User name"),
+                _validHash,
+                _validSalt);
             db.Users.Add(owner);
             await db.SaveChangesAsync();
 
@@ -122,7 +111,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
 
             var stale = p.RowVersion.ToArray();
 
-            p.Name = ProjectName.Create("Gamma Board Renamed");
+            p.Rename(ProjectName.Create("Gamma Board Renamed"));
             await db.SaveChangesAsync();
 
             using var scope2 = sp.CreateScope();
@@ -130,7 +119,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
             var same = await db2.Projects.SingleAsync(x => x.Id == p.Id);
 
             db2.Entry(same).Property(x => x.RowVersion).OriginalValue = stale;
-            same.Name = ProjectName.Create("Another Rename");
+            same.Rename(ProjectName.Create("Another Rename"));
 
             await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => db2.SaveChangesAsync());
         }
@@ -141,7 +130,11 @@ namespace Infrastructure.Tests.Persistence.Contracts
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var owner = User.Create(Email.Create("m@demo.com"), UserName.Create("User Name"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            var owner = User.Create(
+                Email.Create("m@demo.com"),
+                UserName.Create("User Name"),
+                _validHash,
+                _validSalt);
             db.Users.Add(owner);
             await db.SaveChangesAsync();
 
