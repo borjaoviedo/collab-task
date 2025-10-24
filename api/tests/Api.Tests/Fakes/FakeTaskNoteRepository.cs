@@ -26,7 +26,7 @@ namespace Api.Tests.Fakes
 
         public Task AddAsync(TaskNote note, CancellationToken ct = default)
         {
-            note.RowVersion = NextRowVersion();
+            note.SetRowVersion(NextRowVersion());
             _notes[note.Id] = note;
             return Task.CompletedTask;
         }
@@ -42,7 +42,7 @@ namespace Api.Tests.Fakes
             if (!note.RowVersion.SequenceEqual(rowVersion)) return DomainMutation.Conflict;
 
             note.Edit(newContent);
-            note.RowVersion = NextRowVersion();
+            note.SetRowVersion(NextRowVersion());
             return DomainMutation.Updated;
         }
 
@@ -64,7 +64,8 @@ namespace Api.Tests.Fakes
         private static TaskNote Clone(TaskNote n)
         {
             var clone = TaskNote.Create(n.TaskId, n.AuthorId, NoteContent.Create(n.Content));
-            clone.RowVersion = (n.RowVersion is null) ? Array.Empty<byte>() : n.RowVersion.ToArray();
+            var rowVersion = (n.RowVersion is null) ? Array.Empty<byte>() : n.RowVersion.ToArray();
+            clone.SetRowVersion(rowVersion);
             return clone;
         }
     }
