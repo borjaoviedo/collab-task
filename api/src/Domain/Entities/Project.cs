@@ -55,7 +55,7 @@ namespace Domain.Entities
 
         public void RemoveMember(Guid userId, DateTimeOffset removedAtUtc)
         {
-            var m = Members.FirstOrDefault(x => x.UserId == userId && x.RemovedAt == null)
+            var m = Members.FirstOrDefault(m => m.UserId == userId && m.RemovedAt == null)
                 ?? throw new EntityNotFoundException("Member not found.");
 
             if (m.Role == ProjectRole.Owner)
@@ -66,7 +66,7 @@ namespace Domain.Entities
 
         public void ChangeMemberRole(Guid userId, ProjectRole newRole)
         {
-            var m = Members.FirstOrDefault(x => x.UserId == userId && x.RemovedAt == null)
+            var m = Members.FirstOrDefault(m => m.UserId == userId && m.RemovedAt == null)
                 ?? throw new EntityNotFoundException("Member not found.");
 
             if (newRole == ProjectRole.Owner)
@@ -87,10 +87,10 @@ namespace Domain.Entities
         {
             if (OwnerId == newOwnerId) return;
 
-            var target = Members.FirstOrDefault(x => x.UserId == newOwnerId && x.RemovedAt == null)
+            var target = Members.FirstOrDefault(m => m.UserId == newOwnerId && m.RemovedAt == null)
                 ?? throw new DomainRuleViolationException("New owner must be an active member.");
 
-            var current = Members.First(x => x.Role == ProjectRole.Owner && x.RemovedAt == null);
+            var current = Members.First(m => m.Role == ProjectRole.Owner && m.RemovedAt == null);
 
             current.ChangeRole(ProjectRole.Admin);
             target.ChangeRole(ProjectRole.Owner);
