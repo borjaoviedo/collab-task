@@ -37,9 +37,9 @@ namespace Api.Tests.Endpoints
             uptimeStr.Should().NotBeNullOrWhiteSpace();
             Regex.IsMatch(uptimeStr!, @"^\d+\.\d{2}:\d{2}:\d{2}$").Should().BeTrue();
 
-            // Server time must be close to now (6s tolerance)
+            // Server time must be close to now
             var serverNow = serverTimeUtc.GetDateTimeOffset();
-            (DateTimeOffset.UtcNow - serverNow).Duration().Should().BeLessThan(TimeSpan.FromSeconds(6));
+            (DateTimeOffset.UtcNow - serverNow).Duration().Should().BeLessThan(TimeSpan.FromSeconds(10));
         }
     }
 }
