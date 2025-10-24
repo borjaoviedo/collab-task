@@ -31,6 +31,7 @@ namespace Domain.Entities
         public void Rename(ColumnName name)
         {
             if (Name.Equals(name)) return;
+
             Name = name;
         }
 
@@ -38,6 +39,7 @@ namespace Domain.Entities
         {
             if (order < 0) throw new ArgumentOutOfRangeException(nameof(order), "Order must be equal or greater than 0.");
             if (Order == order) return;
+
             Order = order;
         }
 

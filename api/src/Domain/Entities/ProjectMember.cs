@@ -17,8 +17,11 @@ namespace Domain.Entities
 
         public static ProjectMember Create(Guid projectId, Guid userId, ProjectRole role)
         {
-            if (projectId == Guid.Empty) throw new ArgumentException("ProjectId cannot be empty.", nameof(projectId));
-            if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty.", nameof(userId));
+            if (projectId == Guid.Empty)
+                throw new ArgumentException("ProjectId cannot be empty.", nameof(projectId));
+            if (userId == Guid.Empty)
+                throw new ArgumentException("UserId cannot be empty.", nameof(userId));
+
             CheckRole(role);
 
             return new ProjectMember

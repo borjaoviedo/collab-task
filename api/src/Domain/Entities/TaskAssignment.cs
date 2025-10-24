@@ -29,24 +29,26 @@ namespace Domain.Entities
         public static TaskAssignment AssignOwner(Guid taskId, Guid userId)
         {
             CheckTaskAndUserId(taskId, userId);
+
             return Create(taskId, userId, TaskRole.Owner);
         }
 
         public static TaskAssignment AssignCoOwner(Guid taskId, Guid userId)
         {
             CheckTaskAndUserId(taskId, userId);
-            return Create(taskId, userId, TaskRole.CoOwner);
-        }
 
-        private static void CheckTaskAndUserId(Guid taskId, Guid userId)
-        {
-            if (taskId == Guid.Empty) throw new ArgumentException("TaskId cannot be empty.", nameof(taskId));
-            if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty.", nameof(userId));
+            return Create(taskId, userId, TaskRole.CoOwner);
         }
 
         internal void SetRowVersion(byte[] value)
             => RowVersion = value ?? throw new ArgumentNullException(nameof(value));
 
         internal void SetRole(TaskRole role) => Role = role;
+
+        private static void CheckTaskAndUserId(Guid taskId, Guid userId)
+        {
+            if (taskId == Guid.Empty) throw new ArgumentException("TaskId cannot be empty.", nameof(taskId));
+            if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty.", nameof(userId));
+        }
     }
 }

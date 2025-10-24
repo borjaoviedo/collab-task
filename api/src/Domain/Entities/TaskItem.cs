@@ -49,10 +49,8 @@ namespace Domain.Entities
 
         public void Edit(TaskTitle? title, TaskDescription? description, DateTimeOffset? dueDate)
         {
-            if (title is not null && !Title.Equals(title))
-                Title = title;
-            if (description is not null && !Description.Equals(description))
-                Description = description;
+            if (title is not null && !Title.Equals(title)) Title = title;
+            if (description is not null && !Description.Equals(description)) Description = description;
             if (dueDate is not null && dueDate < DateTimeOffset.UtcNow)
                 throw new ArgumentException("Due date cannot be in the past.", nameof(dueDate));
 

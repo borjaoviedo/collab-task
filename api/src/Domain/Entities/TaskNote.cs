@@ -32,6 +32,7 @@ namespace Domain.Entities
         public void Edit(NoteContent content)
         {
             if (Content.Equals(content)) return;
+
             Content = content;
         }
 
