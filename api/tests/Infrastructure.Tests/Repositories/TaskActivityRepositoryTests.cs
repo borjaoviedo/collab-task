@@ -52,19 +52,19 @@ namespace Infrastructure.Tests.Repositories
                 userId,
                 TaskActivityType.NoteAdded,
                 ActivityPayload.Create(payload1),
-                createdAt: TestTime.OffsetFromFixed(-3));
+                createdAt: TestTime.FromFixedMinutes(-3));
             var a2 = TaskActivity.Create
                 (taskId,
                 userId,
                 TaskActivityType.NoteEdited,
                 ActivityPayload.Create(payload2),
-                createdAt: TestTime.OffsetFromFixed(-2));
+                createdAt: TestTime.FromFixedMinutes(-2));
             var a3 = TaskActivity.Create(
                 taskId,
                 userId,
                 TaskActivityType.NoteRemoved,
                 ActivityPayload.Create(payload3),
-                createdAt: TestTime.OffsetFromFixed(-1));
+                createdAt: TestTime.FromFixedMinutes(-1));
 
             await repo.AddRangeAsync([a2, a3, a1]);
             await repo.SaveChangesAsync();

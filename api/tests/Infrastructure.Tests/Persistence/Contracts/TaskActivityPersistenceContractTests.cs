@@ -50,19 +50,19 @@ namespace Infrastructure.Tests.Persistence.Contracts
                 actor,
                 TaskActivityType.NoteAdded,
                 ActivityPayload.Create("{\"m\":\"1\"}"),
-                createdAt: TestTime.OffsetFromFixed(-3));
+                createdAt: TestTime.FromFixedMinutes(-3));
             var a2 = TaskActivity.Create(
                 taskId,
                 actor,
                 TaskActivityType.NoteEdited,
                 ActivityPayload.Create("{\"m\":\"2\"}"),
-                createdAt: TestTime.OffsetFromFixed(-2));
+                createdAt: TestTime.FromFixedMinutes(-2));
             var a3 = TaskActivity.Create(
                 taskId,
                 actor,
                 TaskActivityType.NoteRemoved,
                 ActivityPayload.Create("{\"m\":\"3\"}"),
-                createdAt: TestTime.OffsetFromFixed(-1));
+                createdAt: TestTime.FromFixedMinutes(-1));
 
             db.TaskActivities.AddRange(a2, a3, a1);
             await db.SaveChangesAsync();
