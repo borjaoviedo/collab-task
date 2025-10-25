@@ -33,12 +33,6 @@ namespace Infrastructure.Data.Configurations
                 .HasForeignKey(a => a.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Unique Index: 1 Owner per Task
-            e.HasIndex(a => new { a.TaskId, a.Role })
-                .IsUnique()
-                .HasFilter("[Role] = 'Owner'")
-                .HasDatabaseName("UX_Assignments_Task_Owner");
-
             // Concurrency token
             e.Property(a => a.RowVersion).IsRowVersion();
 
