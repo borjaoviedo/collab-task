@@ -5,10 +5,9 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Infrastructure.Data.Interceptors
 {
-    public sealed class AuditingSaveChangesInterceptor : SaveChangesInterceptor
+    public sealed class AuditingSaveChangesInterceptor(IDateTimeProvider clock) : SaveChangesInterceptor
     {
-        private readonly IDateTimeProvider _clock;
-        public AuditingSaveChangesInterceptor(IDateTimeProvider clock) => _clock = clock;
+        private readonly IDateTimeProvider _clock = clock;
 
         public override InterceptionResult<int> SavingChanges(
             DbContextEventData eventData,
