@@ -76,6 +76,7 @@ namespace Infrastructure.Tests.Repositories
 
             var tracked = await db.TaskItems.SingleAsync(t => t.Id == task.Id);
             var newDueDate = DateTimeOffset.UtcNow.AddDays(1);
+            newDueDate = DateTimeOffset.FromUnixTimeMilliseconds(newDueDate.ToUnixTimeMilliseconds());
             var (res, change) = await repo.EditAsync(task.Id, TaskTitle.Create("New"), TaskDescription.Create("NewD"), newDueDate, tracked.RowVersion!);
             res.Should().Be(DomainMutation.Updated);
             change.Should().NotBeNull();

@@ -103,6 +103,7 @@ namespace Application.Tests.TaskItems.Services
             var sameTitle = TaskTitle.Create("Title");
             var sameDescription = TaskDescription.Create("Description");
             var sameDueDate = DateTimeOffset.UtcNow.AddDays(10);
+            sameDueDate = DateTimeOffset.FromUnixTimeMilliseconds(sameDueDate.ToUnixTimeMilliseconds());
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId, sameTitle, sameDescription, sameDueDate);
 
             var res = await svc.EditAsync(pId, task.Id, user.Id, sameTitle, sameDescription, sameDueDate, task.RowVersion);
