@@ -72,7 +72,7 @@ namespace Domain.Tests.ValueObjects
                 .Select(_ => (char)random.Next('a', 'z' + 1))
                 .ToArray();
 
-            Assert.Throws<ArgumentException>(() => NoteContent.Create(new string(chars)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => NoteContent.Create(new string(chars)));
         }
 
         [Theory]
@@ -80,7 +80,7 @@ namespace Domain.Tests.ValueObjects
         [InlineData(" t ")]
         public void Create_TooShortNoteContent_Throws(string input)
         {
-            Assert.Throws<ArgumentException>(() => NoteContent.Create(input));
+            Assert.Throws<ArgumentOutOfRangeException>(() => NoteContent.Create(input));
         }
 
         [Theory]

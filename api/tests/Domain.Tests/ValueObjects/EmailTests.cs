@@ -63,7 +63,7 @@ namespace Domain.Tests.ValueObjects
                 .ToArray();
             var tooLongEmail = new string(chars) + "@demo.com";
 
-            Assert.Throws<ArgumentException>(() => Email.Create(tooLongEmail));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Email.Create(tooLongEmail));
         }
 
         [Theory]

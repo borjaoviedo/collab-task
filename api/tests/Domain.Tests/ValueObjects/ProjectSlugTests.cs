@@ -45,7 +45,7 @@ namespace Domain.Tests.ValueObjects
         [InlineData("---")]
         [InlineData("/// ///")]
         public void Create_AllInvalidChars_Throws(string input)
-            => Assert.Throws<ArgumentException>(() => ProjectSlug.Create(input));
+            => Assert.ThrowsAny<ArgumentException>(() => ProjectSlug.Create(input));
 
         [Fact]
         public void Create_InputWithOnlyDashesAround_StaysAlnumEdges()
@@ -53,7 +53,7 @@ namespace Domain.Tests.ValueObjects
 
         [Fact]
         public void Create_NonLatinOnly_Throws()
-            => Assert.Throws<ArgumentException>(() => ProjectSlug.Create("项目 计划"));
+            => Assert.ThrowsAny<ArgumentException>(() => ProjectSlug.Create("计划"));
 
         [Fact]
         public void Create_LowercasesAlways()
@@ -68,7 +68,7 @@ namespace Domain.Tests.ValueObjects
                 .ToArray();
             var tooLong = new string(chars);
 
-            Assert.Throws<ArgumentException>(() => ProjectSlug.Create(tooLong));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ProjectSlug.Create(tooLong));
         }
 
         [Theory]

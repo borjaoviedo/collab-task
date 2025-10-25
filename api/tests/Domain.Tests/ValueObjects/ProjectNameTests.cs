@@ -37,7 +37,7 @@ namespace Domain.Tests.ValueObjects
                 .ToArray();
             var tooLong = new string(chars);
 
-            Assert.Throws<ArgumentException>(() => ProjectName.Create(tooLong));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ProjectName.Create(tooLong));
         }
 
         [Theory]

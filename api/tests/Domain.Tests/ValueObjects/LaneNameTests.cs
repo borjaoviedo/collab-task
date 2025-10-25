@@ -72,7 +72,7 @@ namespace Domain.Tests.ValueObjects
                 .Select(_ => (char)random.Next('a', 'z' + 1))
                 .ToArray();
 
-            Assert.Throws<ArgumentException>(() => LaneName.Create(new string(chars)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => LaneName.Create(new string(chars)));
         }
 
         [Theory]
@@ -80,7 +80,7 @@ namespace Domain.Tests.ValueObjects
         [InlineData(" l ")]
         public void Create_TooShortLaneName_Throws(string input)
         {
-            Assert.Throws<ArgumentException>(() => LaneName.Create(input));
+            Assert.Throws<ArgumentOutOfRangeException>(() => LaneName.Create(input));
         }
 
         [Theory]

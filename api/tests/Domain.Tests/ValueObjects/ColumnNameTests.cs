@@ -72,7 +72,7 @@ namespace Domain.Tests.ValueObjects
                 .Select(_ => (char)random.Next('a', 'z' + 1))
                 .ToArray();
 
-            Assert.Throws<ArgumentException>(() => ColumnName.Create(new string(chars)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ColumnName.Create(new string(chars)));
         }
 
         [Theory]
@@ -80,7 +80,7 @@ namespace Domain.Tests.ValueObjects
         [InlineData(" C ")]
         public void Create_TooShortColumnName_Throws(string input)
         {
-            Assert.Throws<ArgumentException>(() => ColumnName.Create(input));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ColumnName.Create(input));
         }
 
         [Theory]

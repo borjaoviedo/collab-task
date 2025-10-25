@@ -72,7 +72,7 @@ namespace Domain.Tests.ValueObjects
                 .Select(_ => (char)random.Next('a', 'z' + 1))
                 .ToArray();
 
-            Assert.Throws<ArgumentException>(() => TaskDescription.Create(new string(chars)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => TaskDescription.Create(new string(chars)));
         }
 
         [Theory]
@@ -80,7 +80,7 @@ namespace Domain.Tests.ValueObjects
         [InlineData(" t ")]
         public void Create_TooShortTaskDescription_Throws(string input)
         {
-            Assert.Throws<ArgumentException>(() => TaskDescription.Create(input));
+            Assert.Throws<ArgumentOutOfRangeException>(() => TaskDescription.Create(input));
         }
 
         [Theory]

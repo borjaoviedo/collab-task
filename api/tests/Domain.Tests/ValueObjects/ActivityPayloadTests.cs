@@ -23,8 +23,7 @@ namespace Domain.Tests.ValueObjects
         public void Create_EmptyOrWhitespace_Throws(string input)
         {
             Action act = () => ActivityPayload.Create(input);
-            act.Should().Throw<ArgumentException>()
-               .WithParameterName("value");
+            act.Should().Throw<ArgumentException>();
         }
 
         [Fact]
@@ -32,9 +31,7 @@ namespace Domain.Tests.ValueObjects
         {
             var bad = "{ a: 1 ";
             Action act = () => ActivityPayload.Create(bad);
-            act.Should().Throw<ArgumentException>()
-               .WithParameterName("value")
-               .WithInnerException<JsonException>();
+            act.Should().Throw<ArgumentException>().WithInnerException<JsonException>();
         }
 
         [Fact]

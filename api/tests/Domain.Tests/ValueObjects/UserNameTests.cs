@@ -75,7 +75,7 @@ namespace Domain.Tests.ValueObjects
                 .ToArray();
             var tooLongName = new string(chars);
 
-            Assert.Throws<ArgumentException>(() => UserName.Create(tooLongName));
+            Assert.Throws<ArgumentOutOfRangeException>(() => UserName.Create(tooLongName));
         }
 
         [Theory]
