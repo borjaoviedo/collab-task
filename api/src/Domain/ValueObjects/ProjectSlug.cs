@@ -10,15 +10,15 @@ namespace Domain.ValueObjects
 
         private ProjectSlug(string value) => Value = value;
 
-        public static ProjectSlug Create(string projectSlug)
+        public static ProjectSlug Create(string projectName)
         {
-            Guards.NotNullOrWhiteSpace(projectSlug);
-            projectSlug = Normalize(projectSlug);
+            Guards.NotNullOrWhiteSpace(projectName);
+            var projectSlug = Normalize(projectName);
 
             Guards.LengthBetween(projectSlug, 1, 100);
 
             if (!IsAlnum(projectSlug[0]) || !IsAlnum(projectSlug[^1]))
-                throw new ArgumentException("Slug must start and end with alphanumeric", nameof(projectSlug));
+                throw new ArgumentException("Slug must start and end with alphanumeric", nameof(projectName));
 
             return new ProjectSlug(projectSlug);
         }
@@ -37,7 +37,6 @@ namespace Domain.ValueObjects
         public static bool operator !=(ProjectSlug? a, ProjectSlug? b) => !Equals(a, b);
 
         public static implicit operator string(ProjectSlug pSlug) => pSlug.Value;
-
 
         private static string Normalize(string input)
         {
