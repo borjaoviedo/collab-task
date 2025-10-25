@@ -6,91 +6,120 @@ namespace Domain.Tests.Entities
 {
     public sealed class LaneTests
     {
+        private static readonly Guid _defaultProjectId = Guid.NewGuid();
+        private static readonly LaneName _defaultLaneName = LaneName.Create("lane");
+        private static readonly int _defaultLaneOrder = 0;
+        private readonly Lane _defaultLane = Lane.Create(
+            _defaultProjectId,
+            _defaultLaneName,
+            _defaultLaneOrder);
+
         [Fact]
         public void Set_All_Core_Properties_Assigns_Correctly()
         {
-            var projectId = Guid.NewGuid();
-            var name = LaneName.Create("Demo Line");
-            var order = 0;
+            var order = 2;
+            var lane = Lane.Create(
+                _defaultProjectId,
+                _defaultLaneName,
+                order);
 
-            var l = Lane.Create(projectId, name, order);
-
-            l.ProjectId.Should().Be(projectId);
-            l.Name.Should().Be(name);
-            l.Order.Should().Be(order);
+            lane.ProjectId.Should().Be(_defaultProjectId);
+            lane.Name.Should().Be(_defaultLaneName);
+            lane.Order.Should().Be(order);
         }
 
         [Fact]
         public void Lane_Id_Is_Initialized()
         {
-            var l = Lane.Create(Guid.NewGuid(), LaneName.Create("Line"), 1);
+            var lane = _defaultLane;
 
-            l.Id.Should().NotBeEmpty();
-            l.Id.Should().NotBe(Guid.Empty);
+            lane.Id.Should().NotBeEmpty();
+            lane.Id.Should().NotBe(Guid.Empty);
         }
 
         [Fact]
         public void Lane_Is_Initialized_When_Null_Order()
         {
-            var l = Lane.Create(Guid.NewGuid(), LaneName.Create("Line"), null);
+            var lane = Lane.Create(
+                _defaultProjectId,
+                _defaultLaneName,
+                order: null);
 
-            l.Name.Value.Should().Be("Line"); 
+            lane.Name.Value.Should().Be(_defaultLaneName.Value); 
         }
 
         [Fact]
         public void Lane_Is_Initialized_With_Order_0_When_Negative_Order()
         {
-            var l = Lane.Create(Guid.NewGuid(), LaneName.Create("Line"), -1);
+            var lane = Lane.Create(
+                _defaultProjectId,
+                _defaultLaneName,
+                order: -1);
 
-            l.Name.Value.Should().Be("Line");
-            l.Order.Should().Be(0);
+            lane.Name.Value.Should().Be(_defaultLaneName.Value);
+            lane.Order.Should().Be(0);
         }
 
         [Fact]
         public void ProjectId_With_Guid_Empty_Throws()
         {
-            var projectId = Guid.Empty;
-            Action act = () => Lane.Create(projectId, LaneName.Create("Line"), 1);
+            var act = () => Lane.Create(
+                projectId: Guid.Empty,
+                _defaultLaneName,
+                _defaultLaneOrder);
+
             act.Should().Throw<ArgumentException>();
         }
 
         [Fact]
         public void Rename_Changes_Name()
         {
-            var l = Lane.Create(Guid.NewGuid(), LaneName.Create("Line"), 1);
-            l.Rename(LaneName.Create("New Line"));
-            l.Name.Value.Should().Be("New Line");
+            var lane = _defaultLane;
+            var newLaneName = "new";
+
+            lane.Rename(LaneName.Create(newLaneName));
+
+            lane.Name.Value.Should().Be(newLaneName);
         }
 
         [Fact]
         public void Rename_Same_Name_Does_Not_Change()
         {
-            var l = Lane.Create(Guid.NewGuid(), LaneName.Create("Line"), 1);
-            l.Rename(LaneName.Create("Line"));
-            l.Name.Value.Should().Be("Line");
+            var lane = _defaultLane;
+
+            lane.Rename(_defaultLaneName);
+
+            lane.Name.Value.Should().Be(_defaultLaneName.Value);
         }
 
         [Fact]
         public void Reorder_Changes_Order()
         {
-            var l = Lane.Create(Guid.NewGuid(), LaneName.Create("Line"), 1);
-            l.Reorder(2);
-            l.Order.Should().Be(2);
+            var differentOrder = 2;
+            var lane = _defaultLane;
+
+            lane.Reorder(differentOrder);
+
+            lane.Order.Should().Be(differentOrder);
         }
 
         [Fact]
         public void Reorder_Same_Order_Does_Not_Change()
         {
-            var l = Lane.Create(Guid.NewGuid(), LaneName.Create("Line"), 1);
-            l.Reorder(1);
-            l.Order.Should().Be(1);
+            var lane = _defaultLane;
+
+            lane.Reorder(_defaultLaneOrder);
+
+            lane.Order.Should().Be(_defaultLaneOrder);
         }
 
         [Fact]
         public void Reorder_Negative_Order_Throws()
         {
-            var l = Lane.Create(Guid.NewGuid(), LaneName.Create("Line"), 1);
-            Action act = () => l.Reorder(-1);
+            var lane = _defaultLane;
+
+            var act = () => lane.Reorder(-1);
+
             act.Should().Throw<ArgumentOutOfRangeException>();
         }
     }
