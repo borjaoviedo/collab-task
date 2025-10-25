@@ -44,20 +44,14 @@ namespace Infrastructure.Data.Configurations
             e.Property(m => m.RowVersion).IsRowVersion();
 
             // Indexes
-            e.HasIndex(pm => pm.UserId)
-           .HasDatabaseName("IX_ProjectMembers_UserId");
+            e.HasIndex(m => m.UserId)
+                .HasDatabaseName("IX_ProjectMembers_UserId");
 
-            e.HasIndex(pm => new { pm.ProjectId, pm.Role })
+            e.HasIndex(m => new { m.ProjectId, m.Role })
                 .HasDatabaseName("IX_ProjectMembers_ProjectId_Role");
 
-            e.HasIndex(pm => new { pm.ProjectId, pm.RemovedAt })
+            e.HasIndex(m => new { m.ProjectId, m.RemovedAt })
                 .HasDatabaseName("IX_ProjectMembers_ProjectId_RemovedAt");
-
-            // Exactly one active Owner per project
-            e.HasIndex(pm => pm.ProjectId)
-                .IsUnique()
-                .HasFilter("[Role] = 'Owner' AND [RemovedAt] IS NULL")
-                .HasDatabaseName("UX_ProjectMembers_ProjectId_ActiveOwner");
         }
     }
 }
