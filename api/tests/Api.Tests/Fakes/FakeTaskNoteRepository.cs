@@ -22,7 +22,7 @@ namespace Api.Tests.Fakes
                 .OrderBy(n => n.CreatedAt).Select(Clone).ToList());
 
         public Task<IReadOnlyList<TaskNote>> ListByUserAsync(Guid userId, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<TaskNote>>(_notes.Values.Where(n => n.AuthorId == userId).Select(Clone).ToList());
+            => Task.FromResult<IReadOnlyList<TaskNote>>(_notes.Values.Where(n => n.UserId == userId).Select(Clone).ToList());
 
         public Task AddAsync(TaskNote note, CancellationToken ct = default)
         {
@@ -63,8 +63,8 @@ namespace Api.Tests.Fakes
 
         private static TaskNote Clone(TaskNote n)
         {
-            var clone = TaskNote.Create(n.TaskId, n.AuthorId, NoteContent.Create(n.Content));
-            var rowVersion = (n.RowVersion is null) ? Array.Empty<byte>() : n.RowVersion.ToArray();
+            var clone = TaskNote.Create(n.TaskId, n.UserId, NoteContent.Create(n.Content));
+            var rowVersion = (n.RowVersion is null) ? [] : n.RowVersion;
             clone.SetRowVersion(rowVersion);
             return clone;
         }

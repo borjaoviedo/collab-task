@@ -27,7 +27,7 @@ namespace Infrastructure.Data.Repositories
         public async Task<IReadOnlyList<TaskNote>> ListByUserAsync(Guid userId, CancellationToken ct = default)
             => await _db.TaskNotes
                         .AsNoTracking()
-                        .Where(n => n.AuthorId == userId)
+                        .Where(n => n.UserId == userId)
                         .ToListAsync(ct);
 
         public async Task AddAsync(TaskNote note, CancellationToken ct = default)

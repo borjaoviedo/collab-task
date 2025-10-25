@@ -8,7 +8,7 @@ namespace Domain.Entities
     {
         public Guid Id { get; private set; }
         public Guid TaskId { get; private set; }
-        public Guid AuthorId { get; private set; }
+        public Guid UserId { get; private set; }
         public NoteContent Content { get; private set; } = default!;
         public DateTimeOffset CreatedAt { get; private set; }
         public DateTimeOffset UpdatedAt { get; private set; }
@@ -16,16 +16,16 @@ namespace Domain.Entities
 
         private TaskNote() { }
 
-        public static TaskNote Create(Guid taskId, Guid authorId, NoteContent content)
+        public static TaskNote Create(Guid taskId, Guid userId, NoteContent content)
         {
             Guards.NotEmpty(taskId);
-            Guards.NotEmpty(authorId);
+            Guards.NotEmpty(userId);
 
             return new TaskNote
             {
                 Id = Guid.NewGuid(),
                 TaskId = taskId,
-                AuthorId = authorId,
+                UserId = userId,
                 Content = content
             };
         }

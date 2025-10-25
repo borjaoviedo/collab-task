@@ -10,13 +10,13 @@ namespace Domain.Tests.Entities
         public void Set_All_Core_Properties_Assigns_Correctly()
         {
             var taskId = Guid.NewGuid();
-            var authorId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             var content = NoteContent.Create("note content here");
 
-            var n = TaskNote.Create(taskId, authorId, content);
+            var n = TaskNote.Create(taskId, userId, content);
 
             n.TaskId.Should().Be(taskId);
-            n.AuthorId.Should().Be(authorId);
+            n.UserId.Should().Be(userId);
             n.Content.Should().Be(content);
         }
 
@@ -36,7 +36,7 @@ namespace Domain.Tests.Entities
         }
 
         [Fact]
-        public void Create_Throws_When_AuthorId_Is_Empty()
+        public void Create_Throws_When_UserId_Is_Empty()
         {
             Action act = () => TaskNote.Create(Guid.NewGuid(), Guid.Empty, NoteContent.Create("note content here"));
             act.Should().Throw<ArgumentException>();

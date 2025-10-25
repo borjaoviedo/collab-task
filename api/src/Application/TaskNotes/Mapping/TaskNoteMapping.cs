@@ -10,7 +10,7 @@ namespace Application.TaskNotes.Mapping
             {
                 Id = entity.Id,
                 TaskId = entity.TaskId,
-                AuthorId = entity.AuthorId,
+                UserId = entity.UserId,
                 Content = entity.Content.Value,
                 CreatedAt = entity.CreatedAt,
                 UpdatedAt = entity.UpdatedAt,

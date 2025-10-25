@@ -17,7 +17,7 @@ namespace Application.Tests.TaskNotes.Mapping
             var read = e.ToReadDto();
             read.Id.Should().Be(e.Id);
             read.TaskId.Should().Be(e.TaskId);
-            read.AuthorId.Should().Be(e.AuthorId);
+            read.UserId.Should().Be(e.UserId);
             read.Content.Should().Be("cotent");
             read.CreatedAt.Should().Be(e.CreatedAt);
             read.UpdatedAt.Should().Be(e.UpdatedAt); // null initially

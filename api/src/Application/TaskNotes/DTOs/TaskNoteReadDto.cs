@@ -5,7 +5,7 @@ namespace Application.TaskNotes.DTOs
     {
         public Guid Id { get; init; }
         public Guid TaskId { get; init; }
-        public Guid AuthorId { get; init; }
+        public Guid UserId { get; init; }
         public string Content { get; init; } = default!;
         public DateTimeOffset CreatedAt { get; init; }
         public DateTimeOffset UpdatedAt { get; init; }
