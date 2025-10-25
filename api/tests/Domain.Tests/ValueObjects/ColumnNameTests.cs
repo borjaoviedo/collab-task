@@ -5,18 +5,23 @@ namespace Domain.Tests.ValueObjects
 {
     public sealed class ColumnNameTests
     {
+        private readonly string _defaultColumnName = "column name";
+
         [Fact]
         public void Create_ValidColumn_ReturnsInstance()
         {
-            var c = ColumnName.Create("new column");
-            c.Value.Should().Be("new column");
+            var columnName = ColumnName.Create(_defaultColumnName);
+
+            columnName.Value.Should().Be(_defaultColumnName);
         }
 
         [Fact]
         public void Create_Column_With_Numbers_ReturnsInstance()
         {
-            var c = ColumnName.Create("New column 2025");
-            c.Value.Should().Be("New column 2025");
+            var columnNameString = "New Column 2025";
+            var columnName = ColumnName.Create(columnNameString);
+
+            columnName.Value.Should().Be(columnNameString);
         }
 
         [Theory]
@@ -39,6 +44,7 @@ namespace Domain.Tests.ValueObjects
         public void Create_Trim_Applied_Correctly(string input)
         {
             var trimmedInput = input.Trim();
+
             if (trimmedInput.Length == 0)
                 Assert.Throws<ArgumentException>(() => ColumnName.Create(input));
             else
@@ -50,7 +56,7 @@ namespace Domain.Tests.ValueObjects
         [InlineData("New Invalid  Column")]
         [InlineData("NOt  valid  column")]
         public void Create_Name_With_Two_Or_More_Consecutive_Spaces_Throws(string input)
-            => Assert.Throws<ArgumentException>(() => ColumnName.Create(input!));
+            => Assert.Throws<ArgumentException>(() => ColumnName.Create(input));
 
         [Theory]
         [InlineData("cólùmn ñame", "cólùmn ñame")]
@@ -79,104 +85,107 @@ namespace Domain.Tests.ValueObjects
         [InlineData("c")]
         [InlineData(" C ")]
         public void Create_TooShortColumnName_Throws(string input)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => ColumnName.Create(input));
-        }
+            => Assert.Throws<ArgumentOutOfRangeException>(() => ColumnName.Create(input));
 
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void Create_NullEmptyOrWhitespace_Throws(string? input)
-            => Assert.Throws<ArgumentException>(() => ColumnName.Create(input!));
+        public void Create_NullEmptyOrWhitespace_Throws(string input)
+            => Assert.Throws<ArgumentException>(() => ColumnName.Create(input));
 
         [Fact]
         public void ToString_ReturnsValue()
-            => ColumnName.Create("column name").ToString().Should().Be("column name");
+        {
+            var columnName = ColumnName.Create(_defaultColumnName);
+
+            columnName.ToString().Should().Be(_defaultColumnName);
+        }
 
         [Fact]
         public void Equality_SameValue_True()
         {
-            var a = ColumnName.Create("same column");
-            var b = ColumnName.Create("same column");
-            a.Equals(b).Should().BeTrue();
+            var columnNameA = ColumnName.Create(_defaultColumnName);
+            var columnNameB = ColumnName.Create(_defaultColumnName);
+
+            columnNameA.Equals(columnNameB).Should().BeTrue();
         }
 
         [Fact]
         public void Equality_DifferentValue_False()
         {
-            var a = ColumnName.Create("first column");
-            var b = ColumnName.Create("second column");
-            a.Equals(b).Should().BeFalse();
+            var columnNameA = ColumnName.Create(_defaultColumnName);
+            var columnNameB = ColumnName.Create("different name");
+
+            columnNameA.Equals(columnNameB).Should().BeFalse();
         }
 
         [Fact]
         public void Equality_IgnoresCase()
         {
-            var a = ColumnName.Create("First column");
-            var b = ColumnName.Create("first column");
-            a.Should().Be(b);
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            var columnNameA = ColumnName.Create("First Column");
+            var columnNameB = ColumnName.Create("first column");
+
+            columnNameA.Should().Be(columnNameB);
+            columnNameA.GetHashCode().Should().Be(columnNameB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_SameValue_True()
         {
-            var a = ColumnName.Create("Same column");
-            var b = ColumnName.Create("Same column");
+            var columnNameA = ColumnName.Create(_defaultColumnName);
+            var columnNameB = ColumnName.Create(_defaultColumnName);
 
-            var result = a == b;
-            result.Should().BeTrue();
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            (columnNameA == columnNameB).Should().BeTrue();
+            columnNameA.GetHashCode().Should().Be(columnNameB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_DifferentValue_False()
         {
-            var a = ColumnName.Create("Same column");
-            var b = ColumnName.Create("Not same column");
+            var columnNameA = ColumnName.Create(_defaultColumnName);
+            var columnNameB = ColumnName.Create("different name");
 
-            var result = a == b;
-            result.Should().BeFalse();
+            (columnNameA == columnNameB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_SameValue_False()
         {
-            var a = ColumnName.Create("Same column");
-            var b = ColumnName.Create("Same column");
+            var columnNameA = ColumnName.Create(_defaultColumnName);
+            var columnNameB = ColumnName.Create(_defaultColumnName);
 
-            var result = a != b;
-            result.Should().BeFalse();
+            (columnNameA != columnNameB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_DifferentValue_True()
         {
-            var a = ColumnName.Create("Same column");
-            var b = ColumnName.Create("Not same");
+            var columnNameA = ColumnName.Create(_defaultColumnName);
+            var columnNameB = ColumnName.Create("different name");
 
-            var result = a != b;
-            result.Should().BeTrue();
+            (columnNameA != columnNameB).Should().BeTrue();
         }
 
         [Fact]
         public void Operators_Handle_Nulls()
         {
-            ColumnName? a = null;
-            ColumnName? b = null;
-            (a == b).Should().BeTrue();
-            var c = ColumnName.Create("column");
-            (a == c).Should().BeFalse();
-            (c != null).Should().BeTrue();
+            ColumnName? columnNameA = null;
+            ColumnName? columnNameB = null;
+            var columnNameC = ColumnName.Create(_defaultColumnName);
+
+            (columnNameA == columnNameB).Should().BeTrue();
+            (columnNameA == columnNameC).Should().BeFalse();
+            (columnNameC != null).Should().BeTrue();
         }
 
         [Fact]
         public void Implicit_ToString_Works()
         {
-            ColumnName c = ColumnName.Create("column");
-            string s = c;
-            s.Should().Be("column");
+            ColumnName columnName = ColumnName.Create(_defaultColumnName);
+            string str = columnName;
+
+            str.Should().Be(_defaultColumnName);
         }
     }
 }
