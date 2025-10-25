@@ -2,6 +2,7 @@ using Application.TaskActivities.Abstractions;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
+using TestHelpers.Time;
 
 namespace Api.Tests.Fakes
 {
@@ -39,6 +40,11 @@ namespace Api.Tests.Fakes
         public Task<int> SaveChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
 
         private static TaskActivity Clone(TaskActivity a)
-            => TaskActivity.Create(a.TaskId, a.ActorId, a.Type, ActivityPayload.Create(a.Payload));
+            => TaskActivity.Create(
+                            a.TaskId,
+                            a.ActorId,
+                            a.Type,
+                            ActivityPayload.Create(a.Payload),
+                            createdAt: TestTime.FixedNow);
     }
 }

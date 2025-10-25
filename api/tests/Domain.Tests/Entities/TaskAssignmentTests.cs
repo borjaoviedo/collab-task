@@ -22,14 +22,22 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Create_With_Invalid_TaskId_Throws()
         {
-            Action act = () => TaskAssignment.Create(Guid.Empty, Guid.NewGuid(), TaskRole.Owner);
+            var act = () => TaskAssignment.Create(
+                taskId: Guid.Empty,
+                userId: Guid.NewGuid(),
+                TaskRole.Owner);
+
             act.Should().Throw<ArgumentException>();
         }
 
         [Fact]
         public void Create_With_Invalid_UserId_Throws()
         {
-            Action act = () => TaskAssignment.Create(Guid.NewGuid(), Guid.Empty, TaskRole.Owner);
+            var act = () => TaskAssignment.Create(
+                taskId: Guid.NewGuid(),
+                userId: Guid.Empty,
+                TaskRole.Owner);
+
             act.Should().Throw<ArgumentException>();
         }
 
@@ -39,6 +47,7 @@ namespace Domain.Tests.Entities
             var taskId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var assignment = TaskAssignment.AssignOwner(taskId, userId);
+
             assignment.TaskId.Should().Be(taskId);
             assignment.UserId.Should().Be(userId);
             assignment.Role.Should().Be(TaskRole.Owner);
@@ -50,6 +59,7 @@ namespace Domain.Tests.Entities
             var taskId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var assignment = TaskAssignment.AssignCoOwner(taskId, userId);
+
             assignment.TaskId.Should().Be(taskId);
             assignment.UserId.Should().Be(userId);
             assignment.Role.Should().Be(TaskRole.CoOwner);

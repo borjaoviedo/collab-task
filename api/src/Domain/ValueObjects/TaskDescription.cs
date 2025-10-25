@@ -1,29 +1,26 @@
+using Domain.Common;
 
 namespace Domain.ValueObjects
 {
-    public sealed class TaskDescription
+    public sealed class TaskDescription :IEquatable<TaskDescription>
     {
         public string Value { get; }
 
         private TaskDescription(string value) => Value = value;
 
-        public static TaskDescription Create(string value)
+        public static TaskDescription Create(string taskDescription)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Task description cannot be empty.", nameof(value));
+            Guards.NotNullOrWhiteSpace(taskDescription);
+            taskDescription = taskDescription.Trim();
 
-            value = value.Trim();
-
-            if (value.Length < 2 || value.Length > 2000)
-                throw new ArgumentException("Task description must be between 2 and 2000 characters", nameof(value));
-
-            return new TaskDescription(value);
+            Guards.LengthBetween(taskDescription, 2, 2000);
+            return new TaskDescription(taskDescription);
         }
 
         public override string ToString() => Value;
 
-        public bool Equals(TaskDescription? other) =>
-            other is not null && StringComparer.OrdinalIgnoreCase.Equals(Value, other.Value);
+        public bool Equals(TaskDescription? other)
+            => other is not null && StringComparer.OrdinalIgnoreCase.Equals(Value, other.Value);
 
         public override bool Equals(object? obj) => obj is TaskDescription o && Equals(o);
 

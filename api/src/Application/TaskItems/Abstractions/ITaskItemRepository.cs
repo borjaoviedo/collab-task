@@ -29,6 +29,7 @@ namespace Application.TaskItems.Abstractions
             Guid taskId,
             Guid targetColumnId,
             Guid targetLaneId,
+            Guid targetProjectId,
             decimal targetSortKey,
             byte[] rowVersion,
             CancellationToken ct = default);

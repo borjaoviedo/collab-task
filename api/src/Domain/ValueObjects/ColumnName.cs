@@ -1,33 +1,28 @@
-using System.Text.RegularExpressions;
+using Domain.Common;
 
 namespace Domain.ValueObjects
 {
-    public sealed class ColumnName
+    public sealed class ColumnName : IEquatable<ColumnName>
     {
         public string Value { get; }
 
         private ColumnName(string value) => Value = value;
 
-        public static ColumnName Create(string value)
+        public static ColumnName Create(string columnName)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Column name cannot be empty", nameof(value));
+            Guards.NotNullOrWhiteSpace(columnName);
+            columnName = columnName.Trim();
 
-            value = value.Trim();
+            Guards.LengthBetween(columnName, 2, 100);
+            Guards.NoConsecutiveSpaces(columnName);
 
-            if (value.Length < 2 || value.Length > 100)
-                throw new ArgumentException("Column name must be between 2 and 100 characters", nameof(value));
-
-            if (Regex.IsMatch(value, @"\s{2,}"))
-                throw new ArgumentException("Column name cannot contain consecutive spaces.", nameof(value));
-
-            return new ColumnName(value);
+            return new ColumnName(columnName);
         }
 
         public override string ToString() => Value;
 
-        public bool Equals(ColumnName? other) =>
-            other is not null && StringComparer.OrdinalIgnoreCase.Equals(Value, other.Value);
+        public bool Equals(ColumnName? other)
+            => other is not null && StringComparer.OrdinalIgnoreCase.Equals(Value, other.Value);
 
         public override bool Equals(object? obj) => obj is ColumnName o && Equals(o);
 

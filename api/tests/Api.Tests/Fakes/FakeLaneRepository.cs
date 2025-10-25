@@ -39,7 +39,7 @@ namespace Api.Tests.Fakes
         {
             lock (_lock)
             {
-                lane.RowVersion = NextRowVersion();
+                lane.SetRowVersion(NextRowVersion());
                 _lanes[lane.Id] = lane;
             }
             return Task.CompletedTask;
@@ -56,7 +56,7 @@ namespace Api.Tests.Fakes
             if (await ExistsWithNameAsync(lane.ProjectId, newName, lane.Id, ct)) return DomainMutation.Conflict;
 
             lane.Rename(LaneName.Create(newName));
-            lane.RowVersion = NextRowVersion();
+            lane.SetRowVersion(NextRowVersion());
             return DomainMutation.Updated;
         }
 
@@ -82,7 +82,7 @@ namespace Api.Tests.Fakes
                 if (lanes[i].Order != i)
                 {
                     lanes[i].Reorder(i);
-                    lanes[i].RowVersion = NextRowVersion();
+                    lanes[i].SetRowVersion(NextRowVersion());
                 }
             }
             return DomainMutation.Updated;
@@ -103,7 +103,8 @@ namespace Api.Tests.Fakes
         private static Lane Clone(Lane l)
         {
             var clone = Lane.Create(l.ProjectId, LaneName.Create(l.Name), l.Order);
-            clone.RowVersion = (l.RowVersion is null) ? Array.Empty<byte>() : l.RowVersion.ToArray();
+            var rowVersion = (l.RowVersion is null) ? Array.Empty<byte>() : l.RowVersion.ToArray();
+            clone.SetRowVersion(rowVersion);
             return clone;
         }
     }

@@ -1,9 +1,11 @@
 using Application.Common.Abstractions.Time;
 
-namespace Application.Tests.Common.Helpers
+namespace TestHelpers.Time
 {
     public sealed class FakeClock(DateTimeOffset now) : IDateTimeProvider
     {
-        public DateTimeOffset UtcNow { get; } = now;
+        private readonly DateTimeOffset _now = now;
+
+        public DateTimeOffset UtcNow => _now;
     }
 }

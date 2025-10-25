@@ -5,18 +5,22 @@ namespace Domain.Tests.ValueObjects
 {
     public sealed class TaskTitleTests
     {
+        private readonly string _defaultTaskTitle = "task title";
+
         [Fact]
         public void Create_ValidTaskTitle_ReturnsInstance()
         {
-            var t = TaskTitle.Create("Task Title");
-            t.Value.Should().Be("Task Title");
+            var taskTitle = TaskTitle.Create(_defaultTaskTitle);
+
+            taskTitle.Value.Should().Be(_defaultTaskTitle);
         }
 
         [Fact]
         public void Create_TaskTitle_With_Numbers_ReturnsInstance()
         {
-            var t = TaskTitle.Create("Task Title 2025");
-            t.Value.Should().Be("Task Title 2025");
+            var taskTitle = TaskTitle.Create("Task Title 2025");
+
+            taskTitle.Value.Should().Be("Task Title 2025");
         }
 
         [Theory]
@@ -39,6 +43,7 @@ namespace Domain.Tests.ValueObjects
         public void Create_Trim_Applied_Correctly(string input)
         {
             var trimmedInput = input.Trim();
+
             if (trimmedInput.Length == 0)
                 Assert.Throws<ArgumentException>(() => TaskTitle.Create(input));
             else
@@ -50,7 +55,7 @@ namespace Domain.Tests.ValueObjects
         [InlineData("New Invalid  Title")]
         [InlineData("NOt  valid  title")]
         public void Create_TaskTitle_With_Two_Or_More_Consecutive_Spaces_Throws(string input)
-            => Assert.Throws<ArgumentException>(() => TaskTitle.Create(input!));
+            => Assert.Throws<ArgumentException>(() => TaskTitle.Create(input));
 
         [Theory]
         [InlineData("títlè ñame", "títlè ñame")]
@@ -72,111 +77,114 @@ namespace Domain.Tests.ValueObjects
                 .Select(_ => (char)random.Next('a', 'z' + 1))
                 .ToArray();
 
-            Assert.Throws<ArgumentException>(() => TaskTitle.Create(new string(chars)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => TaskTitle.Create(new string(chars)));
         }
 
         [Theory]
         [InlineData("T")]
         [InlineData(" t ")]
         public void Create_TooShortTaskTitle_Throws(string input)
-        {
-            Assert.Throws<ArgumentException>(() => TaskTitle.Create(input));
-        }
+            => Assert.Throws<ArgumentOutOfRangeException>(() => TaskTitle.Create(input));
 
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void Create_NullEmptyOrWhitespace_Throws(string? input)
-            => Assert.Throws<ArgumentException>(() => TaskTitle.Create(input!));
+        public void Create_NullEmptyOrWhitespace_Throws(string input)
+            => Assert.Throws<ArgumentException>(() => TaskTitle.Create(input));
 
         [Fact]
         public void ToString_ReturnsValue()
-            => TaskTitle.Create("task title").ToString().Should().Be("task title");
+        {
+            var taskTitle = TaskTitle.Create(_defaultTaskTitle);
+
+            taskTitle.ToString().Should().Be(_defaultTaskTitle);
+        }
 
         [Fact]
         public void Equality_SameValue_True()
         {
-            var a = TaskTitle.Create("same title");
-            var b = TaskTitle.Create("same title");
-            a.Equals(b).Should().BeTrue();
+            var taskTitleA = TaskTitle.Create(_defaultTaskTitle);
+            var taskTitleB = TaskTitle.Create(_defaultTaskTitle);
+
+            taskTitleA.Equals(taskTitleB).Should().BeTrue();
         }
 
         [Fact]
         public void Equality_DifferentValue_False()
         {
-            var a = TaskTitle.Create("first title");
-            var b = TaskTitle.Create("second title");
-            a.Equals(b).Should().BeFalse();
+            var taskTitleA = TaskTitle.Create(_defaultTaskTitle);
+            var taskTitleB = TaskTitle.Create("different task title");
+
+            taskTitleA.Equals(taskTitleB).Should().BeFalse();
         }
 
         [Fact]
         public void Equality_IgnoresCase()
         {
-            var a = TaskTitle.Create("First Title");
-            var b = TaskTitle.Create("first title");
-            a.Should().Be(b);
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            var taskTitleA = TaskTitle.Create("First Title");
+            var taskTitleB = TaskTitle.Create("first title");
+
+            taskTitleA.Should().Be(taskTitleB);
+            taskTitleA.GetHashCode().Should().Be(taskTitleB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_SameValue_True()
         {
-            var a = TaskTitle.Create("Same title");
-            var b = TaskTitle.Create("Same title");
+            var taskTitleA = TaskTitle.Create(_defaultTaskTitle);
+            var taskTitleB = TaskTitle.Create(_defaultTaskTitle);
 
-            var result = a == b;
-            result.Should().BeTrue();
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            (taskTitleA == taskTitleB).Should().BeTrue();
+            taskTitleA.GetHashCode().Should().Be(taskTitleB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_DifferentValue_False()
         {
-            var a = TaskTitle.Create("Same title");
-            var b = TaskTitle.Create("Not same title");
+            var taskTitleA = TaskTitle.Create(_defaultTaskTitle);
+            var taskTitleB = TaskTitle.Create("different task title");
 
-            var result = a == b;
-            result.Should().BeFalse();
+            (taskTitleA == taskTitleB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_SameValue_False()
         {
-            var a = TaskTitle.Create("Same title");
-            var b = TaskTitle.Create("Same title");
+            var taskTitleA = TaskTitle.Create(_defaultTaskTitle);
+            var taskTitleB = TaskTitle.Create(_defaultTaskTitle);
 
-            var result = a != b;
-            result.Should().BeFalse();
+            (taskTitleA != taskTitleB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_DifferentValue_True()
         {
-            var a = TaskTitle.Create("Same title");
-            var b = TaskTitle.Create("Not title");
+            var taskTitleA = TaskTitle.Create(_defaultTaskTitle);
+            var taskTitleB = TaskTitle.Create("different task title");
 
-            var result = a != b;
-            result.Should().BeTrue();
+            (taskTitleA != taskTitleB).Should().BeTrue();
         }
 
         [Fact]
         public void Operators_Handle_Nulls()
         {
-            TaskTitle? a = null;
-            TaskTitle? b = null;
-            (a == b).Should().BeTrue();
-            var c = TaskTitle.Create("title");
-            (a == c).Should().BeFalse();
-            (c != null).Should().BeTrue();
+            TaskTitle? taskTitleA = null;
+            TaskTitle? taskTitleB = null;
+            var taskTitleC = TaskTitle.Create(_defaultTaskTitle);
+
+            (taskTitleA == taskTitleB).Should().BeTrue();
+            (taskTitleA == taskTitleC).Should().BeFalse();
+            (taskTitleC != null).Should().BeTrue();
         }
 
         [Fact]
         public void Implicit_ToString_Works()
         {
-            TaskTitle t = TaskTitle.Create("title");
-            string s = t;
-            s.Should().Be("title");
+            TaskTitle taskTitle = TaskTitle.Create(_defaultTaskTitle);
+            string str = taskTitle;
+
+            str.Should().Be(_defaultTaskTitle);
         }
     }
 }

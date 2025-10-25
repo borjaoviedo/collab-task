@@ -112,6 +112,7 @@ namespace Application.TaskItems.Services
                 taskId,
                 targetColumnId,
                 targetLaneId,
+                projectId,
                 targetSortKey,
                 rowVersion,
                 ct);

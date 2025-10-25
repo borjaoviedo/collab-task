@@ -61,7 +61,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
 
             var stale = l.RowVersion!.ToArray();
 
-            l.Name = LaneName.Create("Lane B");
+            l.Rename(LaneName.Create("Lane B"));
             db.Entry(l).Property(x => x.Name).IsModified = true;
             await db.SaveChangesAsync();
 
@@ -69,7 +69,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
             var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
             var same = await db2.Lanes.SingleAsync(x => x.Id == l.Id);
             db2.Entry(same).Property(x => x.RowVersion).OriginalValue = stale;
-            same.Name = LaneName.Create("Lane C");
+            same.Rename(LaneName.Create("Lane C"));
             db2.Entry(same).Property(x => x.Name).IsModified = true;
 
             await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => db2.SaveChangesAsync());

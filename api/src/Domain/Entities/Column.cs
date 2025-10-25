@@ -1,23 +1,23 @@
 using Domain.ValueObjects;
-using System.ComponentModel.DataAnnotations;
+using Domain.Common;
 
 namespace Domain.Entities
 {
     public sealed class Column
     {
-        public Guid Id { get; set; }
-        public Guid LaneId { get; set; }
-        public Guid ProjectId { get; set; }
-        public required ColumnName Name { get; set; }
-        public int Order { get; set; }
-        [Timestamp] public byte[] RowVersion { get; set; } = default!;
+        public Guid Id { get; private set; }
+        public Guid LaneId { get; private set; }
+        public Guid ProjectId { get; private set; }
+        public ColumnName Name { get; private set; } = default!;
+        public int Order { get; private set; }
+        public byte[] RowVersion { get; private set; } = default!;
 
         private Column() { }
 
         public static Column Create(Guid projectId, Guid laneId, ColumnName name, int? order)
         {
-            if (projectId == Guid.Empty) throw new ArgumentException("ProjectId cannot be empty.", nameof(projectId));
-            if (laneId == Guid.Empty) throw new ArgumentException("LaneId cannot be empty.", nameof(laneId));
+            Guards.NotEmpty(projectId);
+            Guards.NotEmpty(laneId);
 
             return new()
             {
@@ -37,9 +37,16 @@ namespace Domain.Entities
 
         public void Reorder(int order)
         {
-            if (order < 0) throw new ArgumentOutOfRangeException(nameof(order), "Order must be equal or greater than 0.");
+            Guards.NonNegative(order);
             if (Order == order) return;
+
             Order = order;
+        }
+
+        internal void SetRowVersion(byte[] rowVersion)
+        {
+            Guards.NotNull(rowVersion);
+            RowVersion = rowVersion;
         }
     }
 }

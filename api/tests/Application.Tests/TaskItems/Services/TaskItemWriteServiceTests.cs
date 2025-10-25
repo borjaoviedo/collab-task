@@ -1,7 +1,7 @@
+using Application.Common.Abstractions.Time;
 using Application.TaskActivities.Services;
 using Application.TaskItems.Realtime;
 using Application.TaskItems.Services;
-using Application.Tests.Common.Fixtures;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
@@ -10,11 +10,14 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using TestHelpers;
+using TestHelpers.Time;
 
 namespace Application.Tests.TaskItems.Services
 {
-    public sealed class TaskItemWriteServiceTests : BaseTest
+    public sealed class TaskItemWriteServiceTests
     {
+        private readonly IDateTimeProvider _clock = TestTime.FixedClock();
+
         [Fact]
         public async Task CreateAsync_Returns_Created_And_Task_And_Publishes_Event()
         {
@@ -23,7 +26,7 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
@@ -52,7 +55,7 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
@@ -89,7 +92,7 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
@@ -122,7 +125,7 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
 
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
 
@@ -150,7 +153,7 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
@@ -184,7 +187,7 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
@@ -208,7 +211,7 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
@@ -229,7 +232,7 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
@@ -252,7 +255,7 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
@@ -278,7 +281,7 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
@@ -301,7 +304,7 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
@@ -327,7 +330,7 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>(MockBehavior.Strict);
 
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
@@ -362,7 +365,7 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
@@ -385,7 +388,7 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);

@@ -116,7 +116,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
             var stale = u.RowVersion!.ToArray();
 
             // first update succeeds
-            u.Role = UserRole.Admin;
+            u.ChangeRole(UserRole.Admin);
             await db.SaveChangesAsync();
 
             // second context with stale original rowversion
@@ -127,7 +127,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
             var entry = db2.Entry(same);
             entry.Property(x => x.RowVersion).OriginalValue = stale;
 
-            same.Role = UserRole.User;
+            same.ChangeRole(UserRole.User);
 
             await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => db2.SaveChangesAsync());
         }

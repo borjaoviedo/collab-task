@@ -1,21 +1,21 @@
+using Domain.Common;
 using Domain.ValueObjects;
-using System.ComponentModel.DataAnnotations;
 
 namespace Domain.Entities
 {
     public sealed class Lane
     {
-        public Guid Id { get; set; }
-        public Guid ProjectId { get; set; }
-        public required LaneName Name { get; set; }
-        public int Order { get; set; }
-        [Timestamp] public byte[] RowVersion { get; set; } = default!;
+        public Guid Id { get; private set; }
+        public Guid ProjectId { get; private set; }
+        public LaneName Name { get; private set; } = default!;
+        public int Order { get; private set; }
+        public byte[] RowVersion { get; private set; } = default!;
 
         private Lane() { }
 
         public static Lane Create(Guid projectId, LaneName name, int? order)
         {
-            if (projectId == Guid.Empty) throw new ArgumentException("ProjectId cannot be empty.", nameof(projectId));
+            Guards.NotEmpty(projectId);
 
             return new()
             {
@@ -34,9 +34,16 @@ namespace Domain.Entities
 
         public void Reorder(int order)
         {
-            if (order < 0) throw new ArgumentOutOfRangeException(nameof(order), "Order must be equal or greater than 0.");
+            Guards.NonNegative(order);
             if (Order == order) return;
+
             Order = order;
+        }
+
+        internal void SetRowVersion(byte[] rowVersion)
+        {
+            Guards.NotNull(rowVersion);
+            RowVersion = rowVersion;
         }
     }
 }

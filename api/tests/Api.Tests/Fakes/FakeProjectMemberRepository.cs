@@ -76,7 +76,7 @@ namespace Api.Tests.Fakes
             var key = (member.ProjectId, member.UserId);
 
             if (member.RowVersion is null || member.RowVersion.Length == 0)
-                member.RowVersion = NextRowVersion();
+                member.SetRowVersion(NextRowVersion());
 
             // keep a tracked instance internally
             var tracked = Clone(member, includeUser: false);
@@ -106,7 +106,7 @@ namespace Api.Tests.Fakes
                 return Task.FromResult(DomainMutation.Conflict);
 
             current.ChangeRole(newRole);
-            current.RowVersion = NextRowVersion();
+            current.SetRowVersion(NextRowVersion());
             return Task.FromResult(DomainMutation.Updated);
         }
 
@@ -127,7 +127,7 @@ namespace Api.Tests.Fakes
                 return Task.FromResult(DomainMutation.Conflict);
 
             current.Remove(now);
-            current.RowVersion = NextRowVersion();
+            current.SetRowVersion(NextRowVersion());
             return Task.FromResult(DomainMutation.Updated);
         }
 
@@ -147,7 +147,7 @@ namespace Api.Tests.Fakes
                 return Task.FromResult(DomainMutation.Conflict);
 
             current.Restore();
-            current.RowVersion = NextRowVersion();
+            current.SetRowVersion(NextRowVersion());
             return Task.FromResult(DomainMutation.Updated);
         }
 
@@ -164,11 +164,12 @@ namespace Api.Tests.Fakes
         private static ProjectMember Clone(ProjectMember m, bool includeUser, User? user = null)
         {
             var clone = ProjectMember.Create(m.ProjectId, m.UserId, m.Role);
-            clone.RowVersion = (m.RowVersion is null) ? [] : m.RowVersion.ToArray();
+            var rowVersion = (m.RowVersion is null) ? [] : m.RowVersion.ToArray();
+            clone.SetRowVersion(rowVersion);
             clone.Remove(m.RemovedAt);
 
             if (includeUser && user is not null)
-                clone.User = Clone(user);
+                clone.SetUser(Clone(user));
 
             return clone;
         }
@@ -176,7 +177,8 @@ namespace Api.Tests.Fakes
         private static User Clone(User u)
         {
             var clone = User.Create(u.Email, u.Name, u.PasswordHash, u.PasswordSalt, u.Role);
-            clone.RowVersion = (u.RowVersion is null) ? [] : u.RowVersion.ToArray();
+            var rowVersion = (u.RowVersion is null) ? [] : u.RowVersion;
+            clone.SetRowVersion(rowVersion);
             return clone;
         }
     }

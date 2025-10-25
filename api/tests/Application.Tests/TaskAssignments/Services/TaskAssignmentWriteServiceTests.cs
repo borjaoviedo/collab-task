@@ -1,17 +1,20 @@
+using Application.Common.Abstractions.Time;
 using Application.TaskActivities.Services;
 using Application.TaskAssignments.Services;
-using Application.Tests.Common.Fixtures;
 using Domain.Enums;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
 using MediatR;
 using Moq;
 using TestHelpers;
+using TestHelpers.Time;
 
 namespace Application.Tests.TaskAssignments.Services
 {
-    public sealed class TaskAssignmentWriteServiceTests : BaseTest
+    public sealed class TaskAssignmentWriteServiceTests
     {
+        private readonly IDateTimeProvider _clock = TestTime.FixedClock();
+
         [Fact]
         public async Task CreateAsync_Persists_Assignment_As_Created()
         {
@@ -20,7 +23,7 @@ namespace Application.Tests.TaskAssignments.Services
 
             var repo = new TaskAssignmentRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskAssignmentWriteService(repo, actSvc, mediator.Object);
@@ -45,7 +48,7 @@ namespace Application.Tests.TaskAssignments.Services
 
             var repo = new TaskAssignmentRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskAssignmentWriteService(repo, actSvc, mediator.Object);
@@ -69,7 +72,7 @@ namespace Application.Tests.TaskAssignments.Services
 
             var repo = new TaskAssignmentRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskAssignmentWriteService(repo, actSvc, mediator.Object);
@@ -90,7 +93,7 @@ namespace Application.Tests.TaskAssignments.Services
 
             var repo = new TaskAssignmentRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, Clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskAssignmentWriteService(repo, actSvc, mediator.Object);

@@ -21,10 +21,9 @@ namespace Api.Tests.Fakes
             ArgumentNullException.ThrowIfNull(item);
 
             if (item.RowVersion is null || item.RowVersion.Length == 0)
-                item.RowVersion = NextRowVersion();
+                item.SetRowVersion(NextRowVersion());
 
-            var copy = Clone(item);
-            _byId[item.Id] = copy;
+            _byId[item.Id] = item;
             _idByEmail[item.Email.Value] = item.Id;
             _idByName[item.Name.Value] = item.Id;
 
@@ -34,7 +33,6 @@ namespace Api.Tests.Fakes
         public Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct = default)
         {
             var list = _byId.Values
-                .Select(Clone)
                 .OrderBy(u => u.Name.Value)
                 .ToList()
                 .AsReadOnly();
@@ -45,17 +43,17 @@ namespace Api.Tests.Fakes
         public Task<User?> GetByEmailAsync(Email email, CancellationToken ct = default)
         {
             if (email is null) return Task.FromResult<User?>(null);
-            return Task.FromResult(TryGetByEmail(email, out var u) ? Clone(u) : null);
+            return Task.FromResult(TryGetByEmail(email, out var u) ? u : null);
         }
 
         public Task<User?> GetByNameAsync(UserName name, CancellationToken ct = default)
         {
             if (name is null) return Task.FromResult<User?>(null);
-            return Task.FromResult(TryGetByName(name, out var u) ? Clone(u) : null);
+            return Task.FromResult(TryGetByName(name, out var u) ? u : null);
         }
 
         public Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
-            => Task.FromResult(_byId.TryGetValue(id, out var u) ? Clone(u) : null);
+            => Task.FromResult(_byId.TryGetValue(id, out var u) ? u : null);
 
         public Task<User?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default)
             => Task.FromResult(_byId.TryGetValue(id, out var u) ? u : null);
@@ -76,7 +74,7 @@ namespace Api.Tests.Fakes
 
             _idByName.TryRemove(user.Name.Value, out _);
             user.Rename(UserName.Create(newName));
-            user.RowVersion = NextRowVersion();
+            user.SetRowVersion(NextRowVersion());
             _idByName[user.Name.Value] = id;
 
             return Task.FromResult(DomainMutation.Updated);
@@ -93,7 +91,7 @@ namespace Api.Tests.Fakes
                 return Task.FromResult(DomainMutation.Conflict);
 
             user.ChangeRole(role);
-            user.RowVersion = NextRowVersion();
+            user.SetRowVersion(NextRowVersion());
 
             return Task.FromResult(DomainMutation.Updated);
         }
@@ -144,16 +142,6 @@ namespace Api.Tests.Fakes
 
         private byte[] NextRowVersion()
             => BitConverter.GetBytes(Interlocked.Increment(ref _rv));
-
-        private static User Clone(User u)
-        {
-            var clone = User.Create(u.Email, u.Name, u.PasswordHash.ToArray(), u.PasswordSalt.ToArray(), u.Role);
-            clone.Id = u.Id;
-            clone.CreatedAt = u.CreatedAt;
-            clone.UpdatedAt = u.UpdatedAt;
-            clone.RowVersion = (u.RowVersion is null) ? Array.Empty<byte>() : u.RowVersion.ToArray();
-            return clone;
-        }
 
         private bool TryGetByEmail(string email, out User user)
         {

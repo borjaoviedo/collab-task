@@ -33,7 +33,7 @@ namespace Api.Tests.Fakes
 
         public Task AddAsync(TaskItem task, CancellationToken ct = default)
         {
-            task.RowVersion = NextRowVersion();
+            task.SetRowVersion(NextRowVersion());
             _tasks[task.Id] = task;
             return Task.CompletedTask;
         }
@@ -60,7 +60,7 @@ namespace Api.Tests.Fakes
             if (Equals(beforeTitle, task.Title) && Equals(beforeDesc, task.Description) && Nullable.Equals(beforeDue, task.DueDate))
                 return (DomainMutation.NoOp, null);
 
-            task.RowVersion = NextRowVersion();
+            task.SetRowVersion(NextRowVersion());
             return (DomainMutation.Updated, null);
         }
 
@@ -68,6 +68,7 @@ namespace Api.Tests.Fakes
             Guid taskId,
             Guid targetColumnId,
             Guid targetLaneId,
+            Guid targetProjectId,
             decimal targetSortKey,
             byte[] rowVersion,
             CancellationToken ct = default)
@@ -78,8 +79,8 @@ namespace Api.Tests.Fakes
             if (task.ColumnId == targetColumnId && task.LaneId == targetLaneId && task.SortKey == targetSortKey)
                 return (DomainMutation.NoOp, null);
 
-            task.Move(targetLaneId, targetColumnId, targetSortKey);
-            task.RowVersion = NextRowVersion();
+            task.Move(targetProjectId, targetLaneId, targetColumnId, targetSortKey);
+            task.SetRowVersion(NextRowVersion());
             return (DomainMutation.Updated, null);
         }
 
@@ -106,7 +107,7 @@ namespace Api.Tests.Fakes
         public Task RebalanceSortKeysAsync(Guid columnId, CancellationToken ct = default)
         {
             var list = _tasks.Values.Where(t => t.ColumnId == columnId).OrderBy(t => t.SortKey).ToList();
-            for (int i = 0; i < list.Count; i++) list[i].SortKey = i;
+            for (int i = 0; i < list.Count; i++) list[i].SetSortKey(i);
             return Task.CompletedTask;
         }
 
@@ -123,10 +124,8 @@ namespace Api.Tests.Fakes
                 t.Description,
                 t.DueDate,
                 t.SortKey);
-            clone.Id = t.Id;
-            clone.CreatedAt = t.CreatedAt;
-            clone.UpdatedAt = t.UpdatedAt;
-            clone.RowVersion = (t.RowVersion is null) ? Array.Empty<byte>() : t.RowVersion.ToArray();
+            var rowVersion = (t.RowVersion is null) ? [] : t.RowVersion.ToArray();
+            clone.SetRowVersion(rowVersion);
             return clone;
         }
     }

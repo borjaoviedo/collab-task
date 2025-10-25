@@ -16,7 +16,7 @@ namespace Infrastructure.Data.Configurations
             e.Property(n => n.Id).ValueGeneratedNever();
 
             e.Property(n => n.TaskId).IsRequired();
-            e.Property(n => n.AuthorId).IsRequired();
+            e.Property(n => n.UserId).IsRequired();
 
             // Relationship: 1 Task - N Notes
             e.HasOne<TaskItem>()
@@ -27,7 +27,7 @@ namespace Infrastructure.Data.Configurations
             // Relationship: 1 User - N Notes
             e.HasOne<User>()
                 .WithMany()
-                .HasForeignKey(n => n.AuthorId)
+                .HasForeignKey(n => n.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // VO
@@ -51,8 +51,8 @@ namespace Infrastructure.Data.Configurations
             e.HasIndex(n => new { n.TaskId, n.CreatedAt })
                 .HasDatabaseName("IX_Notes_TaskId_CreatedAt");
 
-            e.HasIndex(n => n.AuthorId)
-                .HasDatabaseName("IX_Notes_AuthorId");
+            e.HasIndex(n => n.UserId)
+                .HasDatabaseName("IX_Notes_UserId");
         }
     }
 }

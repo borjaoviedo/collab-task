@@ -5,17 +5,15 @@ namespace Domain.Tests.ValueObjects
 {
     public class UserNameTests
     {
+        private readonly string _defaultUserName = "user name";
 
         [Fact]
         public void Create_ValidName_ReturnsInstance()
         {
-            var n = UserName.Create("A Name");
-            n.Value.Should().Be("A Name");
-        }
+            var userName = UserName.Create(_defaultUserName);
 
-        [Fact]
-        public void Create_Allows_Single_Spaces_Between_Words()
-            => UserName.Create("John Doe Junior").Value.Should().Be("John Doe Junior");
+            userName.Value.Should().Be(_defaultUserName);
+        }
 
         [Theory]
         [InlineData("José")]
@@ -39,6 +37,7 @@ namespace Domain.Tests.ValueObjects
         public void Create_Trim_Applied_Correctly(string input)
         {
             var trimmedInput = input.Trim();
+
             if (trimmedInput.Length == 0)
                 Assert.Throws<ArgumentException>(() => UserName.Create(input));
             else
@@ -54,7 +53,7 @@ namespace Domain.Tests.ValueObjects
         [InlineData("John@Doe")]
         [InlineData("John+Doe")]
         public void Create_InvalidFormat_Throws(string input)
-            => Assert.Throws<ArgumentException>(() => UserName.Create(input!));
+            => Assert.Throws<ArgumentException>(() => UserName.Create(input));
 
         [Theory]
         [InlineData("John  Doe")]
@@ -64,7 +63,7 @@ namespace Domain.Tests.ValueObjects
         [InlineData("John Doe   Junior")]
         [InlineData("John  Doe  Senior")]
         public void Create_Name_With_Two_Or_More_Consecutive_Spaces_Throws(string input)
-            => Assert.Throws<ArgumentException>(() => UserName.Create(input!));
+            => Assert.Throws<ArgumentException>(() => UserName.Create(input));
 
         [Fact]
         public void Create_TooLongName_Throws()
@@ -75,117 +74,123 @@ namespace Domain.Tests.ValueObjects
                 .ToArray();
             var tooLongName = new string(chars);
 
-            Assert.Throws<ArgumentException>(() => UserName.Create(tooLongName));
+            Assert.Throws<ArgumentOutOfRangeException>(() => UserName.Create(tooLongName));
         }
 
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void Create_NullEmptyOrWhitespace_Throws(string? input)
-            => Assert.Throws<ArgumentException>(() => UserName.Create(input!));
+        public void Create_NullEmptyOrWhitespace_Throws(string input)
+            => Assert.Throws<ArgumentException>(() => UserName.Create(input));
 
 
         [Fact]
         public void ToString_ReturnsValue()
-            => UserName.Create("Random User Name").ToString().Should().Be("Random User Name");
+        {
+            var userName = UserName.Create(_defaultUserName);
+
+            userName.ToString().Should().Be(_defaultUserName);
+        }
 
         [Fact]
         public void Equality_SameValue_True()
         {
-            var a = UserName.Create("same name");
-            var b = UserName.Create("same name");
-            a.Equals(b).Should().BeTrue();
+            var userNameA = UserName.Create(_defaultUserName);
+            var userNameB = UserName.Create(_defaultUserName);
+
+            userNameA.Equals(userNameB).Should().BeTrue();
         }
 
         [Fact]
         public void Equality_DifferentValue_False()
         {
-            var a = UserName.Create("same name");
-            var b = UserName.Create("not same name");
-            a.Equals(b).Should().BeFalse();
+            var userNameA = UserName.Create(_defaultUserName);
+            var userNameB = UserName.Create("different user name");
+
+            userNameA.Equals(userNameB).Should().BeFalse();
         }
 
         [Fact]
         public void Equality_IgnoresCase()
         {
-            var a = UserName.Create("User Name");
-            var b = UserName.Create("user name");
-            a.Should().Be(b);
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            var userNameA = UserName.Create("User Name");
+            var userNameB = UserName.Create("user name");
+
+            userNameA.Should().Be(userNameB);
+            userNameA.GetHashCode().Should().Be(userNameB.GetHashCode());
         }
 
         [Fact]
         public void Equality_Is_Symmetric_And_Transitive()
         {
-            var a = UserName.Create("Alice Smith");
-            var b = UserName.Create("alice smith");
-            var c = UserName.Create("ALICE SMITH");
-            a.Equals(b).Should().BeTrue();
-            b.Equals(a).Should().BeTrue();
-            a.Equals(b).Should().BeTrue();
-            b.Equals(c).Should().BeTrue();
-            a.Equals(c).Should().BeTrue();
+            var userNameA = UserName.Create("Alice Smith");
+            var userNameB = UserName.Create("alice smith");
+            var userNameC = UserName.Create("ALICE SMITH");
+
+            userNameA.Equals(userNameB).Should().BeTrue();
+            userNameB.Equals(userNameA).Should().BeTrue();
+            userNameA.Equals(userNameB).Should().BeTrue();
+            userNameB.Equals(userNameC).Should().BeTrue();
+            userNameA.Equals(userNameC).Should().BeTrue();
         }
 
         [Fact]
         public void Operators_Equality_SameValue_True()
         {
-            var a = UserName.Create("Valid Random User Name");
-            var b = UserName.Create("Valid Random User Name");
+            var userNameA = UserName.Create(_defaultUserName);
+            var userNameB = UserName.Create(_defaultUserName);
 
-            var result = a == b;
-            result.Should().BeTrue();
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            (userNameA == userNameB).Should().BeTrue();
+            userNameA.GetHashCode().Should().Be(userNameB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_DifferentValue_False()
         {
-            var a = UserName.Create("User name");
-            var b = UserName.Create("Second user name");
+            var userNameA = UserName.Create(_defaultUserName);
+            var userNameB = UserName.Create("different user name");
 
-            var result = a == b;
-            result.Should().BeFalse();
+            (userNameA == userNameB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_SameValue_False()
         {
-            var a = UserName.Create("Common name");
-            var b = UserName.Create("Common name");
+            var userNameA = UserName.Create(_defaultUserName);
+            var userNameB = UserName.Create(_defaultUserName);
 
-            var result = a != b;
-            result.Should().BeFalse();
+            (userNameA != userNameB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_DifferentValue_True()
         {
-            var a = UserName.Create("John");
-            var b = UserName.Create("Michael");
+            var userNameA = UserName.Create(_defaultUserName);
+            var userNameB = UserName.Create("different user name");
 
-            var result = a != b;
-            result.Should().BeTrue();
+            (userNameA != userNameB).Should().BeTrue();
         }
 
         [Fact]
         public void Operators_Handle_Nulls()
         {
-            UserName? a = null;
-            UserName? b = null;
-            (a == b).Should().BeTrue();
-            var c = UserName.Create("name");
-            (a == c).Should().BeFalse();
-            (c != null).Should().BeTrue();
+            UserName? userNameA = null;
+            UserName? userNameB = null;
+            var userNameC = UserName.Create(_defaultUserName);
+
+            (userNameA == userNameB).Should().BeTrue();
+            (userNameA == userNameC).Should().BeFalse();
+            (userNameC != null).Should().BeTrue();
         }
 
         [Fact]
         public void Implicit_ToString_Works()
         {
-            UserName n = UserName.Create("last name");
-            string s = n;
-            s.Should().Be("last name");
+            UserName userName = UserName.Create(_defaultUserName);
+            string str = userName;
+
+            str.Should().Be(_defaultUserName);
         }
     }
 }

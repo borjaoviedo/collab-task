@@ -1,24 +1,26 @@
+using Domain.Common;
 using Domain.Enums;
 
 namespace Domain.Entities
 {
     public sealed class ProjectMember
     {
-        public Guid ProjectId { get; set; }
-        public Guid UserId { get; set; }
-        public ProjectRole Role { get; set; }
-        public DateTimeOffset JoinedAt { get; set; }
-        public DateTimeOffset? RemovedAt { get; set; }
-        public byte[] RowVersion { get; set; } = default!;
-        public Project Project { get; set; } = null!;
-        public User User { get; set; } = null!;
+        public Guid ProjectId { get; private set; }
+        public Guid UserId { get; private set; }
+        public ProjectRole Role { get; private set; }
+        public DateTimeOffset JoinedAt { get; private set; }
+        public DateTimeOffset? RemovedAt { get; private set; }
+        public byte[] RowVersion { get; private set; } = default!;
+        public Project Project { get; private set; } = default!;
+        public User User { get; private set; } = default!;
 
         private ProjectMember() { }
 
         public static ProjectMember Create(Guid projectId, Guid userId, ProjectRole role)
         {
-            if (projectId == Guid.Empty) throw new ArgumentException("ProjectId cannot be empty.", nameof(projectId));
-            if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty.", nameof(userId));
+            Guards.NotEmpty(projectId);
+            Guards.NotEmpty(userId);
+            Guards.EnumDefined(role);
 
             return new ProjectMember
             {
@@ -29,8 +31,38 @@ namespace Domain.Entities
             };
         }
 
-        public void ChangeRole(ProjectRole newRole) => Role = newRole;
-        public void Remove(DateTimeOffset? removedAtUtc) => RemovedAt = removedAtUtc;
+        public void ChangeRole(ProjectRole newRole)
+        {
+            Guards.EnumDefined(newRole);
+            if (Role == newRole) return;
+
+            Role = newRole;
+        }
+
+        public void Remove(DateTimeOffset? removedAtUtc)
+        {
+            if (RemovedAt.HasValue) return;
+            RemovedAt = removedAtUtc;
+        }
+
         public void Restore() => RemovedAt = null;
+
+        internal void SetRowVersion(byte[] rowVersion)
+        {
+            Guards.NotNull(rowVersion);
+            RowVersion = rowVersion;
+        }
+
+        internal void SetUser(User user)
+        {
+            Guards.NotNull(user);
+            User = user;
+        }
+
+        internal void SetProject(Project project)
+        {
+            Guards.NotNull(project);
+            Project = project;
+        }
     }
 }

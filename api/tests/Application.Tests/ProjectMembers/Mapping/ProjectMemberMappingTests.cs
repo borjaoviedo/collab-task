@@ -35,7 +35,8 @@ namespace Application.Tests.ProjectMembers.Mapping
         public void ToReadDto_Maps_UserName_And_Email_When_User_Is_Present()
         {
             var projectMember = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Admin);
-            projectMember.User = User.Create(Email.Create("test@demo.com"), UserName.Create("Test User"), _validHash, _validSalt, UserRole.User);
+            var user = User.Create(Email.Create("test@demo.com"), UserName.Create("Test User"), _validHash, _validSalt, UserRole.User);
+            projectMember.SetUser(user);
 
             var dto = projectMember.ToReadDto();
 

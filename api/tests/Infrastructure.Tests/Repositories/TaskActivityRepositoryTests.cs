@@ -4,6 +4,7 @@ using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
 using TestHelpers;
+using TestHelpers.Time;
 
 namespace Infrastructure.Tests.Repositories
 {
@@ -18,8 +19,12 @@ namespace Infrastructure.Tests.Repositories
 
             var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
 
-            var activity = TaskActivity.Create(taskId, userId, TaskActivityType.TaskCreated,
-                ActivityPayload.Create("{\"event\":\"created\"}"));
+            var activity = TaskActivity.Create(
+                taskId,
+                userId,
+                TaskActivityType.TaskCreated,
+                ActivityPayload.Create("{\"event\":\"created\"}"),
+                createdAt: TestTime.FixedNow);
 
             await repo.AddAsync(activity);
             await repo.SaveChangesAsync();
@@ -42,16 +47,24 @@ namespace Infrastructure.Tests.Repositories
             var payload1 = "{\"msg\":\"a1\"}";
             var payload2 = "{\"msg\":\"a2\"}";
             var payload3 = "{\"msg\":\"a3\"}";
-            var a1 = TaskActivity.Create(taskId, userId, TaskActivityType.NoteAdded,
-                ActivityPayload.Create(payload1));
-            var a2 = TaskActivity.Create(taskId, userId, TaskActivityType.NoteEdited,
-                ActivityPayload.Create(payload2));
-            var a3 = TaskActivity.Create(taskId, userId, TaskActivityType.NoteRemoved,
-                ActivityPayload.Create(payload3));
-
-            a1.CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-3);
-            a2.CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-2);
-            a3.CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-1);
+            var a1 = TaskActivity.Create(
+                taskId,
+                userId,
+                TaskActivityType.NoteAdded,
+                ActivityPayload.Create(payload1),
+                createdAt: TestTime.FromFixedMinutes(-3));
+            var a2 = TaskActivity.Create
+                (taskId,
+                userId,
+                TaskActivityType.NoteEdited,
+                ActivityPayload.Create(payload2),
+                createdAt: TestTime.FromFixedMinutes(-2));
+            var a3 = TaskActivity.Create(
+                taskId,
+                userId,
+                TaskActivityType.NoteRemoved,
+                ActivityPayload.Create(payload3),
+                createdAt: TestTime.FromFixedMinutes(-1));
 
             await repo.AddRangeAsync([a2, a3, a1]);
             await repo.SaveChangesAsync();
@@ -72,8 +85,18 @@ namespace Infrastructure.Tests.Repositories
 
             var payload1 = "{\"a\":1}";
             var payload2 = "{\"a\":2}";
-            var a1 = TaskActivity.Create(taskId, userId1, TaskActivityType.NoteAdded, ActivityPayload.Create(payload1));
-            var a2 = TaskActivity.Create(taskId, userId2, TaskActivityType.NoteEdited, ActivityPayload.Create(payload2));
+            var a1 = TaskActivity.Create(
+                taskId,
+                userId1,
+                TaskActivityType.NoteAdded,
+                ActivityPayload.Create(payload1),
+                createdAt: TestTime.FixedNow);
+            var a2 = TaskActivity.Create(
+                taskId,
+                userId2,
+                TaskActivityType.NoteEdited,
+                ActivityPayload.Create(payload2),
+                createdAt: TestTime.FixedNow);
             await repo.AddRangeAsync([a1, a2]);
             await repo.SaveChangesAsync();
 
@@ -93,8 +116,18 @@ namespace Infrastructure.Tests.Repositories
 
             var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
 
-            var created = TaskActivity.Create(taskId, userId, TaskActivityType.TaskCreated, ActivityPayload.Create("{\"e\":\"c\"}"));
-            var noteAdded = TaskActivity.Create(taskId, userId, TaskActivityType.NoteAdded, ActivityPayload.Create("{\"e\":\"m\"}"));
+            var created = TaskActivity.Create(
+                taskId,
+                userId,
+                TaskActivityType.TaskCreated,
+                ActivityPayload.Create("{\"e\":\"c\"}"),
+                createdAt: TestTime.FixedNow);
+            var noteAdded = TaskActivity.Create(
+                taskId,
+                userId,
+                TaskActivityType.NoteAdded,
+                ActivityPayload.Create("{\"e\":\"m\"}"),
+                createdAt: TestTime.FixedNow);
             await repo.AddRangeAsync([created, noteAdded]);
             await repo.SaveChangesAsync();
 
@@ -111,7 +144,12 @@ namespace Infrastructure.Tests.Repositories
             var repo = new TaskActivityRepository(db);
 
             var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
-            var a = TaskActivity.Create(taskId, userId, TaskActivityType.TaskCreated, ActivityPayload.Create("{\"x\":1}"));
+            var a = TaskActivity.Create(
+                taskId,
+                userId,
+                TaskActivityType.TaskCreated,
+                ActivityPayload.Create("{\"x\":1}"),
+                createdAt: TestTime.FixedNow);
             await repo.AddAsync(a);
             var affected = await repo.SaveChangesAsync();
             affected.Should().BeGreaterThan(0);

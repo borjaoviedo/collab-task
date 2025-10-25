@@ -34,7 +34,7 @@ namespace Api.Tests.Fakes
 
         public Task AddAsync(TaskAssignment assignment, CancellationToken ct = default)
         {
-            assignment.RowVersion = NextRowVersion();
+            assignment.SetRowVersion(NextRowVersion());
             _map[(assignment.TaskId, assignment.UserId)] = assignment;
             return Task.CompletedTask;
         }
@@ -50,8 +50,8 @@ namespace Api.Tests.Fakes
                     _map.Values.Any(a => a.TaskId == taskId && a.UserId != userId && a.Role == TaskRole.Owner))
                     return Task.FromResult((DomainMutation.Conflict, (AssignmentChange?)null));
 
-                existing.Role = role;
-                existing.RowVersion = NextRowVersion();
+                existing.SetRole(role);
+                existing.SetRowVersion(NextRowVersion());
                 return Task.FromResult((DomainMutation.Updated, (AssignmentChange?)null));
             }
 
@@ -60,7 +60,7 @@ namespace Api.Tests.Fakes
                 return Task.FromResult((DomainMutation.Conflict, (AssignmentChange?)null));
 
             var aNew = TaskAssignment.Create(taskId, userId, role);
-            aNew.RowVersion = NextRowVersion();
+            aNew.SetRowVersion(NextRowVersion());
             _map[(taskId, userId)] = aNew;
             return Task.FromResult((DomainMutation.Created, (AssignmentChange?)null));
         }
@@ -79,8 +79,8 @@ namespace Api.Tests.Fakes
             if (!existing.RowVersion.SequenceEqual(rowVersion))
                 return Task.FromResult((DomainMutation.Conflict, (AssignmentChange?)null));
 
-            existing.Role = newRole;
-            existing.RowVersion = NextRowVersion();
+            existing.SetRole(newRole);
+            existing.SetRowVersion(NextRowVersion());
             return Task.FromResult((DomainMutation.Updated, (AssignmentChange?)null));
         }
 
@@ -102,7 +102,8 @@ namespace Api.Tests.Fakes
         private static TaskAssignment Clone(TaskAssignment a)
         {
             var clone = TaskAssignment.Create(a.TaskId, a.UserId, a.Role);
-            clone.RowVersion = (a.RowVersion is null) ? Array.Empty<byte>() : a.RowVersion.ToArray();
+            var rowVersion = (a.RowVersion is null) ? [] : a.RowVersion.ToArray();
+            clone.SetRowVersion(rowVersion);
             return clone;
         }
     }

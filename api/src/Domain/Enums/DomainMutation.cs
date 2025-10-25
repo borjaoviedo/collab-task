@@ -1,12 +1,15 @@
+using System.Text.Json.Serialization;
+
 namespace Domain.Enums
 {
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum DomainMutation
     {
-        NoOp = 0,
-        NotFound = 1,
-        Updated = 2,
-        Created = 3,
-        Deleted = 4,
-        Conflict = 5
+        NoOp,
+        NotFound,
+        Updated,
+        Created,
+        Deleted,
+        Conflict
     }
 }

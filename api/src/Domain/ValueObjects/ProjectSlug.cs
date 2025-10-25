@@ -1,28 +1,26 @@
+using Domain.Common;
 using System.Globalization;
 using System.Text;
 
 namespace Domain.ValueObjects
 {
-    public sealed class ProjectSlug
+    public sealed class ProjectSlug : IEquatable<ProjectSlug>
     {
         public string Value { get; }
 
         private ProjectSlug(string value) => Value = value;
 
-        public static ProjectSlug Create(string value)
+        public static ProjectSlug Create(string projectName)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Slug cannot be empty", nameof(value));
+            Guards.NotNullOrWhiteSpace(projectName);
+            var projectSlug = Normalize(projectName);
 
-            var normalized = Normalize(value);
+            Guards.LengthBetween(projectSlug, 1, 100);
 
-            if (normalized.Length is < 1 or > 100)
-                throw new ArgumentException("Slug length must be 1..100", nameof(value));
+            if (!IsAlnum(projectSlug[0]) || !IsAlnum(projectSlug[^1]))
+                throw new ArgumentException("Slug must start and end with alphanumeric", nameof(projectName));
 
-            if (!IsAlnum(normalized[0]) || !IsAlnum(normalized[^1]))
-                throw new ArgumentException("Slug must start and end with alphanumeric", nameof(value));
-
-            return new ProjectSlug(normalized);
+            return new ProjectSlug(projectSlug);
         }
 
         public override string ToString() => Value;
@@ -39,7 +37,6 @@ namespace Domain.ValueObjects
         public static bool operator !=(ProjectSlug? a, ProjectSlug? b) => !Equals(a, b);
 
         public static implicit operator string(ProjectSlug pSlug) => pSlug.Value;
-
 
         private static string Normalize(string input)
         {

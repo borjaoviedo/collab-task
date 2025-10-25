@@ -44,7 +44,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
             var stale = n.RowVersion!.ToArray();
 
             // bump rowversion
-            n.Content = NoteContent.Create("content B");
+            n.Edit(NoteContent.Create("content B"));
             db.Entry(n).Property(x => x.Content).IsModified = true;
             await db.SaveChangesAsync();
 
@@ -54,7 +54,7 @@ namespace Infrastructure.Tests.Persistence.Contracts
 
             // stale update
             db2.Entry(same).Property(x => x.RowVersion).OriginalValue = stale;
-            same.Content = NoteContent.Create("oontent C");
+            same.Edit(NoteContent.Create("content C"));
             db2.Entry(same).Property(x => x.Content).IsModified = true;
             await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => db2.SaveChangesAsync());
 

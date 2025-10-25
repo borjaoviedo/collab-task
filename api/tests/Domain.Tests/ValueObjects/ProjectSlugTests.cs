@@ -5,11 +5,14 @@ namespace Domain.Tests.ValueObjects
 {
     public class ProjectSlugTests
     {
+        private readonly string _defaultProjectName = "project name";
+
         [Fact]
         public void Create_ValidProjectSlug_ReturnsInstance()
         {
-            var pSlug = ProjectSlug.Create("project slug");
-            pSlug.Value.Should().Be("project-slug");
+            var projectSlug = ProjectSlug.Create(_defaultProjectName);
+
+            projectSlug.Value.Should().Be("project-name");
         }
 
         [Fact]
@@ -45,7 +48,7 @@ namespace Domain.Tests.ValueObjects
         [InlineData("---")]
         [InlineData("/// ///")]
         public void Create_AllInvalidChars_Throws(string input)
-            => Assert.Throws<ArgumentException>(() => ProjectSlug.Create(input));
+            => Assert.ThrowsAny<ArgumentException>(() => ProjectSlug.Create(input));
 
         [Fact]
         public void Create_InputWithOnlyDashesAround_StaysAlnumEdges()
@@ -53,7 +56,7 @@ namespace Domain.Tests.ValueObjects
 
         [Fact]
         public void Create_NonLatinOnly_Throws()
-            => Assert.Throws<ArgumentException>(() => ProjectSlug.Create("项目 计划"));
+            => Assert.ThrowsAny<ArgumentException>(() => ProjectSlug.Create("计划"));
 
         [Fact]
         public void Create_LowercasesAlways()
@@ -68,19 +71,24 @@ namespace Domain.Tests.ValueObjects
                 .ToArray();
             var tooLong = new string(chars);
 
-            Assert.Throws<ArgumentException>(() => ProjectSlug.Create(tooLong));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ProjectSlug.Create(tooLong));
         }
 
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void Create_NullEmptyOrWhitespace_Throws(string? input)
-            => Assert.Throws<ArgumentException>(() => ProjectSlug.Create(input!));
+        public void Create_NullEmptyOrWhitespace_Throws(string input)
+            => Assert.Throws<ArgumentException>(() => ProjectSlug.Create(input));
 
         [Fact]
         public void ToString_ReturnsValue()
-            => ProjectSlug.Create("a-project-name").ToString().Should().Be("a-project-name");
+        {
+            var projectSlugString = "a-project-name";
+            var projectSlug = ProjectSlug.Create(projectSlugString);
+
+            projectSlug.ToString().Should().Be(projectSlugString);
+        }
 
         [Fact]
         public void ToString_ReturnsNormalizedValue()
@@ -89,102 +97,106 @@ namespace Domain.Tests.ValueObjects
         [Fact]
         public void Equality_SameValue_True()
         {
-            var a = ProjectSlug.Create("Same Name");
-            var b = ProjectSlug.Create("Same Name");
-            a.Equals(b).Should().BeTrue();
+            var projectSlugA = ProjectSlug.Create(_defaultProjectName);
+            var projectSlugB = ProjectSlug.Create(_defaultProjectName);
+
+            projectSlugA.Equals(projectSlugB).Should().BeTrue();
         }
 
         [Fact]
         public void Equality_IgnoresCase()
         {
-            var a = ProjectSlug.Create("Project Name");
-            var b = ProjectSlug.Create("project name");
-            a.Equals(b).Should().BeTrue();
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            var projectSlugA = ProjectSlug.Create("Project Name");
+            var projectSlugB = ProjectSlug.Create("project name");
+
+            projectSlugA.Equals(projectSlugB).Should().BeTrue();
+            projectSlugA.GetHashCode().Should().Be(projectSlugB.GetHashCode());
         }
 
         [Fact]
         public void Equals_Object_Overload_Works()
         {
-            var a = ProjectSlug.Create("Board A");
-            object b = ProjectSlug.Create("board a");
-            a.Equals(b).Should().BeTrue();
+            var projectSlugA = ProjectSlug.Create(_defaultProjectName);
+            object projectSlugB = ProjectSlug.Create(_defaultProjectName);
+
+            projectSlugA.Equals(projectSlugB).Should().BeTrue();
         }
 
         [Fact]
         public void GetHashCode_SameValue_SameHash()
         {
-            var a = ProjectSlug.Create("Same Name");
-            var b = ProjectSlug.Create("same name");
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            var projectSlugA = ProjectSlug.Create(_defaultProjectName);
+            var projectSlugB = ProjectSlug.Create(_defaultProjectName);
+
+            projectSlugA.GetHashCode().Should().Be(projectSlugB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_SameValue_True()
         {
-            var a = ProjectSlug.Create("same project name value");
-            var b = ProjectSlug.Create("same project name value");
+            var projectSlugA = ProjectSlug.Create(_defaultProjectName);
+            var projectSlugB = ProjectSlug.Create(_defaultProjectName);
 
-            var result = a == b;
-            result.Should().BeTrue();
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            (projectSlugA == projectSlugB).Should().BeTrue();
+            projectSlugA.GetHashCode().Should().Be(projectSlugB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_DifferentValue_False()
         {
-            var a = ProjectSlug.Create("project name value");
-            var b = ProjectSlug.Create("not same project name value");
+            var projectSlugA = ProjectSlug.Create(_defaultProjectName);
+            var projectSlugB = ProjectSlug.Create("different project name");
 
-            var result = a == b;
-            result.Should().BeFalse();
+            (projectSlugA == projectSlugB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_SameValue_False()
         {
-            var a = ProjectSlug.Create("same project name value");
-            var b = ProjectSlug.Create("same project name value");
+            var projectSlugA = ProjectSlug.Create(_defaultProjectName);
+            var projectSlugB = ProjectSlug.Create(_defaultProjectName);
 
-            var result = a != b;
-            result.Should().BeFalse();
+            (projectSlugA != projectSlugB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_DifferentValue_True()
         {
-            var a = ProjectSlug.Create("a project name");
-            var b = ProjectSlug.Create("different project name");
+            var projectSlugA = ProjectSlug.Create(_defaultProjectName);
+            var projectSlugB = ProjectSlug.Create("different project name");
 
-            var result = a != b;
-            result.Should().BeTrue();
+            (projectSlugA != projectSlugB).Should().BeTrue();
         }
 
         [Fact]
         public void Operators_Handle_Nulls()
         {
-            ProjectSlug? a = null;
-            ProjectSlug? b = null;
-            (a == b).Should().BeTrue();
-            var c = ProjectSlug.Create("Random Name");
-            (a == c).Should().BeFalse();
-            (c != null).Should().BeTrue();
+            ProjectSlug? projectSlugA = null;
+            ProjectSlug? projectSlugB = null;
+            var projectSlugC = ProjectSlug.Create(_defaultProjectName);
+
+            (projectSlugA == projectSlugB).Should().BeTrue();
+            (projectSlugA == projectSlugC).Should().BeFalse();
+            (projectSlugC != null).Should().BeTrue();
         }
 
         [Fact]
         public void Implicit_ToString_Works()
         {
-            ProjectSlug e = ProjectSlug.Create("project");
-            string s = e;
-            s.Should().Be("project");
+            var projectSlugString = "a-project-name";
+            ProjectSlug projectSlug = ProjectSlug.Create(projectSlugString);
+            string str = projectSlug;
+
+            str.Should().Be(projectSlugString);
         }
 
         [Fact]
         public void ImplicitCast_EqualsToString()
         {
-            ProjectSlug e = ProjectSlug.Create("project");
-            string s = e;
-            e.ToString().Should().Be(s);
+            ProjectSlug projectSlug = ProjectSlug.Create(_defaultProjectName);
+            string str = projectSlug;
+
+            projectSlug.ToString().Should().Be(str);
         }
     }
 }

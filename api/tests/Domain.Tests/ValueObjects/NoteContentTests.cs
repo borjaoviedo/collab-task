@@ -5,18 +5,22 @@ namespace Domain.Tests.ValueObjects
 {
     public sealed class NoteContentTests
     {
+        private readonly string _defaultNoteContent = "note content";
+
         [Fact]
         public void Create_ValidNoteContent_ReturnsInstance()
         {
-            var n = NoteContent.Create("This is a note");
-            n.Value.Should().Be("This is a note");
+            var noteContent = NoteContent.Create(_defaultNoteContent);
+
+            noteContent.Value.Should().Be(_defaultNoteContent);
         }
 
         [Fact]
         public void Create_NoteContent_With_Numbers_ReturnsInstance()
         {
-            var n = NoteContent.Create("Note with numbers 123");
-            n.Value.Should().Be("Note with numbers 123");
+            var noteContent = NoteContent.Create("Note with numbers 123");
+
+            noteContent.Value.Should().Be("Note with numbers 123");
         }
 
         [Theory]
@@ -39,6 +43,7 @@ namespace Domain.Tests.ValueObjects
         public void Create_Trim_Applied_Correctly(string input)
         {
             var trimmedInput = input.Trim();
+
             if (trimmedInput.Length == 0)
                 Assert.Throws<ArgumentException>(() => NoteContent.Create(input));
             else
@@ -72,111 +77,114 @@ namespace Domain.Tests.ValueObjects
                 .Select(_ => (char)random.Next('a', 'z' + 1))
                 .ToArray();
 
-            Assert.Throws<ArgumentException>(() => NoteContent.Create(new string(chars)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => NoteContent.Create(new string(chars)));
         }
 
         [Theory]
         [InlineData("T")]
         [InlineData(" t ")]
         public void Create_TooShortNoteContent_Throws(string input)
-        {
-            Assert.Throws<ArgumentException>(() => NoteContent.Create(input));
-        }
+            => Assert.Throws<ArgumentOutOfRangeException>(() => NoteContent.Create(input));
 
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void Create_NullEmptyOrWhitespace_Throws(string? input)
-            => Assert.Throws<ArgumentException>(() => NoteContent.Create(input!));
+        public void Create_NullEmptyOrWhitespace_Throws(string input)
+            => Assert.Throws<ArgumentException>(() => NoteContent.Create(input));
 
         [Fact]
         public void ToString_ReturnsValue()
-            => NoteContent.Create("note content").ToString().Should().Be("note content");
+        {
+            var noteContent = NoteContent.Create(_defaultNoteContent);
+
+            noteContent.ToString().Should().Be(_defaultNoteContent);
+        }
 
         [Fact]
         public void Equality_SameValue_True()
         {
-            var a = NoteContent.Create("same note");
-            var b = NoteContent.Create("same note");
-            a.Equals(b).Should().BeTrue();
+            var noteContentA = NoteContent.Create(_defaultNoteContent);
+            var noteContentB = NoteContent.Create(_defaultNoteContent);
+
+            noteContentA.Equals(noteContentB).Should().BeTrue();
         }
 
         [Fact]
         public void Equality_DifferentValue_False()
         {
-            var a = NoteContent.Create("first note");
-            var b = NoteContent.Create("second note");
-            a.Equals(b).Should().BeFalse();
+            var noteContentA = NoteContent.Create(_defaultNoteContent);
+            var noteContentB = NoteContent.Create("different note content");
+
+            noteContentA.Equals(noteContentB).Should().BeFalse();
         }
 
         [Fact]
         public void Equality_IgnoresCase()
         {
-            var a = NoteContent.Create("First Note");
-            var b = NoteContent.Create("first note");
-            a.Should().Be(b);
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            var noteContentA = NoteContent.Create("First Note");
+            var noteContentB = NoteContent.Create("first note");
+
+            noteContentA.Should().Be(noteContentB);
+            noteContentA.GetHashCode().Should().Be(noteContentB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_SameValue_True()
         {
-            var a = NoteContent.Create("Same note");
-            var b = NoteContent.Create("Same note");
+            var noteContentA = NoteContent.Create(_defaultNoteContent);
+            var noteContentB = NoteContent.Create(_defaultNoteContent);
 
-            var result = a == b;
-            result.Should().BeTrue();
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            (noteContentA == noteContentB).Should().BeTrue();
+            noteContentA.GetHashCode().Should().Be(noteContentB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_DifferentValue_False()
         {
-            var a = NoteContent.Create("Same note");
-            var b = NoteContent.Create("Not same note");
+            var noteContentA = NoteContent.Create(_defaultNoteContent);
+            var noteContentB = NoteContent.Create("different note content");
 
-            var result = a == b;
-            result.Should().BeFalse();
+            (noteContentA == noteContentB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_SameValue_False()
         {
-            var a = NoteContent.Create("Same note");
-            var b = NoteContent.Create("Same note");
+            var noteContentA = NoteContent.Create(_defaultNoteContent);
+            var noteContentB = NoteContent.Create(_defaultNoteContent);
 
-            var result = a != b;
-            result.Should().BeFalse();
+            (noteContentA != noteContentB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_DifferentValue_True()
         {
-            var a = NoteContent.Create("Same note");
-            var b = NoteContent.Create("Not note");
+            var noteContentA = NoteContent.Create(_defaultNoteContent);
+            var noteContentB = NoteContent.Create("different note content");
 
-            var result = a != b;
-            result.Should().BeTrue();
+            (noteContentA != noteContentB).Should().BeTrue();
         }
 
         [Fact]
         public void Operators_Handle_Nulls()
         {
-            NoteContent? a = null;
-            NoteContent? b = null;
-            (a == b).Should().BeTrue();
-            var c = NoteContent.Create("note");
-            (a == c).Should().BeFalse();
-            (c != null).Should().BeTrue();
+            NoteContent? noteContentA = null;
+            NoteContent? noteContentB = null;
+            var noteContentC = NoteContent.Create(_defaultNoteContent);
+
+            (noteContentA == noteContentB).Should().BeTrue();
+            (noteContentA == noteContentC).Should().BeFalse();
+            (noteContentC != null).Should().BeTrue();
         }
 
         [Fact]
         public void Implicit_ToString_Works()
         {
-            NoteContent n = NoteContent.Create("note");
-            string s = n;
-            s.Should().Be("note");
+            NoteContent noteContent = NoteContent.Create(_defaultNoteContent);
+            string str = noteContent;
+
+            str.Should().Be(_defaultNoteContent);
         }
     }
 }

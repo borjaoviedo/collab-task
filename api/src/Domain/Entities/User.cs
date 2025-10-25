@@ -1,27 +1,34 @@
+using Domain.Common;
 using Domain.Common.Abstractions;
 using Domain.Enums;
 using Domain.ValueObjects;
-using System.ComponentModel.DataAnnotations;
 
 namespace Domain.Entities
 {
     public sealed class User : IAuditable
     {
-        public Guid Id { get; set; }
-        public required Email Email { get; set; }
-        public required UserName Name { get; set; }
-        public byte[] PasswordHash { get; set; } = default!;
-        public byte[] PasswordSalt { get; set; } = default!;
-        public UserRole Role { get; set; } = UserRole.User;
-        public DateTimeOffset CreatedAt { get; set; }
-        public DateTimeOffset UpdatedAt { get; set; }
-        [Timestamp] public byte[] RowVersion { get; set; } = default!;
+        public Guid Id { get; private set; }
+        public Email Email { get; private set; } = default!;
+        public UserName Name { get; private set; } = default!;
+        public byte[] PasswordHash { get; private set; } = default!;
+        public byte[] PasswordSalt { get; private set; } = default!;
+        public UserRole Role { get; private set; } = UserRole.User;
+        public DateTimeOffset CreatedAt { get; private set; }
+        public DateTimeOffset UpdatedAt { get; private set; }
+        public byte[] RowVersion { get; private set; } = default!;
         public ICollection<ProjectMember> ProjectMemberships { get; private set; } = [];
 
         private User() { }
 
-        public static User Create(Email email, UserName name, byte[] hash, byte[] salt, UserRole role = UserRole.User)
+        public static User Create(
+            Email email,
+            UserName name,
+            byte[] hash,
+            byte[] salt,
+            UserRole role = UserRole.User)
         {
+            Guards.EnumDefined(role);
+
             return new User
             {
                 Id = Guid.NewGuid(),
@@ -35,6 +42,18 @@ namespace Domain.Entities
 
         public void Rename(UserName newName) => Name = newName;
 
-        public void ChangeRole(UserRole newRole) => Role = newRole;
+        public void ChangeRole(UserRole newRole)
+        {
+            Guards.EnumDefined(newRole);
+            if (Role == newRole) return;
+
+            Role = newRole;
+        }
+
+        internal void SetRowVersion(byte[] rowVersion)
+        {
+            Guards.NotNull(rowVersion);
+            RowVersion = rowVersion;
+        }
     }
 }

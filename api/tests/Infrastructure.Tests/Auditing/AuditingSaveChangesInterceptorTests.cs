@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 using Domain.ValueObjects;
 using TestHelpers;
 using Infrastructure.Tests.Containers;
@@ -13,13 +12,20 @@ namespace Infrastructure.Tests.Auditing
         private readonly MsSqlContainerFixture _fx = fx;
         private readonly string _cs = fx.ConnectionString;
 
+        private readonly byte[] _validHash = TestDataFactory.Bytes(32);
+        private readonly byte[] _validSalt = TestDataFactory.Bytes(16);
+
         [Fact]
         public async Task CreatedAt_And_UpdatedAt_Are_Set_On_Insert()
         {
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var u = User.Create(Email.Create($"{Guid.NewGuid()}@demo.com"), UserName.Create("Project user"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            var u = User.Create(
+                Email.Create($"{Guid.NewGuid()}@demo.com"),
+                UserName.Create("Project user"),
+                _validHash,
+                _validSalt);
             var p = Project.Create(u.Id, ProjectName.Create("Audit Test"));
 
             db.AddRange(u, p);
@@ -36,14 +42,18 @@ namespace Infrastructure.Tests.Auditing
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var u = User.Create(Email.Create($"{Guid.NewGuid()}@demo.com"), UserName.Create("Project user"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            var u = User.Create(
+                Email.Create($"{Guid.NewGuid()}@demo.com"),
+                UserName.Create("Project user"),
+                _validHash,
+                _validSalt);
             var p = Project.Create(u.Id, ProjectName.Create("Audit Test 2"));
 
             db.AddRange(u, p);
             await db.SaveChangesAsync();
 
             var createdAt = p.CreatedAt;
-            p.Name = ProjectName.Create("Audit Test 2 Updated");
+            p.Rename(ProjectName.Create("Audit Test 2 Updated"));
             await db.SaveChangesAsync();
 
             p.CreatedAt.Should().Be(createdAt);

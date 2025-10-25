@@ -5,11 +5,14 @@ namespace Domain.Tests.ValueObjects
 {
     public class ProjectNameTests
     {
+        private readonly string _defaultProjectName = "project name";
+
         [Fact]
         public void Create_ValidProjectName_ReturnsInstance()
         {
-            var pName = ProjectName.Create("first project name");
-            pName.Value.Should().Be("first project name");
+            var projectName = ProjectName.Create(_defaultProjectName);
+
+            projectName.Value.Should().Be(_defaultProjectName);
         }
 
         [Fact]
@@ -24,8 +27,9 @@ namespace Domain.Tests.ValueObjects
         public void Create_Trim_DoesNotCount_Towards_Length()
         {
             var input = "  " + new string('x', 100) + "  ";
-            var p = ProjectName.Create(input);
-            p.Value.Should().HaveLength(100);
+            var projectName = ProjectName.Create(input);
+
+            projectName.Value.Should().HaveLength(100);
         }
 
         [Fact]
@@ -37,7 +41,7 @@ namespace Domain.Tests.ValueObjects
                 .ToArray();
             var tooLong = new string(chars);
 
-            Assert.Throws<ArgumentException>(() => ProjectName.Create(tooLong));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ProjectName.Create(tooLong));
         }
 
         [Theory]
@@ -46,6 +50,7 @@ namespace Domain.Tests.ValueObjects
         public void Create_Trim_Applied_Correctly(string input)
         {
             var trimmedInput = input.Trim();
+
             if (trimmedInput.Length == 0)
                 Assert.Throws<ArgumentException>(() => ProjectName.Create(input));
             else
@@ -75,112 +80,119 @@ namespace Domain.Tests.ValueObjects
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void Create_NullEmptyOrWhitespace_Throws(string? input)
-            => Assert.Throws<ArgumentException>(() => ProjectName.Create(input!));
+        public void Create_NullEmptyOrWhitespace_Throws(string input)
+            => Assert.Throws<ArgumentException>(() => ProjectName.Create(input));
 
         [Fact]
         public void ToString_ReturnsValue()
-            => ProjectName.Create("a project name").ToString().Should().Be("a project name");
+        {
+            var projectName = ProjectName.Create(_defaultProjectName);
+
+            projectName.ToString().Should().Be(_defaultProjectName);
+        }
 
         [Fact]
         public void Equality_SameValue_True()
         {
-            var a = ProjectName.Create("Same Name");
-            var b = ProjectName.Create("Same Name");
-            a.Equals(b).Should().BeTrue();
+            var projectNameA = ProjectName.Create(_defaultProjectName);
+            var projectNameB = ProjectName.Create(_defaultProjectName);
+
+            projectNameA.Equals(projectNameB).Should().BeTrue();
         }
 
         [Fact]
         public void Equality_DifferentValue_False()
         {
-            var a = ProjectName.Create("Project Name");
-            var b = ProjectName.Create("Project  Name");
-            a.Equals(b).Should().BeFalse();
+            var projectNameA = ProjectName.Create(_defaultProjectName);
+            var projectNameB = ProjectName.Create("different project name");
+
+            projectNameA.Equals(projectNameB).Should().BeFalse();
         }
 
         [Fact]
         public void Equality_IgnoresCase()
         {
-            var a = ProjectName.Create("Project Name");
-            var b = ProjectName.Create("project name");
-            a.Should().Be(b);
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            var projectNameA = ProjectName.Create("Project Name");
+            var projectNameB = ProjectName.Create("project name");
+
+            projectNameA.Should().Be(projectNameB);
+            projectNameA.GetHashCode().Should().Be(projectNameB.GetHashCode());
         }
 
         [Fact]
         public void Equals_Object_Overload_Works()
         {
-            var a = ProjectName.Create("Board A");
-            object b = ProjectName.Create("board a");
-            a.Equals(b).Should().BeTrue();
+            var projectNameA = ProjectName.Create(_defaultProjectName);
+            object projectNameB = ProjectName.Create(_defaultProjectName);
+
+            projectNameA.Equals(projectNameB).Should().BeTrue();
         }
 
         [Fact]
         public void GetHashCode_SameValue_SameHash()
         {
-            var a = ProjectName.Create("Same Name");
-            var b = ProjectName.Create("same name");
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            var projectNameA = ProjectName.Create(_defaultProjectName);
+            var projectNameB = ProjectName.Create(_defaultProjectName);
+
+            projectNameA.GetHashCode().Should().Be(projectNameB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_SameValue_True()
         {
-            var a = ProjectName.Create("same project name value");
-            var b = ProjectName.Create("same project name value");
+            var projectNameA = ProjectName.Create(_defaultProjectName);
+            var projectNameB = ProjectName.Create(_defaultProjectName);
 
-            var result = a == b;
-            result.Should().BeTrue();
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            (projectNameA == projectNameB).Should().BeTrue();
+            projectNameA.GetHashCode().Should().Be(projectNameB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_DifferentValue_False()
         {
-            var a = ProjectName.Create("project name value");
-            var b = ProjectName.Create("not same project name value");
+            var projectNameA = ProjectName.Create(_defaultProjectName);
+            var projectNameB = ProjectName.Create("different project name");
 
-            var result = a == b;
-            result.Should().BeFalse();
+            (projectNameA == projectNameB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_SameValue_False()
         {
-            var a = ProjectName.Create("same project name value");
-            var b = ProjectName.Create("same project name value");
+            var projectNameA = ProjectName.Create(_defaultProjectName);
+            var projectNameB = ProjectName.Create(_defaultProjectName);
 
-            var result = a != b;
-            result.Should().BeFalse();
+            (projectNameA != projectNameB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_DifferentValue_True()
         {
-            var a = ProjectName.Create("a project name");
-            var b = ProjectName.Create("different project name");
+            var projectNameA = ProjectName.Create(_defaultProjectName);
+            var projectNameB = ProjectName.Create("different project name");
 
-            var result = a != b;
-            result.Should().BeTrue();
+            (projectNameA != projectNameB).Should().BeTrue();
         }
 
         [Fact]
         public void Operators_Handle_Nulls()
         {
-            ProjectName? a = null;
-            ProjectName? b = null;
-            (a == b).Should().BeTrue();
-            var c = ProjectName.Create("Random Name");
-            (a == c).Should().BeFalse();
-            (c != null).Should().BeTrue();
+            ProjectName? projectNameA = null;
+            ProjectName? projectNameB = null;
+            var projectNameC = ProjectName.Create(_defaultProjectName);
+
+            (projectNameA == projectNameB).Should().BeTrue();
+            (projectNameA == projectNameC).Should().BeFalse();
+            (projectNameC != null).Should().BeTrue();
         }
 
         [Fact]
         public void Implicit_ToString_Works()
         {
-            ProjectName e = ProjectName.Create("project");
-            string s = e;
-            s.Should().Be("project");
+            ProjectName projectName = ProjectName.Create(_defaultProjectName);
+            string str = projectName;
+
+            str.Should().Be(_defaultProjectName);
         }
     }
 }

@@ -1,33 +1,28 @@
-using System.Text.RegularExpressions;
+using Domain.Common;
 
 namespace Domain.ValueObjects
 {
-    public sealed class TaskTitle
+    public sealed class TaskTitle : IEquatable<TaskTitle>
     {
         public string Value { get; }
 
         private TaskTitle(string value) => Value = value;
 
-        public static TaskTitle Create(string value)
+        public static TaskTitle Create(string taskTitle)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Task title name cannot be empty", nameof(value));
+            Guards.NotNullOrWhiteSpace(taskTitle);
+            taskTitle = taskTitle.Trim();
 
-            value = value.Trim();
+            Guards.LengthBetween(taskTitle, 2, 100);
+            Guards.NoConsecutiveSpaces(taskTitle);
 
-            if (value.Length < 2 || value.Length > 100)
-                throw new ArgumentException("Task title must be between 2 and 100 characters", nameof(value));
-
-            if (Regex.IsMatch(value, @"\s{2,}"))
-                throw new ArgumentException("Task title cannot contain consecutive spaces.", nameof(value));
-
-            return new TaskTitle(value);
+            return new TaskTitle(taskTitle);
         }
 
         public override string ToString() => Value;
 
-        public bool Equals(TaskTitle? other) =>
-            other is not null && StringComparer.OrdinalIgnoreCase.Equals(Value, other.Value);
+        public bool Equals(TaskTitle? other)
+            => other is not null && StringComparer.OrdinalIgnoreCase.Equals(Value, other.Value);
 
         public override bool Equals(object? obj) => obj is TaskTitle o && Equals(o);
 

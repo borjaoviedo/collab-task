@@ -5,12 +5,14 @@ namespace Domain.Tests.ValueObjects
 {
     public class EmailTests
     {
+        private readonly string _defaultEmail = "test@email.com";
 
         [Fact]
         public void Create_ValidEmail_ReturnsInstance()
         {
-            var e = Email.Create("testemail123@demo.com");
-            e.Value.Should().Be("testemail123@demo.com");
+            var email = Email.Create(_defaultEmail);
+
+            email.Value.Should().Be(_defaultEmail);
         }
 
         [Theory]
@@ -33,6 +35,7 @@ namespace Domain.Tests.ValueObjects
         public void Create_Trim_Applied_Correctly(string input)
         {
             var trimmedInput = input.Trim();
+
             if (trimmedInput.Length == 0)
                 Assert.Throws<ArgumentException>(() => Email.Create(input));
             else
@@ -52,7 +55,7 @@ namespace Domain.Tests.ValueObjects
         [InlineData("email_with_multiple_domains@first.com@second.com")]
         [InlineData("@email_without_local_part.com")]
         public void Create_InvalidFormat_Throws(string input)
-            => Assert.Throws<ArgumentException>(() => Email.Create(input!));
+            => Assert.Throws<ArgumentException>(() => Email.Create(input));
 
         [Fact]
         public void Create_TooLongEmail_Throws()
@@ -63,15 +66,15 @@ namespace Domain.Tests.ValueObjects
                 .ToArray();
             var tooLongEmail = new string(chars) + "@demo.com";
 
-            Assert.Throws<ArgumentException>(() => Email.Create(tooLongEmail));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Email.Create(tooLongEmail));
         }
 
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void Create_NullEmptyOrWhitespace_Throws(string? input)
-            => Assert.Throws<ArgumentException>(() => Email.Create(input!));
+        public void Create_NullEmptyOrWhitespace_Throws(string input)
+            => Assert.Throws<ArgumentException>(() => Email.Create(input));
 
         [Theory]
         [InlineData("t est@demo.com")]
@@ -86,91 +89,95 @@ namespace Domain.Tests.ValueObjects
 
         [Fact]
         public void ToString_ReturnsValue()
-            => Email.Create("new.email@demo2.com").ToString().Should().Be("new.email@demo2.com");
+        {
+            var email = Email.Create(_defaultEmail);
+
+            email.ToString().Should().Be(_defaultEmail);
+        }
 
         [Fact]
         public void Equality_SameValue_True()
         {
-            var a = Email.Create("same@email.com");
-            var b = Email.Create("same@email.com");
-            a.Equals(b).Should().BeTrue();
+            var emailA = Email.Create(_defaultEmail);
+            var emailB = Email.Create(_defaultEmail);
+
+            emailA.Equals(emailB).Should().BeTrue();
         }
 
         [Fact]
         public void Equality_DifferentValue_False()
         {
-            var a = Email.Create("first@email.com");
-            var b = Email.Create("notfirst@email.com");
-            a.Equals(b).Should().BeFalse();
+            var emailA = Email.Create(_defaultEmail);
+            var emailB = Email.Create("different@email.com");
+
+            emailA.Equals(emailB).Should().BeFalse();
         }
 
         [Fact]
         public void Equality_IgnoresCase()
         {
-            var a = Email.Create("User@Domain.com");
-            var b = Email.Create("user@domain.com");
-            a.Should().Be(b);
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            var emailA = Email.Create("User@Domain.com");
+            var emailB = Email.Create("user@domain.com");
+            emailA.Should().Be(emailB);
+            emailA.GetHashCode().Should().Be(emailB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_SameValue_True()
         {
-            var a = Email.Create("valid-email@valid.com");
-            var b = Email.Create("valid-email@valid.com");
+            var emailA = Email.Create(_defaultEmail);
+            var emailB = Email.Create(_defaultEmail);
 
-            var result = a == b;
-            result.Should().BeTrue();
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            (emailA == emailB).Should().BeTrue();
+            emailA.GetHashCode().Should().Be(emailB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_DifferentValue_False()
         {
-            var a = Email.Create("valid-email@valid.com");
-            var b = Email.Create("valid-email2@valid.com");
+            var emailA = Email.Create(_defaultEmail);
+            var emailB = Email.Create("different@email.com");
 
-            var result = a == b;
-            result.Should().BeFalse();
+            (emailA == emailB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_SameValue_False()
         {
-            var a = Email.Create("valid-email@valid.com");
-            var b = Email.Create("valid-email@valid.com");
+            var emailA = Email.Create(_defaultEmail);
+            var emailB = Email.Create(_defaultEmail);
 
-            var result = a != b;
-            result.Should().BeFalse();
+            (emailA != emailB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_DifferentValue_True()
         {
-            var a = Email.Create("valid-email@valid.com");
-            var b = Email.Create("valid-email2@valid.com");
+            var emailA = Email.Create(_defaultEmail);
+            var emailB = Email.Create("different@email.com");
 
-            var result = a != b;
-            result.Should().BeTrue();
+            (emailA != emailB).Should().BeTrue();
         }
 
         [Fact]
         public void Operators_Handle_Nulls()
         {
-            Email? a = null;
-            Email? b = null;
-            (a == b).Should().BeTrue();
-            var c = Email.Create("x@d.com");
-            (a == c).Should().BeFalse();
-            (c != null).Should().BeTrue();
+            Email? emailA = null;
+            Email? emailB = null;
+            var emailC = Email.Create(_defaultEmail);
+
+            (emailA == emailB).Should().BeTrue();
+            (emailA == emailC).Should().BeFalse();
+            (emailC != null).Should().BeTrue();
         }
 
         [Fact]
         public void Implicit_ToString_Works()
         {
-            Email e = Email.Create("something@demo.com");
-            string s = e;
-            s.Should().Be("something@demo.com");
+            Email email = Email.Create(_defaultEmail);
+            string str = email;
+
+            str.Should().Be(_defaultEmail);
         }
     }
 }
