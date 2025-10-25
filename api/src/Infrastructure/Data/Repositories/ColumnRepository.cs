@@ -20,13 +20,19 @@ namespace Infrastructure.Data.Repositories
 
         public async Task<bool> ExistsWithNameAsync(Guid laneId, ColumnName name, Guid? excludeColumnId = null, CancellationToken ct = default)
         {
-            var q = _db.Columns.AsNoTracking().Where(c => c.LaneId == laneId && c.Name == name);
-            if (excludeColumnId.HasValue) q = q.Where(c => c.Id != excludeColumnId.Value);
+            var q = _db.Columns
+                        .AsNoTracking()
+                        .Where(c => c.LaneId == laneId && c.Name == name);
+
+            if (excludeColumnId.HasValue)
+                q = q.Where(c => c.Id != excludeColumnId.Value);
+
             return await q.AnyAsync(ct);
         }
 
         public async Task<int> GetMaxOrderAsync(Guid laneId, CancellationToken ct = default)
             => await _db.Columns
+                        .AsNoTracking()
                         .Where(c => c.LaneId == laneId)
                         .Select(c => (int?)c.Order)
                         .MaxAsync(ct) ?? -1;
