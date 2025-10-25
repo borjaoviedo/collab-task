@@ -5,18 +5,22 @@ namespace Domain.Tests.ValueObjects
 {
     public sealed class LaneNameTests
     {
+        private readonly string _defaultLaneName = "lane name";
+
         [Fact]
         public void Create_ValidLane_ReturnsInstance()
         {
-            var l = LaneName.Create("New Lane");
-            l.Value.Should().Be("New Lane");
+            var laneName = LaneName.Create(_defaultLaneName);
+
+            laneName.Value.Should().Be(_defaultLaneName);
         }
 
         [Fact]
         public void Create_Lane_With_Numbers_ReturnsInstance()
         {
-            var l = LaneName.Create("New Lane 2025");
-            l.Value.Should().Be("New Lane 2025");
+            var laneName = LaneName.Create("New Lane 2025");
+
+            laneName.Value.Should().Be("New Lane 2025");
         }
 
         [Theory]
@@ -39,6 +43,7 @@ namespace Domain.Tests.ValueObjects
         public void Create_Trim_Applied_Correctly(string input)
         {
             var trimmedInput = input.Trim();
+
             if (trimmedInput.Length == 0)
                 Assert.Throws<ArgumentException>(() => LaneName.Create(input));
             else
@@ -46,11 +51,11 @@ namespace Domain.Tests.ValueObjects
         }
 
         [Theory]
-        [InlineData("Line  Create")]
-        [InlineData("New Invalid  Line")]
-        [InlineData("NOt  valid  line")]
+        [InlineData("Lane  Create")]
+        [InlineData("New Invalid  Lane")]
+        [InlineData("NOt  valid  lane")]
         public void Create_Name_With_Two_Or_More_Consecutive_Spaces_Throws(string input)
-            => Assert.Throws<ArgumentException>(() => LaneName.Create(input!));
+            => Assert.Throws<ArgumentException>(() => LaneName.Create(input));
 
         [Theory]
         [InlineData("lánè ñame", "lánè ñame")]
@@ -79,104 +84,107 @@ namespace Domain.Tests.ValueObjects
         [InlineData("L")]
         [InlineData(" l ")]
         public void Create_TooShortLaneName_Throws(string input)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => LaneName.Create(input));
-        }
+            => Assert.Throws<ArgumentOutOfRangeException>(() => LaneName.Create(input));
 
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void Create_NullEmptyOrWhitespace_Throws(string? input)
-            => Assert.Throws<ArgumentException>(() => LaneName.Create(input!));
+        public void Create_NullEmptyOrWhitespace_Throws(string input)
+            => Assert.Throws<ArgumentException>(() => LaneName.Create(input));
 
         [Fact]
         public void ToString_ReturnsValue()
-            => LaneName.Create("lane name").ToString().Should().Be("lane name");
+        {
+            var laneName = LaneName.Create(_defaultLaneName);
+
+            laneName.ToString().Should().Be(_defaultLaneName);
+        }
 
         [Fact]
         public void Equality_SameValue_True()
         {
-            var a = LaneName.Create("same lane");
-            var b = LaneName.Create("same lane");
-            a.Equals(b).Should().BeTrue();
+            var laneNameA = LaneName.Create(_defaultLaneName);
+            var laneNameB = LaneName.Create(_defaultLaneName);
+
+            laneNameA.Equals(laneNameB).Should().BeTrue();
         }
 
         [Fact]
         public void Equality_DifferentValue_False()
         {
-            var a = LaneName.Create("first line");
-            var b = LaneName.Create("second line");
-            a.Equals(b).Should().BeFalse();
+            var laneNameA = LaneName.Create(_defaultLaneName);
+            var laneNameB = LaneName.Create("different lane");
+
+            laneNameA.Equals(laneNameB).Should().BeFalse();
         }
 
         [Fact]
         public void Equality_IgnoresCase()
         {
-            var a = LaneName.Create("First Line");
-            var b = LaneName.Create("first line");
-            a.Should().Be(b);
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            var laneNameA = LaneName.Create("First Lane");
+            var laneNameB = LaneName.Create("first lane");
+
+            laneNameA.Should().Be(laneNameB);
+            laneNameA.GetHashCode().Should().Be(laneNameB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_SameValue_True()
         {
-            var a = LaneName.Create("Same line");
-            var b = LaneName.Create("Same line");
+            var laneNameA = LaneName.Create(_defaultLaneName);
+            var laneNameB = LaneName.Create(_defaultLaneName);
 
-            var result = a == b;
-            result.Should().BeTrue();
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            (laneNameA == laneNameB).Should().BeTrue();
+            laneNameA.GetHashCode().Should().Be(laneNameB.GetHashCode());
         }
 
         [Fact]
         public void Operators_Equality_DifferentValue_False()
         {
-            var a = LaneName.Create("Same line");
-            var b = LaneName.Create("Not same line");
+            var laneNameA = LaneName.Create(_defaultLaneName);
+            var laneNameB = LaneName.Create("different laneName");
 
-            var result = a == b;
-            result.Should().BeFalse();
+            (laneNameA == laneNameB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_SameValue_False()
         {
-            var a = LaneName.Create("Same line");
-            var b = LaneName.Create("Same line");
+            var laneNameA = LaneName.Create(_defaultLaneName);
+            var laneNameB = LaneName.Create(_defaultLaneName);
 
-            var result = a != b;
-            result.Should().BeFalse();
+            (laneNameA != laneNameB).Should().BeFalse();
         }
 
         [Fact]
         public void Operators_Inequality_DifferentValue_True()
         {
-            var a = LaneName.Create("Same line");
-            var b = LaneName.Create("Not same");
+            var laneNameA = LaneName.Create(_defaultLaneName);
+            var laneNameB = LaneName.Create("different lane");
 
-            var result = a != b;
-            result.Should().BeTrue();
+            (laneNameA != laneNameB).Should().BeTrue();
         }
 
         [Fact]
         public void Operators_Handle_Nulls()
         {
-            LaneName? a = null;
-            LaneName? b = null;
-            (a == b).Should().BeTrue();
-            var c = LaneName.Create("line");
-            (a == c).Should().BeFalse();
-            (c != null).Should().BeTrue();
+            LaneName? laneNameA = null;
+            LaneName? laneNameB = null;
+            var laneNameC = LaneName.Create(_defaultLaneName);
+
+            (laneNameA == laneNameB).Should().BeTrue();
+            (laneNameA == laneNameC).Should().BeFalse();
+            (laneNameC != null).Should().BeTrue();
         }
 
         [Fact]
         public void Implicit_ToString_Works()
         {
-            LaneName l = LaneName.Create("line");
-            string s = l;
-            s.Should().Be("line");
+            LaneName laneName = LaneName.Create(_defaultLaneName);
+            string str = laneName;
+
+            str.Should().Be(_defaultLaneName);
         }
     }
 }
