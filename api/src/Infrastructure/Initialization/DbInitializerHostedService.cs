@@ -5,15 +5,15 @@ namespace Infrastructure.Initialization
 {
     public sealed class DbInitHostedService(IServiceProvider sp, IHostEnvironment env) : IHostedService
     {
-        public async Task StartAsync(CancellationToken ct)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
             if (env.IsEnvironment("Testing")) return;
             if (string.Equals(Environment.GetEnvironmentVariable("DISABLE_DB_INIT"), "true", StringComparison.OrdinalIgnoreCase))
                 return;
 
-            await sp.ApplyMigrationsAndSeedAsync(ct);
+            await sp.ApplyMigrationsAndSeedAsync(cancellationToken);
         }
 
-        public Task StopAsync(CancellationToken ct) => Task.CompletedTask;
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }
