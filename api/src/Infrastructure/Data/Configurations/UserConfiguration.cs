@@ -69,7 +69,7 @@ namespace Infrastructure.Data.Configurations
 
             e.HasIndex(u => u.Name)
                 .IsUnique()
-                .HasDatabaseName("IX_Users_Name");
+                .HasDatabaseName("UX_Users_Name");
         }
     }
 }
