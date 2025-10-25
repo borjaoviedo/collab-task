@@ -6,14 +6,15 @@ namespace Domain.Tests.ValueObjects
 {
     public sealed class ActivityPayloadTests
     {
+        private readonly string _defaultPayload = "{ \"a\": 1 }";
+
         [Fact]
         public void Create_WithValidJson_ReturnsValueObject()
         {
-            var json = " { \"a\": 1 } ";
-            var payload = ActivityPayload.Create(json);
+            var payload = ActivityPayload.Create(_defaultPayload);
 
             payload.Should().NotBeNull();
-            payload.Value.Should().Be("{ \"a\": 1 }");
+            payload.Value.Should().Be(_defaultPayload);
         }
 
         [Theory]
@@ -22,47 +23,50 @@ namespace Domain.Tests.ValueObjects
         [InlineData("   ")]
         public void Create_EmptyOrWhitespace_Throws(string input)
         {
-            Action act = () => ActivityPayload.Create(input);
+            var act = () => ActivityPayload.Create(input);
+
             act.Should().Throw<ArgumentException>();
         }
 
         [Fact]
         public void Create_InvalidJson_Throws()
         {
-            var bad = "{ a: 1 ";
-            Action act = () => ActivityPayload.Create(bad);
+            var invalidJson = "{ a: 1 ";
+            var act = () => ActivityPayload.Create(invalidJson);
+
             act.Should().Throw<ArgumentException>().WithInnerException<JsonException>();
         }
 
         [Fact]
         public void Equality_SameString_IsEqual()
         {
-            var a = ActivityPayload.Create("{\"x\":2}");
-            var b = ActivityPayload.Create("{\"x\":2}");
+            var activityPayloadA = ActivityPayload.Create(_defaultPayload);
+            var activityPayloadB = ActivityPayload.Create(_defaultPayload);
 
-            a.Should().Be(b);
-            (a == b).Should().BeTrue();
-            a.Equals((object)b).Should().BeTrue();
-            a.GetHashCode().Should().Be(b.GetHashCode());
+            activityPayloadA.Should().Be(activityPayloadB);
+            (activityPayloadA == activityPayloadB).Should().BeTrue();
+            activityPayloadA.Equals(activityPayloadB).Should().BeTrue();
+            activityPayloadA.GetHashCode().Should().Be(activityPayloadB.GetHashCode());
         }
 
         [Fact]
         public void Equality_DifferentString_IsNotEqual()
         {
-            var a = ActivityPayload.Create("{\"x\":2}");
-            var b = ActivityPayload.Create("{\"x\":3}");
+            var activityPayloadA = ActivityPayload.Create(_defaultPayload);
+            var activityPayloadB = ActivityPayload.Create("{\"x\":3}");
 
-            a.Should().NotBe(b);
-            (a != b).Should().BeTrue();
+            activityPayloadA.Should().NotBe(activityPayloadB);
+            (activityPayloadA != activityPayloadB).Should().BeTrue();
         }
 
         [Fact]
         public void Implicit_ToString_Works()
         {
-            var a = ActivityPayload.Create("{\"k\":\"v\"}");
-            string s = a;
-            s.Should().Be("{\"k\":\"v\"}");
-            a.ToString().Should().Be(s);
+            var activityPayload = ActivityPayload.Create(_defaultPayload);
+            string activityPayloadString = activityPayload;
+
+            activityPayloadString.Should().Be(_defaultPayload);
+            activityPayload.ToString().Should().Be(activityPayloadString);
         }
     }
 }
