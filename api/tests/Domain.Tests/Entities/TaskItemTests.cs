@@ -6,91 +6,88 @@ namespace Domain.Tests.Entities
 {
     public sealed class TaskItemTests
     {
+        private readonly DateTimeOffset _utcNow = DateTimeOffset.UtcNow;
+        private static readonly Guid _defaultColumnId = Guid.NewGuid();
+        private static readonly Guid _defaultLaneId = Guid.NewGuid();
+        private static readonly Guid _defaultProjectId = Guid.NewGuid();
+        private static readonly TaskTitle _defaultTaskTitle = TaskTitle.Create("title");
+        private static readonly TaskDescription _defaultTaskDescription = TaskDescription.Create("description");
+        private static readonly Decimal _defaultSortKey = 0m;
+
+        private readonly TaskItem _defaultTaskItem = TaskItem.Create(
+            _defaultColumnId,
+            _defaultLaneId,
+            _defaultProjectId,
+            _defaultTaskTitle,
+            _defaultTaskDescription,
+            dueDate: null,
+            sortKey: null);
+
         [Fact]
         public void Set_All_Core_Properties_Assigns_Correctly()
         {
-            var projectId = Guid.NewGuid();
-            var laneId = Guid.NewGuid();
-            var columnId = Guid.NewGuid();
-            var title = TaskTitle.Create("Task Title");
-            var description = TaskDescription.Create("Description here.");
+            var task = _defaultTaskItem;
 
-            var t = TaskItem.Create(columnId, laneId, projectId, title, description);
-
-            t.ProjectId.Should().Be(projectId);
-            t.LaneId.Should().Be(laneId);
-            t.ColumnId.Should().Be(columnId);
-            t.Title.Should().Be(title);
-            t.Description.Should().Be(description);
+            task.ProjectId.Should().Be(_defaultProjectId);
+            task.LaneId.Should().Be(_defaultLaneId);
+            task.ColumnId.Should().Be(_defaultColumnId);
+            task.Title.Should().Be(_defaultTaskTitle);
+            task.Description.Should().Be(_defaultTaskDescription);
         }
 
         [Fact]
         public void TaskItem_Id_Is_Initialized()
         {
-            var t = TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"));
+            var task = _defaultTaskItem;
 
-            t.Id.Should().NotBeEmpty();
-            t.Id.Should().NotBe(Guid.Empty);
+            task.Id.Should().NotBeEmpty();
+            task.Id.Should().NotBe(Guid.Empty);
         }
 
         [Fact]
         public void TaskItem_SortKey_Has_Default_Value_When_No_Value_Given()
         {
-            var t = TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"));
+            var task = _defaultTaskItem;
 
-            t.SortKey.Should().Be(0m);
+            task.SortKey.Should().Be(_defaultSortKey);
         }
 
         [Fact]
         public void TaskItem_SortKey_Has_Different_Value_When_Value_Given()
         {
-            var t = TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"),
-                sortKey: 5m);
+            var differentSortKey = 5m;
+            var task = TaskItem.Create(
+                _defaultColumnId,
+                _defaultLaneId,
+                _defaultProjectId,
+                _defaultTaskTitle,
+                _defaultTaskDescription,
+                sortKey: differentSortKey);
 
-            t.SortKey.Should().Be(5m);
+            task.SortKey.Should().Be(differentSortKey);
         }
 
         [Fact]
         public void TaskItem_DueDate_Is_Null_When_No_Value_Given()
         {
-            var t = TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"));
+            var task = _defaultTaskItem;
 
-            t.DueDate.Should().Be(null);
+            task.DueDate.Should().Be(null);
         }
 
         [Fact]
         public void TaskItem_DueDate_Has_Value_When_Value_Given()
         {
-            var dueDate = DateTimeOffset.UtcNow.AddDays(2);
-            var t = TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"),
+            var dueDate = _utcNow.AddDays(3);
+            var task = TaskItem.Create(
+                _defaultColumnId,
+                _defaultLaneId,
+                _defaultProjectId,
+                _defaultTaskTitle,
+                _defaultTaskDescription,
                 dueDate);
 
-            t.DueDate.Should().Be(dueDate);
+            task.DueDate.Should().Be(dueDate);
         }
 
         [Theory]
@@ -99,12 +96,12 @@ namespace Domain.Tests.Entities
         [InlineData("a")]
         public void Invalid_TaskTitle_Throws(string input)
         {
-            Action act = () => TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create(input),
-                TaskDescription.Create("Description"));
+            var act = () => TaskItem.Create(
+                _defaultColumnId,
+                _defaultLaneId,
+                _defaultProjectId,
+                title: TaskTitle.Create(input),
+                _defaultTaskDescription);
 
             act.Should().Throw<ArgumentException>();
         }
@@ -115,12 +112,12 @@ namespace Domain.Tests.Entities
         [InlineData("a")]
         public void Invalid_TaskDescription_Throws(string input)
         {
-            Action act = () => TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create(input));
+            var act = () => TaskItem.Create(
+                _defaultColumnId,
+                _defaultLaneId,
+                _defaultProjectId,
+                _defaultTaskTitle,
+                description: TaskDescription.Create(input));
 
             act.Should().Throw<ArgumentException>();
         }
@@ -128,13 +125,13 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Past_DueDate_Throws()
         {
-            Action act = () => TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"),
-                DateTimeOffset.UtcNow.AddDays(-1));
+            var act = () => TaskItem.Create(
+                _defaultColumnId,
+                _defaultLaneId,
+                _defaultProjectId,
+                _defaultTaskTitle,
+                _defaultTaskDescription,
+                dueDate: _utcNow.AddDays(-2));
 
             act.Should().Throw<ArgumentException>();
         }
@@ -142,13 +139,12 @@ namespace Domain.Tests.Entities
         [Fact]
         public void ColumnId_With_Guid_Empty_Throws()
         {
-            var columnId = Guid.Empty;
-            Action act = () => TaskItem.Create(
-                columnId,
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"));
+            var act = () => TaskItem.Create(
+                columnId : Guid.Empty,
+                _defaultLaneId,
+                _defaultProjectId,
+                _defaultTaskTitle,
+                _defaultTaskDescription);
 
             act.Should().Throw<ArgumentException>();
         }
@@ -156,13 +152,12 @@ namespace Domain.Tests.Entities
         [Fact]
         public void LaneId_With_Guid_Empty_Throws()
         {
-            var laneId = Guid.Empty;
-            Action act = () => TaskItem.Create(
-                Guid.NewGuid(),
-                laneId,
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"));
+            var act = () => TaskItem.Create(
+                _defaultColumnId,
+                laneId: Guid.Empty,
+                _defaultProjectId,
+                _defaultTaskTitle,
+                _defaultTaskDescription);
 
             act.Should().Throw<ArgumentException>();
         }
@@ -170,13 +165,12 @@ namespace Domain.Tests.Entities
         [Fact]
         public void ProjectId_With_Guid_Empty_Throws()
         {
-            var projectId = Guid.Empty;
-            Action act = () => TaskItem.Create
-            (Guid.NewGuid(),
-                Guid.NewGuid(),
-                projectId,
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"));
+            var act = () => TaskItem.Create(
+                _defaultColumnId,
+                _defaultLaneId,
+                projectId: Guid.Empty,
+                _defaultTaskTitle,
+                _defaultTaskDescription);
 
             act.Should().Throw<ArgumentException>();
         }
@@ -184,181 +178,166 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Edit_Changes_Title()
         {
-            var t = TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"));
+            var task = _defaultTaskItem;
+            var newTaskTitle = "New Title";
 
-            t.Edit(TaskTitle.Create("New title"), null, null);
-            t.Title.Value.Should().Be("New title");
+            task.Edit(title: TaskTitle.Create(newTaskTitle), description: null, dueDate: null);
+
+            task.Title.Value.Should().Be(newTaskTitle);
         }
 
         [Fact]
         public void Edit_Changes_Description()
         {
-            var t = TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"));
+            var task = _defaultTaskItem;
+            var newTaskDescription = "New Description";
 
-            t.Edit(null, TaskDescription.Create("New description"), null);
-            t.Description.Value.Should().Be("New description");
+            task.Edit(title: null, description: TaskDescription.Create(newTaskDescription), dueDate: null);
+
+            task.Description.Value.Should().Be(newTaskDescription);
         }
 
         [Fact]
         public void Edit_Changes_DueDate()
         {
-            var t = TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"),
+            var task = TaskItem.Create(
+                _defaultColumnId,
+                _defaultLaneId,
+                _defaultProjectId,
+                _defaultTaskTitle,
+                _defaultTaskDescription,
                 dueDate: DateTimeOffset.UtcNow.AddDays(10));
 
-            t.Edit(null, null, null);
-            t.DueDate.Should().Be(null);
+            task.Edit(title: null, description: null, dueDate: null);
 
-            var newDueDate = DateTimeOffset.UtcNow.AddDays(5);
+            task.DueDate.Should().BeNull();
 
-            t.Edit(null, null, newDueDate);
-            t.DueDate.Should().Be(newDueDate);
+            var newDueDate = _utcNow.AddDays(5);
+            task.Edit(title: null, description: null, newDueDate);
+
+            task.DueDate.Should().Be(newDueDate);
         }
 
         [Fact]
         public void Edit_With_Same_Values_Does_Not_Change_Entity_Values()
         {
-            var title = TaskTitle.Create("Title");
-            var description = TaskDescription.Create("Description");
-            var dueDate = DateTimeOffset.UtcNow.AddDays(2);
+            var dueDate = _utcNow.AddDays(2);
+            var task = TaskItem.Create(
+                _defaultColumnId,
+                _defaultLaneId,
+                _defaultProjectId,
+                _defaultTaskTitle,
+                _defaultTaskDescription,
+                dueDate);
 
-            var t = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), title,description, dueDate);
-            t.Edit(title, description, dueDate);
+            task.Edit(_defaultTaskTitle, _defaultTaskDescription, dueDate);
 
-            t.Title.Should().Be(title);
-            t.Description.Should().Be(description);
-            t.DueDate.Should().Be(dueDate); 
+            task.Title.Should().Be(_defaultTaskTitle);
+            task.Description.Should().Be(_defaultTaskDescription);
+            task.DueDate.Should().Be(dueDate); 
         }
 
         [Fact]
         public void Edit_With_Invalid_Values_Does_Not_Change_Entity_Values()
         {
-            var title = TaskTitle.Create("Title");
-            var description = TaskDescription.Create("Description");
-            var dueDate = DateTimeOffset.UtcNow.AddDays(10);
-            var t = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), title, description, dueDate);
+            var dueDate = _utcNow.AddDays(20);
+            var task = TaskItem.Create(
+                _defaultColumnId,
+                _defaultLaneId,
+                _defaultProjectId,
+                _defaultTaskTitle,
+                _defaultTaskDescription,
+                dueDate);
 
-            Action act = () => t.Edit(TaskTitle.Create("t"), null, null);
+            var act = () => task.Edit(title: TaskTitle.Create("t"), description: null, dueDate: null);
             act.Should().Throw<ArgumentException>();
 
-            act = () => t.Edit(null, TaskDescription.Create("d"), null);
+            act = () => task.Edit(title: null, description: TaskDescription.Create("d"), dueDate: null);
             act.Should().Throw<ArgumentException>();
 
-            act = () => t.Edit(null, null, DateTimeOffset.UtcNow.AddSeconds(-1));
+            act = () => task.Edit(title: null, description: null, dueDate: _utcNow.AddSeconds(-1));
             act.Should().Throw<ArgumentException>();
         }
 
         [Fact]
         public void Move_Changes_LaneId_ColumnId_SortKey()
         {
-            var t = TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"),
-                sortKey: 1m);
-            var newProjectId = t.ProjectId;
+            var task = _defaultTaskItem;
             var newLaneId = Guid.NewGuid();
             var newColumnId = Guid.NewGuid();
             var newSortKey = 5m;
 
-            t.Move(newProjectId, newLaneId, newColumnId, newSortKey);
+            task.Move(_defaultProjectId, newLaneId, newColumnId, newSortKey);
 
-            t.ProjectId.Should().Be(newProjectId);
-            t.LaneId.Should().Be(newLaneId);
-            t.ColumnId.Should().Be(newColumnId);
-            t.SortKey.Should().Be(newSortKey);
+            task.ProjectId.Should().Be(_defaultProjectId);
+            task.LaneId.Should().Be(newLaneId);
+            task.ColumnId.Should().Be(newColumnId);
+            task.SortKey.Should().Be(newSortKey);
         }
 
         [Fact]
         public void Move_With_Guid_Empty_LaneId_Throws()
         {
-            var t = TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"),
-                sortKey: 1m);
-            var newProjectId = t.ProjectId;
+            var task = _defaultTaskItem;
             var newLaneId = Guid.Empty;
             var newColumnId = Guid.NewGuid();
             var newSortKey = 5m;
 
-            Action act = () => t.Move(newProjectId, newLaneId, newColumnId, newSortKey);
+            var act = () => task.Move(
+                _defaultProjectId,
+                newLaneId,
+                newColumnId,
+                newSortKey);
+
             act.Should().Throw<ArgumentException>();
         }
 
         [Fact]
         public void Move_With_Guid_Empty_ColumnId_Throws()
         {
-            var t = TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"),
-                sortKey: 1m);
-            var newProjectId = t.ProjectId;
+            var task = _defaultTaskItem;
             var newLaneId = Guid.NewGuid();
             var newColumnId = Guid.Empty;
             var newSortKey = 5m;
 
-            Action act = () => t.Move(newProjectId, newLaneId, newColumnId, newSortKey);
+            var act = () => task.Move(
+                _defaultProjectId,
+                newLaneId,
+                newColumnId,
+                newSortKey);
+
             act.Should().Throw<ArgumentException>();
         }
 
         [Fact]
         public void Move_With_Different_Project_Id_Throws()
         {
-            var projectId = Guid.NewGuid();
-            var t = TaskItem.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                projectId,
-                TaskTitle.Create("Title"),
-                TaskDescription.Create("Description"),
-                sortKey: 1m);
-
+            var task = _defaultTaskItem;
             var newProjectId = Guid.NewGuid();
             var newLaneId = Guid.NewGuid();
             var newColumnId = Guid.NewGuid();
             var newSortKey = 5m;
 
-            Action act = () => t.Move(newProjectId, newLaneId, newColumnId, newSortKey);
+            var act = () => task.Move(
+                newProjectId,
+                newLaneId,
+                newColumnId,
+                newSortKey);
+
             act.Should().Throw<ArgumentException>();
         }
 
         [Fact]
         public void Move_With_Same_Values_Does_Not_Change_Entity_Values()
         {
-            var projectId = Guid.NewGuid();
-            var laneId = Guid.NewGuid();
-            var columnId = Guid.NewGuid();
-            var sortKey = 1m;
+            var task = _defaultTaskItem;
 
-            var t = TaskItem.Create(columnId, laneId, projectId, TaskTitle.Create("Title"), TaskDescription.Create("Description"), sortKey: sortKey);
-            t.Move(projectId, laneId, columnId, sortKey);
+            task.Move(_defaultProjectId, _defaultLaneId, _defaultColumnId, _defaultSortKey);
 
-            t.ProjectId.Should().Be(projectId);
-            t.LaneId.Should().Be(laneId);
-            t.ColumnId.Should().Be(columnId);
-            t.SortKey.Should().Be(sortKey);
+            task.ProjectId.Should().Be(_defaultProjectId);
+            task.LaneId.Should().Be(_defaultLaneId);
+            task.ColumnId.Should().Be(_defaultColumnId);
+            task.SortKey.Should().Be(_defaultSortKey);
         }
     }
 }
