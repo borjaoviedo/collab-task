@@ -18,8 +18,8 @@ namespace Domain.Entities
 
         public static TaskNote Create(Guid taskId, Guid authorId, NoteContent content)
         {
-            Guards.NotEmpty(taskId, nameof(taskId));
-            Guards.NotEmpty(authorId, nameof(authorId));
+            Guards.NotEmpty(taskId);
+            Guards.NotEmpty(authorId);
 
             return new TaskNote
             {
@@ -38,7 +38,7 @@ namespace Domain.Entities
 
         internal void SetRowVersion(byte[] rowVersion)
         {
-            Guards.NotNull(rowVersion, nameof(rowVersion));
+            Guards.NotNull(rowVersion);
             RowVersion = rowVersion;
         }
     }

@@ -29,12 +29,12 @@ namespace Domain.Entities
             DateTimeOffset? dueDate = null,
             decimal? sortKey = null)
         {
-            Guards.NotEmpty(projectId, nameof(projectId));
-            Guards.NotEmpty(laneId, nameof(laneId));
-            Guards.NotEmpty(columnId, nameof(columnId));
-            Guards.NotInPast(dueDate, nameof(dueDate));
+            Guards.NotEmpty(projectId);
+            Guards.NotEmpty(laneId);
+            Guards.NotEmpty(columnId);
+            Guards.NotInPast(dueDate);
 
-            if (sortKey is not null) Guards.NonNegative((decimal)sortKey, nameof(sortKey));
+            if (sortKey is not null) Guards.NonNegative((decimal)sortKey);
 
             return new TaskItem
             {
@@ -51,7 +51,7 @@ namespace Domain.Entities
 
         public void Edit(TaskTitle? title, TaskDescription? description, DateTimeOffset? dueDate)
         {
-            Guards.NotInPast(dueDate, nameof(dueDate));
+            Guards.NotInPast(dueDate);
 
             if (title is not null && !Title.Equals(title)) Title = title;
             if (description is not null && !Description.Equals(description)) Description = description;
@@ -63,10 +63,10 @@ namespace Domain.Entities
             if (targetProject != ProjectId)
                 throw new ArgumentException("Move must stay within the same Project.", nameof(targetProject));
 
-            Guards.NotEmpty(targetProject, nameof(targetProject));
-            Guards.NotEmpty(targetLaneId, nameof(targetLaneId));
-            Guards.NotEmpty(targetColumnId, nameof(targetColumnId));
-            Guards.NonNegative(targetSortKey, nameof(targetSortKey));
+            Guards.NotEmpty(targetProject);
+            Guards.NotEmpty(targetLaneId);
+            Guards.NotEmpty(targetColumnId);
+            Guards.NonNegative(targetSortKey);
 
             if (LaneId == targetLaneId && ColumnId == targetColumnId && SortKey == targetSortKey) return;
 
@@ -77,13 +77,13 @@ namespace Domain.Entities
 
         internal void SetRowVersion(byte[] rowVersion)
         {
-            Guards.NotNull(rowVersion, nameof(rowVersion));
+            Guards.NotNull(rowVersion);
             RowVersion = rowVersion;
         }
 
         internal void SetSortKey(decimal sortKey)
         {
-            Guards.NonNegative(sortKey, nameof(sortKey));
+            Guards.NonNegative(sortKey);
             SortKey = sortKey;
         }
     }

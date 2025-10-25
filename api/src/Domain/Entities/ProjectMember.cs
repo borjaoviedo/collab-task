@@ -18,9 +18,9 @@ namespace Domain.Entities
 
         public static ProjectMember Create(Guid projectId, Guid userId, ProjectRole role)
         {
-            Guards.NotEmpty(projectId, nameof(projectId));
-            Guards.NotEmpty(userId, nameof(userId));
-            Guards.EnumDefined(role, nameof(role));
+            Guards.NotEmpty(projectId);
+            Guards.NotEmpty(userId);
+            Guards.EnumDefined(role);
 
             return new ProjectMember
             {
@@ -33,7 +33,7 @@ namespace Domain.Entities
 
         public void ChangeRole(ProjectRole newRole)
         {
-            Guards.EnumDefined(newRole, nameof(newRole));
+            Guards.EnumDefined(newRole);
             if (Role == newRole) return;
 
             Role = newRole;
@@ -49,19 +49,19 @@ namespace Domain.Entities
 
         internal void SetRowVersion(byte[] rowVersion)
         {
-            Guards.NotNull(rowVersion, nameof(rowVersion));
+            Guards.NotNull(rowVersion);
             RowVersion = rowVersion;
         }
 
         internal void SetUser(User user)
         {
-            Guards.NotNull(user, nameof(user));
+            Guards.NotNull(user);
             User = user;
         }
 
         internal void SetProject(Project project)
         {
-            Guards.NotNull(project, nameof(project));
+            Guards.NotNull(project);
             Project = project;
         }
     }

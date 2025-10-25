@@ -21,7 +21,7 @@ namespace Domain.Entities
 
         public static Project Create(Guid ownerId, ProjectName name)
         {
-            Guards.NotEmpty(ownerId, nameof(ownerId));
+            Guards.NotEmpty(ownerId);
 
             var project = new Project()
             {
@@ -45,8 +45,8 @@ namespace Domain.Entities
 
         public void AddMember(Guid userId, ProjectRole role)
         {
-            Guards.NotEmpty(userId, nameof(userId));
-            Guards.EnumDefined(role, nameof(role));
+            Guards.NotEmpty(userId);
+            Guards.EnumDefined(role);
 
             if (Members.Any(m => m.UserId == userId && m.RemovedAt == null))
                 throw new DuplicateEntityException("User already member.");
@@ -59,7 +59,7 @@ namespace Domain.Entities
 
         public void RemoveMember(Guid userId, DateTimeOffset removedAtUtc)
         {
-            Guards.NotEmpty(userId, nameof(userId));
+            Guards.NotEmpty(userId);
 
             var member = GetMember(userId);
 
@@ -71,8 +71,8 @@ namespace Domain.Entities
 
         public void ChangeMemberRole(Guid userId, ProjectRole newRole)
         {
-            Guards.NotEmpty(userId, nameof(userId));
-            Guards.EnumDefined(newRole, nameof(newRole));
+            Guards.NotEmpty(userId);
+            Guards.EnumDefined(newRole);
 
             var member = GetMember(userId);
 
@@ -93,7 +93,7 @@ namespace Domain.Entities
 
         public void TransferOwnership(Guid newOwnerId)
         {
-            Guards.NotEmpty(newOwnerId, nameof(newOwnerId));
+            Guards.NotEmpty(newOwnerId);
             if (OwnerId == newOwnerId) return;
 
             var target = Members.FirstOrDefault(m => m.UserId == newOwnerId && m.RemovedAt == null)
@@ -108,7 +108,7 @@ namespace Domain.Entities
 
         internal void SetRowVersion(byte[] rowVersion)
         {
-            Guards.NotNull(rowVersion, nameof(rowVersion));
+            Guards.NotNull(rowVersion);
             RowVersion = rowVersion;
         }
 

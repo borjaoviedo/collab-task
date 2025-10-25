@@ -14,9 +14,9 @@ namespace Domain.Entities
 
         public static TaskAssignment Create(Guid taskId, Guid userId, TaskRole role)
         {
-            Guards.NotEmpty(taskId, nameof(taskId));
-            Guards.NotEmpty(userId, nameof(userId));
-            Guards.EnumDefined(role, nameof(role));
+            Guards.NotEmpty(taskId);
+            Guards.NotEmpty(userId);
+            Guards.EnumDefined(role);
 
             return new TaskAssignment
             {
@@ -28,29 +28,29 @@ namespace Domain.Entities
 
         public static TaskAssignment AssignOwner(Guid taskId, Guid userId)
         {
-            Guards.NotEmpty(taskId, nameof(taskId));
-            Guards.NotEmpty(userId, nameof(userId));
+            Guards.NotEmpty(taskId);
+            Guards.NotEmpty(userId);
 
             return Create(taskId, userId, TaskRole.Owner);
         }
 
         public static TaskAssignment AssignCoOwner(Guid taskId, Guid userId)
         {
-            Guards.NotEmpty(taskId, nameof(taskId));
-            Guards.NotEmpty(userId, nameof(userId));
+            Guards.NotEmpty(taskId);
+            Guards.NotEmpty(userId);
 
             return Create(taskId, userId, TaskRole.CoOwner);
         }
 
         internal void SetRowVersion(byte[] rowVersion)
         {
-            Guards.NotNull(rowVersion, nameof(rowVersion));
+            Guards.NotNull(rowVersion);
             RowVersion = rowVersion;
         }
 
         internal void SetRole(TaskRole role)
         {
-            Guards.EnumDefined(role, nameof(role));
+            Guards.EnumDefined(role);
             Role = role;
         }
     }

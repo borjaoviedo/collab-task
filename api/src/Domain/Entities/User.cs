@@ -27,7 +27,7 @@ namespace Domain.Entities
             byte[] salt,
             UserRole role = UserRole.User)
         {
-            Guards.EnumDefined(role, nameof(role));
+            Guards.EnumDefined(role);
 
             return new User
             {
@@ -44,7 +44,7 @@ namespace Domain.Entities
 
         public void ChangeRole(UserRole newRole)
         {
-            Guards.EnumDefined(newRole, nameof(newRole));
+            Guards.EnumDefined(newRole);
             if (Role == newRole) return;
 
             Role = newRole;
@@ -52,7 +52,7 @@ namespace Domain.Entities
 
         internal void SetRowVersion(byte[] rowVersion)
         {
-            Guards.NotNull(rowVersion, nameof(rowVersion));
+            Guards.NotNull(rowVersion);
             RowVersion = rowVersion;
         }
     }

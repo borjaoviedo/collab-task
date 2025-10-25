@@ -22,9 +22,9 @@ namespace Domain.Entities
             ActivityPayload payload,
             DateTimeOffset createdAt)
         {
-            Guards.NotEmpty(taskId, nameof(taskId));
-            Guards.NotEmpty(userId, nameof(userId));
-            Guards.EnumDefined(type, nameof(type));
+            Guards.NotEmpty(taskId);
+            Guards.NotEmpty(userId);
+            Guards.EnumDefined(type);
 
             return new TaskActivity
             {

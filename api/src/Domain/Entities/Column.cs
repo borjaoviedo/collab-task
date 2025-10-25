@@ -16,8 +16,8 @@ namespace Domain.Entities
 
         public static Column Create(Guid projectId, Guid laneId, ColumnName name, int? order)
         {
-            Guards.NotEmpty(projectId, nameof(projectId));
-            Guards.NotEmpty(laneId, nameof(laneId));
+            Guards.NotEmpty(projectId);
+            Guards.NotEmpty(laneId);
 
             return new()
             {
@@ -37,7 +37,7 @@ namespace Domain.Entities
 
         public void Reorder(int order)
         {
-            Guards.NonNegative(order, nameof(order));
+            Guards.NonNegative(order);
             if (Order == order) return;
 
             Order = order;
@@ -45,7 +45,7 @@ namespace Domain.Entities
 
         internal void SetRowVersion(byte[] rowVersion)
         {
-            Guards.NotNull(rowVersion, nameof(rowVersion));
+            Guards.NotNull(rowVersion);
             RowVersion = rowVersion;
         }
     }
