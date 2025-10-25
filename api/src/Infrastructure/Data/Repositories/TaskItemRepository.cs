@@ -20,8 +20,13 @@ namespace Infrastructure.Data.Repositories
 
         public async Task<bool> ExistsWithTitleAsync(Guid columnId, TaskTitle title, Guid? excludeTaskId = null, CancellationToken ct = default)
         {
-            var q = _db.TaskItems.AsNoTracking().Where(t => t.ColumnId == columnId && t.Title == title);
-            if (excludeTaskId.HasValue) q = q.Where(t => t.Id != excludeTaskId.Value);
+            var q = _db.TaskItems
+                        .AsNoTracking()
+                        .Where(t => t.ColumnId == columnId && t.Title == title);
+
+            if (excludeTaskId.HasValue)
+                q = q.Where(t => t.Id != excludeTaskId.Value);
+
             return await q.AnyAsync(ct);
         }
 
@@ -59,16 +64,31 @@ namespace Infrastructure.Data.Repositories
             task.Edit(newTitle, newDescription, newDueDate);
 
             var changed = false;
-            if (!Equals(titleBefore, task.Title)) { _db.Entry(task).Property(t => t.Title).IsModified = true; changed = true; }
-            if (!Equals(descriptionBefore, task.Description)) { _db.Entry(task).Property(t => t.Description).IsModified = true; changed = true; }
-            if (!Nullable.Equals(dueDateBefore, task.DueDate)) { _db.Entry(task).Property(t => t.DueDate).IsModified = true; changed = true; }
+
+            if (!Equals(titleBefore, task.Title))
+            {
+                _db.Entry(task).Property(t => t.Title).IsModified = true;
+                changed = true;
+            }
+
+            if (!Equals(descriptionBefore, task.Description))
+            {
+                _db.Entry(task).Property(t => t.Description).IsModified = true;
+                changed = true;
+            }
+
+            if (!Nullable.Equals(dueDateBefore, task.DueDate))
+            {
+                _db.Entry(task).Property(t => t.DueDate).IsModified = true;
+                changed = true;
+            }
 
             if (!changed) return (DomainMutation.NoOp, null);
 
             var change = new TaskItemEditedChange(
-                titleBefore?.Value, task.Title?.Value,
-                descriptionBefore?.Value, task.Description?.Value,
-                dueDateBefore, task.DueDate);
+                titleBefore?.Value,         task.Title?.Value,
+                descriptionBefore?.Value,   task.Description?.Value,
+                dueDateBefore,              task.DueDate);
 
             return (DomainMutation.Updated, change);
         }
@@ -144,6 +164,7 @@ namespace Infrastructure.Data.Repositories
         public async Task<decimal> GetNextSortKeyAsync(Guid columnId, CancellationToken ct = default)
         {
             var max = await _db.TaskItems
+                                .AsNoTracking()
                                 .Where(t => t.ColumnId == columnId)
                                 .Select(t => (decimal?)t.SortKey)
                                 .MaxAsync(ct);
