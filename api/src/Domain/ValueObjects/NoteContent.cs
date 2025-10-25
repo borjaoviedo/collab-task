@@ -1,7 +1,7 @@
 
 namespace Domain.ValueObjects
 {
-    public sealed class NoteContent
+    public sealed class NoteContent : IEquatable<NoteContent>
     {
         public string Value { get; }
 

@@ -1,7 +1,7 @@
 
 namespace Domain.ValueObjects
 {
-    public sealed class ProjectName
+    public sealed class ProjectName : IEquatable<ProjectName>
     {
         public string Value { get; }
 

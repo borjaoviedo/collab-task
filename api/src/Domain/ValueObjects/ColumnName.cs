@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace Domain.ValueObjects
 {
-    public sealed class ColumnName
+    public sealed class ColumnName : IEquatable<ColumnName>
     {
         public string Value { get; }
 

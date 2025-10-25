@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Domain.ValueObjects
 {
-    public sealed class ProjectSlug
+    public sealed class ProjectSlug : IEquatable<ProjectSlug>
     {
         public string Value { get; }
 

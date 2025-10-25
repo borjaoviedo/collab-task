@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Domain.ValueObjects
 {
-    public sealed class ActivityPayload
+    public sealed class ActivityPayload : IEquatable<ActivityPayload>
     {
         public string Value { get; }
 
