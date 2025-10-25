@@ -28,13 +28,19 @@ namespace Infrastructure.Data.Repositories
 
         public async Task<bool> ExistsWithNameAsync(Guid projectId, LaneName name, Guid? excludeLaneId = null, CancellationToken ct = default)
         {
-            var q = _db.Lanes.AsNoTracking().Where(l => l.ProjectId == projectId && l.Name == name);
-            if (excludeLaneId.HasValue) q = q.Where(l => l.Id != excludeLaneId.Value);
+            var q = _db.Lanes
+                        .AsNoTracking()
+                        .Where(l => l.ProjectId == projectId && l.Name == name);
+
+            if (excludeLaneId.HasValue)
+                q = q.Where(l => l.Id != excludeLaneId.Value);
+
             return await q.AnyAsync(ct);
         }
 
         public async Task<int> GetMaxOrderAsync(Guid projectId, CancellationToken ct = default)
             => await _db.Lanes
+                        .AsNoTracking()
                         .Where(l => l.ProjectId == projectId)
                         .Select(l => (int?)l.Order)
                         .MaxAsync(ct) ?? -1;
