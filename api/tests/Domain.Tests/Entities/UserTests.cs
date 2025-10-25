@@ -2,71 +2,80 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers;
 
 namespace Domain.Tests.Entities
 {
     public class UserTests
     {
-        private static byte[] Bytes(int n) => Enumerable.Repeat((byte)0xAB, n).ToArray();
+        private static readonly Email _defaultEmail = Email.Create("email@test.com");
+        private static readonly UserName _defaultUserName = UserName.Create("username");
+        private static readonly byte[] _validHash = TestDataFactory.Bytes(32);
+        private static readonly byte[] _validSalt = TestDataFactory.Bytes(16);
+
+        private readonly User _defaultUser = User.Create(
+            _defaultEmail,
+            _defaultUserName,
+            _validHash,
+            _validSalt);
 
         [Fact]
         public void Defaults_RoleIsUser_And_ProjectMemberships_AreInitialized()
         {
-            var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Demo User"), Bytes(32), Bytes(16));
+            var user = _defaultUser;
 
-            u.Role.Should().Be(UserRole.User);
-            u.ProjectMemberships.Should().NotBeNull();
-            u.ProjectMemberships.Should().BeEmpty();
+            user.Role.Should().Be(UserRole.User);
+            user.ProjectMemberships.Should().NotBeNull();
+            user.ProjectMemberships.Should().BeEmpty();
         }
 
         [Fact]
         public void Set_All_Core_Properties_Assigns_Correctly()
         {
-            var email = Email.Create("dev@demo.com");
-            var name = UserName.Create("Demo Dev");
-            var hash = Bytes(32);
-            var salt = Bytes(16);
+            var user = _defaultUser;
 
-            var u = User.Create(email, name, hash, salt);
-
-            u.Email.Should().Be(email);
-            u.Name.Should().Be(name);
-            u.PasswordHash.Should().BeSameAs(hash);
-            u.PasswordSalt.Should().BeSameAs(salt);
+            user.Email.Should().Be(_defaultEmail);
+            user.Name.Should().Be(_defaultUserName);
+            user.PasswordHash.Should().BeSameAs(_validHash);
+            user.PasswordSalt.Should().BeSameAs(_validSalt);
         }
 
         [Fact]
         public void Role_Can_Be_Changed()
         {
-            var u = User.Create(Email.Create("owner@demo.com"), UserName.Create("Demo Owner"), Bytes(32), Bytes(16));
+            var user = _defaultUser;
 
-            u.Role.Should().Be(UserRole.User);
-            u.ChangeRole(UserRole.Admin);
-            u.Role.Should().Be(UserRole.Admin);
+            user.Role.Should().Be(UserRole.User);
+            user.ChangeRole(UserRole.Admin);
+            user.Role.Should().Be(UserRole.Admin);
         }
 
         [Fact]
         public void ProjectMemberships_Add_And_Remove_Work()
         {
-            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Demo Member"), Bytes(32), Bytes(16));
+            var user = _defaultUser;
 
-            var pm = ProjectMember.Create(Guid.NewGuid(), u.Id, ProjectRole.Owner);
+            var projectMember = ProjectMember.Create(
+                projectId: Guid.NewGuid(),
+                user.Id,
+                ProjectRole.Owner);
 
-            u.ProjectMemberships.Add(pm);
+            user.ProjectMemberships.Add(projectMember);
 
-            u.ProjectMemberships.Should().HaveCount(1);
-            u.ProjectMemberships.Single().Should().BeSameAs(pm);
+            user.ProjectMemberships.Should().HaveCount(1);
+            user.ProjectMemberships.Single().Should().BeSameAs(projectMember);
 
-            u.ProjectMemberships.Remove(pm);
-            u.ProjectMemberships.Should().BeEmpty();
+            user.ProjectMemberships.Remove(projectMember);
+
+            user.ProjectMemberships.Should().BeEmpty();
         }
 
         [Fact]
         public void UpdatedAt_Should_Not_Be_Before_CreatedAt_When_Assigned()
         {
-            var u = User.Create(Email.Create("t@demo.com"), UserName.Create("Demo Time"), Bytes(32), Bytes(16));
+            var user = _defaultUser;
 
-            (u.UpdatedAt >= u.CreatedAt).Should().BeTrue();
+            user.UpdatedAt.Should().BeOnOrAfter(user.CreatedAt);
         }
     }
 }
