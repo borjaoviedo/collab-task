@@ -12,19 +12,19 @@ namespace Domain.Tests.Entities
         public void Create_ValidInputs_SetsProperties()
         {
             var taskId = Guid.NewGuid();
-            var actorId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
             var type = TaskActivityType.TaskCreated;
             var payload = ActivityPayload.Create("{\"title\":\"T1\"}");
             var activity = TaskActivity.Create(
                 taskId,
-                actorId,
+                userId,
                 type,
                 payload,
                 createdAt: TestTime.FixedNow);
 
             activity.Id.Should().NotBeEmpty();
             activity.TaskId.Should().Be(taskId);
-            activity.ActorId.Should().Be(actorId);
+            activity.ActorId.Should().Be(userId);
             activity.Type.Should().Be(type);
             activity.Payload.Should().Be(payload);
         }
@@ -32,24 +32,26 @@ namespace Domain.Tests.Entities
         [Fact]
         public void Create_Empty_TaskId_Throws()
         {
-            Action act = () => TaskActivity.Create(
-                Guid.Empty,
-                Guid.NewGuid(),
-                TaskActivityType.TaskEdited,
-                ActivityPayload.Create("{\"x\":1}"),
+            var act = () => TaskActivity.Create(
+                taskId: Guid.Empty,
+                userId: Guid.NewGuid(),
+                type: TaskActivityType.TaskEdited,
+                payload: ActivityPayload.Create("{\"x\":1}"),
                 createdAt: TestTime.FixedNow);
+
             act.Should().Throw<ArgumentException>();
         }
 
         [Fact]
-        public void Create_Empty_ActorId_Throws()
+        public void Create_Empty_UserId_Throws()
         {
-            Action act = () => TaskActivity.Create(
-                Guid.NewGuid(),
-                Guid.Empty,
-                TaskActivityType.TaskMoved,
-                ActivityPayload.Create("{\"x\":1}"),
+            var act = () => TaskActivity.Create(
+                taskId: Guid.NewGuid(),
+                userId: Guid.Empty,
+                type: TaskActivityType.TaskMoved,
+                payload: ActivityPayload.Create("{\"x\":1}"),
                 createdAt: TestTime.FixedNow);
+
             act.Should().Throw<ArgumentException>();
         }
 
@@ -60,12 +62,13 @@ namespace Domain.Tests.Entities
         [InlineData("{ a: 1 ")]
         public void Create_Invalid_Payload_Throws(string input)
         {
-            Action act = () => TaskActivity.Create(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                TaskActivityType.TaskMoved,
-                ActivityPayload.Create(input),
+            var act = () => TaskActivity.Create(
+                taskId: Guid.NewGuid(),
+                userId: Guid.NewGuid(),
+                type: TaskActivityType.TaskMoved,
+                payload: ActivityPayload.Create(input),
                 createdAt: TestTime.FixedNow);
+
             act.Should().Throw<ArgumentException>();
         }
     }
