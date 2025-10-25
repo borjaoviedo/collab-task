@@ -1,3 +1,4 @@
+using Domain.Common;
 using System.Globalization;
 using System.Text;
 
@@ -9,20 +10,17 @@ namespace Domain.ValueObjects
 
         private ProjectSlug(string value) => Value = value;
 
-        public static ProjectSlug Create(string value)
+        public static ProjectSlug Create(string projectSlug)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Slug cannot be empty", nameof(value));
+            Guards.NotNullOrWhiteSpace(projectSlug);
+            projectSlug = Normalize(projectSlug);
 
-            var normalized = Normalize(value);
+            Guards.LengthBetween(projectSlug, 1, 100);
 
-            if (normalized.Length is < 1 or > 100)
-                throw new ArgumentException("Slug length must be 1..100", nameof(value));
+            if (!IsAlnum(projectSlug[0]) || !IsAlnum(projectSlug[^1]))
+                throw new ArgumentException("Slug must start and end with alphanumeric", nameof(projectSlug));
 
-            if (!IsAlnum(normalized[0]) || !IsAlnum(normalized[^1]))
-                throw new ArgumentException("Slug must start and end with alphanumeric", nameof(value));
-
-            return new ProjectSlug(normalized);
+            return new ProjectSlug(projectSlug);
         }
 
         public override string ToString() => Value;

@@ -1,3 +1,4 @@
+using Domain.Common;
 using System.Text.RegularExpressions;
 
 namespace Domain.ValueObjects
@@ -8,39 +9,38 @@ namespace Domain.ValueObjects
 
         private Email(string value) => Value = value;
 
-        public static Email Create(string value)
+        private static readonly Regex emailPattern = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+
+        public static Email Create(string email)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Email cannot be empty", nameof(value));
+            Guards.NotNullOrWhiteSpace(email);
 
-            value = value.Trim().ToLowerInvariant();
+            email = email.Trim().ToLowerInvariant();
 
-            if (value.Length > 256)
-                throw new ArgumentException("Email too long", nameof(value));
+            Guards.MaxLength(email, 256);
 
-            if (value.Contains(' '))
-                throw new ArgumentException("Email cannot contain spaces", nameof(value));
+            if (email.Contains(' '))
+                throw new ArgumentException("Email cannot contain spaces", nameof(email));
 
-            if (!Regex.IsMatch(value, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-                throw new ArgumentException("Invalid email format", nameof(value));
+            Guards.Matches(email, emailPattern);
 
-            var parts = value.Split('@');
+            var parts = email.Split('@');
             if (parts.Length != 2)
-                throw new ArgumentException("Invalid email format", nameof(value));
+                throw new ArgumentException("Invalid email format", nameof(email));
 
             var local = parts[0];
             var domain = parts[1];
 
             if (local.Length == 0 || domain.Length == 0)
-                throw new ArgumentException("Invalid email format", nameof(value));
+                throw new ArgumentException("Invalid email format", nameof(email));
 
-            return new Email(value);
+            return new Email(email);
         }
 
         public override string ToString() => Value;
 
-        public bool Equals(Email? other) =>
-        other is not null && StringComparer.Ordinal.Equals(Value, other.Value);
+        public bool Equals(Email? other)
+            => other is not null && StringComparer.Ordinal.Equals(Value, other.Value);
 
         public override bool Equals(object? obj) => obj is Email o && Equals(o);
 

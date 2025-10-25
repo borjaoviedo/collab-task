@@ -1,3 +1,4 @@
+using Domain.Common;
 
 namespace Domain.ValueObjects
 {
@@ -7,23 +8,20 @@ namespace Domain.ValueObjects
 
         private ProjectName(string value) => Value = value;
 
-        public static ProjectName Create(string value)
+        public static ProjectName Create(string projectName)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Project name cannot be empty", nameof(value));
+            Guards.NotNullOrWhiteSpace(projectName);
+            projectName = projectName.Trim();
 
-            value = value.Trim();
+            Guards.MaxLength(projectName, 100);
 
-            if (value.Length > 100)
-                throw new ArgumentException("Project name too long", nameof(value));
-
-            return new ProjectName(value);
+            return new ProjectName(projectName);
         }
 
         public override string ToString() => Value;
 
-        public bool Equals(ProjectName? other) =>
-            other is not null && StringComparer.OrdinalIgnoreCase.Equals(Value, other.Value);
+        public bool Equals(ProjectName? other)
+            => other is not null && StringComparer.OrdinalIgnoreCase.Equals(Value, other.Value);
 
         public override bool Equals(object? obj) => obj is ProjectName o && Equals(o);
 

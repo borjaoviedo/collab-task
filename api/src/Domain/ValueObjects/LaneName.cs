@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+using Domain.Common;
 
 namespace Domain.ValueObjects
 {
@@ -8,26 +8,21 @@ namespace Domain.ValueObjects
 
         private LaneName(string value) => Value = value;
 
-        public static LaneName Create(string value)
+        public static LaneName Create(string laneName)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Lane name cannot be empty", nameof(value));
+            Guards.NotNullOrWhiteSpace(laneName);
+            laneName = laneName.Trim();
 
-            value = value.Trim();
+            Guards.LengthBetween(laneName, 2, 100);
+            Guards.NoConsecutiveSpaces(laneName);
 
-            if (value.Length < 2 || value.Length > 100)
-                throw new ArgumentException("Lane name must be between 2 and 100 characters", nameof(value));
-
-            if (Regex.IsMatch(value, @"\s{2,}"))
-                throw new ArgumentException("Lane name cannot contain consecutive spaces.", nameof(value));
-
-            return new LaneName(value);
+            return new LaneName(laneName);
         }
 
         public override string ToString() => Value;
 
-        public bool Equals(LaneName? other) =>
-            other is not null && StringComparer.OrdinalIgnoreCase.Equals(Value, other.Value);
+        public bool Equals(LaneName? other)
+            => other is not null && StringComparer.OrdinalIgnoreCase.Equals(Value, other.Value);
 
         public override bool Equals(object? obj) => obj is LaneName o && Equals(o);
 

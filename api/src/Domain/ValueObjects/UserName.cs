@@ -1,3 +1,4 @@
+using Domain.Common;
 using System.Text.RegularExpressions;
 
 namespace Domain.ValueObjects
@@ -8,36 +9,32 @@ namespace Domain.ValueObjects
 
         private UserName(string value) => Value = value;
 
-        public static UserName Create(string value)
+        public static UserName Create(string userName)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("User name cannot be empty", nameof(value));
+            Guards.NotNullOrWhiteSpace(userName);
+            userName = userName.Trim();
 
-            value = value.Trim();
+            Guards.LengthBetween(userName, 2, 100);
 
-            if (value.Length < 2 || value.Length > 100)
-                throw new ArgumentException("User name must be between 2 and 100 characters", nameof(value));
+            if (Regex.IsMatch(userName, @"[^\p{L}\s]"))
+                throw new ArgumentException("User name must contain only letters and spaces", nameof(userName));
 
-            if (Regex.IsMatch(value, @"[^\p{L}\s]"))
-                throw new ArgumentException("User name must contain only letters and spaces", nameof(value));
+            Guards.NoConsecutiveSpaces(userName);
 
-            if (Regex.IsMatch(value, @"\s{2,}"))
-                throw new ArgumentException("User name cannot contain consecutive spaces.", nameof(value));
-
-            return new UserName(value);
+            return new UserName(userName);
         }
 
         public override string ToString() => Value;
 
-        public bool Equals(UserName? other) =>
-        other is not null && StringComparer.OrdinalIgnoreCase.Equals(Value, other.Value);
+        public bool Equals(UserName? other)
+            => other is not null && StringComparer.OrdinalIgnoreCase.Equals(Value, other.Value);
 
         public override bool Equals(object? obj) => obj is UserName o && Equals(o);
 
         public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(Value);
 
-        public static bool operator ==(UserName? a, UserName? b) =>
-            a is null ? b is null : a.Equals(b);
+        public static bool operator ==(UserName? a, UserName? b)
+            => a is null ? b is null : a.Equals(b);
 
         public static bool operator !=(UserName? a, UserName? b) => !Equals(a, b);
 
