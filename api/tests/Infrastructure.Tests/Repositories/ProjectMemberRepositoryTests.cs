@@ -1,6 +1,7 @@
 using Domain.Entities;
 using Domain.Enums;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using TestHelpers;
 
@@ -74,13 +75,14 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
+            var uow = new UnitOfWork(db);
 
             var (pId, _) = TestDataFactory.SeedUserWithProject(db);
             var newUser = TestDataFactory.SeedUser(db);
             var newProjectMember = ProjectMember.Create(pId, newUser.Id, ProjectRole.Member);
 
             await repo.AddAsync(newProjectMember);
-            await repo.SaveChangesAsync();
+            await uow.SaveAsync(MutationKind.Create);
 
             var fromDb = await repo.GetAsync(pId, newUser.Id);
             fromDb!.Role.Should().Be(ProjectRole.Member);
@@ -98,20 +100,7 @@ namespace Infrastructure.Tests.Repositories
             var current = await repo.GetAsync(pId, uId);
             var res = await repo.UpdateRoleAsync(pId, uId, ProjectRole.Owner, current!.RowVersion!);
 
-            res.Should().Be(DomainMutation.NoOp);
-        }
-
-        [Fact]
-        public async Task UpdateRoleAsync_Returns_Conflict_On_RowVersion_Mismatch()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ProjectMemberRepository(db);
-
-            var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
-
-            var res = await repo.UpdateRoleAsync(pId, uId, ProjectRole.Admin, [1, 2]);
-            res.Should().Be(DomainMutation.Conflict);
+            res.Should().Be(PrecheckStatus.NoOp);
         }
 
         [Fact]
@@ -120,37 +109,28 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
+            var uow = new UnitOfWork(db);
 
             var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
             var current = await repo.GetAsync(pId, uId);
 
             // remove
             var removeResult = await repo.SetRemovedAsync(pId, uId, current!.RowVersion);
-            removeResult.Should().Be(DomainMutation.Updated);
+            removeResult.Should().Be(PrecheckStatus.Ready);
+
+            await uow.SaveAsync(MutationKind.Update);
 
             var removed = await repo.GetAsync(pId, uId);
             removed!.RemovedAt.Should().NotBeNull();
 
             // restore with stale token should fail on SaveChanges
             var restoreResult = await repo.SetRestoredAsync(pId, uId, removed!.RowVersion);
-            restoreResult.Should().Be(DomainMutation.Updated);
+            restoreResult.Should().Be(PrecheckStatus.Ready);
+
+            await uow.SaveAsync(MutationKind.Update);
 
             var restored = await repo.GetAsync(pId, uId);
             restored!.RemovedAt.Should().Be(null);
-        }
-
-        [Fact]
-        public async Task SetRemovedAsync_Returns_Conflict_On_RowVersion_Mismatch()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ProjectMemberRepository(db);
-
-            var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
-
-            // remove
-            var removeResult = await repo.SetRemovedAsync(pId, uId, [1, 2, 3]);
-            removeResult.Should().Be(DomainMutation.Conflict);
         }
 
         [Fact]

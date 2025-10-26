@@ -16,26 +16,15 @@ namespace Api.Tests.Fakes
         // simple rowversion counter
         private long _rv = 1;
 
-        public Task<ProjectMember?> GetAsync(Guid projectId, Guid userId, CancellationToken ct = default)
+        public Task<IReadOnlyList<ProjectMember>> GetByProjectAsync(
+            Guid projectId,
+            bool includeRemoved = false,
+            CancellationToken ct = default)
         {
-            var key = (projectId, userId);
-            if (_byKey.TryGetValue(key, out var pm))
-                return Task.FromResult<ProjectMember?>(Clone(pm, includeUser: false));
+            var q = _byKey.Values.Where(pm => pm.ProjectId == projectId);
 
-            return Task.FromResult<ProjectMember?>(null);
-        }
-
-        public Task<ProjectMember?> GetTrackedByIdAsync(Guid projectId, Guid userId, CancellationToken ct = default)
-        {
-            _byKey.TryGetValue((projectId, userId), out var pm);
-            // Return the tracked instance directly to simulate EF tracking.
-            return Task.FromResult<ProjectMember?>(pm);
-        }
-
-        public Task<IReadOnlyList<ProjectMember>> GetByProjectAsync(Guid projectId, bool includeRemoved = false, CancellationToken ct = default)
-        {
-            IEnumerable<ProjectMember> q = _byKey.Values.Where(pm => pm.ProjectId == projectId);
-            if (!includeRemoved) q = q.Where(pm => pm.RemovedAt is null);
+            if (!includeRemoved)
+                q = q.Where(pm => pm.RemovedAt is null);
 
             var list = q.Select(pm =>
             {
@@ -47,18 +36,21 @@ namespace Api.Tests.Fakes
             return Task.FromResult<IReadOnlyList<ProjectMember>>(list);
         }
 
-        public Task<bool> ExistsAsync(Guid projectId, Guid userId, CancellationToken ct = default)
-            => Task.FromResult(_byKey.ContainsKey((projectId, userId)));
-
-        public Task<int> CountUserActiveMembershipsAsync(Guid userId, CancellationToken ct = default)
+        public Task<ProjectMember?> GetAsync(Guid projectId, Guid userId, CancellationToken ct = default)
         {
-            var count = _byKey.Values
-                .Where(pm => pm.UserId == userId && pm.RemovedAt is null)
-                .Select(pm => pm.ProjectId)
-                .Distinct()
-                .Count();
+            var key = (projectId, userId);
 
-            return Task.FromResult(count);
+            if (_byKey.TryGetValue(key, out var pm))
+                return Task.FromResult<ProjectMember?>(Clone(pm, includeUser: false));
+
+            return Task.FromResult<ProjectMember?>(null);
+        }
+
+        public Task<ProjectMember?> GetTrackedByIdAsync(Guid projectId, Guid userId, CancellationToken ct = default)
+        {
+            _byKey.TryGetValue((projectId, userId), out var pm);
+            // Return the tracked instance directly to simulate EF tracking.
+            return Task.FromResult<ProjectMember?>(pm);
         }
 
         public Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
@@ -90,68 +82,94 @@ namespace Api.Tests.Fakes
             return Task.CompletedTask;
         }
 
-        public Task<DomainMutation> UpdateRoleAsync(Guid projectId, Guid userId, ProjectRole newRole, byte[] rowVersion, CancellationToken ct = default)
+        public Task<PrecheckStatus> UpdateRoleAsync(
+            Guid projectId,
+            Guid userId,
+            ProjectRole newRole,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             if (rowVersion is null || rowVersion.Length == 0)
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             var key = (projectId, userId);
             if (!_byKey.TryGetValue(key, out var current) || current.RemovedAt is not null)
-                return Task.FromResult(DomainMutation.NotFound);
+                return Task.FromResult(PrecheckStatus.NotFound);
 
             if (current.Role == newRole)
-                return Task.FromResult(DomainMutation.NoOp);
+                return Task.FromResult(PrecheckStatus.NoOp);
 
             if (!RowVersionEquals(current.RowVersion, rowVersion))
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             current.ChangeRole(newRole);
             current.SetRowVersion(NextRowVersion());
-            return Task.FromResult(DomainMutation.Updated);
+            return Task.FromResult(PrecheckStatus.Ready);
         }
 
-        public Task<DomainMutation> SetRemovedAsync(Guid projectId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
+        public Task<PrecheckStatus> SetRemovedAsync(
+            Guid projectId,
+            Guid userId,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             if (rowVersion is null || rowVersion.Length == 0)
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             var key = (projectId, userId);
             if (!_byKey.TryGetValue(key, out var current))
-                return Task.FromResult(DomainMutation.NotFound);
+                return Task.FromResult(PrecheckStatus.NotFound);
 
             var now = DateTimeOffset.UtcNow;
             if (current.RemovedAt == now)
-                return Task.FromResult(DomainMutation.NoOp);
+                return Task.FromResult(PrecheckStatus.NoOp);
 
             if (!RowVersionEquals(current.RowVersion, rowVersion))
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             current.Remove(now);
             current.SetRowVersion(NextRowVersion());
-            return Task.FromResult(DomainMutation.Updated);
+            return Task.FromResult(PrecheckStatus.Ready);
         }
 
-        public Task<DomainMutation> SetRestoredAsync(Guid projectId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
+        public Task<PrecheckStatus> SetRestoredAsync(
+            Guid projectId,
+            Guid userId,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             if (rowVersion is null || rowVersion.Length == 0)
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             var key = (projectId, userId);
+
             if (!_byKey.TryGetValue(key, out var current))
-                return Task.FromResult(DomainMutation.NotFound);
+                return Task.FromResult(PrecheckStatus.NotFound);
 
             if (current.RemovedAt == null)
-                return Task.FromResult(DomainMutation.NoOp);
+                return Task.FromResult(PrecheckStatus.NoOp);
 
             if (!RowVersionEquals(current.RowVersion, rowVersion))
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             current.Restore();
             current.SetRowVersion(NextRowVersion());
-            return Task.FromResult(DomainMutation.Updated);
+            return Task.FromResult(PrecheckStatus.Ready);
         }
 
-        public Task<int> SaveChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
+        public Task<bool> ExistsAsync(Guid projectId, Guid userId, CancellationToken ct = default)
+            => Task.FromResult(_byKey.ContainsKey((projectId, userId)));
+
+        public Task<int> CountUserActiveMembershipsAsync(Guid userId, CancellationToken ct = default)
+        {
+            var count = _byKey.Values
+                                .Where(pm => pm.UserId == userId && pm.RemovedAt is null)
+                                .Select(pm => pm.ProjectId)
+                                .Distinct()
+                                .Count();
+
+            return Task.FromResult(count);
+        }
 
         // ----------------- helpers -----------------
 
