@@ -3,6 +3,7 @@ using Application.TaskActivities.Services;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using TestHelpers;
 using TestHelpers.Time;
@@ -20,7 +21,8 @@ namespace Application.Tests.TaskActivities.Services
             await using var db = dbh.CreateContext();
 
             var repo = new TaskActivityRepository(db);
-            var svc = new TaskActivityWriteService(repo, _clock);
+            var uow = new UnitOfWork(db);
+            var svc = new TaskActivityWriteService(repo, uow, _clock);
 
             var (_, _, _, taskId, _, actor) = TestDataFactory.SeedFullBoard(db);
 
@@ -34,7 +36,7 @@ namespace Application.Tests.TaskActivities.Services
             m.Should().Be(DomainMutation.Created);
             activity.Should().NotBeNull();
 
-            await repo.SaveChangesAsync();
+            await uow.SaveAsync(MutationKind.Create);
 
             var list = await repo.ListByTaskAsync(taskId);
             list.Should().ContainSingle();
