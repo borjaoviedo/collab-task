@@ -14,22 +14,15 @@ namespace Api.Tests.Fakes
         private byte[] NextRowVersion()
             => BitConverter.GetBytes(Interlocked.Increment(ref _rv));
 
+        public Task<IReadOnlyList<TaskItem>> ListByColumnAsync(Guid columnId, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<TaskItem>>(_tasks.Values.Where(t => t.ColumnId == columnId)
+                .OrderBy(t => t.SortKey).Select(Clone).ToList());
+
         public Task<TaskItem?> GetByIdAsync(Guid taskId, CancellationToken ct = default)
             => Task.FromResult(_tasks.TryGetValue(taskId, out var t) ? Clone(t) : null);
 
         public Task<TaskItem?> GetTrackedByIdAsync(Guid taskId, CancellationToken ct = default)
             => Task.FromResult(_tasks.TryGetValue(taskId, out var t) ? t : null);
-
-        public Task<bool> ExistsWithTitleAsync(Guid columnId, TaskTitle title, Guid? excludeTaskId = null, CancellationToken ct = default)
-        {
-            var q = _tasks.Values.Where(t => t.ColumnId == columnId && t.Title == title);
-            if (excludeTaskId is Guid id) q = q.Where(t => t.Id != id);
-            return Task.FromResult(q.Any());
-        }
-
-        public Task<IReadOnlyList<TaskItem>> ListByColumnAsync(Guid columnId, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<TaskItem>>(_tasks.Values.Where(t => t.ColumnId == columnId)
-                .OrderBy(t => t.SortKey).Select(Clone).ToList());
 
         public Task AddAsync(TaskItem task, CancellationToken ct = default)
         {
@@ -38,7 +31,7 @@ namespace Api.Tests.Fakes
             return Task.CompletedTask;
         }
 
-        public async Task<(DomainMutation Mutation, TaskItemChange? Change)> EditAsync(
+        public async Task<(PrecheckStatus Status, TaskItemEditedChange? Change)> EditAsync(
             Guid taskId,
             TaskTitle? newTitle,
             TaskDescription? newDescription,
@@ -47,9 +40,11 @@ namespace Api.Tests.Fakes
             CancellationToken ct = default)
         {
             var task = await GetTrackedByIdAsync(taskId, ct);
-            if (task is null) return (DomainMutation.NotFound, null);
-            if (!task.RowVersion.SequenceEqual(rowVersion)) return (DomainMutation.Conflict, null);
-            if (newTitle != null && await ExistsWithTitleAsync(task.ColumnId, newTitle, task.Id, ct)) return (DomainMutation.Conflict, null);
+
+            if (task is null) return (PrecheckStatus.NotFound, null);
+            if (!task.RowVersion.SequenceEqual(rowVersion)) return (PrecheckStatus.Conflict, null);
+            if (newTitle != null && await ExistsWithTitleAsync(task.ColumnId, newTitle, task.Id, ct))
+                return (PrecheckStatus.Conflict, null);
 
             var beforeTitle = task.Title;
             var beforeDesc = task.Description;
@@ -58,13 +53,13 @@ namespace Api.Tests.Fakes
             task.Edit(newTitle, newDescription, newDueDate);
 
             if (Equals(beforeTitle, task.Title) && Equals(beforeDesc, task.Description) && Nullable.Equals(beforeDue, task.DueDate))
-                return (DomainMutation.NoOp, null);
+                return (PrecheckStatus.NoOp, null);
 
             task.SetRowVersion(NextRowVersion());
-            return (DomainMutation.Updated, null);
+            return (PrecheckStatus.Ready, null);
         }
 
-        public async Task<(DomainMutation Mutation, TaskItemChange? Change)> MoveAsync(
+        public async Task<(PrecheckStatus Status, TaskItemMovedChange? Change)> MoveAsync(
             Guid taskId,
             Guid targetColumnId,
             Guid targetLaneId,
@@ -74,24 +69,31 @@ namespace Api.Tests.Fakes
             CancellationToken ct = default)
         {
             var task = await GetTrackedByIdAsync(taskId, ct);
-            if (task is null) return (DomainMutation.NotFound, null);
-            if (!task.RowVersion.SequenceEqual(rowVersion)) return (DomainMutation.Conflict, null);
+
+            if (task is null) return (PrecheckStatus.NotFound, null);
+            if (!task.RowVersion.SequenceEqual(rowVersion)) return (PrecheckStatus.Conflict, null);
             if (task.ColumnId == targetColumnId && task.LaneId == targetLaneId && task.SortKey == targetSortKey)
-                return (DomainMutation.NoOp, null);
+                return (PrecheckStatus.NoOp, null);
 
             task.Move(targetProjectId, targetLaneId, targetColumnId, targetSortKey);
             task.SetRowVersion(NextRowVersion());
-            return (DomainMutation.Updated, null);
+            return (PrecheckStatus.Ready, null);
         }
 
-        public async Task<DomainMutation> DeleteAsync(Guid taskId, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> DeleteAsync(Guid taskId, byte[] rowVersion, CancellationToken ct = default)
         {
             var task = await GetTrackedByIdAsync(taskId, ct);
-            if (task is null) return DomainMutation.NotFound;
-            if (!task.RowVersion.SequenceEqual(rowVersion)) return DomainMutation.Conflict;
+            if (task is null) return PrecheckStatus.NotFound;
 
             _tasks.Remove(taskId);
-            return DomainMutation.Deleted;
+            return PrecheckStatus.Ready;
+        }
+
+        public Task<bool> ExistsWithTitleAsync(Guid columnId, TaskTitle title, Guid? excludeTaskId = null, CancellationToken ct = default)
+        {
+            var q = _tasks.Values.Where(t => t.ColumnId == columnId && t.Title == title);
+            if (excludeTaskId is Guid id) q = q.Where(t => t.Id != id);
+            return Task.FromResult(q.Any());
         }
 
         public Task<decimal> GetNextSortKeyAsync(Guid columnId, CancellationToken ct = default)
@@ -103,16 +105,6 @@ namespace Api.Tests.Fakes
                             .Max();
             return Task.FromResult((max ?? -1m) + 1m);
         }
-
-        public Task RebalanceSortKeysAsync(Guid columnId, CancellationToken ct = default)
-        {
-            var list = _tasks.Values.Where(t => t.ColumnId == columnId).OrderBy(t => t.SortKey).ToList();
-            for (int i = 0; i < list.Count; i++) list[i].SetSortKey(i);
-            return Task.CompletedTask;
-        }
-
-        public Task<int> SaveCreateChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
-        public Task<DomainMutation> SaveUpdateChangesAsync(CancellationToken ct = default) => Task.FromResult(DomainMutation.Updated);
 
         private static TaskItem Clone(TaskItem t)
         {
