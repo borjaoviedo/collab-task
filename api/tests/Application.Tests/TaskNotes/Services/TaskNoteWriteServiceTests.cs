@@ -27,8 +27,7 @@ namespace Application.Tests.TaskNotes.Services
 
             var repo = new TaskNoteRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var uow = new UnitOfWork(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
@@ -58,8 +57,7 @@ namespace Application.Tests.TaskNotes.Services
 
             var repo = new TaskNoteRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var uow = new UnitOfWork(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>(MockBehavior.Strict);
 
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
@@ -102,8 +100,7 @@ namespace Application.Tests.TaskNotes.Services
 
             var repo = new TaskNoteRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var uow = new UnitOfWork(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
@@ -127,8 +124,7 @@ namespace Application.Tests.TaskNotes.Services
 
             var repo = new TaskNoteRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var uow = new UnitOfWork(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
@@ -154,8 +150,7 @@ namespace Application.Tests.TaskNotes.Services
 
             var repo = new TaskNoteRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var uow = new UnitOfWork(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>(MockBehavior.Strict);
 
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
@@ -188,8 +183,7 @@ namespace Application.Tests.TaskNotes.Services
 
             var repo = new TaskNoteRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var uow = new UnitOfWork(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
@@ -208,8 +202,7 @@ namespace Application.Tests.TaskNotes.Services
 
             var repo = new TaskNoteRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var uow = new UnitOfWork(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);

@@ -22,7 +22,7 @@ namespace Application.Tests.TaskActivities.Services
 
             var repo = new TaskActivityRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new TaskActivityWriteService(repo, uow, _clock);
+            var svc = new TaskActivityWriteService(repo, _clock);
 
             var (_, _, _, taskId, _, actor) = TestDataFactory.SeedFullBoard(db);
 

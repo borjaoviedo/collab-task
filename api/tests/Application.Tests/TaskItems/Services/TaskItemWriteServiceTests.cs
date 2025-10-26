@@ -28,7 +28,7 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
@@ -58,7 +58,7 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
@@ -96,7 +96,7 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
@@ -131,7 +131,7 @@ namespace Application.Tests.TaskItems.Services
             var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
 
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
             var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
@@ -160,7 +160,7 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
@@ -195,7 +195,7 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
@@ -220,7 +220,7 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
@@ -242,7 +242,7 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
@@ -266,7 +266,7 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
@@ -293,7 +293,7 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
@@ -317,7 +317,7 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
@@ -344,7 +344,7 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>(MockBehavior.Strict);
 
             var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
@@ -380,7 +380,7 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
@@ -404,7 +404,7 @@ namespace Application.Tests.TaskItems.Services
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);

@@ -24,8 +24,7 @@ namespace Application.Tests.TaskAssignments.Services
 
             var repo = new TaskAssignmentRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var uow = new UnitOfWork(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskAssignmentWriteService(repo, actSvc, mediator.Object);
@@ -50,8 +49,7 @@ namespace Application.Tests.TaskAssignments.Services
 
             var repo = new TaskAssignmentRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var uow = new UnitOfWork(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskAssignmentWriteService(repo, actSvc, mediator.Object);
@@ -75,8 +73,7 @@ namespace Application.Tests.TaskAssignments.Services
 
             var repo = new TaskAssignmentRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var uow = new UnitOfWork(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskAssignmentWriteService(repo, actSvc, mediator.Object);
@@ -97,8 +94,7 @@ namespace Application.Tests.TaskAssignments.Services
 
             var repo = new TaskAssignmentRepository(db);
             var actRepo = new TaskActivityRepository(db);
-            var uow = new UnitOfWork(db);
-            var actSvc = new TaskActivityWriteService(actRepo, uow, _clock);
+            var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
             var svc = new TaskAssignmentWriteService(repo, actSvc, mediator.Object);
