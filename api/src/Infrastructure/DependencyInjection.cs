@@ -1,4 +1,5 @@
 using Application.Columns.Abstractions;
+using Application.Common.Abstractions.Persistence;
 using Application.Common.Abstractions.Security;
 using Application.Common.Abstractions.Time;
 using Application.Lanes.Abstractions;
@@ -38,6 +39,9 @@ namespace Infrastructure
                 options.UseSqlServer(connectionString);
                 options.AddInterceptors(sp.GetRequiredService<AuditingSaveChangesInterceptor>());
             });
+
+            // UoW
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             // Repositories
             services.AddScoped<IUserRepository, UserRepository>();
