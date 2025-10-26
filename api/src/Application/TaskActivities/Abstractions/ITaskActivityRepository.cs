@@ -5,14 +5,12 @@ namespace Application.TaskActivities.Abstractions
 {
     public interface ITaskActivityRepository
     {
-        Task<TaskActivity?> GetByIdAsync(Guid activityId, CancellationToken ct = default);
         Task<IReadOnlyList<TaskActivity>> ListByTaskAsync(Guid taskId, CancellationToken ct = default);
         Task<IReadOnlyList<TaskActivity>> ListByUserAsync(Guid userId, CancellationToken ct = default);
         Task<IReadOnlyList<TaskActivity>> ListByTypeAsync(Guid taskId, TaskActivityType type, CancellationToken ct = default);
+        Task<TaskActivity?> GetByIdAsync(Guid activityId, CancellationToken ct = default);
 
         Task AddAsync(TaskActivity activity, CancellationToken ct = default);
         Task AddRangeAsync(IEnumerable<TaskActivity> activities, CancellationToken ct = default);
-
-        Task<int> SaveChangesAsync(CancellationToken ct = default);
     }
 }

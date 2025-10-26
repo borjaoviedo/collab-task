@@ -9,11 +9,6 @@ namespace Infrastructure.Data.Repositories
     {
         private readonly AppDbContext _db = db;
 
-        public async Task<TaskActivity?> GetByIdAsync(Guid activityId, CancellationToken ct = default)
-            => await _db.TaskActivities
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(a => a.Id == activityId, ct);
-
         public async Task<IReadOnlyList<TaskActivity>> ListByTaskAsync(Guid taskId, CancellationToken ct = default)
             => await _db.TaskActivities
                         .AsNoTracking()
@@ -35,12 +30,15 @@ namespace Infrastructure.Data.Repositories
                         .OrderBy(a => a.CreatedAt)
                         .ToListAsync(ct);
 
+        public async Task<TaskActivity?> GetByIdAsync(Guid activityId, CancellationToken ct = default)
+            => await _db.TaskActivities
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(a => a.Id == activityId, ct);
+
         public async Task AddAsync(TaskActivity activity, CancellationToken ct = default)
             => await _db.TaskActivities.AddAsync(activity, ct);
 
         public async Task AddRangeAsync(IEnumerable<TaskActivity> activities, CancellationToken ct = default)
             => await _db.TaskActivities.AddRangeAsync(activities, ct);
-
-        public async Task<int> SaveChangesAsync(CancellationToken ct = default) => await _db.SaveChangesAsync(ct);
     }
 }
