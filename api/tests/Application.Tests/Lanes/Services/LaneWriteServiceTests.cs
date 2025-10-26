@@ -2,6 +2,7 @@ using Application.Lanes.Services;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers;
@@ -14,9 +15,10 @@ namespace Application.Tests.Lanes.Services
         public async Task Create_Assigns_Next_Order_When_Null()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
-            var svc = new LaneWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new LaneWriteService(repo, uow);
 
             var (pId, _) = TestDataFactory.SeedUserWithProject(db);
             await svc.CreateAsync(pId, LaneName.Create("First"), null);
@@ -30,9 +32,10 @@ namespace Application.Tests.Lanes.Services
         public async Task Create_Returns_Conflict_On_Duplicate_Name_In_Project()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
-            var svc = new LaneWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new LaneWriteService(repo, uow);
 
             var sameName = LaneName.Create("Dup");
             var (pId, _) = TestDataFactory.SeedUserWithProject(db);
@@ -48,9 +51,10 @@ namespace Application.Tests.Lanes.Services
         public async Task Rename_Delegates_To_Repository()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
-            var svc = new LaneWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new LaneWriteService(repo, uow);
 
             var (_, laneId) = TestDataFactory.SeedProjectWithLane(db);
 
@@ -63,9 +67,10 @@ namespace Application.Tests.Lanes.Services
         public async Task Reorder_Delegates_To_Repository()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
-            var svc = new LaneWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new LaneWriteService(repo, uow);
 
             var firstLaneName = "Lane A";
             var secondLaneName = "Lane B";
@@ -93,9 +98,10 @@ namespace Application.Tests.Lanes.Services
         public async Task Delete_Delegates_To_Repository()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
-            var svc = new LaneWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new LaneWriteService(repo, uow);
 
             var (_, laneId) = TestDataFactory.SeedProjectWithLane(db);
 
