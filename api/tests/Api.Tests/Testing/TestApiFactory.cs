@@ -2,6 +2,7 @@ using Api.Filters;
 using Api.Tests.Fakes;
 using Application.Columns.Abstractions;
 using Application.Columns.Services;
+using Application.Common.Abstractions.Persistence;
 using Application.Common.Abstractions.Time;
 using Application.Lanes.Abstractions;
 using Application.Lanes.Services;
@@ -104,7 +105,11 @@ namespace Api.Tests.Testing
                 services.AddScoped<ITaskItemReadService>(sp => new TaskItemReadService(sp.GetRequiredService<ITaskItemRepository>()));
                 services.RemoveAll(typeof(ITaskItemWriteService));
                 services.AddScoped<ITaskItemWriteService>(sp
-                    => new TaskItemWriteService(sp.GetRequiredService<ITaskItemRepository>(), sp.GetRequiredService<ITaskActivityWriteService>(), sp.GetRequiredService<IMediator>()));
+                    => new TaskItemWriteService(
+                        sp.GetRequiredService<ITaskItemRepository>(),
+                        sp.GetRequiredService<IUnitOfWork>(),
+                        sp.GetRequiredService<ITaskActivityWriteService>(),
+                        sp.GetRequiredService<IMediator>()));
 
                 // ===== Task Notes =====
                 services.RemoveAll(typeof(ITaskNoteRepository));
