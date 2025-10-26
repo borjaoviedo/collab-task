@@ -12,28 +12,15 @@ namespace Api.Tests.Fakes
 
         private static byte[] NextRowVersion() => Guid.NewGuid().ToByteArray();
 
+        public Task<IReadOnlyList<Column>> ListByLaneAsync(Guid laneId, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<Column>>(_columns.Values.Where(c => c.LaneId == laneId)
+                .OrderBy(c => c.Order).Select(Clone).ToList());
+
         public Task<Column?> GetByIdAsync(Guid columnId, CancellationToken ct = default)
             => Task.FromResult(_columns.TryGetValue(columnId, out var c) ? Clone(c) : null);
 
         public Task<Column?> GetTrackedByIdAsync(Guid columnId, CancellationToken ct = default)
             => Task.FromResult(_columns.TryGetValue(columnId, out var c) ? c : null);
-
-        public Task<bool> ExistsWithNameAsync(Guid laneId, ColumnName name, Guid? excludeColumnId = null, CancellationToken ct = default)
-        {
-            var q = _columns.Values.Where(c => c.LaneId == laneId && c.Name == name);
-            if (excludeColumnId is Guid id) q = q.Where(c => c.Id != id);
-            return Task.FromResult(q.Any());
-        }
-
-        public Task<int> GetMaxOrderAsync(Guid laneId, CancellationToken ct = default)
-        {
-            var max = _columns.Values.Where(c => c.LaneId == laneId).Select(c => (int?)c.Order).DefaultIfEmpty(null).Max();
-            return Task.FromResult(max ?? -1);
-        }
-
-        public Task<IReadOnlyList<Column>> ListByLaneAsync(Guid laneId, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<Column>>(_columns.Values.Where(c => c.LaneId == laneId)
-                .OrderBy(c => c.Order).Select(Clone).ToList());
 
         public Task AddAsync(Column column, CancellationToken ct = default)
         {
@@ -45,60 +32,132 @@ namespace Api.Tests.Fakes
             return Task.CompletedTask;
         }
 
-        public async Task<DomainMutation> RenameAsync(Guid columnId, ColumnName newName, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> RenameAsync(
+            Guid columnId,
+            ColumnName newName,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
-            var col = await GetTrackedByIdAsync(columnId, ct);
-            if (col is null) return DomainMutation.NotFound;
+            var column = await GetTrackedByIdAsync(columnId, ct);
+            if (column is null) return PrecheckStatus.NotFound;
 
-            if (!col.RowVersion.SequenceEqual(rowVersion)) return DomainMutation.Conflict;
-            if (string.Equals(col.Name, newName, StringComparison.Ordinal)) return DomainMutation.NoOp;
+            if (!column.RowVersion.SequenceEqual(rowVersion)) return PrecheckStatus.Conflict;
+            if (string.Equals(column.Name, newName, StringComparison.Ordinal)) return PrecheckStatus.NoOp;
 
-            if (await ExistsWithNameAsync(col.LaneId, newName, col.Id, ct)) return DomainMutation.Conflict;
+            if (await ExistsWithNameAsync(column.LaneId, newName, column.Id, ct)) return PrecheckStatus.Conflict;
 
-            col.Rename(newName);
-            col.SetRowVersion(NextRowVersion());
-            return DomainMutation.Updated;
+            column.Rename(newName);
+            column.SetRowVersion(NextRowVersion());
+            return PrecheckStatus.Ready;
         }
 
-        public async Task<DomainMutation> ReorderAsync(Guid columnId, int newOrder, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> ReorderPhase1Async(
+            Guid columnId,
+            int newOrder,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
-            var col = await GetTrackedByIdAsync(columnId, ct);
-            if (col is null) return DomainMutation.NotFound;
-            if (!col.RowVersion.SequenceEqual(rowVersion)) return DomainMutation.Conflict;
+            // no real async work here, keep signature for compatibility
+            await Task.Yield();
 
-            var cols = _columns.Values.Where(c => c.LaneId == col.LaneId).OrderBy(c => c.Order).ToList();
-            var currentIndex = cols.FindIndex(c => c.Id == columnId);
-            if (currentIndex < 0) return DomainMutation.NotFound;
-
-            var targetIndex = Math.Clamp(newOrder, 0, cols.Count - 1);
-            if (currentIndex == targetIndex) return DomainMutation.NoOp;
-
-            var moving = cols[currentIndex];
-            cols.RemoveAt(currentIndex);
-            cols.Insert(targetIndex, moving);
-
-            for (int i = 0; i < cols.Count; i++)
+            lock (_lock)
             {
-                if (cols[i].Order != i)
+                if (!_columns.TryGetValue(columnId, out var column))
+                    return PrecheckStatus.NotFound;
+
+                // Concurrency check
+                if (!column.RowVersion.SequenceEqual(rowVersion))
+                    return PrecheckStatus.Conflict;
+
+                // Snapshot lane columns ordered by current Order
+                var columns = _columns.Values
+                    .Where(c => c.LaneId == column.LaneId)
+                    .OrderBy(c => c.Order)
+                    .ToList();
+
+                var currentIndex = columns.FindIndex(c => c.Id == columnId);
+                if (currentIndex < 0) return PrecheckStatus.NotFound;
+
+                var targetIndex = Math.Clamp(newOrder, 0, columns.Count - 1);
+                if (currentIndex == targetIndex) return PrecheckStatus.NoOp;
+
+                // Rebuild desired order: remove then insert
+                var moving = columns[currentIndex];
+                columns.RemoveAt(currentIndex);
+                columns.Insert(targetIndex, moving);
+
+                const int OFFSET = 1000;
+
+                // Phase 1: assign temporary unique orders (+OFFSET) and bump RowVersion
+                for (int i = 0; i < columns.Count; i++)
                 {
-                    cols[i].Reorder(i);
-                    cols[i].SetRowVersion(NextRowVersion());
+                    var tmp = i + OFFSET;
+                    if (columns[i].Order != tmp)
+                    {
+                        columns[i].Reorder(tmp);
+                        columns[i].SetRowVersion(NextRowVersion());
+                    }
+                }
+
+                return PrecheckStatus.Ready;
+            }
+        }
+
+        public async Task ApplyReorderPhase2Async(Guid columnId, CancellationToken ct = default)
+        {
+            await Task.Yield();
+
+            lock (_lock)
+            {
+                if (!_columns.TryGetValue(columnId, out var column))
+                    return;
+
+                // Re-read lane with the offsetted orders and normalize to 0..n
+                var columns = _columns.Values
+                    .Where(c => c.LaneId == column.LaneId)
+                    .OrderBy(c => c.Order)
+                    .ToList();
+
+                for (int i = 0; i < columns.Count; i++)
+                {
+                    if (columns[i].Order != i)
+                    {
+                        columns[i].Reorder(i);
+                        columns[i].SetRowVersion(NextRowVersion());
+                    }
                 }
             }
-            return DomainMutation.Updated;
         }
 
-        public async Task<DomainMutation> DeleteAsync(Guid columnId, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> DeleteAsync(Guid columnId, byte[] rowVersion, CancellationToken ct = default)
         {
-            var col = await GetTrackedByIdAsync(columnId, ct);
-            if (col is null) return DomainMutation.NotFound;
-            if (!col.RowVersion.SequenceEqual(rowVersion)) return DomainMutation.Conflict;
+            var column = await GetTrackedByIdAsync(columnId, ct);
+            if (column is null) return PrecheckStatus.NotFound;
+            if (!column.RowVersion.SequenceEqual(rowVersion)) return PrecheckStatus.Conflict;
 
             _columns.Remove(columnId);
-            return DomainMutation.Deleted;
+            return PrecheckStatus.Ready;
         }
 
-        public Task<int> SaveChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
+        public Task<bool> ExistsWithNameAsync(Guid laneId, ColumnName name, Guid? excludeColumnId = null, CancellationToken ct = default)
+        {
+            var q = _columns.Values.Where(c => c.LaneId == laneId && c.Name == name);
+
+            if (excludeColumnId is Guid id)
+                q = q.Where(c => c.Id != id);
+
+            return Task.FromResult(q.Any());
+        }
+
+        public Task<int> GetMaxOrderAsync(Guid laneId, CancellationToken ct = default)
+        {
+            var max = _columns.Values
+                                .Where(c => c.LaneId == laneId)
+                                .Select(c => (int?)c.Order)
+                                .DefaultIfEmpty(null)
+                                .Max();
+            return Task.FromResult(max ?? -1);
+        }
 
         private static Column Clone(Column c)
         {
