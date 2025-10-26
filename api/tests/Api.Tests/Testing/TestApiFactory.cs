@@ -80,7 +80,8 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(IProjectMemberReadService));
                 services.AddScoped<IProjectMemberReadService>(sp => new ProjectMemberReadService(sp.GetRequiredService<IProjectMemberRepository>()));
                 services.RemoveAll(typeof(IProjectMemberWriteService));
-                services.AddScoped<IProjectMemberWriteService>(sp => new ProjectMemberWriteService(sp.GetRequiredService<IProjectMemberRepository>()));
+                services.AddScoped<IProjectMemberWriteService>(sp
+                    => new ProjectMemberWriteService(sp.GetRequiredService<IProjectMemberRepository>(), sp.GetRequiredService<IUnitOfWork>()));
 
                 // ===== Lanes =====
                 services.RemoveAll(typeof(ILaneRepository));
