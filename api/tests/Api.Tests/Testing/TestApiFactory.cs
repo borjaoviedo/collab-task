@@ -96,7 +96,8 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(IColumnReadService));
                 services.AddScoped<IColumnReadService>(sp => new ColumnReadService(sp.GetRequiredService<IColumnRepository>()));
                 services.RemoveAll(typeof(IColumnWriteService));
-                services.AddScoped<IColumnWriteService>(sp => new ColumnWriteService(sp.GetRequiredService<IColumnRepository>()));
+                services.AddScoped<IColumnWriteService>(sp
+                    => new ColumnWriteService(sp.GetRequiredService<IColumnRepository>(), sp.GetRequiredService<IUnitOfWork>()));
 
                 // ===== Task Items =====
                 services.RemoveAll(typeof(ITaskItemRepository));
