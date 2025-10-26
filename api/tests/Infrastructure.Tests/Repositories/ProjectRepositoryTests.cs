@@ -4,6 +4,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers;
@@ -203,13 +204,14 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
+            var uow = new UnitOfWork(db);
 
             var projectName = ProjectName.Create("New Project");
             var owner = TestDataFactory.SeedUser(db);
             var project = Project.Create(owner.Id, ProjectName.Create(projectName));
 
             await repo.AddAsync(project);
-            await repo.SaveChangesAsync();
+            await uow.SaveAsync(MutationKind.Create);
 
             var fromDb = await db.Projects.SingleAsync(p => p.Id == project.Id);
             fromDb.Name.Value.Should().Be(projectName);
@@ -260,7 +262,7 @@ namespace Infrastructure.Tests.Repositories
 
             var res = await repo.RenameAsync(project.Id, projectName, project.RowVersion);
 
-            res.Should().Be(DomainMutation.NoOp);
+            res.Should().Be(PrecheckStatus.NoOp);
         }
 
         [Fact]
@@ -269,6 +271,7 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
+            var uow = new UnitOfWork(db);
 
             var oldProjectName = ProjectName.Create("Old name");
             var newProjectName = ProjectName.Create("New name");
@@ -276,7 +279,9 @@ namespace Infrastructure.Tests.Repositories
             var project = TestDataFactory.SeedProject(db, user.Id, oldProjectName);
 
             var res = await repo.RenameAsync(project.Id, newProjectName, project.RowVersion);
-            res.Should().Be(DomainMutation.Updated);
+            res.Should().Be(PrecheckStatus.Ready);
+
+            await uow.SaveAsync(MutationKind.Update);
 
             var fromDb = await db.Projects.AsNoTracking().SingleAsync(p => p.Id == project.Id);
             fromDb.Name.Value.Should().Be(newProjectName);
@@ -284,22 +289,7 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task RenameAsync_Returns_Conflict_On_RowVersion_Mismatch()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ProjectRepository(db);
-
-            var oldProjectName = ProjectName.Create("Old name");
-            var newProjectName = ProjectName.Create("New name");
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db, projectName: oldProjectName);
-
-            var res = await repo.RenameAsync(pId, newProjectName, [1, 2, 3, 4]);
-            res.Should().Be(DomainMutation.Conflict);
-        }
-
-        [Fact]
-        public async Task DeleteAsync_Returns_Deleted_When_Existing_Project()
+        public async Task DeleteAsync_Returns_Ready_When_Existing_Project()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -309,7 +299,7 @@ namespace Infrastructure.Tests.Repositories
             var project = TestDataFactory.SeedProject(db, user.Id);
 
             var res = await repo.DeleteAsync(project.Id, project.RowVersion);
-            res.Should().Be(DomainMutation.Deleted);
+            res.Should().Be(PrecheckStatus.Ready);
         }
 
         [Fact]
@@ -320,20 +310,7 @@ namespace Infrastructure.Tests.Repositories
             var repo = new ProjectRepository(db);
 
             var res = await repo.DeleteAsync(Guid.NewGuid(), [1, 2]);
-            res.Should().Be(DomainMutation.NotFound);
-        }
-
-        [Fact]
-        public async Task DeleteAsync_Returns_Conflict_On_RowVersion_Mismatch()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ProjectRepository(db);
-
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-
-            var res = await repo.DeleteAsync(pId, [1, 2, 3]);
-            res.Should().Be(DomainMutation.Conflict);
+            res.Should().Be(PrecheckStatus.NotFound);
         }
     }
 }
