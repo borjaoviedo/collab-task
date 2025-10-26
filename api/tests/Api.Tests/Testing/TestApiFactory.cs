@@ -72,7 +72,8 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(IProjectReadService));
                 services.AddScoped<IProjectReadService>(sp => new ProjectReadService(sp.GetRequiredService<IProjectRepository>()));
                 services.RemoveAll(typeof(IProjectWriteService));
-                services.AddScoped<IProjectWriteService>(sp => new ProjectWriteService(sp.GetRequiredService<IProjectRepository>()));
+                services.AddScoped<IProjectWriteService>(sp
+                    => new ProjectWriteService(sp.GetRequiredService<IProjectRepository>(), sp.GetRequiredService<IUnitOfWork>()));
 
                 // ===== Project Members =====
                 services.RemoveAll(typeof(IProjectMemberRepository));
