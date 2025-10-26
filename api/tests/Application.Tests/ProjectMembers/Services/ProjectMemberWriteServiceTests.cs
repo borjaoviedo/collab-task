@@ -1,6 +1,7 @@
 using Application.ProjectMembers.Services;
 using Domain.Enums;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers;
@@ -15,7 +16,8 @@ namespace Application.Tests.ProjectMembers.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
-            var svc = new ProjectMemberWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new ProjectMemberWriteService(repo, uow);
 
             var (pId, _) = TestDataFactory.SeedUserWithProject(db);
             var user = TestDataFactory.SeedUser(db);
@@ -31,7 +33,8 @@ namespace Application.Tests.ProjectMembers.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
-            var svc = new ProjectMemberWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new ProjectMemberWriteService(repo, uow);
 
             var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
             var res = await svc.ChangeRoleAsync(pId, uId, ProjectRole.Admin, [1, 2, 3, 4]);
@@ -45,7 +48,8 @@ namespace Application.Tests.ProjectMembers.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
-            var svc = new ProjectMemberWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new ProjectMemberWriteService(repo, uow);
 
             var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
             var member = await db.ProjectMembers.SingleAsync(m => m.ProjectId == pId && m.UserId == uId);
