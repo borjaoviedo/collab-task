@@ -140,7 +140,10 @@ namespace Api.Tests.Testing
                 services.AddScoped<ITaskActivityReadService>(sp => new TaskActivityReadService(sp.GetRequiredService<ITaskActivityRepository>()));
                 services.RemoveAll(typeof(ITaskActivityWriteService));
                 services.AddScoped<ITaskActivityWriteService>(sp
-                    => new TaskActivityWriteService(sp.GetRequiredService<ITaskActivityRepository>(), sp.GetRequiredService<IDateTimeProvider>()));
+                    => new TaskActivityWriteService(
+                        sp.GetRequiredService<ITaskActivityRepository>(),
+                        sp.GetRequiredService<IUnitOfWork>(),
+                        sp.GetRequiredService<IDateTimeProvider>()));
 
                 // ===== Endpoint filter para If-Match =====
                 services.RemoveAll(typeof(IfMatchRowVersionFilter));
