@@ -88,7 +88,8 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(ILaneReadService));
                 services.AddScoped<ILaneReadService>(sp => new LaneReadService(sp.GetRequiredService<ILaneRepository>()));
                 services.RemoveAll(typeof(ILaneWriteService));
-                services.AddScoped<ILaneWriteService>(sp => new LaneWriteService(sp.GetRequiredService<ILaneRepository>()));
+                services.AddScoped<ILaneWriteService>(sp
+                    => new LaneWriteService(sp.GetRequiredService<ILaneRepository>(), sp.GetRequiredService<IUnitOfWork>()));
 
                 // ===== Columns =====
                 services.RemoveAll(typeof(IColumnRepository));
