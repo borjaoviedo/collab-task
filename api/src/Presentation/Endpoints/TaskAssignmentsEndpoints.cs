@@ -236,7 +236,7 @@ namespace Api.Endpoints
                 }
 
                 var executedBy = (Guid)currentUserSvc.UserId!;
-                var result = await taskAssignmentWriteSvc.RemoveAsync(projectId, taskId, targetUserId: userId, executedBy, rowVersion, ct);
+                var result = await taskAssignmentWriteSvc.DeleteAsync(projectId, taskId, targetUserId: userId, executedBy, rowVersion, ct);
 
                 log.LogInformation("Task assignment removed projectId={ProjectId} taskId={TaskId} userId={UserId} mutation={Mutation}",
                                     projectId, taskId, userId, result);
