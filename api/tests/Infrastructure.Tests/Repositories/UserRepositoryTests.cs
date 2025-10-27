@@ -62,33 +62,6 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task GetByNameAsync_Returns_User_When_Exists()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-
-            var name = UserName.Create("User Name");
-            var u = TestDataFactory.SeedUser(db, name: name);
-            var found = await repo.GetByNameAsync(name);
-
-            found.Should().NotBeNull();
-            found!.Id.Should().Be(u.Id);
-        }
-
-        [Fact]
-        public async Task GetByNameAsync_Returns_Null_When_Not_Found()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-
-            var found = await repo.GetByNameAsync(UserName.Create("Not Found User Name"));
-
-            found.Should().BeNull();
-        }
-
-        [Fact]
         public async Task GetTrackedByIdAsync_Returns_User_When_Exists_Null_Otherwise()
         {
             using var dbh = new SqliteTestDb();
@@ -163,24 +136,6 @@ namespace Infrastructure.Tests.Repositories
 
             (await repo.ExistsWithNameAsync(name)).Should().BeTrue();
             (await repo.ExistsWithNameAsync(UserName.Create("Diff User Name"))).Should().BeFalse();
-        }
-
-        [Fact]
-        public async Task AnyAdmin_And_CountAdmins_Work_As_Expected()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-
-            (await repo.AnyAdminAsync()).Should().BeFalse();
-            (await repo.CountAdminsAsync()).Should().Be(0);
-
-            TestDataFactory.SeedUser(db, role: UserRole.Admin);
-            (await repo.AnyAdminAsync()).Should().BeTrue();
-            (await repo.CountAdminsAsync()).Should().Be(1);
-
-            TestDataFactory.SeedUser(db, role: UserRole.User);
-            (await repo.CountAdminsAsync()).Should().Be(1);
         }
 
         [Fact]

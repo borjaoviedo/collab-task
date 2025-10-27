@@ -22,11 +22,6 @@ namespace Infrastructure.Data.Repositories
                         .AsNoTracking()
                         .FirstOrDefaultAsync(u => u.Email == email, ct);
 
-        public async Task<User?> GetByNameAsync(UserName name, CancellationToken ct = default)
-            => await _db.Users
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(u => u.Name == name, ct);
-
         public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
             => await _db.Users
                         .AsNoTracking()
@@ -39,7 +34,11 @@ namespace Infrastructure.Data.Repositories
         public async Task AddAsync(User item, CancellationToken ct = default)
             => await _db.Users.AddAsync(item, ct);
 
-        public async Task<PrecheckStatus> RenameAsync(Guid id, UserName newName, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> RenameAsync(
+            Guid id,
+            UserName newName,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var user = await GetTrackedByIdAsync(id, ct);
             if (user is null) return PrecheckStatus.NotFound;
@@ -60,7 +59,11 @@ namespace Infrastructure.Data.Repositories
             return PrecheckStatus.Ready;
         }
 
-        public async Task<PrecheckStatus> ChangeRoleAsync(Guid id, UserRole newRole, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> ChangeRoleAsync(
+            Guid id,
+            UserRole newRole,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var user = await GetTrackedByIdAsync(id, ct);
             if (user is null) return PrecheckStatus.NotFound;
@@ -77,7 +80,10 @@ namespace Infrastructure.Data.Repositories
             return PrecheckStatus.Ready;
         }
 
-        public async Task<PrecheckStatus> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> DeleteAsync(
+            Guid id,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var user = await GetTrackedByIdAsync(id, ct);
             if (user is null) return PrecheckStatus.NotFound;
@@ -88,7 +94,10 @@ namespace Infrastructure.Data.Repositories
             return PrecheckStatus.Ready;
         }
 
-        public async Task<bool> ExistsWithEmailAsync(Email email, Guid? excludeUserId = null, CancellationToken ct = default)
+        public async Task<bool> ExistsWithEmailAsync(
+            Email email,
+            Guid? excludeUserId = null,
+            CancellationToken ct = default)
         {
             var q = _db.Users
                         .AsNoTracking()
@@ -100,7 +109,10 @@ namespace Infrastructure.Data.Repositories
             return await q.AnyAsync(ct);
         }
 
-        public async Task<bool> ExistsWithNameAsync(UserName name, Guid? excludeUserId = null, CancellationToken ct = default)
+        public async Task<bool> ExistsWithNameAsync(
+            UserName name,
+            Guid? excludeUserId = null,
+            CancellationToken ct = default)
         {
             var q = _db.Users
                         .AsNoTracking()
@@ -111,15 +123,5 @@ namespace Infrastructure.Data.Repositories
 
             return await q.AnyAsync(ct);
         }
-
-        public async Task<bool> AnyAdminAsync(CancellationToken ct = default)
-            => await _db.Users
-                        .AsNoTracking()
-                        .AnyAsync(u => u.Role == UserRole.Admin, ct);
-
-        public async Task<int> CountAdminsAsync(CancellationToken ct = default)
-            => await _db.Users
-                        .AsNoTracking()
-                        .CountAsync(u => u.Role == UserRole.Admin, ct);
     }
 }
