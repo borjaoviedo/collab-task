@@ -23,7 +23,7 @@ namespace Api.Extensions
                 .AddProblemDetailsAndExceptionMapping()
                 .AddSignalR();
 
-            services.AddScoped<IBoardNotifier, BoardNotifier>();
+            services.AddScoped<IRealtimeNotifier, ProjectsHubNotifier>();
 
             return services;
         }
