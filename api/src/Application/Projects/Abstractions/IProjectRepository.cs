@@ -7,7 +7,7 @@ namespace Application.Projects.Abstractions
 {
     public interface IProjectRepository
     {
-        Task<IReadOnlyList<Project>> GetAllByUserAsync(
+        Task<IReadOnlyList<Project>> ListByUserAsync(
             Guid userId,
             ProjectFilter? filter = null,
             CancellationToken ct = default);

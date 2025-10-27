@@ -21,7 +21,7 @@ namespace Api.Tests.Fakes
 
         private readonly IProjectMemberRepository _pmRepo = pmRepo;
 
-        public Task<IReadOnlyList<Project>> GetAllByUserAsync(Guid userId, ProjectFilter? filter = null, CancellationToken ct = default)
+        public Task<IReadOnlyList<Project>> ListByUserAsync(Guid userId, ProjectFilter? filter = null, CancellationToken ct = default)
         {
             filter ??= new ProjectFilter();
             var includeRemoved = filter.IncludeRemoved == true;
