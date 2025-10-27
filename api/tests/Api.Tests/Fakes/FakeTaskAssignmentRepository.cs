@@ -2,6 +2,7 @@ using Application.TaskAssignments.Abstractions;
 using Application.TaskAssignments.Changes;
 using Domain.Entities;
 using Domain.Enums;
+using System.Threading.Tasks;
 
 namespace Api.Tests.Fakes
 {
@@ -26,12 +27,10 @@ namespace Api.Tests.Fakes
         public Task<bool> ExistsAsync(Guid taskId, Guid userId, CancellationToken ct = default)
             => Task.FromResult(_map.ContainsKey((taskId, userId)));
 
-        public Task<bool> AnyOwnerAsync(Guid taskId, CancellationToken ct = default)
-            => Task.FromResult(_map.Values.Any(a => a.TaskId == taskId && a.Role == TaskRole.Owner));
-
-        public Task<int> CountByRoleAsync(Guid taskId, TaskRole role, CancellationToken ct = default)
-            => Task.FromResult(_map.Values.Count(a => a.TaskId == taskId && a.Role == role));
-
+        public Task<bool> AnyOwnerAsync(Guid taskId, Guid? excludeUserId = null, CancellationToken ct = default)
+            => Task.FromResult(_map.Values.Any(a => a.TaskId == taskId
+                                                    && a.Role == TaskRole.Owner
+                                                    && (excludeUserId == null || a.UserId != excludeUserId)));
         public Task AddAsync(TaskAssignment assignment, CancellationToken ct = default)
         {
             assignment.SetRowVersion(NextRowVersion());
@@ -39,65 +38,40 @@ namespace Api.Tests.Fakes
             return Task.CompletedTask;
         }
 
-        public Task<(DomainMutation Mutation, AssignmentChange? Change)> AssignAsync(Guid taskId, Guid userId, TaskRole role, CancellationToken ct = default)
-        {
-            if (_map.TryGetValue((taskId, userId), out var existing))
-            {
-                if (existing.Role == role)
-                    return Task.FromResult((DomainMutation.NoOp, (AssignmentChange?)null));
-
-                if (role == TaskRole.Owner &&
-                    _map.Values.Any(a => a.TaskId == taskId && a.UserId != userId && a.Role == TaskRole.Owner))
-                    return Task.FromResult((DomainMutation.Conflict, (AssignmentChange?)null));
-
-                existing.SetRole(role);
-                existing.SetRowVersion(NextRowVersion());
-                return Task.FromResult((DomainMutation.Updated, (AssignmentChange?)null));
-            }
-
-            if (role == TaskRole.Owner &&
-                _map.Values.Any(a => a.TaskId == taskId && a.Role == TaskRole.Owner))
-                return Task.FromResult((DomainMutation.Conflict, (AssignmentChange?)null));
-
-            var aNew = TaskAssignment.Create(taskId, userId, role);
-            aNew.SetRowVersion(NextRowVersion());
-            _map[(taskId, userId)] = aNew;
-            return Task.FromResult((DomainMutation.Created, (AssignmentChange?)null));
-        }
-
-        public Task<(DomainMutation Mutation, AssignmentChange? Change)> ChangeRoleAsync(Guid taskId, Guid userId, TaskRole newRole, byte[] rowVersion, CancellationToken ct = default)
+        public Task<(PrecheckStatus Status, AssignmentChange? Change)> ChangeRoleAsync(
+            Guid taskId,
+            Guid userId,
+            TaskRole newRole,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             if (!_map.TryGetValue((taskId, userId), out var existing))
-                return Task.FromResult((DomainMutation.NotFound, (AssignmentChange?)null));
+                return Task.FromResult((PrecheckStatus.NotFound, (AssignmentChange?)null));
             if (existing.Role == newRole)
-                return Task.FromResult((DomainMutation.NoOp, (AssignmentChange?)null));
+                return Task.FromResult((PrecheckStatus.NoOp, (AssignmentChange?)null));
 
             if (newRole == TaskRole.Owner &&
                 _map.Values.Any(a => a.TaskId == taskId && a.UserId != userId && a.Role == TaskRole.Owner))
-                return Task.FromResult((DomainMutation.Conflict, (AssignmentChange?)null));
+                return Task.FromResult((PrecheckStatus.Conflict, (AssignmentChange?)null));
 
             if (!existing.RowVersion.SequenceEqual(rowVersion))
-                return Task.FromResult((DomainMutation.Conflict, (AssignmentChange?)null));
+                return Task.FromResult((PrecheckStatus.Conflict, (AssignmentChange?)null));
 
             existing.SetRole(newRole);
             existing.SetRowVersion(NextRowVersion());
-            return Task.FromResult((DomainMutation.Updated, (AssignmentChange?)null));
+            return Task.FromResult((PrecheckStatus.Ready, (AssignmentChange?)null));
         }
 
-        public Task<DomainMutation> RemoveAsync(Guid taskId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
+        public Task<PrecheckStatus> DeleteAsync(Guid taskId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
         {
             if (!_map.TryGetValue((taskId, userId), out var existing))
-                return Task.FromResult(DomainMutation.NotFound);
+                return Task.FromResult(PrecheckStatus.NotFound);
             if (!existing.RowVersion.SequenceEqual(rowVersion))
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             _map.Remove((taskId, userId));
-            return Task.FromResult(DomainMutation.Deleted);
+            return Task.FromResult(PrecheckStatus.Ready);
         }
-
-        public Task<int> SaveCreateChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
-        public Task<DomainMutation> SaveUpdateChangesAsync(CancellationToken ct = default) => Task.FromResult(DomainMutation.Updated);
-        public Task<DomainMutation> SaveRemoveChangesAsync(CancellationToken ct = default) => Task.FromResult(DomainMutation.Deleted);
 
         private static TaskAssignment Clone(TaskAssignment a)
         {

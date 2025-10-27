@@ -6,21 +6,26 @@ namespace Application.TaskAssignments.Abstractions
 {
     public interface ITaskAssignmentRepository
     {
-        Task<TaskAssignment?> GetAsync(Guid taskId, Guid userId, CancellationToken ct = default);
-        Task<TaskAssignment?> GetTrackedAsync(Guid taskId, Guid userId, CancellationToken ct = default);
         Task<IReadOnlyList<TaskAssignment>> ListByTaskAsync(Guid taskId, CancellationToken ct = default);
         Task<IReadOnlyList<TaskAssignment>> ListByUserAsync(Guid userId, CancellationToken ct = default);
-        Task<bool> ExistsAsync(Guid taskId, Guid userId, CancellationToken ct = default);
-        Task<bool> AnyOwnerAsync(Guid taskId, CancellationToken ct = default);
-        Task<int> CountByRoleAsync(Guid taskId, TaskRole role, CancellationToken ct = default);
+        Task<TaskAssignment?> GetAsync(Guid taskId, Guid userId, CancellationToken ct = default);
+        Task<TaskAssignment?> GetTrackedAsync(Guid taskId, Guid userId, CancellationToken ct = default);
 
         Task AddAsync(TaskAssignment assignment, CancellationToken ct = default);
-        Task<(DomainMutation Mutation, AssignmentChange? Change)> AssignAsync(Guid taskId, Guid userId, TaskRole role, CancellationToken ct = default);
-        Task<(DomainMutation Mutation, AssignmentChange? Change)> ChangeRoleAsync(Guid taskId, Guid userId, TaskRole newRole, byte[] rowVersion, CancellationToken ct = default);
-        Task<DomainMutation> RemoveAsync(Guid taskId, Guid userId, byte[] rowVersion, CancellationToken ct = default);
 
-        Task<int> SaveCreateChangesAsync(CancellationToken ct = default);
-        Task<DomainMutation> SaveUpdateChangesAsync(CancellationToken ct = default);
-        Task<DomainMutation> SaveRemoveChangesAsync(CancellationToken ct = default);
+        Task<(PrecheckStatus Status, AssignmentChange? Change)> ChangeRoleAsync(
+            Guid taskId,
+            Guid userId,
+            TaskRole newRole,
+            byte[] rowVersion,
+            CancellationToken ct = default);
+        Task<PrecheckStatus> DeleteAsync(
+            Guid taskId,
+            Guid userId,
+            byte[] rowVersion,
+            CancellationToken ct = default);
+
+        Task<bool> ExistsAsync(Guid taskId, Guid userId, CancellationToken ct = default);
+        Task<bool> AnyOwnerAsync(Guid taskId, Guid? excludeUserId = null, CancellationToken ct = default);
     }
 }

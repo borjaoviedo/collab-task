@@ -12,13 +12,6 @@ namespace Application.TaskAssignments.Abstractions
             TaskRole role,
             Guid executedBy,
             CancellationToken ct = default);
-        Task<DomainMutation> AssignAsync(
-            Guid projectId,
-            Guid taskId,
-            Guid targetUserId,
-            TaskRole role,
-            Guid executedBy,
-            CancellationToken ct = default);
         Task<DomainMutation> ChangeRoleAsync(
             Guid projectId,
             Guid taskId,
@@ -27,7 +20,7 @@ namespace Application.TaskAssignments.Abstractions
             Guid executedBy,
             byte[] rowVersion,
             CancellationToken ct = default);
-        Task<DomainMutation> RemoveAsync(
+        Task<DomainMutation> DeleteAsync(
             Guid projectId,
             Guid taskId,
             Guid targetUserId,
