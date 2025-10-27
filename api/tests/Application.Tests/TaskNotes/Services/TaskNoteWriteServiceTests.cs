@@ -26,11 +26,12 @@ namespace Application.Tests.TaskNotes.Services
             await using var db = dbh.CreateContext();
 
             var repo = new TaskNoteRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
+            var svc = new TaskNoteWriteService(repo, uow, actSvc, mediator.Object);
 
             var (pId, _, _, tId, _, uId) = TestDataFactory.SeedFullBoard(db);
 
@@ -56,11 +57,12 @@ namespace Application.Tests.TaskNotes.Services
             await using var db = dbh.CreateContext();
 
             var repo = new TaskNoteRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>(MockBehavior.Strict);
 
-            var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
+            var svc = new TaskNoteWriteService(repo, uow, actSvc, mediator.Object);
 
             var (pId, _, _, tId, nId, _) = TestDataFactory.SeedFullBoard(db);
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
@@ -99,11 +101,12 @@ namespace Application.Tests.TaskNotes.Services
             await using var db = dbh.CreateContext();
 
             var repo = new TaskNoteRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
+            var svc = new TaskNoteWriteService(repo, uow, actSvc, mediator.Object);
 
             var original = NoteContent.Create("Note content");
             var (pId, _, _, tId, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: original);
@@ -123,11 +126,12 @@ namespace Application.Tests.TaskNotes.Services
             await using var db = dbh.CreateContext();
 
             var repo = new TaskNoteRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
+            var svc = new TaskNoteWriteService(repo, uow, actSvc, mediator.Object);
 
             var original = NoteContent.Create("Note content");
             var (pId, _, _, tId, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: original);
@@ -149,11 +153,12 @@ namespace Application.Tests.TaskNotes.Services
             await using var db = dbh.CreateContext();
 
             var repo = new TaskNoteRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>(MockBehavior.Strict);
 
-            var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
+            var svc = new TaskNoteWriteService(repo, uow, actSvc, mediator.Object);
 
             var (pId, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
             var note = await db.TaskNotes.AsNoTracking().SingleAsync();
@@ -182,11 +187,12 @@ namespace Application.Tests.TaskNotes.Services
             await using var db = dbh.CreateContext();
 
             var repo = new TaskNoteRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
+            var svc = new TaskNoteWriteService(repo, uow, actSvc, mediator.Object);
 
             var res = await svc.DeleteAsync(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),[1, 2]);
             res.Should().Be(DomainMutation.NotFound);
@@ -201,11 +207,12 @@ namespace Application.Tests.TaskNotes.Services
             await using var db = dbh.CreateContext();
 
             var repo = new TaskNoteRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskNoteWriteService(repo, actSvc, mediator.Object);
+            var svc = new TaskNoteWriteService(repo, uow, actSvc, mediator.Object);
 
             var (pId, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
             var user = TestDataFactory.SeedUser(db);
