@@ -21,6 +21,22 @@ namespace Api.Tests.Auth.Authorization
         [InlineData(ProjectRole.Owner, ProjectRole.Owner, true)]
         public async Task Policies_Enforce_Minimum_Role(ProjectRole userRole, ProjectRole required, bool expected)
         {
+            using var sp = BuildServiceProvider(userRole);
+            var authz = sp.GetRequiredService<IAuthorizationService>();
+            var http = BuildHttpContextWithUser();
+
+            var policyName = MapPolicy(required);
+
+            var result = await authz.AuthorizeAsync(http.User, http, policyName);
+
+            result.Succeeded.Should().Be(expected);
+        }
+
+        // ---------- HELPERS ----------
+
+        // Builds a minimal DI container with auth + policies and a stubbed role reader.
+        private static ServiceProvider BuildServiceProvider(ProjectRole userRole)
+        {
             var services = new ServiceCollection();
 
             var cfg = new ConfigurationBuilder()
@@ -33,13 +49,15 @@ namespace Api.Tests.Auth.Authorization
                 .Build();
 
             services.AddLogging();
-            // Inject fake reader that returns the role for current user
             services.AddScoped<IProjectMemberReadService>(_ => new StubProjectMemberReadService(userRole));
             services.AddJwtAuthAndPolicies(cfg);
 
-            var sp = services.BuildServiceProvider();
-            var authz = sp.GetRequiredService<IAuthorizationService>();
+            return services.BuildServiceProvider();
+        }
 
+        // Creates an HttpContext with route projectId and authenticated user (sub).
+        private static DefaultHttpContext BuildHttpContextWithUser()
+        {
             var http = new DefaultHttpContext();
             http.Request.RouteValues["projectId"] = Guid.NewGuid().ToString();
 
@@ -47,30 +65,34 @@ namespace Api.Tests.Auth.Authorization
             id.AddClaim(new Claim("sub", Guid.NewGuid().ToString()));
             http.User = new ClaimsPrincipal(id);
 
-            var policyName = required switch
-            {
-                ProjectRole.Reader => Policies.ProjectReader,
-                ProjectRole.Member => Policies.ProjectMember,
-                ProjectRole.Admin => Policies.ProjectAdmin,
-                ProjectRole.Owner => Policies.ProjectOwner,
-                _ => throw new ArgumentOutOfRangeException(nameof(required), required, "ProjectRole required value is not valid for the policy.")
-            };
-
-            var result = await authz.AuthorizeAsync(http.User, http, policyName);
-            result.Succeeded.Should().Be(expected);
+            return http;
         }
 
-        private sealed class StubProjectMemberReadService : IProjectMemberReadService
+        // Maps required ProjectRole to policy name registered by AddJwtAuthAndPolicies.
+        private static string MapPolicy(ProjectRole required) => required switch
         {
-            private readonly ProjectRole _role;
+            ProjectRole.Reader => Policies.ProjectReader,
+            ProjectRole.Member => Policies.ProjectMember,
+            ProjectRole.Admin => Policies.ProjectAdmin,
+            ProjectRole.Owner => Policies.ProjectOwner,
+            _ => throw new ArgumentOutOfRangeException(nameof(required), required, "Invalid ProjectRole for policy mapping.")
+        };
 
-            public StubProjectMemberReadService(ProjectRole role) => _role = role;
+        // ---------- TEST DOUBLE ----------
+
+        // Self-contained stub. No DB. Deterministic role for current user in any project.
+        private sealed class StubProjectMemberReadService(ProjectRole role) : IProjectMemberReadService
+        {
+            private readonly ProjectRole _role = role;
 
             public Task<ProjectMember?> GetAsync(Guid projectId, Guid userId, CancellationToken ct = default)
                 => Task.FromResult<ProjectMember?>(null);
 
-            public Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(Guid projectId, bool includeRemoved = false, CancellationToken ct = default)
-                => Task.FromResult<IReadOnlyList<ProjectMember>>(Array.Empty<ProjectMember>());
+            public Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(
+                Guid projectId,
+                bool includeRemoved = false,
+                CancellationToken ct = default)
+                => Task.FromResult<IReadOnlyList<ProjectMember>>([]);
 
             public Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
                 => Task.FromResult<ProjectRole?>(_role);

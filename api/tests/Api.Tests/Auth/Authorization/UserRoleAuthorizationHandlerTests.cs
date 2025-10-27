@@ -8,144 +8,110 @@ namespace Api.Tests.Auth.Authorization
 {
     public sealed class UserRoleAuthorizationHandlerTests
     {
-        private static AuthorizationHandlerContext Ctx(UserRole min, ClaimsPrincipal user)
-        => new(new[] { new UserRoleRequirement(min) }, user, new object());
+        private readonly UserRoleAuthorizationHandler _sut = new();
 
-        private static ClaimsPrincipal UserWithRoleClaim(string value, bool useStd = true)
-        {
-            var id = new ClaimsIdentity("test");
-            id.AddClaim(new Claim(useStd ? ClaimTypes.Role : "role", value));
-            return new ClaimsPrincipal(id);
-        }
+        // ---------- SUCCESS CASES ----------
 
-        private static AuthorizationHandlerContext BuildContext(
+        [Theory]
+        [InlineData(UserRole.Admin, UserRole.Admin, ClaimTypes.Role)]      // meets minimum
+        [InlineData(UserRole.Admin, UserRole.User, ClaimTypes.Role)]       // greater than minimum
+        [InlineData(UserRole.Admin, UserRole.User, "role")]                // custom claim type
+        public async Task Authorize_Succeeds_When_Role_Meets_Or_Exceeds_Minimum(
+            UserRole userRole,
             UserRole minimumRole,
-            ClaimsPrincipal? user = null)
+            string claimType)
         {
-            var requirement = new UserRoleRequirement(minimumRole);
-            var principal = user ?? new ClaimsPrincipal(new ClaimsIdentity());
-            var resource = new object();
-            return new AuthorizationHandlerContext(new[] { requirement }, principal, resource);
-        }
+            var principal = BuildPrincipalFromEnum(userRole, claimType);
+            var context = BuildContext(minimumRole, principal);
 
-        private static ClaimsPrincipal BuildUser(UserRole? role, bool useClaimTypesRole = true)
-        {
-            var id = new ClaimsIdentity("test");
-            if (role.HasValue)
-            {
-                var type = useClaimTypesRole ? ClaimTypes.Role : "role";
-                id.AddClaim(new Claim(type, role.Value.ToString()));
-            }
-            return new ClaimsPrincipal(id);
+            await _sut.HandleAsync(context);
+
+            context.HasSucceeded.Should().BeTrue();
         }
 
         [Fact]
-        public async Task Succeeds_When_UserRole_Meets_Minimum()
+        public async Task Authorize_Succeeds_With_Case_Insensitive_Role_Value()
         {
-            var ctx = BuildContext(UserRole.Admin, BuildUser(UserRole.Admin));
-            var handler = new UserRoleAuthorizationHandler();
+            var principal = BuildPrincipalFromRaw("admin", ClaimTypes.Role); // lower-case text
+            var context = BuildContext(UserRole.Admin, principal);
 
-            await handler.HandleAsync(ctx);
+            await _sut.HandleAsync(context);
 
-            ctx.HasSucceeded.Should().BeTrue();
+            context.HasSucceeded.Should().BeTrue();
         }
 
         [Fact]
-        public async Task Succeeds_When_UserRole_Is_Greater_Than_Minimum()
-        {
-            var ctx = BuildContext(UserRole.User, BuildUser(UserRole.Admin));
-            var handler = new UserRoleAuthorizationHandler();
-
-            await handler.HandleAsync(ctx);
-
-            ctx.HasSucceeded.Should().BeTrue();
-        }
-
-        [Fact]
-        public async Task Fails_When_UserRole_Is_Lower_Than_Minimum()
-        {
-            var ctx = BuildContext(UserRole.Admin, BuildUser(UserRole.User));
-            var handler = new UserRoleAuthorizationHandler();
-
-            await handler.HandleAsync(ctx);
-
-            ctx.HasSucceeded.Should().BeFalse();
-        }
-
-        [Fact]
-        public async Task Fails_When_Missing_Role_Claim()
-        {
-            var ctx = BuildContext(UserRole.User, BuildUser(role: null));
-            var handler = new UserRoleAuthorizationHandler();
-
-            await handler.HandleAsync(ctx);
-
-            ctx.HasSucceeded.Should().BeFalse();
-        }
-
-        [Fact]
-        public async Task Succeeds_With_Custom_role_Claim_Type()
-        {
-            var ctx = BuildContext(UserRole.User, BuildUser(UserRole.Admin, useClaimTypesRole: false));
-            var handler = new UserRoleAuthorizationHandler();
-
-            await handler.HandleAsync(ctx);
-
-            ctx.HasSucceeded.Should().BeTrue();
-        }
-
-        [Fact]
-        public async Task Is_Case_Insensitive_On_Role_Value()
-        {
-            var id = new ClaimsIdentity("test");
-            id.AddClaim(new Claim(ClaimTypes.Role, "admin")); // lower-case
-            var principal = new ClaimsPrincipal(id);
-
-            var ctx = new AuthorizationHandlerContext(
-                new[] { new UserRoleRequirement(UserRole.Admin) }, principal, new object());
-
-            var handler = new UserRoleAuthorizationHandler();
-            await handler.HandleAsync(ctx);
-
-            ctx.HasSucceeded.Should().BeTrue();
-        }
-
-        [Fact]
-        public async Task Fails_When_Role_Claim_Is_Invalid_Text()
-        {
-            var ctx = Ctx(UserRole.User, UserWithRoleClaim("superuser"));
-            var h = new UserRoleAuthorizationHandler();
-
-            await h.HandleAsync(ctx);
-
-            ctx.HasSucceeded.Should().BeFalse();
-        }
-
-        [Fact]
-        public async Task Fails_When_Role_Claim_Empty_Custom_Type()
-        {
-            var id = new ClaimsIdentity("test");
-            id.AddClaim(new Claim("role", "")); // empty
-            var ctx = Ctx(UserRole.User, new ClaimsPrincipal(id));
-            var h = new UserRoleAuthorizationHandler();
-
-            await h.HandleAsync(ctx);
-
-            ctx.HasSucceeded.Should().BeFalse();
-        }
-
-        [Fact]
-        public async Task Succeeds_When_Multiple_Role_Claims_Contain_Highest_Enough()
+        public async Task Authorize_Succeeds_When_Multiple_Role_Claims_Contain_A_Sufficient_One()
         {
             var id = new ClaimsIdentity("test");
             id.AddClaim(new Claim(ClaimTypes.Role, UserRole.User.ToString()));
-            id.AddClaim(new Claim(ClaimTypes.Role, UserRole.Admin.ToString())); // higher
-            var ctx = Ctx(UserRole.Admin, new ClaimsPrincipal(id));
-            var h = new UserRoleAuthorizationHandler();
+            id.AddClaim(new Claim(ClaimTypes.Role, UserRole.Admin.ToString())); // higher one present
+            var principal = new ClaimsPrincipal(id);
 
-            await h.HandleAsync(ctx);
+            var context = BuildContext(UserRole.Admin, principal);
 
-            ctx.HasSucceeded.Should().BeTrue();
+            await _sut.HandleAsync(context);
+
+            context.HasSucceeded.Should().BeTrue();
+        }
+
+        // ---------- FAILURE CASES ----------
+
+        [Theory]
+        [InlineData(UserRole.User, UserRole.Admin, ClaimTypes.Role)] // below minimum
+        public async Task Authorize_Fails_When_Role_Is_Below_Minimum(
+            UserRole userRole,
+            UserRole minimumRole,
+            string claimType)
+        {
+            var principal = BuildPrincipalFromEnum(userRole, claimType);
+            var context = BuildContext(minimumRole, principal);
+
+            await _sut.HandleAsync(context);
+
+            context.HasSucceeded.Should().BeFalse();
+        }
+
+        [Theory]
+        [InlineData(null, UserRole.User, ClaimTypes.Role)]  // missing claim
+        [InlineData("invalid", UserRole.User, ClaimTypes.Role)] // unparsable text
+        [InlineData("", UserRole.User, "role")] // empty value on custom type
+        public async Task Authorize_Fails_With_Missing_Empty_Or_Invalid_Role_Claim(
+            string? roleValue,
+            UserRole minimumRole,
+            string claimType)
+        {
+            var principal = roleValue is null
+                ? new ClaimsPrincipal(new ClaimsIdentity("test")) // no claim
+                : BuildPrincipalFromRaw(roleValue, claimType);
+
+            var context = BuildContext(minimumRole, principal);
+
+            await _sut.HandleAsync(context);
+
+            context.HasSucceeded.Should().BeFalse();
+        }
+
+        // ---------- HELPERS ----------
+
+        private static AuthorizationHandlerContext BuildContext(UserRole minimumRole, ClaimsPrincipal principal)
+        {
+            var requirement = new UserRoleRequirement(minimumRole);
+            return new AuthorizationHandlerContext([requirement], principal, resource: new object());
+        }
+
+        private static ClaimsPrincipal BuildPrincipalFromEnum(UserRole role, string claimType)
+        {
+            var id = new ClaimsIdentity("test");
+            id.AddClaim(new Claim(claimType, role.ToString()));
+            return new ClaimsPrincipal(id);
+        }
+
+        private static ClaimsPrincipal BuildPrincipalFromRaw(string value, string claimType)
+        {
+            var id = new ClaimsIdentity("test");
+            id.AddClaim(new Claim(claimType, value));
+            return new ClaimsPrincipal(id);
         }
     }
 }
