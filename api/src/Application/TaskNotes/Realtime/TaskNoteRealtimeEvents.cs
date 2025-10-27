@@ -2,8 +2,8 @@
 namespace Application.TaskNotes.Realtime
 {
     public sealed record TaskNoteCreatedPayload(Guid TaskId, Guid NoteId, string Content);
-    public sealed record TaskNoteUpdatedPayload(Guid NoteId, string NewContent);
-    public sealed record TaskNoteDeletedPayload(Guid NoteId);
+    public sealed record TaskNoteUpdatedPayload(Guid TaskId, Guid NoteId, string NewContent);
+    public sealed record TaskNoteDeletedPayload(Guid TaskId, Guid NoteId);
 
     public sealed record TaskNoteCreatedEvent(Guid ProjectId, TaskNoteCreatedPayload Payload)
         : Application.Realtime.RealtimeEvent<TaskNoteCreatedPayload>(TypeName, ProjectId, DateTimeOffset.UtcNow, Payload)

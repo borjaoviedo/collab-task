@@ -74,7 +74,7 @@ namespace Application.TaskNotes.Services
             {
                 var notification = new TaskNoteUpdated(
                     projectId,
-                    new TaskNoteUpdatedPayload(noteId, content));
+                    new TaskNoteUpdatedPayload(taskId, noteId, content));
                 await mediator.Publish(notification, ct);
             }
 
@@ -106,7 +106,9 @@ namespace Application.TaskNotes.Services
 
             if (saveDeleteResult == DomainMutation.Deleted)
             {
-                var notification = new TaskNoteDeleted(projectId, new TaskNoteDeletedPayload(note.Id));
+                var notification = new TaskNoteDeleted(
+                    projectId,
+                    new TaskNoteDeletedPayload(note.TaskId, note.Id));
                 await mediator.Publish(notification, ct);
             }
 
