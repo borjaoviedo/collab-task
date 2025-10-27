@@ -12,7 +12,10 @@ namespace Infrastructure.Data.Repositories
     {
         private readonly AppDbContext _db = db;
 
-        public async Task<IReadOnlyList<Project>> GetAllByUserAsync(Guid userId, ProjectFilter? filter = null, CancellationToken ct = default)
+        public async Task<IReadOnlyList<Project>> ListByUserAsync(
+            Guid userId,
+            ProjectFilter? filter = null,
+            CancellationToken ct = default)
         {
             filter ??= new ProjectFilter();
             var includeRemoved = filter.IncludeRemoved == true;
@@ -79,7 +82,11 @@ namespace Infrastructure.Data.Repositories
         public async Task AddAsync(Project project, CancellationToken ct = default)
             => await _db.Projects.AddAsync(project, ct);
 
-        public async Task<PrecheckStatus> RenameAsync(Guid id, ProjectName newName, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> RenameAsync(
+            Guid id,
+            ProjectName newName,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var project = await GetTrackedByIdAsync(id, ct);
             if (project is null) return PrecheckStatus.NotFound;
