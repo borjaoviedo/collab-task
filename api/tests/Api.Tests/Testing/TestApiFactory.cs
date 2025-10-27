@@ -135,7 +135,11 @@ namespace Api.Tests.Testing
                 services.AddScoped<ITaskAssignmentReadService>(sp => new TaskAssignmentReadService(sp.GetRequiredService<ITaskAssignmentRepository>()));
                 services.RemoveAll(typeof(ITaskAssignmentWriteService));
                 services.AddScoped<ITaskAssignmentWriteService>(sp
-                    => new TaskAssignmentWriteService(sp.GetRequiredService<ITaskAssignmentRepository>(), sp.GetRequiredService<ITaskActivityWriteService>(), sp.GetRequiredService<IMediator>()));
+                    => new TaskAssignmentWriteService(
+                        sp.GetRequiredService<ITaskAssignmentRepository>(),
+                        sp.GetRequiredService<IUnitOfWork>(),
+                        sp.GetRequiredService<ITaskActivityWriteService>(),
+                        sp.GetRequiredService<IMediator>()));
 
                 // ===== Task Activities =====
                 services.RemoveAll(typeof(ITaskActivityRepository));
