@@ -24,13 +24,19 @@ namespace Infrastructure.Data.Repositories
             return await q.Include(pm => pm.User).ToListAsync(ct);
         }
 
-        public async Task<ProjectMember?> GetByProjectAndUserIdAsync(Guid projectId, Guid userId, CancellationToken ct = default)
+        public async Task<ProjectMember?> GetByProjectAndUserIdAsync(
+            Guid projectId,
+            Guid userId,
+            CancellationToken ct = default)
             => await _db.ProjectMembers
                         .AsNoTracking()
                         .Include(pm => pm.User)
                         .FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
 
-        public async Task<ProjectMember?> GetTrackedByProjectAndUserIdAsync(Guid projectId, Guid userId, CancellationToken ct = default)
+        public async Task<ProjectMember?> GetTrackedByProjectAndUserIdAsync(
+            Guid projectId,
+            Guid userId,
+            CancellationToken ct = default)
             => await _db.ProjectMembers.FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
 
         public async Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)

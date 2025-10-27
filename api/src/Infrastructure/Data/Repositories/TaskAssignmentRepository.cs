@@ -70,7 +70,6 @@ namespace Infrastructure.Data.Repositories
             return PrecheckStatus.Ready;
         }
 
-
         public async Task<bool> ExistsAsync(Guid taskId, Guid userId, CancellationToken ct = default)
             => await _db.TaskAssignments
                         .AsNoTracking()

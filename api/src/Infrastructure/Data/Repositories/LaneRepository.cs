@@ -29,7 +29,11 @@ namespace Infrastructure.Data.Repositories
         public async Task AddAsync(Lane lane, CancellationToken ct = default)
             => await _db.Lanes.AddAsync(lane, ct);
 
-        public async Task<PrecheckStatus> RenameAsync(Guid laneId, LaneName newName, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> RenameAsync(
+            Guid laneId,
+            LaneName newName,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var lane = await GetTrackedByIdAsync(laneId, ct);
             if (lane is null) return PrecheckStatus.NotFound;
@@ -127,7 +131,11 @@ namespace Infrastructure.Data.Repositories
             return PrecheckStatus.Ready;
         }
 
-        public async Task<bool> ExistsWithNameAsync(Guid projectId, LaneName name, Guid? excludeLaneId = null, CancellationToken ct = default)
+        public async Task<bool> ExistsWithNameAsync(
+            Guid projectId,
+            LaneName name,
+            Guid? excludeLaneId = null,
+            CancellationToken ct = default)
         {
             var q = _db.Lanes
                         .AsNoTracking()
@@ -140,10 +148,14 @@ namespace Infrastructure.Data.Repositories
         }
 
         public async Task<int> GetMaxOrderAsync(Guid projectId, CancellationToken ct = default)
-            => await _db.Lanes
-                        .AsNoTracking()
-                        .Where(l => l.ProjectId == projectId)
-                        .Select(l => (int?)l.Order)
-                        .MaxAsync(ct) ?? -1;
+        {
+            var max = await _db.Lanes
+                                .AsNoTracking()
+                                .Where(l => l.ProjectId == projectId)
+                                .Select(l => (int?)l.Order)
+                                .MaxAsync(ct);
+
+            return max ?? -1;
+        }
     }
 }

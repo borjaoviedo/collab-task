@@ -23,7 +23,10 @@ namespace Infrastructure.Data.Repositories
                         .OrderBy(a => a.CreatedAt)
                         .ToListAsync(ct);
 
-        public async Task<IReadOnlyList<TaskActivity>> ListByTypeAsync(Guid taskId, TaskActivityType type, CancellationToken ct = default)
+        public async Task<IReadOnlyList<TaskActivity>> ListByTypeAsync(
+            Guid taskId,
+            TaskActivityType type,
+            CancellationToken ct = default)
             => await _db.TaskActivities
                         .AsNoTracking()
                         .Where(a => a.TaskId == taskId && a.Type == type)

@@ -28,7 +28,11 @@ namespace Infrastructure.Data.Repositories
         public async Task AddAsync(Column column, CancellationToken ct = default)
             => await _db.AddAsync(column, ct);
 
-        public async Task<PrecheckStatus> RenameAsync(Guid columnId, ColumnName newName, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> RenameAsync(
+            Guid columnId,
+            ColumnName newName,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var column = await GetTrackedByIdAsync(columnId, ct);
             if (column is null) return PrecheckStatus.NotFound;
@@ -125,7 +129,11 @@ namespace Infrastructure.Data.Repositories
             return PrecheckStatus.Ready;
         }
 
-        public async Task<bool> ExistsWithNameAsync(Guid laneId, ColumnName name, Guid? excludeColumnId = null, CancellationToken ct = default)
+        public async Task<bool> ExistsWithNameAsync(
+            Guid laneId,
+            ColumnName name,
+            Guid? excludeColumnId = null,
+            CancellationToken ct = default)
         {
             var q = _db.Columns
                         .AsNoTracking()
@@ -138,10 +146,14 @@ namespace Infrastructure.Data.Repositories
         }
 
         public async Task<int> GetMaxOrderAsync(Guid laneId, CancellationToken ct = default)
-            => await _db.Columns
-                        .AsNoTracking()
-                        .Where(c => c.LaneId == laneId)
-                        .Select(c => (int?)c.Order)
-                        .MaxAsync(ct) ?? -1;
+        {
+            var max = await _db.Columns
+                                .AsNoTracking()
+                                .Where(c => c.LaneId == laneId)
+                                .Select(c => (int?)c.Order)
+                                .MaxAsync(ct);
+
+            return max ?? -1;
+        }
     }
 }

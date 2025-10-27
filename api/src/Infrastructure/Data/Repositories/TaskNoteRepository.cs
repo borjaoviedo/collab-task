@@ -33,7 +33,11 @@ namespace Infrastructure.Data.Repositories
         public async Task AddAsync(TaskNote note, CancellationToken ct = default)
             => await _db.TaskNotes.AddAsync(note, ct);
 
-        public async Task<PrecheckStatus> EditAsync(Guid noteId, NoteContent newContent, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> EditAsync(
+            Guid noteId,
+            NoteContent newContent,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var note = await GetTrackedByIdAsync(noteId, ct);
             if (note is null) return PrecheckStatus.NotFound;

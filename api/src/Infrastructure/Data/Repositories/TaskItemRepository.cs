@@ -22,6 +22,7 @@ namespace Infrastructure.Data.Repositories
             => await _db.TaskItems
                         .AsNoTracking()
                         .FirstOrDefaultAsync(t => t.Id == taskId, ct);
+
         public async Task<TaskItem?> GetTrackedByIdAsync(Guid taskId, CancellationToken ct = default)
             => await _db.TaskItems.FirstOrDefaultAsync(t => t.Id == taskId, ct);
 
@@ -93,8 +94,12 @@ namespace Infrastructure.Data.Repositories
             _db.Entry(task).Property(t => t.RowVersion).OriginalValue = rowVersion;
 
             // Load target column and lane to validate relationships
-            var targetColumn = await _db.Columns.AsNoTracking().FirstOrDefaultAsync(c => c.Id == targetColumnId, ct);
-            var targetLane  = await _db.Lanes.AsNoTracking().FirstOrDefaultAsync(l => l.Id == targetLaneId, ct);
+            var targetColumn = await _db.Columns
+                                        .AsNoTracking()
+                                        .FirstOrDefaultAsync(c => c.Id == targetColumnId, ct);
+            var targetLane  = await _db.Lanes
+                                        .AsNoTracking()
+                                        .FirstOrDefaultAsync(l => l.Id == targetLaneId, ct);
             if (targetColumn is null || targetLane is null) return (PrecheckStatus.NotFound, Change: null);
 
             // Integrity: column must belong to lane, and both to same project as task
@@ -132,7 +137,11 @@ namespace Infrastructure.Data.Repositories
             return PrecheckStatus.Ready;
         }
 
-        public async Task<bool> ExistsWithTitleAsync(Guid columnId, TaskTitle title, Guid? excludeTaskId = null, CancellationToken ct = default)
+        public async Task<bool> ExistsWithTitleAsync(
+            Guid columnId,
+            TaskTitle title,
+            Guid? excludeTaskId = null,
+            CancellationToken ct = default)
         {
             var q = _db.TaskItems
                         .AsNoTracking()
