@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.TaskNotes.Realtime
 {
-    public sealed class TaskNoteChangedHandler(IBoardNotifier notifier)
+    public sealed class TaskNoteChangedHandler(IRealtimeNotifier notifier)
     : INotificationHandler<TaskNoteCreated>,
       INotificationHandler<TaskNoteUpdated>,
       INotificationHandler<TaskNoteDeleted>
