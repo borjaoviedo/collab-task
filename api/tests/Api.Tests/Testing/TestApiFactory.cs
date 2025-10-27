@@ -2,6 +2,7 @@ using Api.Filters;
 using Api.Tests.Fakes;
 using Application.Columns.Abstractions;
 using Application.Columns.Services;
+using Application.Common.Abstractions.Persistence;
 using Application.Common.Abstractions.Time;
 using Application.Lanes.Abstractions;
 using Application.Lanes.Services;
@@ -63,7 +64,7 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(IUserReadService));
                 services.AddScoped<IUserReadService>(sp => new UserReadService(sp.GetRequiredService<IUserRepository>()));
                 services.RemoveAll(typeof(IUserWriteService));
-                services.AddScoped<IUserWriteService>(sp => new UserWriteService(sp.GetRequiredService<IUserRepository>()));
+                services.AddScoped<IUserWriteService>(sp => new UserWriteService(sp.GetRequiredService<IUserRepository>(), sp.GetRequiredService<IUnitOfWork>()));
 
                 // ===== Projects =====
                 services.RemoveAll(typeof(IProjectRepository));
@@ -71,7 +72,8 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(IProjectReadService));
                 services.AddScoped<IProjectReadService>(sp => new ProjectReadService(sp.GetRequiredService<IProjectRepository>()));
                 services.RemoveAll(typeof(IProjectWriteService));
-                services.AddScoped<IProjectWriteService>(sp => new ProjectWriteService(sp.GetRequiredService<IProjectRepository>()));
+                services.AddScoped<IProjectWriteService>(sp
+                    => new ProjectWriteService(sp.GetRequiredService<IProjectRepository>(), sp.GetRequiredService<IUnitOfWork>()));
 
                 // ===== Project Members =====
                 services.RemoveAll(typeof(IProjectMemberRepository));
@@ -79,7 +81,8 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(IProjectMemberReadService));
                 services.AddScoped<IProjectMemberReadService>(sp => new ProjectMemberReadService(sp.GetRequiredService<IProjectMemberRepository>()));
                 services.RemoveAll(typeof(IProjectMemberWriteService));
-                services.AddScoped<IProjectMemberWriteService>(sp => new ProjectMemberWriteService(sp.GetRequiredService<IProjectMemberRepository>()));
+                services.AddScoped<IProjectMemberWriteService>(sp
+                    => new ProjectMemberWriteService(sp.GetRequiredService<IProjectMemberRepository>(), sp.GetRequiredService<IUnitOfWork>()));
 
                 // ===== Lanes =====
                 services.RemoveAll(typeof(ILaneRepository));
@@ -87,7 +90,8 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(ILaneReadService));
                 services.AddScoped<ILaneReadService>(sp => new LaneReadService(sp.GetRequiredService<ILaneRepository>()));
                 services.RemoveAll(typeof(ILaneWriteService));
-                services.AddScoped<ILaneWriteService>(sp => new LaneWriteService(sp.GetRequiredService<ILaneRepository>()));
+                services.AddScoped<ILaneWriteService>(sp
+                    => new LaneWriteService(sp.GetRequiredService<ILaneRepository>(), sp.GetRequiredService<IUnitOfWork>()));
 
                 // ===== Columns =====
                 services.RemoveAll(typeof(IColumnRepository));
@@ -95,7 +99,8 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(IColumnReadService));
                 services.AddScoped<IColumnReadService>(sp => new ColumnReadService(sp.GetRequiredService<IColumnRepository>()));
                 services.RemoveAll(typeof(IColumnWriteService));
-                services.AddScoped<IColumnWriteService>(sp => new ColumnWriteService(sp.GetRequiredService<IColumnRepository>()));
+                services.AddScoped<IColumnWriteService>(sp
+                    => new ColumnWriteService(sp.GetRequiredService<IColumnRepository>(), sp.GetRequiredService<IUnitOfWork>()));
 
                 // ===== Task Items =====
                 services.RemoveAll(typeof(ITaskItemRepository));
@@ -104,7 +109,11 @@ namespace Api.Tests.Testing
                 services.AddScoped<ITaskItemReadService>(sp => new TaskItemReadService(sp.GetRequiredService<ITaskItemRepository>()));
                 services.RemoveAll(typeof(ITaskItemWriteService));
                 services.AddScoped<ITaskItemWriteService>(sp
-                    => new TaskItemWriteService(sp.GetRequiredService<ITaskItemRepository>(), sp.GetRequiredService<ITaskActivityWriteService>(), sp.GetRequiredService<IMediator>()));
+                    => new TaskItemWriteService(
+                        sp.GetRequiredService<ITaskItemRepository>(),
+                        sp.GetRequiredService<IUnitOfWork>(),
+                        sp.GetRequiredService<ITaskActivityWriteService>(),
+                        sp.GetRequiredService<IMediator>()));
 
                 // ===== Task Notes =====
                 services.RemoveAll(typeof(ITaskNoteRepository));
@@ -113,7 +122,11 @@ namespace Api.Tests.Testing
                 services.AddScoped<ITaskNoteReadService>(sp => new TaskNoteReadService(sp.GetRequiredService<ITaskNoteRepository>()));
                 services.RemoveAll(typeof(ITaskNoteWriteService));
                 services.AddScoped<ITaskNoteWriteService>(sp
-                    => new TaskNoteWriteService(sp.GetRequiredService<ITaskNoteRepository>(), sp.GetRequiredService<ITaskActivityWriteService>(), sp.GetRequiredService<IMediator>()));
+                    => new TaskNoteWriteService(
+                        sp.GetRequiredService<ITaskNoteRepository>(),
+                        sp.GetRequiredService<IUnitOfWork>(),
+                        sp.GetRequiredService<ITaskActivityWriteService>(),
+                        sp.GetRequiredService<IMediator>()));
 
                 // ===== Task Assignments =====
                 services.RemoveAll(typeof(ITaskAssignmentRepository));
@@ -122,7 +135,11 @@ namespace Api.Tests.Testing
                 services.AddScoped<ITaskAssignmentReadService>(sp => new TaskAssignmentReadService(sp.GetRequiredService<ITaskAssignmentRepository>()));
                 services.RemoveAll(typeof(ITaskAssignmentWriteService));
                 services.AddScoped<ITaskAssignmentWriteService>(sp
-                    => new TaskAssignmentWriteService(sp.GetRequiredService<ITaskAssignmentRepository>(), sp.GetRequiredService<ITaskActivityWriteService>(), sp.GetRequiredService<IMediator>()));
+                    => new TaskAssignmentWriteService(
+                        sp.GetRequiredService<ITaskAssignmentRepository>(),
+                        sp.GetRequiredService<IUnitOfWork>(),
+                        sp.GetRequiredService<ITaskActivityWriteService>(),
+                        sp.GetRequiredService<IMediator>()));
 
                 // ===== Task Activities =====
                 services.RemoveAll(typeof(ITaskActivityRepository));

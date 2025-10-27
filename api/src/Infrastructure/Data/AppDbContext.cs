@@ -4,10 +4,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.Data
 {
-    public sealed class AppDbContext : DbContext
+    public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
         public DbSet<User> Users { get; set; }
         public DbSet<Project> Projects { get; set; }
         public DbSet<ProjectMember> ProjectMembers { get; set; }
@@ -28,6 +26,7 @@ namespace Infrastructure.Data
 
         private void ConfigureProviderSpecificMappings(ModelBuilder modelBuilder)
         {
+            // ------------------------ SQLServer ------------------------ 
             if (Database.IsSqlServer())
             {
                 // Columns
@@ -70,10 +69,14 @@ namespace Infrastructure.Data
                 {
                     e.ToTable("ProjectMembers", t =>
                     {
-                        t.HasCheckConstraint(
-                            "CK_ProjectMembers_RemovedAt_After_JoinedAt",
-                            "[RemovedAt] IS NULL OR [RemovedAt] >= [JoinedAt]");
+                        t.HasCheckConstraint("CK_ProjectMembers_RemovedAt_After_JoinedAt", "[RemovedAt] IS NULL OR [RemovedAt] >= [JoinedAt]");
                     });
+
+                    // Exactly one active Owner per project
+                    e.HasIndex(m => m.ProjectId)
+                        .IsUnique()
+                        .HasFilter("[Role] = 'Owner' AND [RemovedAt] IS NULL")
+                        .HasDatabaseName("UX_ProjectMembers_ProjectId_ActiveOwner");
                 });
 
                 // TaskActivities
@@ -85,6 +88,21 @@ namespace Infrastructure.Data
                     });
                 });
 
+                // Assignments (TaskAssignment)
+                modelBuilder.Entity<TaskAssignment>(e =>
+                {
+                    e.ToTable("Assignments", t =>
+                    {
+                        t.HasCheckConstraint("CK_Assignments_Role_NotEmpty", "LEN(LTRIM(RTRIM([Role]))) > 0");
+                        t.HasCheckConstraint("CK_Assignments_Role_Valid", "[Role] IN ('Owner','CoOwner')");
+                    });
+
+                    e.HasIndex(a => new { a.TaskId, a.Role })
+                     .IsUnique()
+                     .HasFilter("[Role] = 'Owner'")
+                     .HasDatabaseName("UX_Assignments_Task_Owner");
+                });
+
                 // Tasks (TaskItem)
                 modelBuilder.Entity<TaskItem>(e =>
                 {
@@ -93,16 +111,6 @@ namespace Infrastructure.Data
                         t.HasCheckConstraint("CK_Tasks_Title_NotEmpty", "LEN(LTRIM(RTRIM([Title]))) > 0");
                         t.HasCheckConstraint("CK_Tasks_Description_NotEmpty", "LEN(LTRIM(RTRIM([Description]))) > 0");
                         t.HasCheckConstraint("CK_Tasks_SortKey_NonNegative", "[SortKey] >= 0");
-                    });
-                });
-
-                // Assignments (TaskAssignment)
-                modelBuilder.Entity<TaskAssignment>(e =>
-                {
-                    e.ToTable("Assignments", t =>
-                    {
-                        t.HasCheckConstraint("CK_Assignments_Role_NotEmpty", "LEN(LTRIM(RTRIM([Role]))) > 0");
-                        t.HasCheckConstraint("CK_Assignments_Role_Valid", "[Role] IN ('Owner','CoOwner')");
                     });
                 });
 
@@ -130,7 +138,13 @@ namespace Infrastructure.Data
                 return;
             }
 
-            // SQLite
+            // ------------------------ SQLite (testing) ------------------------
+
+            var dtoToLong = new ValueConverter<DateTimeOffset, long>(
+                    v => v.ToUnixTimeMilliseconds(),
+                    v => DateTimeOffset.FromUnixTimeMilliseconds(v));
+
+            // Columns
             modelBuilder.Entity<Column>(e =>
             {
                 e.ToTable("Columns", t =>
@@ -140,12 +154,13 @@ namespace Infrastructure.Data
                 });
 
                 e.Property(c => c.RowVersion)
-                    .IsRequired()
-                    .IsConcurrencyToken()
-                    .ValueGeneratedOnAddOrUpdate()
-                    .HasDefaultValueSql("randomblob(8)");
+                 .IsRequired()
+                 .IsConcurrencyToken()
+                 .ValueGeneratedOnAddOrUpdate()
+                 .HasDefaultValueSql("randomblob(8)");
             });
 
+            // Lanes
             modelBuilder.Entity<Lane>(e =>
             {
                 e.ToTable("Lanes", t =>
@@ -155,12 +170,13 @@ namespace Infrastructure.Data
                 });
 
                 e.Property(l => l.RowVersion)
-                    .IsRequired()
-                    .IsConcurrencyToken()
-                    .ValueGeneratedOnAddOrUpdate()
-                    .HasDefaultValueSql("randomblob(8)");
+                 .IsRequired()
+                 .IsConcurrencyToken()
+                 .ValueGeneratedOnAddOrUpdate()
+                 .HasDefaultValueSql("randomblob(8)");
             });
 
+            // Projects
             modelBuilder.Entity<Project>(e =>
             {
                 e.ToTable("Projects", t =>
@@ -175,35 +191,38 @@ namespace Infrastructure.Data
                 });
 
                 e.Property(p => p.RowVersion)
-                    .IsRequired()
-                    .IsConcurrencyToken()
-                    .ValueGeneratedOnAddOrUpdate()
-                    .HasDefaultValueSql("randomblob(8)");
-
-                var dtoToLong = new ValueConverter<DateTimeOffset, long>(
-                    v => v.ToUnixTimeMilliseconds(),
-                    v => DateTimeOffset.FromUnixTimeMilliseconds(v));
+                 .IsRequired()
+                 .IsConcurrencyToken()
+                 .ValueGeneratedOnAddOrUpdate()
+                 .HasDefaultValueSql("randomblob(8)");
 
                 e.Property(p => p.CreatedAt).HasConversion(dtoToLong);
                 e.Property(p => p.UpdatedAt).HasConversion(dtoToLong);
             });
 
+            // ProjectMembers
             modelBuilder.Entity<ProjectMember>(e =>
             {
                 e.ToTable("ProjectMembers", t =>
                 {
-                    t.HasCheckConstraint(
-                        "CK_ProjectMembers_RemovedAt_After_JoinedAt_sqlite",
-                        "RemovedAt IS NULL OR RemovedAt >= JoinedAt");
+                    t.HasCheckConstraint("CK_ProjectMembers_RemovedAt_After_JoinedAt_sqlite", "RemovedAt IS NULL OR RemovedAt >= JoinedAt");
                 });
 
                 e.Property(m => m.RowVersion)
-                    .IsRequired()
-                    .IsConcurrencyToken()
-                    .ValueGeneratedOnAddOrUpdate()
-                    .HasDefaultValueSql("randomblob(8)");
+                 .IsRequired()
+                 .IsConcurrencyToken()
+                 .ValueGeneratedOnAddOrUpdate()
+                 .HasDefaultValueSql("randomblob(8)");
+
+                e.Property(m => m.JoinedAt).HasConversion(dtoToLong);
+                e.Property(m => m.RemovedAt).HasConversion(dtoToLong);
+
+                e.HasIndex(m => m.ProjectId)
+                 .IsUnique()
+                 .HasFilter("Role = 'Owner' AND RemovedAt IS NULL");
             });
 
+            // TaskActivities
             modelBuilder.Entity<TaskActivity>(e =>
             {
                 e.ToTable("TaskActivities", t =>
@@ -211,13 +230,30 @@ namespace Infrastructure.Data
                     t.HasCheckConstraint("CK_TaskActivities_Payload_NotEmpty_sqlite", "length(trim(Payload)) > 0");
                 });
 
-                var dtoToLong = new ValueConverter<DateTimeOffset, long>(
-                    v => v.ToUnixTimeMilliseconds(),
-                    v => DateTimeOffset.FromUnixTimeMilliseconds(v));
-
                 e.Property(n => n.CreatedAt).HasConversion(dtoToLong);
             });
 
+            // Assignments (TaskAssignment)
+            modelBuilder.Entity<TaskAssignment>(e =>
+            {
+                e.ToTable("Assignments", t =>
+                {
+                    t.HasCheckConstraint("CK_Assignments_Role_NotEmpty_sqlite", "length(trim(Role)) > 0");
+                    t.HasCheckConstraint("CK_Assignments_Role_Valid_sqlite", "Role IN ('Owner','CoOwner')");
+                });
+
+                e.Property(a => a.RowVersion)
+                 .IsRequired()
+                 .IsConcurrencyToken()
+                 .ValueGeneratedOnAddOrUpdate()
+                 .HasDefaultValueSql("randomblob(8)");
+
+                e.HasIndex(a => new { a.TaskId, a.Role })
+                 .IsUnique()
+                 .HasFilter("Role = 'Owner'");
+            });
+
+            // Tasks (TaskItem)
             modelBuilder.Entity<TaskItem>(e =>
             {
                 e.ToTable("Tasks", t =>
@@ -228,16 +264,21 @@ namespace Infrastructure.Data
                 });
 
                 e.Property(t => t.RowVersion)
-                    .IsRequired()
-                    .IsConcurrencyToken()
-                    .ValueGeneratedOnAddOrUpdate()
-                    .HasDefaultValueSql("randomblob(8)");
+                 .IsRequired()
+                 .IsConcurrencyToken()
+                 .ValueGeneratedOnAddOrUpdate()
+                 .HasDefaultValueSql("randomblob(8)");
 
                 e.Property(t => t.SortKey)
-                    .HasConversion<double>()
-                    .HasColumnType("REAL");
+                 .HasConversion<double>()
+                 .HasColumnType("REAL");
+
+                e.Property(t => t.CreatedAt).HasConversion(dtoToLong);
+                e.Property(t => t.UpdatedAt).HasConversion(dtoToLong);
+                e.Property(t => t.DueDate).HasConversion(dtoToLong);
             });
 
+            // Notes (TaskNote)
             modelBuilder.Entity<TaskNote>(e =>
             {
                 e.ToTable("Notes", t =>
@@ -246,34 +287,16 @@ namespace Infrastructure.Data
                 });
 
                 e.Property(n => n.RowVersion)
-                    .IsRequired()
-                    .IsConcurrencyToken()
-                    .ValueGeneratedOnAddOrUpdate()
-                    .HasDefaultValueSql("randomblob(8)");
-
-                var dtoToLong = new ValueConverter<DateTimeOffset, long>(
-                    v => v.ToUnixTimeMilliseconds(),
-                    v => DateTimeOffset.FromUnixTimeMilliseconds(v));
+                 .IsRequired()
+                 .IsConcurrencyToken()
+                 .ValueGeneratedOnAddOrUpdate()
+                 .HasDefaultValueSql("randomblob(8)");
 
                 e.Property(n => n.CreatedAt).HasConversion(dtoToLong);
                 e.Property(n => n.UpdatedAt).HasConversion(dtoToLong);
             });
 
-            modelBuilder.Entity<TaskAssignment>(e =>
-            {
-                e.ToTable("Assignments", t =>
-                {
-                    t.HasCheckConstraint("CK_Assignments_Role_NotEmpty_sqlite", "length(trim(Role)) > 0");
-                    t.HasCheckConstraint("CK_Assignments_Role_Valid_sqlite", "Role IN ('Owner','CoOwner')");
-                });
-
-                e.Property(a => a.RowVersion)
-                    .IsRequired()
-                    .IsConcurrencyToken()
-                    .ValueGeneratedOnAddOrUpdate()
-                    .HasDefaultValueSql("randomblob(8)");
-            });
-
+            // Users
             modelBuilder.Entity<User>(e =>
             {
                 e.ToTable("Users", t =>
@@ -285,10 +308,13 @@ namespace Infrastructure.Data
                 });
 
                 e.Property(u => u.RowVersion)
-                    .IsRequired()
-                    .IsConcurrencyToken()
-                    .ValueGeneratedOnAddOrUpdate()
-                    .HasDefaultValueSql("randomblob(8)");
+                 .IsRequired()
+                 .IsConcurrencyToken()
+                 .ValueGeneratedOnAddOrUpdate()
+                 .HasDefaultValueSql("randomblob(8)");
+
+                e.Property(u => u.CreatedAt).HasConversion(dtoToLong);
+                e.Property(u => u.UpdatedAt).HasConversion(dtoToLong);
             });
         }
     }

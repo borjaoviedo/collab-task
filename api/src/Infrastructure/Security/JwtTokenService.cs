@@ -9,19 +9,17 @@ using System.Text;
 
 namespace Infrastructure.Security
 {
-    public sealed class JwtTokenService : IJwtTokenService
+    public sealed class JwtTokenService(IDateTimeProvider clock, IOptions<JwtOptions> options) : IJwtTokenService
     {
-        private readonly IDateTimeProvider _clock;
-        private readonly JwtOptions _options;
+        private readonly IDateTimeProvider _clock = clock;
+        private readonly JwtOptions _options = options.Value;
         private readonly JwtSecurityTokenHandler _handler = new();
 
-        public JwtTokenService(IDateTimeProvider clock, IOptions<JwtOptions> options)
-        {
-            _clock = clock;
-            _options = options.Value;
-        }
-
-        public (string Token, DateTime ExpiresAtUtc) CreateToken(Guid userId, string email, string name, UserRole role)
+        public (string Token, DateTime ExpiresAtUtc) CreateToken(
+            Guid userId,
+            string email,
+            string name,
+            UserRole role)
         {
             var key = GetSigningKey(_options.Key);
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -41,9 +39,9 @@ namespace Infrastructure.Security
             var token = new JwtSecurityToken(
                 issuer: _options.Issuer,
                 audience: _options.Audience,
-                claims: claims,
+                claims,
                 notBefore: now.UtcDateTime,
-                expires: expiresAtUtc,
+                expiresAtUtc,
                 signingCredentials: creds);
 
             var tokenStr = _handler.WriteToken(token);
@@ -90,9 +88,11 @@ namespace Infrastructure.Security
         {
             if (string.IsNullOrWhiteSpace(key))
                 throw new InvalidOperationException("Jwt:Key is missing.");
+
             var bytes = Encoding.UTF8.GetBytes(key);
             if (bytes.Length < 32)
                 throw new InvalidOperationException("Jwt:Key must be at least 32 bytes.");
+
             return new SymmetricSecurityKey(bytes);
         }
     }

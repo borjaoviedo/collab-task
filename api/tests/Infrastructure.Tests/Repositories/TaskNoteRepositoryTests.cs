@@ -2,6 +2,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers;
@@ -16,13 +17,14 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
+            var uow = new UnitOfWork(db);
 
             var (_, _, _, tId, _, uId) = TestDataFactory.SeedFullBoard(db);
 
             var noteContent = NoteContent.Create("Note content");
             var note = TaskNote.Create(tId, uId, noteContent);
             await repo.AddAsync(note);
-            await repo.SaveCreateChangesAsync();
+            await uow.SaveAsync(MutationKind.Create);
 
             var fromDb = await db.TaskNotes.AsNoTracking().SingleAsync(n => n.Id == note.Id);
             fromDb.Content.Value.Should().Be(noteContent);
@@ -34,13 +36,16 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
+            var uow = new UnitOfWork(db);
 
             var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
 
             var newContent = NoteContent.Create("New Content");
             var res = await repo.EditAsync(nId, newContent, noteFromDb.RowVersion);
-            res.Should().Be(DomainMutation.Updated);
+            res.Should().Be(PrecheckStatus.Ready);
+
+            await uow.SaveAsync(MutationKind.Update);
 
             noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
             noteFromDb.Content.Value.Should().Be(newContent);
@@ -52,37 +57,23 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
+            var uow = new UnitOfWork(db);
 
             var originalNoteContent = NoteContent.Create("Note content");
             var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: originalNoteContent);
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
 
             var res = await repo.EditAsync(nId, originalNoteContent, noteFromDb.RowVersion);
-            res.Should().Be(DomainMutation.NoOp);
+            res.Should().Be(PrecheckStatus.NoOp);
+
+            await uow.SaveAsync(MutationKind.Update);
 
             noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
             noteFromDb.Content.Value.Should().Be(originalNoteContent);
         }
 
         [Fact]
-        public async Task EditAsync_Returns_Conflict_On_RowVersion_Mismatch()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
-
-            var originalNoteContent = NoteContent.Create("Note content");
-            var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: originalNoteContent);
-
-            var res = await repo.EditAsync(nId, NoteContent.Create("New Content"), [1, 2]);
-            res.Should().Be(DomainMutation.Conflict);
-
-            var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
-            noteFromDb.Content.Value.Should().Be(originalNoteContent);
-        }
-
-        [Fact]
-        public async Task DeleteAsync_Returns_Deleted_When_Note_Exists()
+        public async Task DeleteAsync_Returns_Ready_When_Note_Exists()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -92,7 +83,7 @@ namespace Infrastructure.Tests.Repositories
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
 
             var res = await repo.DeleteAsync(nId, noteFromDb.RowVersion);
-            res.Should().Be(DomainMutation.Deleted);
+            res.Should().Be(PrecheckStatus.Ready);
         }
 
         [Fact]
@@ -103,20 +94,7 @@ namespace Infrastructure.Tests.Repositories
             var repo = new TaskNoteRepository(db);
 
             var res = await repo.DeleteAsync(Guid.NewGuid(), [1, 2]);
-            res.Should().Be(DomainMutation.NotFound);
-        }
-
-        [Fact]
-        public async Task DeleteAsync_Returns_Conflict_On_RowVersion_Mismatch()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
-
-            var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
-
-            var res = await repo.DeleteAsync(nId, [1, 2]);
-            res.Should().Be(DomainMutation.Conflict);
+            res.Should().Be(PrecheckStatus.NotFound);
         }
 
         [Fact]

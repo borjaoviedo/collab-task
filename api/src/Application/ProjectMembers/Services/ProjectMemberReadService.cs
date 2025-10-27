@@ -7,10 +7,10 @@ namespace Application.ProjectMembers.Services
     public sealed class ProjectMemberReadService(IProjectMemberRepository repo) : IProjectMemberReadService
     {
         public async Task<ProjectMember?> GetAsync(Guid projectId, Guid userId, CancellationToken ct = default)
-            => await repo.GetAsync(projectId, userId, ct);
+            => await repo.GetByProjectAndUserIdAsync(projectId, userId, ct);
 
         public async Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(Guid projectId, bool includeRemoved = false, CancellationToken ct = default)
-            => await repo.GetByProjectAsync(projectId, includeRemoved, ct);
+            => await repo.ListByProjectAsync(projectId, includeRemoved, ct);
 
         public async Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
             => await repo.GetRoleAsync(projectId, userId, ct);

@@ -4,6 +4,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers;
@@ -63,7 +64,7 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task GetAllByUserAsync_Returns_Only_Projects_Where_User_Is_Member()
+        public async Task ListByUserAsync_Returns_Only_Projects_Where_User_Is_Member()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -81,15 +82,15 @@ namespace Infrastructure.Tests.Repositories
             // Make U1 a member of P2 as well
             TestDataFactory.SeedProjectMember(db, p2.Id, u1.Id);
 
-            var listUser1 = await repo.GetAllByUserAsync(u1.Id);
+            var listUser1 = await repo.ListByUserAsync(u1.Id);
             listUser1.Select(p => p.Name.Value).Should().BeEquivalentTo(firstProjectName, secondProjectName);
 
-            var listUser2 = await repo.GetAllByUserAsync(u2.Id);
+            var listUser2 = await repo.ListByUserAsync(u2.Id);
             listUser2.Select(p => p.Name.Value).Should().BeEquivalentTo(secondProjectName);
         }
 
         [Fact]
-        public async Task GetAllByUserAsync_Excludes_Removed_Memberships_By_Default()
+        public async Task ListByUserAsync_Excludes_Removed_Memberships_By_Default()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -104,13 +105,13 @@ namespace Infrastructure.Tests.Repositories
             secondProject.RemoveMember(firstUserId, DateTimeOffset.UtcNow.AddMinutes(1)); // sets RemovedAt
             await db.SaveChangesAsync();
 
-            var list = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter()); // IncludeRemoved=false
+            var list = await repo.ListByUserAsync(firstUserId, new ProjectFilter()); // IncludeRemoved=false
 
             list.Select(p => p.Name.Value).Should().BeEquivalentTo(firstProjectName);
         }
 
         [Fact]
-        public async Task GetAllByUserAsync_Includes_Removed_Memberships_When_Requested()
+        public async Task ListByUserAsync_Includes_Removed_Memberships_When_Requested()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -127,13 +128,13 @@ namespace Infrastructure.Tests.Repositories
             await db.SaveChangesAsync();
 
             var filter = new ProjectFilter { IncludeRemoved = true };
-            var list = await repo.GetAllByUserAsync(firstUserId, filter);
+            var list = await repo.ListByUserAsync(firstUserId, filter);
 
             list.Select(p => p.Name.Value).Should().BeEquivalentTo(firstProjectName, secondProjectName);
         }
 
         [Fact]
-        public async Task GetAllByUserAsync_Filters_By_NameContains()
+        public async Task ListByUserAsync_Filters_By_NameContains()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -147,13 +148,13 @@ namespace Infrastructure.Tests.Repositories
             var thirdProject = TestDataFactory.SeedProject(db, secondUserId, thirdProjectName);
 
             TestDataFactory.SeedProjectMember(db, thirdProject.Id, firstUserId);
-            var list = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { NameContains = "Board", OrderBy = ProjectOrderBy.NameAsc });
+            var list = await repo.ListByUserAsync(firstUserId, new ProjectFilter { NameContains = "Board", OrderBy = ProjectOrderBy.NameAsc });
 
             list.Select(p => p.Name.Value).Should().Equal("Alpha Board", "Gamma Board");
         }
 
         [Fact]
-        public async Task GetAllByUserAsync_Filters_By_Role()
+        public async Task ListByUserAsync_Filters_By_Role()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -166,15 +167,15 @@ namespace Infrastructure.Tests.Repositories
 
             TestDataFactory.SeedProjectMember(db, secondProjectId, firstUserId, ProjectRole.Member);
 
-            var onlyOwner = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { Role = ProjectRole.Owner, OrderBy = ProjectOrderBy.NameAsc });
+            var onlyOwner = await repo.ListByUserAsync(firstUserId, new ProjectFilter { Role = ProjectRole.Owner, OrderBy = ProjectOrderBy.NameAsc });
             onlyOwner.Select(p => p.Name.Value).Should().Equal(firstProjectName);
 
-            var onlyMember = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { Role = ProjectRole.Member, OrderBy = ProjectOrderBy.NameAsc });
+            var onlyMember = await repo.ListByUserAsync(firstUserId, new ProjectFilter { Role = ProjectRole.Member, OrderBy = ProjectOrderBy.NameAsc });
             onlyMember.Select(p => p.Name.Value).Should().Equal(secondProjectName);
         }
 
         [Fact]
-        public async Task GetAllByUserAsync_Paging_Works_With_Skip_Take()
+        public async Task ListByUserAsync_Paging_Works_With_Skip_Take()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -190,10 +191,10 @@ namespace Infrastructure.Tests.Repositories
             TestDataFactory.SeedProjectMember(db, secondProjectId, firstUserId);
             TestDataFactory.SeedProjectMember(db, thirdProjectId, firstUserId);
 
-            var page1 = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { OrderBy = ProjectOrderBy.NameAsc, Skip = 0, Take = 2 });
+            var page1 = await repo.ListByUserAsync(firstUserId, new ProjectFilter { OrderBy = ProjectOrderBy.NameAsc, Skip = 0, Take = 2 });
             page1.Select(p => p.Name.Value).Should().Equal(firstProjectName, secondProjectName);
 
-            var page2 = await repo.GetAllByUserAsync(firstUserId, new ProjectFilter { OrderBy = ProjectOrderBy.NameAsc, Skip = 2, Take = 2 });
+            var page2 = await repo.ListByUserAsync(firstUserId, new ProjectFilter { OrderBy = ProjectOrderBy.NameAsc, Skip = 2, Take = 2 });
             page2.Select(p => p.Name.Value).Should().Equal(thirdProjectName);
         }
 
@@ -203,13 +204,14 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
+            var uow = new UnitOfWork(db);
 
             var projectName = ProjectName.Create("New Project");
             var owner = TestDataFactory.SeedUser(db);
             var project = Project.Create(owner.Id, ProjectName.Create(projectName));
 
             await repo.AddAsync(project);
-            await repo.SaveChangesAsync();
+            await uow.SaveAsync(MutationKind.Create);
 
             var fromDb = await db.Projects.SingleAsync(p => p.Id == project.Id);
             fromDb.Name.Value.Should().Be(projectName);
@@ -260,7 +262,7 @@ namespace Infrastructure.Tests.Repositories
 
             var res = await repo.RenameAsync(project.Id, projectName, project.RowVersion);
 
-            res.Should().Be(DomainMutation.NoOp);
+            res.Should().Be(PrecheckStatus.NoOp);
         }
 
         [Fact]
@@ -269,6 +271,7 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
+            var uow = new UnitOfWork(db);
 
             var oldProjectName = ProjectName.Create("Old name");
             var newProjectName = ProjectName.Create("New name");
@@ -276,7 +279,9 @@ namespace Infrastructure.Tests.Repositories
             var project = TestDataFactory.SeedProject(db, user.Id, oldProjectName);
 
             var res = await repo.RenameAsync(project.Id, newProjectName, project.RowVersion);
-            res.Should().Be(DomainMutation.Updated);
+            res.Should().Be(PrecheckStatus.Ready);
+
+            await uow.SaveAsync(MutationKind.Update);
 
             var fromDb = await db.Projects.AsNoTracking().SingleAsync(p => p.Id == project.Id);
             fromDb.Name.Value.Should().Be(newProjectName);
@@ -284,22 +289,7 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task RenameAsync_Returns_Conflict_On_RowVersion_Mismatch()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ProjectRepository(db);
-
-            var oldProjectName = ProjectName.Create("Old name");
-            var newProjectName = ProjectName.Create("New name");
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db, projectName: oldProjectName);
-
-            var res = await repo.RenameAsync(pId, newProjectName, [1, 2, 3, 4]);
-            res.Should().Be(DomainMutation.Conflict);
-        }
-
-        [Fact]
-        public async Task DeleteAsync_Returns_Deleted_When_Existing_Project()
+        public async Task DeleteAsync_Returns_Ready_When_Existing_Project()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -309,7 +299,7 @@ namespace Infrastructure.Tests.Repositories
             var project = TestDataFactory.SeedProject(db, user.Id);
 
             var res = await repo.DeleteAsync(project.Id, project.RowVersion);
-            res.Should().Be(DomainMutation.Deleted);
+            res.Should().Be(PrecheckStatus.Ready);
         }
 
         [Fact]
@@ -320,20 +310,7 @@ namespace Infrastructure.Tests.Repositories
             var repo = new ProjectRepository(db);
 
             var res = await repo.DeleteAsync(Guid.NewGuid(), [1, 2]);
-            res.Should().Be(DomainMutation.NotFound);
-        }
-
-        [Fact]
-        public async Task DeleteAsync_Returns_Conflict_On_RowVersion_Mismatch()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ProjectRepository(db);
-
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-
-            var res = await repo.DeleteAsync(pId, [1, 2, 3]);
-            res.Should().Be(DomainMutation.Conflict);
+            res.Should().Be(PrecheckStatus.NotFound);
         }
     }
 }

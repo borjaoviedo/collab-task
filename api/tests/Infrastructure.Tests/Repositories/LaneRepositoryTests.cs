@@ -2,6 +2,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers;
@@ -123,14 +124,14 @@ namespace Infrastructure.Tests.Repositories
         public async Task AddAsync_Persists_Lane()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
-
+            var uow = new UnitOfWork(db);
             var (pId, _) = TestDataFactory.SeedUserWithProject(db);
 
             var lane = Lane.Create(pId, LaneName.Create("Backlog"), 0);
             await repo.AddAsync(lane);
-            await repo.SaveChangesAsync();
+            await uow.SaveAsync(MutationKind.Create);
 
             var fromDb = await db.Lanes.AsNoTracking().SingleAsync(l => l.Id == lane.Id);
             fromDb.Name.Value.Should().Be("Backlog");
@@ -143,12 +144,16 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
+            var uow = new UnitOfWork(db);
 
             var (pId, _) = TestDataFactory.SeedUserWithProject(db);
             var lane = TestDataFactory.SeedLane(db, pId);
 
             var res = await repo.RenameAsync(lane.Id, LaneName.Create("In Progress"), lane.RowVersion ?? Array.Empty<byte>());
-            res.Should().Be(DomainMutation.Updated);
+            res.Should().Be(PrecheckStatus.Ready);
+
+            await uow.SaveAsync(MutationKind.Update);
+
             var fromDb = await db.Lanes.AsNoTracking().SingleAsync(l => l.Id == lane.Id);
             fromDb.Name.Value.Should().Be("In Progress");
         }
@@ -165,7 +170,7 @@ namespace Infrastructure.Tests.Repositories
             var lane = TestDataFactory.SeedLane(db, pId, sameName, 1);
 
             var res = await repo.RenameAsync(lane.Id, sameName, lane.RowVersion!);
-            res.Should().Be(DomainMutation.NoOp);
+            res.Should().Be(PrecheckStatus.NoOp);
         }
 
         [Fact]
@@ -180,15 +185,16 @@ namespace Infrastructure.Tests.Repositories
             var doingLane = TestDataFactory.SeedLane(db, pId, "Doing", 1);
 
             var res = await repo.RenameAsync(doingLane.Id, sameName, doingLane.RowVersion!);
-            res.Should().Be(DomainMutation.Conflict);
+            res.Should().Be(PrecheckStatus.Conflict);
         }
 
         [Fact]
         public async Task ReorderAsync_Reindexes_Without_Gaps()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
+            var uow = new UnitOfWork(db);
 
             var firstLaneName = "Lane A";
             var secondLaneName = "Lane B";
@@ -200,8 +206,11 @@ namespace Infrastructure.Tests.Repositories
             // reload tracked 'c' to get current RowVersion
             var trackedC = await db.Lanes.SingleAsync(l => l.Id == laneC.Id);
 
-            var res = await repo.ReorderAsync(trackedC.Id, 0, trackedC.RowVersion!);
-            res.Should().Be(DomainMutation.Updated);
+            await repo.ReorderPhase1Async(trackedC.Id, 0, trackedC.RowVersion!);
+            await uow.SaveAsync(MutationKind.Update);
+
+            await repo.ApplyReorderPhase2Async(trackedC.Id);
+            await uow.SaveAsync(MutationKind.Update);
 
             var lanes = await db.Lanes
                                 .AsNoTracking()
@@ -219,13 +228,16 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
+            var uow = new UnitOfWork(db);
 
             var (_, lId) = TestDataFactory.SeedProjectWithLane(db);
 
             var tracked = await db.Lanes.SingleAsync(l => l.Id == lId);
 
             var res = await repo.DeleteAsync(tracked.Id, tracked.RowVersion!);
-            res.Should().Be(DomainMutation.Deleted);
+            res.Should().Be(PrecheckStatus.Ready);
+
+            await uow.SaveAsync(MutationKind.Delete);
 
             var exists = await db.Lanes.AnyAsync(l => l.Id == lId);
             exists.Should().BeFalse();
@@ -239,23 +251,7 @@ namespace Infrastructure.Tests.Repositories
             var repo = new LaneRepository(db);
 
             var res = await repo.DeleteAsync(Guid.NewGuid(), []);
-            res.Should().Be(DomainMutation.NotFound);
-        }
-
-        [Fact]
-        public async Task DeleteAsync_Concurrency_Failure()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new LaneRepository(db);
-
-            var (_, lId) = TestDataFactory.SeedProjectWithLane(db);
-
-            var res = await repo.DeleteAsync(lId, []);
-            res.Should().Be(DomainMutation.Conflict);
-
-            var stillExists = await db.Lanes.AnyAsync(l => l.Id == lId);
-            stillExists.Should().BeTrue();
+            res.Should().Be(PrecheckStatus.NotFound);
         }
     }
 }

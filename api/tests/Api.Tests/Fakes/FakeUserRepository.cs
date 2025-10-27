@@ -16,21 +16,7 @@ namespace Api.Tests.Fakes
         // simple rowversion counter
         private long _rv = 1;
 
-        public Task AddAsync(User item, CancellationToken ct = default)
-        {
-            ArgumentNullException.ThrowIfNull(item);
-
-            if (item.RowVersion is null || item.RowVersion.Length == 0)
-                item.SetRowVersion(NextRowVersion());
-
-            _byId[item.Id] = item;
-            _idByEmail[item.Email.Value] = item.Id;
-            _idByName[item.Name.Value] = item.Id;
-
-            return Task.CompletedTask;
-        }
-
-        public Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct = default)
+        public Task<IReadOnlyList<User>> ListAsync(CancellationToken ct = default)
         {
             var list = _byId.Values
                 .OrderBy(u => u.Name.Value)
@@ -58,57 +44,71 @@ namespace Api.Tests.Fakes
         public Task<User?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default)
             => Task.FromResult(_byId.TryGetValue(id, out var u) ? u : null);
 
-        public Task<DomainMutation> RenameAsync(Guid id, UserName newName, byte[] rowVersion, CancellationToken ct = default)
+        public Task AddAsync(User item, CancellationToken ct = default)
         {
-            if (rowVersion is null || rowVersion.Length == 0) return Task.FromResult(DomainMutation.Conflict);
-            if (!_byId.TryGetValue(id, out var user)) return Task.FromResult(DomainMutation.NotFound);
+            ArgumentNullException.ThrowIfNull(item);
+
+            if (item.RowVersion is null || item.RowVersion.Length == 0)
+                item.SetRowVersion(NextRowVersion());
+
+            _byId[item.Id] = item;
+            _idByEmail[item.Email.Value] = item.Id;
+            _idByName[item.Name.Value] = item.Id;
+
+            return Task.CompletedTask;
+        }
+
+        public Task<PrecheckStatus> RenameAsync(Guid id, UserName newName, byte[] rowVersion, CancellationToken ct = default)
+        {
+            if (rowVersion is null || rowVersion.Length == 0) return Task.FromResult(PrecheckStatus.Conflict);
+            if (!_byId.TryGetValue(id, out var user)) return Task.FromResult(PrecheckStatus.NotFound);
 
             if (string.Equals(user.Name.Value, newName, StringComparison.Ordinal))
-                return Task.FromResult(DomainMutation.NoOp);
+                return Task.FromResult(PrecheckStatus.NoOp);
 
             if (_idByName.TryGetValue(newName, out var otherId) && otherId != id)
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             if (!RowVersionEquals(user.RowVersion, rowVersion))
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             _idByName.TryRemove(user.Name.Value, out _);
             user.Rename(UserName.Create(newName));
             user.SetRowVersion(NextRowVersion());
             _idByName[user.Name.Value] = id;
 
-            return Task.FromResult(DomainMutation.Updated);
+            return Task.FromResult(PrecheckStatus.Ready);
         }
 
-        public Task<DomainMutation> ChangeRoleAsync(Guid id, UserRole role, byte[] rowVersion, CancellationToken ct = default)
+        public Task<PrecheckStatus> ChangeRoleAsync(Guid id, UserRole newRole, byte[] rowVersion, CancellationToken ct = default)
         {
-            if (rowVersion is null || rowVersion.Length == 0) return Task.FromResult(DomainMutation.Conflict);
-            if (!_byId.TryGetValue(id, out var user)) return Task.FromResult(DomainMutation.NotFound);
+            if (rowVersion is null || rowVersion.Length == 0) return Task.FromResult(PrecheckStatus.Conflict);
+            if (!_byId.TryGetValue(id, out var user)) return Task.FromResult(PrecheckStatus.NotFound);
 
-            if (user.Role == role) return Task.FromResult(DomainMutation.NoOp);
+            if (user.Role == newRole) return Task.FromResult(PrecheckStatus.NoOp);
 
             if (!RowVersionEquals(user.RowVersion, rowVersion))
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
-            user.ChangeRole(role);
+            user.ChangeRole(newRole);
             user.SetRowVersion(NextRowVersion());
 
-            return Task.FromResult(DomainMutation.Updated);
+            return Task.FromResult(PrecheckStatus.Ready);
         }
 
-        public Task<DomainMutation> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default)
+        public Task<PrecheckStatus> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default)
         {
-            if (rowVersion is null || rowVersion.Length == 0) return Task.FromResult(DomainMutation.Conflict);
-            if (!_byId.TryGetValue(id, out var user)) return Task.FromResult(DomainMutation.NotFound);
+            if (rowVersion is null || rowVersion.Length == 0) return Task.FromResult(PrecheckStatus.Conflict);
+            if (!_byId.TryGetValue(id, out var user)) return Task.FromResult(PrecheckStatus.NotFound);
 
             if (!RowVersionEquals(user.RowVersion, rowVersion))
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             _byId.TryRemove(id, out _);
             _idByEmail.TryRemove(user.Email.Value, out _);
             _idByName.TryRemove(user.Name.Value, out _);
 
-            return Task.FromResult(DomainMutation.Deleted);
+            return Task.FromResult(PrecheckStatus.Ready);
         }
 
         public Task<bool> ExistsWithEmailAsync(Email email, Guid? excludeUserId = null, CancellationToken ct = default)
@@ -132,9 +132,6 @@ namespace Api.Tests.Fakes
 
         public Task<int> CountAdminsAsync(CancellationToken ct = default)
             => Task.FromResult(_byId.Values.Count(u => u.Role == UserRole.Admin));
-
-        public Task<int> SaveChangesAsync(CancellationToken ct = default)
-            => Task.FromResult(0); // No-op
 
         // ----------------- helpers -----------------
         private static bool RowVersionEquals(byte[] a, byte[] b)

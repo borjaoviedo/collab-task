@@ -24,14 +24,14 @@ namespace Infrastructure.Security
             return (hash, salt);
         }
 
-        public bool Verify(string password, byte[] salt, byte[] hash)
+        public bool Verify(string password, byte[] salt, byte[] expectedHash)
         {
-            if (string.IsNullOrWhiteSpace(password))
-                return false;
+            if (string.IsNullOrWhiteSpace(password)) return false;
 
             using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations, HashAlgorithmName.SHA256);
             var computed = pbkdf2.GetBytes(HashSize);
-            return CryptographicOperations.FixedTimeEquals(computed, hash);
+
+            return CryptographicOperations.FixedTimeEquals(computed, expectedHash);
         }
     }
 }

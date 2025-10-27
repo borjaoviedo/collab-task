@@ -1,3 +1,5 @@
+using Application.Common.Abstractions.Extensions;
+using Application.Common.Abstractions.Persistence;
 using Application.TaskActivities.Abstractions;
 using Application.TaskActivities.Payloads;
 using Application.TaskNotes.Abstractions;
@@ -9,7 +11,11 @@ using MediatR;
 
 namespace Application.TaskNotes.Services
 {
-    public sealed class TaskNoteWriteService(ITaskNoteRepository repo, ITaskActivityWriteService activityWriter, IMediator mediator) : ITaskNoteWriteService
+    public sealed class TaskNoteWriteService(
+        ITaskNoteRepository repo,
+        IUnitOfWork uow,
+        ITaskActivityWriteService activityWriter,
+        IMediator mediator) : ITaskNoteWriteService
     {
         public async Task<(DomainMutation, TaskNote?)> CreateAsync(
             Guid projectId,
@@ -28,14 +34,18 @@ namespace Application.TaskNotes.Services
                 TaskActivityType.NoteAdded,
                 payload,
                 ct);
-            await repo.SaveCreateChangesAsync(ct);
 
-            var notification = new TaskNoteCreated(
+            var saveCreateResult = await uow.SaveAsync(MutationKind.Create, ct);
+
+            if (saveCreateResult == DomainMutation.Created)
+            {
+                var notification = new TaskNoteCreated(
                 projectId,
                 new TaskNoteCreatedPayload(taskId, note.Id, note.Content.Value));
-            await mediator.Publish(notification, ct);
+                await mediator.Publish(notification, ct);
+            }
 
-            return (DomainMutation.Created, note);
+            return (saveCreateResult, note);
         }
 
         public async Task<DomainMutation> EditAsync(
@@ -47,8 +57,8 @@ namespace Application.TaskNotes.Services
             byte[] rowVersion,
             CancellationToken ct = default)
         {
-            var editResult = await repo.EditAsync(noteId, content, rowVersion, ct);
-            if (editResult != DomainMutation.Updated) return editResult;
+            var editStatus = await repo.EditAsync(noteId, content, rowVersion, ct);
+            if (editStatus != PrecheckStatus.Ready) return editStatus.ToErrorDomainMutation();
 
             var payload = ActivityPayloadFactory.NoteEdited(noteId);
             await activityWriter.CreateAsync(
@@ -58,7 +68,7 @@ namespace Application.TaskNotes.Services
                 payload,
                 ct);
 
-            var saveUpdateResult = await repo.SaveUpdateChangesAsync(ct);
+            var saveUpdateResult = await uow.SaveAsync(MutationKind.Update, ct);
 
             if (saveUpdateResult == DomainMutation.Updated)
             {
@@ -81,8 +91,8 @@ namespace Application.TaskNotes.Services
             var note = await repo.GetByIdAsync(noteId, ct);
             if (note is null) return DomainMutation.NotFound;
 
-            var deleteResult = await repo.DeleteAsync(noteId, rowVersion, ct);
-            if (deleteResult != DomainMutation.Deleted) return deleteResult;
+            var deleteStatus = await repo.DeleteAsync(noteId, rowVersion, ct);
+            if (deleteStatus != PrecheckStatus.Ready) return deleteStatus.ToErrorDomainMutation();
             
             var payload = ActivityPayloadFactory.NoteRemoved(noteId);
             await activityWriter.CreateAsync(
@@ -92,7 +102,7 @@ namespace Application.TaskNotes.Services
                 payload,
                 ct);
 
-            var saveDeleteResult = await repo.SaveDeleteChangesAsync(ct);
+            var saveDeleteResult = await uow.SaveAsync(MutationKind.Delete, ct);
 
             if (saveDeleteResult == DomainMutation.Deleted)
             {

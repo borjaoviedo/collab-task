@@ -10,6 +10,6 @@ namespace Application.Projects.Services
             => await repo.GetByIdAsync(projectId, ct);
 
         public async Task<IReadOnlyList<Project>> ListByUserAsync(Guid userId, ProjectFilter? filter = null, CancellationToken ct = default)
-            => await repo.GetAllByUserAsync(userId, filter, ct);
+            => await repo.ListByUserAsync(userId, filter, ct);
     }
 }

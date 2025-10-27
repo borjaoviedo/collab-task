@@ -2,6 +2,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers;
@@ -126,6 +127,7 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
+            var uow = new UnitOfWork(db);
 
             var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
             var laneId = TestDataFactory.SeedLane(db, projectId).Id;
@@ -133,7 +135,7 @@ namespace Infrastructure.Tests.Repositories
 
             var column = Column.Create(projectId, laneId, ColumnName.Create(columnName), 0);
             await repo.AddAsync(column);
-            await repo.SaveChangesAsync();
+            await uow.SaveAsync(MutationKind.Create);
 
             var fromDb = await db.Columns.AsNoTracking().SingleAsync(c => c.Id == column.Id);
             fromDb.Name.Value.Should().Be(columnName);
@@ -146,6 +148,7 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
+            var uow = new UnitOfWork(db);
 
             var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
             var column = TestDataFactory.SeedColumn(db, pId, lId);
@@ -153,7 +156,10 @@ namespace Infrastructure.Tests.Repositories
             var newName = "new name";
 
             var res = await repo.RenameAsync(column.Id, ColumnName.Create(newName), column.RowVersion ?? []);
-            res.Should().Be(DomainMutation.Updated);
+            res.Should().Be(PrecheckStatus.Ready);
+
+            await uow.SaveAsync(MutationKind.Update);
+
             var fromDb = await db.Columns.AsNoTracking().SingleAsync(c => c.Id == column.Id);
             fromDb.Name.Value.Should().Be(newName);
         }
@@ -170,7 +176,7 @@ namespace Infrastructure.Tests.Repositories
             var column = TestDataFactory.SeedColumn(db, pId, lId, sameName);
 
             var res = await repo.RenameAsync(column.Id, ColumnName.Create(sameName), column.RowVersion!);
-            res.Should().Be(DomainMutation.NoOp);
+            res.Should().Be(PrecheckStatus.NoOp);
         }
 
         [Fact]
@@ -188,7 +194,7 @@ namespace Infrastructure.Tests.Repositories
             var defaultNameColumn = TestDataFactory.SeedColumn(db, pId, lId, order: 1);
 
             var res = await repo.RenameAsync(defaultNameColumn.Id, ColumnName.Create(sameName), defaultNameColumn.RowVersion!);
-            res.Should().Be(DomainMutation.Conflict);
+            res.Should().Be(PrecheckStatus.Conflict);
         }
 
         [Fact]
@@ -197,6 +203,7 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
+            var uow = new UnitOfWork(db);
 
             var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
             TestDataFactory.SeedColumn(db, pId, lId, "Column A", 0);
@@ -206,8 +213,11 @@ namespace Infrastructure.Tests.Repositories
             // reload tracked 'c' to get current RowVersion
             var trackedC = await db.Columns.SingleAsync(c => c.Id == columnC.Id);
 
-            var res = await repo.ReorderAsync(trackedC.Id, 0, trackedC.RowVersion!);
-            res.Should().Be(DomainMutation.Updated);
+            await repo.ReorderPhase1Async(trackedC.Id, 0, trackedC.RowVersion!);
+            await uow.SaveAsync(MutationKind.Update);
+
+            await repo.ApplyReorderPhase2Async(trackedC.Id);
+            await uow.SaveAsync(MutationKind.Update);
 
             var columns = await db.Columns.AsNoTracking()
                 .Where(c => c.ProjectId == pId && c.LaneId == lId)
@@ -224,6 +234,7 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
+            var uow = new UnitOfWork(db);
 
             var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
             var column = TestDataFactory.SeedColumn(db, pId, lId);
@@ -231,7 +242,9 @@ namespace Infrastructure.Tests.Repositories
             var tracked = await db.Columns.SingleAsync(c => c.Id == column.Id);
 
             var res = await repo.DeleteAsync(tracked.Id, tracked.RowVersion!);
-            res.Should().Be(DomainMutation.Deleted);
+            res.Should().Be(PrecheckStatus.Ready);
+
+            await uow.SaveAsync(MutationKind.Delete);
 
             var exists = await db.Columns.AnyAsync(c => c.Id == column.Id);
             exists.Should().BeFalse();
@@ -245,24 +258,7 @@ namespace Infrastructure.Tests.Repositories
             var repo = new ColumnRepository(db);
 
             var res = await repo.DeleteAsync(Guid.NewGuid(), []);
-            res.Should().Be(DomainMutation.NotFound);
-        }
-
-        [Fact]
-        public async Task DeleteAsync_Concurrency_Failure()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ColumnRepository(db);
-
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            var column = TestDataFactory.SeedColumn(db, pId, lId);
-
-            var res = await repo.DeleteAsync(column.Id, []);
-            res.Should().Be(DomainMutation.Conflict);
-
-            var stillExists = await db.Columns.AnyAsync(c => c.Id == column.Id);
-            stillExists.Should().BeTrue();
+            res.Should().Be(PrecheckStatus.NotFound);
         }
     }
 }

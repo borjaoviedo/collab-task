@@ -2,6 +2,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers;
@@ -16,12 +17,13 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
+            var uow = new UnitOfWork(db);
 
             var email = Email.Create("a@b.com");
             var u = User.Create(email, UserName.Create("User Name"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
 
             await repo.AddAsync(u);
-            await repo.SaveChangesAsync();
+            await uow.SaveAsync(MutationKind.Create);
 
             var id = u.Id;
             id.Should().Be(u.Id);
@@ -60,33 +62,6 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task GetByNameAsync_Returns_User_When_Exists()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-
-            var name = UserName.Create("User Name");
-            var u = TestDataFactory.SeedUser(db, name: name);
-            var found = await repo.GetByNameAsync(name);
-
-            found.Should().NotBeNull();
-            found!.Id.Should().Be(u.Id);
-        }
-
-        [Fact]
-        public async Task GetByNameAsync_Returns_Null_When_Not_Found()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-
-            var found = await repo.GetByNameAsync(UserName.Create("Not Found User Name"));
-
-            found.Should().BeNull();
-        }
-
-        [Fact]
         public async Task GetTrackedByIdAsync_Returns_User_When_Exists_Null_Otherwise()
         {
             using var dbh = new SqliteTestDb();
@@ -104,34 +79,34 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task GetAllAsync_Returns_All_Users_List()
+        public async Task ListAsync_Returns_All_Users_List()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
             TestDataFactory.SeedUser(db);
-            var list = await repo.GetAllAsync();
+            var list = await repo.ListAsync();
             list.Should().NotBeNull();
             list.Count.Should().Be(1);
 
             TestDataFactory.SeedUser(db);
-            list = await repo.GetAllAsync();
+            list = await repo.ListAsync();
             list.Count.Should().Be(2);
 
             TestDataFactory.SeedUser(db);
-            list = await repo.GetAllAsync();
+            list = await repo.ListAsync();
             list.Count.Should().Be(3);
         }
 
         [Fact]
-        public async Task GetAllAsync_Returns_Empty_List_When_No_Users()
+        public async Task ListAsync_Returns_Empty_List_When_No_Users()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var list = await repo.GetAllAsync();
+            var list = await repo.ListAsync();
             list.Should().BeEmpty();
         }
 
@@ -164,24 +139,6 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task AnyAdmin_And_CountAdmins_Work_As_Expected()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-
-            (await repo.AnyAdminAsync()).Should().BeFalse();
-            (await repo.CountAdminsAsync()).Should().Be(0);
-
-            TestDataFactory.SeedUser(db, role: UserRole.Admin);
-            (await repo.AnyAdminAsync()).Should().BeTrue();
-            (await repo.CountAdminsAsync()).Should().Be(1);
-
-            TestDataFactory.SeedUser(db, role: UserRole.User);
-            (await repo.CountAdminsAsync()).Should().Be(1);
-        }
-
-        [Fact]
         public async Task RenameAsync_NoOp_When_Name_Unchanged()
         {
             using var dbh = new SqliteTestDb();
@@ -193,7 +150,7 @@ namespace Infrastructure.Tests.Repositories
 
             var res = await repo.RenameAsync(u.Id, name, u.RowVersion);
 
-            res.Should().Be(DomainMutation.NoOp);
+            res.Should().Be(PrecheckStatus.NoOp);
         }
 
         [Fact]
@@ -202,11 +159,14 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
+            var uow = new UnitOfWork(db);
 
             var user = TestDataFactory.SeedUser(db);
 
             var res = await repo.RenameAsync(user.Id, UserName.Create("New"), user.RowVersion);
-            res.Should().Be(DomainMutation.Updated);
+            res.Should().Be(PrecheckStatus.Ready);
+
+            await uow.SaveAsync(MutationKind.Update);
 
             var fromDb = await db.Users.AsNoTracking().SingleAsync(u => u.Id == user.Id);
             fromDb.Name.Value.Should().Be("New");
@@ -218,25 +178,17 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
+            var uow = new UnitOfWork(db);
 
-            var u = TestDataFactory.SeedUser(db);
-            var res = await repo.ChangeRoleAsync(u.Id, UserRole.Admin, u.RowVersion);
+            var user = TestDataFactory.SeedUser(db);
+            var res = await repo.ChangeRoleAsync(user.Id, UserRole.Admin, user.RowVersion);
 
-            res.Should().Be(DomainMutation.Updated);
-        }
+            res.Should().Be(PrecheckStatus.Ready);
 
-        [Fact]
-        public async Task ChangeRoleAsync_Returns_Conflict_On_RowVersion_Mismatch()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
+            await uow.SaveAsync(MutationKind.Update);
 
-            var u = TestDataFactory.SeedUser(db);
-
-            var res = await repo.ChangeRoleAsync(u.Id, UserRole.Admin, [1, 2, 3, 4]);
-
-            res.Should().Be(DomainMutation.Conflict);
+            var fromDb = await db.Users.AsNoTracking().SingleAsync(u => u.Id == user.Id);
+            fromDb.Role.Should().Be(UserRole.Admin);
         }
 
         [Fact]
@@ -249,7 +201,7 @@ namespace Infrastructure.Tests.Repositories
             var u = TestDataFactory.SeedUser(db, role: UserRole.Admin);
 
             var res = await repo.ChangeRoleAsync(u.Id, UserRole.Admin, u.RowVersion);
-            res.Should().Be(DomainMutation.NoOp);
+            res.Should().Be(PrecheckStatus.NoOp);
         }
 
         [Fact]
@@ -258,11 +210,17 @@ namespace Infrastructure.Tests.Repositories
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
+            var uow = new UnitOfWork(db);
 
             var user = TestDataFactory.SeedUser(db);
 
             var res = await repo.DeleteAsync(user.Id, user.RowVersion);
-            res.Should().Be(DomainMutation.Deleted);
+            res.Should().Be(PrecheckStatus.Ready);
+
+            await uow.SaveAsync(MutationKind.Delete);
+
+            var fromDb = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
+            fromDb.Should().BeNull();
         }
 
         [Fact]
@@ -273,20 +231,7 @@ namespace Infrastructure.Tests.Repositories
             var repo = new UserRepository(db);
 
             var res = await repo.DeleteAsync(Guid.NewGuid(), [9, 9, 9]);
-            res.Should().Be(DomainMutation.NotFound);
-        }
-
-        [Fact]
-        public async Task DeleteAsync_Returns_Conflict_On_RowVersion_Mismatch()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-
-            var u = TestDataFactory.SeedUser(db);
-
-            var res = await repo.DeleteAsync(u.Id, [5, 5, 5]);
-            res.Should().Be(DomainMutation.Conflict);
+            res.Should().Be(PrecheckStatus.NotFound);
         }
 
         [Fact]

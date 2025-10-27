@@ -12,18 +12,10 @@ namespace Infrastructure.Data.Repositories
     {
         private readonly AppDbContext _db = db;
 
-        public async Task<Project?> GetByIdAsync(Guid id, CancellationToken ct = default)
-            => await _db.Projects
-                        .AsNoTracking()
-                        .Include(p => p.Members.Where(m => m.RemovedAt == null))
-                        .FirstOrDefaultAsync(p => p.Id == id, ct);
-
-        public async Task<Project?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default)
-            => await _db.Projects
-                        .Include(p => p.Members.Where(m => m.RemovedAt == null))
-                        .FirstOrDefaultAsync(p => p.Id == id, ct);
-
-        public async Task<IReadOnlyList<Project>> GetAllByUserAsync(Guid userId, ProjectFilter? filter = null, CancellationToken ct = default)
+        public async Task<IReadOnlyList<Project>> ListByUserAsync(
+            Guid userId,
+            ProjectFilter? filter = null,
+            CancellationToken ct = default)
         {
             filter ??= new ProjectFilter();
             var includeRemoved = filter.IncludeRemoved == true;
@@ -76,14 +68,29 @@ namespace Infrastructure.Data.Repositories
             return await q.ToListAsync(ct);
         }
 
+        public async Task<Project?> GetByIdAsync(Guid id, CancellationToken ct = default)
+            => await _db.Projects
+                        .AsNoTracking()
+                        .Include(p => p.Members.Where(m => m.RemovedAt == null))
+                        .FirstOrDefaultAsync(p => p.Id == id, ct);
+
+        public async Task<Project?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default)
+            => await _db.Projects
+                        .Include(p => p.Members.Where(m => m.RemovedAt == null))
+                        .FirstOrDefaultAsync(p => p.Id == id, ct);
+
         public async Task AddAsync(Project project, CancellationToken ct = default)
             => await _db.Projects.AddAsync(project, ct);
 
-        public async Task<DomainMutation> RenameAsync(Guid id, ProjectName newName, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> RenameAsync(
+            Guid id,
+            ProjectName newName,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var project = await GetTrackedByIdAsync(id, ct);
-            if (project is null) return DomainMutation.NotFound;
-            if (project.Name == newName) return DomainMutation.NoOp;
+            if (project is null) return PrecheckStatus.NotFound;
+            if (project.Name == newName) return PrecheckStatus.NoOp;
 
             _db.Entry(project).Property(p => p.RowVersion).OriginalValue = rowVersion;
 
@@ -91,45 +98,23 @@ namespace Infrastructure.Data.Repositories
             _db.Entry(project).Property(p => p.Name).IsModified = true;
             _db.Entry(project).Property(p => p.Slug).IsModified = true;
 
-            try
-            {
-                await _db.SaveChangesAsync(ct);
-                return DomainMutation.Updated;
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return DomainMutation.Conflict;
-            }
+            return PrecheckStatus.Ready;
         }
 
-        public async Task<DomainMutation> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default)
         {
             var project = await GetTrackedByIdAsync(id, ct);
-            if (project is null) return DomainMutation.NotFound;
+            if (project is null) return PrecheckStatus.NotFound;
 
             _db.Entry(project).Property(p => p.RowVersion).OriginalValue = rowVersion;
             _db.Projects.Remove(project);
 
-            try
-            {
-                await _db.SaveChangesAsync(ct);
-                return DomainMutation.Deleted;
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return DomainMutation.Conflict;
-            }
-            catch (DbUpdateException)
-            {
-                return DomainMutation.Conflict;
-            }
+            return PrecheckStatus.Ready;
         }
 
         public async Task<bool> ExistsByNameAsync(Guid ownerId, ProjectName name, CancellationToken ct = default)
             => await _db.Projects
                         .AsNoTracking()
                         .AnyAsync(p => p.OwnerId == ownerId && p.Name == name, ct);
-
-        public async Task<int> SaveChangesAsync(CancellationToken ct = default) => await _db.SaveChangesAsync(ct);
     }
 }

@@ -9,18 +9,14 @@ namespace Infrastructure.Data.Repositories
     {
         private readonly AppDbContext _db = db;
 
-        public async Task<ProjectMember?> GetAsync(Guid projectId, Guid userId, CancellationToken ct = default)
-            => await _db.ProjectMembers
-                        .AsNoTracking()
-                        .Include(pm => pm.User)
-                        .FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
-
-        public async Task<ProjectMember?> GetTrackedByIdAsync(Guid projectId, Guid userId, CancellationToken ct = default)
-            => await _db.ProjectMembers.FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
-
-        public async Task<IReadOnlyList<ProjectMember>> GetByProjectAsync(Guid projectId, bool includeRemoved = false, CancellationToken ct = default)
+        public async Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(
+            Guid projectId,
+            bool includeRemoved = false,
+            CancellationToken ct = default)
         {
-            var q = _db.ProjectMembers.AsNoTracking().Where(pm => pm.ProjectId == projectId);
+            var q = _db.ProjectMembers
+                        .AsNoTracking()
+                        .Where(pm => pm.ProjectId == projectId);
 
             if (!includeRemoved)
                 q = q.Where(pm => pm.RemovedAt == null);
@@ -28,11 +24,97 @@ namespace Infrastructure.Data.Repositories
             return await q.Include(pm => pm.User).ToListAsync(ct);
         }
 
+        public async Task<ProjectMember?> GetByProjectAndUserIdAsync(
+            Guid projectId,
+            Guid userId,
+            CancellationToken ct = default)
+            => await _db.ProjectMembers
+                        .AsNoTracking()
+                        .Include(pm => pm.User)
+                        .FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
+
+        public async Task<ProjectMember?> GetTrackedByProjectAndUserIdAsync(
+            Guid projectId,
+            Guid userId,
+            CancellationToken ct = default)
+            => await _db.ProjectMembers.FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
+
+        public async Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
+            => await _db.ProjectMembers
+                        .AsNoTracking()
+                        .Where(pm => pm.ProjectId == projectId && pm.UserId == userId)
+                        .Select(pm => (ProjectRole?)pm.Role)
+                        .FirstOrDefaultAsync(ct);
+
+        public async Task AddAsync(ProjectMember member, CancellationToken ct = default)
+            => await _db.ProjectMembers.AddAsync(member, ct);
+
+        public async Task<PrecheckStatus> UpdateRoleAsync(
+            Guid projectId,
+            Guid userId,
+            ProjectRole newRole,
+            byte[] rowVersion,
+            CancellationToken ct = default)
+        {
+            var projectMember = await GetTrackedByProjectAndUserIdAsync(projectId, userId, ct);
+
+            if (projectMember is null || projectMember.RemovedAt is not null)
+                return PrecheckStatus.NotFound;
+
+            if (projectMember.Role == newRole)
+                return PrecheckStatus.NoOp;
+
+            _db.Entry(projectMember).Property(pm => pm.RowVersion).OriginalValue = rowVersion;
+
+            projectMember.ChangeRole(newRole);
+            _db.Entry(projectMember).Property(pm => pm.Role).IsModified = true;
+
+            return PrecheckStatus.Ready;
+        }
+
+        public async Task<PrecheckStatus> SetRemovedAsync(
+            Guid projectId,
+            Guid userId,
+            byte[] rowVersion,
+            CancellationToken ct = default)
+        {
+            var projectMember = await GetTrackedByProjectAndUserIdAsync(projectId, userId, ct);
+            if (projectMember is null) return PrecheckStatus.NotFound;
+
+            var now = DateTimeOffset.UtcNow;
+            if (projectMember.RemovedAt == now) return PrecheckStatus.NoOp;
+
+            _db.Entry(projectMember).Property(pm => pm.RowVersion).OriginalValue = rowVersion;
+
+            projectMember.Remove(now);
+            _db.Entry(projectMember).Property(pm => pm.RemovedAt).IsModified = true;
+
+            return PrecheckStatus.Ready;
+        }
+
+        public async Task<PrecheckStatus> SetRestoredAsync(
+            Guid projectId,
+            Guid userId,
+            byte[] rowVersion,
+            CancellationToken ct = default)
+        {
+            var projectMember = await GetTrackedByProjectAndUserIdAsync(projectId, userId, ct);
+            if (projectMember is null) return PrecheckStatus.NotFound;
+
+            if (projectMember.RemovedAt == null) return PrecheckStatus.NoOp;
+
+            _db.Entry(projectMember).Property(pm => pm.RowVersion).OriginalValue = rowVersion;
+
+            projectMember.Restore();
+            _db.Entry(projectMember).Property(pm => pm.RemovedAt).IsModified = true;
+
+            return PrecheckStatus.Ready;
+        }
+
         public async Task<bool> ExistsAsync(Guid projectId, Guid userId, CancellationToken ct = default)
             => await _db.ProjectMembers
                         .AsNoTracking()
                         .AnyAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
-
 
         public async Task<int> CountUserActiveMembershipsAsync(Guid userId, CancellationToken ct = default)
             => await _db.ProjectMembers
@@ -41,89 +123,5 @@ namespace Infrastructure.Data.Repositories
                         .Select(pm => pm.ProjectId)
                         .Distinct()
                         .CountAsync(ct);
-
-        public async Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
-            => await _db.ProjectMembers
-                        .Where(pm => pm.ProjectId == projectId && pm.UserId == userId)
-                        .Select(pm => (ProjectRole?)pm.Role)
-                        .FirstOrDefaultAsync(ct);
-
-        public async Task AddAsync(ProjectMember member, CancellationToken ct = default)
-            => await _db.ProjectMembers.AddAsync(member, ct);
-
-        public async Task<DomainMutation> UpdateRoleAsync(Guid projectId, Guid userId, ProjectRole newRole, byte[] rowVersion, CancellationToken ct = default)
-        {
-            var projectMember = await GetTrackedByIdAsync(projectId, userId, ct);
-
-            if (projectMember is null || projectMember.RemovedAt is not null)
-                return DomainMutation.NotFound;
-
-            if (projectMember.Role == newRole)
-                return DomainMutation.NoOp;
-
-            _db.Entry(projectMember).Property(pm => pm.RowVersion).OriginalValue = rowVersion;
-
-            projectMember.ChangeRole(newRole);
-            _db.Entry(projectMember).Property(pm => pm.Role).IsModified = true;
-
-            try
-            {
-                await _db.SaveChangesAsync(ct);
-                return DomainMutation.Updated;
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return DomainMutation.Conflict;
-            }
-        }
-
-        public async Task<DomainMutation> SetRemovedAsync(Guid projectId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
-        {
-            var projectMember = await GetTrackedByIdAsync(projectId, userId, ct);
-            if (projectMember is null) return DomainMutation.NotFound;
-
-            var now = DateTimeOffset.UtcNow;
-            if (projectMember.RemovedAt == now) return DomainMutation.NoOp;
-
-            _db.Entry(projectMember).Property(pm => pm.RowVersion).OriginalValue = rowVersion;
-
-            projectMember.Remove(now);
-            _db.Entry(projectMember).Property(pm => pm.RemovedAt).IsModified = true;
-
-            try
-            {
-                await _db.SaveChangesAsync(ct);
-                return DomainMutation.Updated;
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return DomainMutation.Conflict;
-            }
-        }
-
-        public async Task<DomainMutation> SetRestoredAsync(Guid projectId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
-        {
-            var projectMember = await GetTrackedByIdAsync(projectId, userId, ct);
-            if (projectMember is null) return DomainMutation.NotFound;
-
-            if (projectMember.RemovedAt == null) return DomainMutation.NoOp;
-
-            _db.Entry(projectMember).Property(pm => pm.RowVersion).OriginalValue = rowVersion;
-
-            projectMember.Restore();
-            _db.Entry(projectMember).Property(pm => pm.RemovedAt).IsModified = true;
-
-            try
-            {
-                await _db.SaveChangesAsync(ct);
-                return DomainMutation.Updated;
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return DomainMutation.Conflict;
-            }
-        }
-
-        public async Task<int> SaveChangesAsync(CancellationToken ct = default) => await _db.SaveChangesAsync(ct);
     }
 }

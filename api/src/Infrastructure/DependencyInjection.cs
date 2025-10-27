@@ -1,4 +1,5 @@
 using Application.Columns.Abstractions;
+using Application.Common.Abstractions.Persistence;
 using Application.Common.Abstractions.Security;
 using Application.Common.Abstractions.Time;
 using Application.Lanes.Abstractions;
@@ -25,14 +26,12 @@ namespace Infrastructure
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
         {
             // Common services
-            services
-                .AddSingleton<IDateTimeProvider, SystemDateTimeProvider>()
-                .AddScoped<AuditingSaveChangesInterceptor>();
+            services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
+            services.AddScoped<AuditingSaveChangesInterceptor>();
 
             // Security
-            services
-                .AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>()
-                .AddScoped<IJwtTokenService, JwtTokenService>();
+            services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
 
             // EF Core DbContext + interceptors
             services.AddDbContext<AppDbContext>((sp, options) =>
@@ -40,6 +39,9 @@ namespace Infrastructure
                 options.UseSqlServer(connectionString);
                 options.AddInterceptors(sp.GetRequiredService<AuditingSaveChangesInterceptor>());
             });
+
+            // UoW
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             // Repositories
             services.AddScoped<IUserRepository, UserRepository>();

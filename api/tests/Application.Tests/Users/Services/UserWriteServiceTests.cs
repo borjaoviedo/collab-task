@@ -2,6 +2,7 @@ using Application.Users.Services;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers;
@@ -17,9 +18,10 @@ namespace Application.Tests.Users.Services
         public async Task CreateAsync_Returns_Created_And_User()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
-            var svc = new UserWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new UserWriteService(repo, uow);
 
             var (created, user) = await svc.CreateAsync(
                 Email.Create("email@e.com"),
@@ -36,9 +38,10 @@ namespace Application.Tests.Users.Services
         public async Task Rename_Delegates_To_Repository()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
-            var svc = new UserWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new UserWriteService(repo, uow);
 
             var user = TestDataFactory.SeedUser(db);
 
@@ -51,9 +54,10 @@ namespace Application.Tests.Users.Services
         public async Task RenameAsync_Returns_NoOp_When_Unchanged()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
-            var svc = new UserWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new UserWriteService(repo, uow);
 
             var sameName = UserName.Create("same name");
             var u = TestDataFactory.SeedUser(db, name: sameName);
@@ -66,9 +70,10 @@ namespace Application.Tests.Users.Services
         public async Task ChangeRoleAsync_Returns_Conflict_When_RowVersion_Mismatch()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
-            var svc = new UserWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new UserWriteService(repo, uow);
 
             var u = TestDataFactory.SeedUser(db);
 
@@ -80,9 +85,10 @@ namespace Application.Tests.Users.Services
         public async Task Delete_Delegates_To_Repository()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
-            var svc = new UserWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new UserWriteService(repo, uow);
 
             var user = TestDataFactory.SeedUser(db);
 

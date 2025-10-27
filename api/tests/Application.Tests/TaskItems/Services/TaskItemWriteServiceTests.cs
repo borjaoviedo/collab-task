@@ -5,6 +5,7 @@ using Application.TaskItems.Services;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -25,11 +26,12 @@ namespace Application.Tests.TaskItems.Services
             await using var db = dbh.CreateContext();
 
             var taskRepo = new TaskItemRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
+            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
             var taskTitle = TaskTitle.Create("Task Title");
             var taskDescription = TaskDescription.Create("Description");
@@ -54,11 +56,12 @@ namespace Application.Tests.TaskItems.Services
             await using var db = dbh.CreateContext();
 
             var taskRepo = new TaskItemRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
+            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
@@ -91,11 +94,12 @@ namespace Application.Tests.TaskItems.Services
             await using var db = dbh.CreateContext();
 
             var taskRepo = new TaskItemRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
+            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
@@ -103,6 +107,7 @@ namespace Application.Tests.TaskItems.Services
             var sameTitle = TaskTitle.Create("Title");
             var sameDescription = TaskDescription.Create("Description");
             var sameDueDate = DateTimeOffset.UtcNow.AddDays(10);
+            sameDueDate = DateTimeOffset.FromUnixTimeMilliseconds(sameDueDate.ToUnixTimeMilliseconds());
             var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId, sameTitle, sameDescription, sameDueDate);
 
             var res = await svc.EditAsync(pId, task.Id, user.Id, sameTitle, sameDescription, sameDueDate, task.RowVersion);
@@ -123,11 +128,12 @@ namespace Application.Tests.TaskItems.Services
             await using var db = dbh.CreateContext();
 
             var taskRepo = new TaskItemRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
 
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
-            var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
+            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
@@ -152,11 +158,12 @@ namespace Application.Tests.TaskItems.Services
             await using var db = dbh.CreateContext();
 
             var taskRepo = new TaskItemRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
+            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
@@ -186,11 +193,12 @@ namespace Application.Tests.TaskItems.Services
             await using var db = dbh.CreateContext();
 
             var taskRepo = new TaskItemRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
+            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
@@ -210,11 +218,12 @@ namespace Application.Tests.TaskItems.Services
             await using var db = dbh.CreateContext();
 
             var taskRepo = new TaskItemRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
+            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
@@ -231,11 +240,12 @@ namespace Application.Tests.TaskItems.Services
             await using var db = dbh.CreateContext();
 
             var taskRepo = new TaskItemRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
+            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
@@ -254,11 +264,12 @@ namespace Application.Tests.TaskItems.Services
             await using var db = dbh.CreateContext();
 
             var taskRepo = new TaskItemRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
+            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
@@ -280,11 +291,12 @@ namespace Application.Tests.TaskItems.Services
             await using var db = dbh.CreateContext();
 
             var taskRepo = new TaskItemRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
+            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
@@ -303,11 +315,12 @@ namespace Application.Tests.TaskItems.Services
             await using var db = dbh.CreateContext();
 
             var taskRepo = new TaskItemRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
+            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
             var (firstProjectId, firstProjectLaneId, firstProjectColumnId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
@@ -329,11 +342,12 @@ namespace Application.Tests.TaskItems.Services
             await using var db = dbh.CreateContext();
 
             var taskRepo = new TaskItemRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>(MockBehavior.Strict);
 
-            var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
+            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             TestDataFactory.SeedUser(db);
@@ -364,11 +378,12 @@ namespace Application.Tests.TaskItems.Services
             await using var db = dbh.CreateContext();
 
             var taskRepo = new TaskItemRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
+            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             TestDataFactory.SeedUser(db);
@@ -387,11 +402,12 @@ namespace Application.Tests.TaskItems.Services
             await using var db = dbh.CreateContext();
 
             var taskRepo = new TaskItemRepository(db);
+            var uow = new UnitOfWork(db);
             var actRepo = new TaskActivityRepository(db);
             var actSvc = new TaskActivityWriteService(actRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, actSvc, mediator.Object);
+            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
 
             var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
             TestDataFactory.SeedUser(db);

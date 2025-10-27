@@ -2,6 +2,7 @@ using Application.Columns.Services;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers;
@@ -16,14 +17,15 @@ namespace Application.Tests.Columns.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
-            var svc = new ColumnWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new ColumnWriteService(repo, uow);
 
             var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
             var laneId = TestDataFactory.SeedLane(db, projectId).Id;
             var columnName = "Column name";
 
             await svc.CreateAsync(projectId, laneId, ColumnName.Create(columnName));
-            await repo.SaveChangesAsync();
+            await uow.SaveAsync(MutationKind.Create);
 
             var fromDb = await db.Columns.AsNoTracking().SingleAsync(c => c.Name == columnName);
             fromDb.Name.Value.Should().Be(columnName);
@@ -36,7 +38,8 @@ namespace Application.Tests.Columns.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
-            var svc = new ColumnWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new ColumnWriteService(repo, uow);
 
             var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
             var column = TestDataFactory.SeedColumn(db, pId, lId);
@@ -55,7 +58,8 @@ namespace Application.Tests.Columns.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
-            var svc = new ColumnWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new ColumnWriteService(repo, uow);
 
             var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
             var sameName = "Same Column Name";
@@ -71,7 +75,8 @@ namespace Application.Tests.Columns.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
-            var svc = new ColumnWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new ColumnWriteService(repo, uow);
 
             var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
 
@@ -90,7 +95,8 @@ namespace Application.Tests.Columns.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
-            var svc = new ColumnWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new ColumnWriteService(repo, uow);
 
             var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
             TestDataFactory.SeedColumn(db, pId, lId, "Column A", 0);
@@ -118,7 +124,8 @@ namespace Application.Tests.Columns.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
-            var svc = new ColumnWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new ColumnWriteService(repo, uow);
 
             var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
             var column = TestDataFactory.SeedColumn(db, pId, lId);
@@ -138,7 +145,8 @@ namespace Application.Tests.Columns.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
-            var svc = new ColumnWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new ColumnWriteService(repo, uow);
 
             var res = await svc.DeleteAsync(Guid.NewGuid(), []);
             res.Should().Be(DomainMutation.NotFound);
@@ -150,7 +158,8 @@ namespace Application.Tests.Columns.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
-            var svc = new ColumnWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new ColumnWriteService(repo, uow);
 
             var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
             var column = TestDataFactory.SeedColumn(db, pId, lId);

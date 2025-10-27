@@ -11,18 +11,18 @@ namespace Api.Tests.Fakes
 
         private static byte[] NextRowVersion() => Guid.NewGuid().ToByteArray();
 
-        public Task<TaskNote?> GetByIdAsync(Guid noteId, CancellationToken ct = default)
-            => Task.FromResult(_notes.TryGetValue(noteId, out var n) ? Clone(n) : null);
-
-        public Task<TaskNote?> GetTrackedByIdAsync(Guid noteId, CancellationToken ct = default)
-            => Task.FromResult(_notes.TryGetValue(noteId, out var n) ? n : null);
-
         public Task<IReadOnlyList<TaskNote>> ListByTaskAsync(Guid taskId, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<TaskNote>>(_notes.Values.Where(n => n.TaskId == taskId)
                 .OrderBy(n => n.CreatedAt).Select(Clone).ToList());
 
         public Task<IReadOnlyList<TaskNote>> ListByUserAsync(Guid userId, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<TaskNote>>(_notes.Values.Where(n => n.UserId == userId).Select(Clone).ToList());
+
+        public Task<TaskNote?> GetByIdAsync(Guid noteId, CancellationToken ct = default)
+            => Task.FromResult(_notes.TryGetValue(noteId, out var n) ? Clone(n) : null);
+
+        public Task<TaskNote?> GetTrackedByIdAsync(Guid noteId, CancellationToken ct = default)
+            => Task.FromResult(_notes.TryGetValue(noteId, out var n) ? n : null);
 
         public Task AddAsync(TaskNote note, CancellationToken ct = default)
         {
@@ -31,35 +31,30 @@ namespace Api.Tests.Fakes
             return Task.CompletedTask;
         }
 
-        public async Task<DomainMutation> EditAsync(Guid noteId, NoteContent newContent, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> EditAsync(Guid noteId, NoteContent newContent, byte[] rowVersion, CancellationToken ct = default)
         {
             var note = await GetTrackedByIdAsync(noteId, ct);
-            if (note is null) return DomainMutation.NotFound;
+            if (note is null) return PrecheckStatus.NotFound;
 
-            if (string.IsNullOrWhiteSpace(newContent)) return DomainMutation.NoOp;
-            if (string.Equals(note.Content.Value, newContent.Value, StringComparison.Ordinal)) return DomainMutation.NoOp;
+            if (string.IsNullOrWhiteSpace(newContent)) return PrecheckStatus.NoOp;
+            if (string.Equals(note.Content.Value, newContent.Value, StringComparison.Ordinal)) return PrecheckStatus.NoOp;
 
-            if (!note.RowVersion.SequenceEqual(rowVersion)) return DomainMutation.Conflict;
+            if (!note.RowVersion.SequenceEqual(rowVersion)) return PrecheckStatus.Conflict;
 
             note.Edit(newContent);
             note.SetRowVersion(NextRowVersion());
-            return DomainMutation.Updated;
+            return PrecheckStatus.Ready;
         }
 
-        public async Task<DomainMutation> DeleteAsync(Guid noteId, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> DeleteAsync(Guid noteId, byte[] rowVersion, CancellationToken ct = default)
         {
             var note = await GetTrackedByIdAsync(noteId, ct);
-            if (note is null) return DomainMutation.NotFound;
-            if (!note.RowVersion.SequenceEqual(rowVersion)) return DomainMutation.Conflict;
+            if (note is null) return PrecheckStatus.NotFound;
+            if (!note.RowVersion.SequenceEqual(rowVersion)) return PrecheckStatus.Conflict;
 
             _notes.Remove(noteId);
-            return DomainMutation.Deleted;
+            return PrecheckStatus.Ready;
         }
-
-        public Task<int> SaveCreateChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
-        public Task<DomainMutation> SaveUpdateChangesAsync(CancellationToken ct = default) => Task.FromResult(DomainMutation.Updated);
-
-        public Task<DomainMutation> SaveDeleteChangesAsync(CancellationToken ct = default) => Task.FromResult(DomainMutation.Deleted);
 
         private static TaskNote Clone(TaskNote n)
         {

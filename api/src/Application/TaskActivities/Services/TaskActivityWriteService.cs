@@ -6,7 +6,9 @@ using Domain.ValueObjects;
 
 namespace Application.TaskActivities.Services
 {
-    public sealed class TaskActivityWriteService(ITaskActivityRepository repo, IDateTimeProvider clock) : ITaskActivityWriteService
+    public sealed class TaskActivityWriteService(
+        ITaskActivityRepository repo,
+        IDateTimeProvider clock) : ITaskActivityWriteService
     {
         public async Task<(DomainMutation, TaskActivity?)> CreateAsync(
             Guid taskId,

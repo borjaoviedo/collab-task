@@ -21,22 +21,7 @@ namespace Api.Tests.Fakes
 
         private readonly IProjectMemberRepository _pmRepo = pmRepo;
 
-        public Task<Project?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        {
-            if (_byId.TryGetValue(id, out var p))
-                return Task.FromResult<Project?>(p);
-
-            return Task.FromResult<Project?>(null);
-        }
-
-        public Task<Project?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default)
-        {
-            _byId.TryGetValue(id, out var p);
-            // return tracked instance to simulate EF tracking
-            return Task.FromResult(p);
-        }
-
-        public Task<IReadOnlyList<Project>> GetAllByUserAsync(Guid userId, ProjectFilter? filter = null, CancellationToken ct = default)
+        public Task<IReadOnlyList<Project>> ListByUserAsync(Guid userId, ProjectFilter? filter = null, CancellationToken ct = default)
         {
             filter ??= new ProjectFilter();
             var includeRemoved = filter.IncludeRemoved == true;
@@ -87,6 +72,21 @@ namespace Api.Tests.Fakes
             return Task.FromResult<IReadOnlyList<Project>>(list);
         }
 
+        public Task<Project?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        {
+            if (_byId.TryGetValue(id, out var p))
+                return Task.FromResult<Project?>(p);
+
+            return Task.FromResult<Project?>(null);
+        }
+
+        public Task<Project?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default)
+        {
+            _byId.TryGetValue(id, out var p);
+            // return tracked instance to simulate EF tracking
+            return Task.FromResult(p);
+        }
+
         public Task AddAsync(Project project, CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(project);
@@ -113,23 +113,23 @@ namespace Api.Tests.Fakes
             return Task.CompletedTask;
         }
 
-        public Task<DomainMutation> RenameAsync(Guid id, ProjectName newName, byte[] rowVersion, CancellationToken ct = default)
+        public Task<PrecheckStatus> RenameAsync(Guid id, ProjectName newName, byte[] rowVersion, CancellationToken ct = default)
         {
             if (rowVersion is null || rowVersion.Length == 0)
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             if (!_byId.TryGetValue(id, out var current))
-                return Task.FromResult(DomainMutation.NotFound);
+                return Task.FromResult(PrecheckStatus.NotFound);
 
             if (current.Name == ProjectName.Create(newName))
-                return Task.FromResult(DomainMutation.NoOp);
+                return Task.FromResult(PrecheckStatus.NoOp);
 
             if (!RowVersionEquals(current.RowVersion, rowVersion))
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             // uniqueness per owner
             if (_nameIndex.ContainsKey((current.OwnerId, newName)))
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             // mutate tracked instance to simulate EF
             current.Rename(ProjectName.Create(newName));
@@ -139,29 +139,27 @@ namespace Api.Tests.Fakes
             _nameIndex.TryRemove((current.OwnerId, current.Name.Value), out _);
             _nameIndex.TryAdd((current.OwnerId, newName), 0);
 
-            return Task.FromResult(DomainMutation.Updated);
+            return Task.FromResult(PrecheckStatus.Ready);
         }
 
-        public Task<DomainMutation> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default)
+        public Task<PrecheckStatus> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default)
         {
             if (rowVersion is null || rowVersion.Length == 0)
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             if (!_byId.TryGetValue(id, out var current))
-                return Task.FromResult(DomainMutation.NotFound);
+                return Task.FromResult(PrecheckStatus.NotFound);
 
             if (!RowVersionEquals(current.RowVersion, rowVersion))
-                return Task.FromResult(DomainMutation.Conflict);
+                return Task.FromResult(PrecheckStatus.Conflict);
 
             _byId.TryRemove(id, out _);
             _nameIndex.TryRemove((current.OwnerId, current.Name.Value), out _);
-            return Task.FromResult(DomainMutation.Deleted);
+            return Task.FromResult(PrecheckStatus.Ready);
         }
 
         public Task<bool> ExistsByNameAsync(Guid ownerId, ProjectName name, CancellationToken ct = default)
             => Task.FromResult(_nameIndex.ContainsKey((ownerId, name)));
-
-        public Task<int> SaveChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
 
         // ----------------- helpers -----------------
 

@@ -2,6 +2,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using TestHelpers;
 using TestHelpers.Time;
@@ -14,8 +15,9 @@ namespace Infrastructure.Tests.Repositories
         public async Task AddAsync_And_GetByIdAsync_Persist_And_Read()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new TaskActivityRepository(db);
+            var uow = new UnitOfWork(db);
 
             var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
 
@@ -27,7 +29,7 @@ namespace Infrastructure.Tests.Repositories
                 createdAt: TestTime.FixedNow);
 
             await repo.AddAsync(activity);
-            await repo.SaveChangesAsync();
+            await uow.SaveAsync(MutationKind.Create);
 
             var found = await repo.GetByIdAsync(activity.Id);
             found.Should().NotBeNull();
@@ -39,8 +41,9 @@ namespace Infrastructure.Tests.Repositories
         public async Task AddRangeAsync_And_ListByTaskAsync_Returns_Ordered_By_CreatedAt()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new TaskActivityRepository(db);
+            var uow = new UnitOfWork(db);
 
             var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
 
@@ -53,12 +56,20 @@ namespace Infrastructure.Tests.Repositories
                 TaskActivityType.NoteAdded,
                 ActivityPayload.Create(payload1),
                 createdAt: TestTime.FromFixedMinutes(-3));
+
+            await repo.AddAsync(a1);
+            await uow.SaveAsync(MutationKind.Create);
+
             var a2 = TaskActivity.Create
                 (taskId,
                 userId,
                 TaskActivityType.NoteEdited,
                 ActivityPayload.Create(payload2),
                 createdAt: TestTime.FromFixedMinutes(-2));
+
+            await repo.AddAsync(a2);
+            await uow.SaveAsync(MutationKind.Create);
+
             var a3 = TaskActivity.Create(
                 taskId,
                 userId,
@@ -66,8 +77,8 @@ namespace Infrastructure.Tests.Repositories
                 ActivityPayload.Create(payload3),
                 createdAt: TestTime.FromFixedMinutes(-1));
 
-            await repo.AddRangeAsync([a2, a3, a1]);
-            await repo.SaveChangesAsync();
+            await repo.AddAsync(a3);
+            await uow.SaveAsync(MutationKind.Create);
 
             var list = await repo.ListByTaskAsync(taskId);
             list.Select(x => x.Payload.Value).Should().Equal(payload1, payload2, payload3);
@@ -77,8 +88,9 @@ namespace Infrastructure.Tests.Repositories
         public async Task ListByUserAsync_Filters_By_Actor()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new TaskActivityRepository(db);
+            var uow = new UnitOfWork(db);
 
             var (_, _ , _, taskId, _, userId1) = TestDataFactory.SeedFullBoard(db);
             var userId2 = TestDataFactory.SeedUser(db).Id;
@@ -91,14 +103,19 @@ namespace Infrastructure.Tests.Repositories
                 TaskActivityType.NoteAdded,
                 ActivityPayload.Create(payload1),
                 createdAt: TestTime.FixedNow);
+
+            await repo.AddAsync(a1);
+            await uow.SaveAsync(MutationKind.Create);
+
             var a2 = TaskActivity.Create(
                 taskId,
                 userId2,
                 TaskActivityType.NoteEdited,
                 ActivityPayload.Create(payload2),
                 createdAt: TestTime.FixedNow);
-            await repo.AddRangeAsync([a1, a2]);
-            await repo.SaveChangesAsync();
+
+            await repo.AddAsync(a2);
+            await uow.SaveAsync(MutationKind.Create);
 
             var list1 = await repo.ListByUserAsync(userId1);
             list1.Should().ContainSingle(x => x.ActorId == userId1);
@@ -111,8 +128,9 @@ namespace Infrastructure.Tests.Repositories
         public async Task ListByTypeAsync_Filters_By_Type_Within_Task()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
+            await using var db = dbh.CreateContext();
             var repo = new TaskActivityRepository(db);
+            var uow = new UnitOfWork(db);
 
             var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
 
@@ -122,37 +140,23 @@ namespace Infrastructure.Tests.Repositories
                 TaskActivityType.TaskCreated,
                 ActivityPayload.Create("{\"e\":\"c\"}"),
                 createdAt: TestTime.FixedNow);
+
+            await repo.AddAsync(created);
+            await uow.SaveAsync(MutationKind.Create);
+
             var noteAdded = TaskActivity.Create(
                 taskId,
                 userId,
                 TaskActivityType.NoteAdded,
                 ActivityPayload.Create("{\"e\":\"m\"}"),
                 createdAt: TestTime.FixedNow);
-            await repo.AddRangeAsync([created, noteAdded]);
-            await repo.SaveChangesAsync();
+
+            await repo.AddAsync(noteAdded);
+            await uow.SaveAsync(MutationKind.Create);
 
             var onlyComments = await repo.ListByTypeAsync(taskId, TaskActivityType.TaskCreated);
             onlyComments.Should().ContainSingle();
             onlyComments.Single().Type.Should().Be(TaskActivityType.TaskCreated);
-        }
-
-        [Fact]
-        public async Task SaveChangesAsync_Returns_Affected_Count()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext(recreate: true);
-            var repo = new TaskActivityRepository(db);
-
-            var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
-            var a = TaskActivity.Create(
-                taskId,
-                userId,
-                TaskActivityType.TaskCreated,
-                ActivityPayload.Create("{\"x\":1}"),
-                createdAt: TestTime.FixedNow);
-            await repo.AddAsync(a);
-            var affected = await repo.SaveChangesAsync();
-            affected.Should().BeGreaterThan(0);
         }
     }
 }

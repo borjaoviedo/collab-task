@@ -2,6 +2,7 @@ using Application.Projects.Services;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers;
@@ -17,7 +18,8 @@ namespace Application.Tests.Projects.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
-            var svc = new ProjectWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new ProjectWriteService(repo, uow);
 
             var owner = TestDataFactory.SeedUser(db);
 
@@ -33,7 +35,8 @@ namespace Application.Tests.Projects.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
-            var svc = new ProjectWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new ProjectWriteService(repo, uow);
 
             var user = TestDataFactory.SeedUser(db);
             var project = TestDataFactory.SeedProject(db, user.Id);
@@ -52,7 +55,8 @@ namespace Application.Tests.Projects.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
-            var svc = new ProjectWriteService(repo);
+            var uow = new UnitOfWork(db);
+            var svc = new ProjectWriteService(repo, uow);
 
             var user = TestDataFactory.SeedUser(db);
             var project = TestDataFactory.SeedProject(db, user.Id);
