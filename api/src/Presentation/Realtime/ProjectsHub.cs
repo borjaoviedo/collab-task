@@ -14,9 +14,9 @@ namespace Api.Realtime
             => $"project:{projectId}";
 
         public async Task JoinProject(Guid projectId)
-            => await Groups.AddToGroupAsync(Context.ConnectionId, $"project:{projectId}");
+            => await Groups.AddToGroupAsync(Context.ConnectionId, GroupName(projectId));
 
         public async Task LeaveProject(Guid projectId)
-            => await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"project:{projectId}");
+            => await Groups.RemoveFromGroupAsync(Context.ConnectionId, GroupName(projectId));
     }
 }
