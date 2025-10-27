@@ -9,7 +9,7 @@ namespace Infrastructure.Data.Repositories
     {
         private readonly AppDbContext _db = db;
 
-        public async Task<IReadOnlyList<ProjectMember>> GetByProjectAsync(
+        public async Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(
             Guid projectId,
             bool includeRemoved = false,
             CancellationToken ct = default)
@@ -24,13 +24,13 @@ namespace Infrastructure.Data.Repositories
             return await q.Include(pm => pm.User).ToListAsync(ct);
         }
 
-        public async Task<ProjectMember?> GetAsync(Guid projectId, Guid userId, CancellationToken ct = default)
+        public async Task<ProjectMember?> GetByProjectAndUserIdAsync(Guid projectId, Guid userId, CancellationToken ct = default)
             => await _db.ProjectMembers
                         .AsNoTracking()
                         .Include(pm => pm.User)
                         .FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
 
-        public async Task<ProjectMember?> GetTrackedByIdAsync(Guid projectId, Guid userId, CancellationToken ct = default)
+        public async Task<ProjectMember?> GetTrackedByProjectAndUserIdAsync(Guid projectId, Guid userId, CancellationToken ct = default)
             => await _db.ProjectMembers.FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
 
         public async Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
@@ -50,7 +50,7 @@ namespace Infrastructure.Data.Repositories
             byte[] rowVersion,
             CancellationToken ct = default)
         {
-            var projectMember = await GetTrackedByIdAsync(projectId, userId, ct);
+            var projectMember = await GetTrackedByProjectAndUserIdAsync(projectId, userId, ct);
 
             if (projectMember is null || projectMember.RemovedAt is not null)
                 return PrecheckStatus.NotFound;
@@ -72,7 +72,7 @@ namespace Infrastructure.Data.Repositories
             byte[] rowVersion,
             CancellationToken ct = default)
         {
-            var projectMember = await GetTrackedByIdAsync(projectId, userId, ct);
+            var projectMember = await GetTrackedByProjectAndUserIdAsync(projectId, userId, ct);
             if (projectMember is null) return PrecheckStatus.NotFound;
 
             var now = DateTimeOffset.UtcNow;
@@ -92,7 +92,7 @@ namespace Infrastructure.Data.Repositories
             byte[] rowVersion,
             CancellationToken ct = default)
         {
-            var projectMember = await GetTrackedByIdAsync(projectId, userId, ct);
+            var projectMember = await GetTrackedByProjectAndUserIdAsync(projectId, userId, ct);
             if (projectMember is null) return PrecheckStatus.NotFound;
 
             if (projectMember.RemovedAt == null) return PrecheckStatus.NoOp;
