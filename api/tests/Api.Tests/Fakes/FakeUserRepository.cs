@@ -16,7 +16,7 @@ namespace Api.Tests.Fakes
         // simple rowversion counter
         private long _rv = 1;
 
-        public Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct = default)
+        public Task<IReadOnlyList<User>> ListAsync(CancellationToken ct = default)
         {
             var list = _byId.Values
                 .OrderBy(u => u.Name.Value)

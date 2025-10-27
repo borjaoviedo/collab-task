@@ -11,6 +11,6 @@ namespace Application.Users.Services
         public async Task<User?> GetByEmailAsync(Email email, CancellationToken ct = default)
             => await repo.GetByEmailAsync(email, ct);
         public async Task<IReadOnlyList<User>> ListAsync(CancellationToken ct = default)
-            => await repo.GetAllAsync(ct);
+            => await repo.ListAsync(ct);
     }
 }

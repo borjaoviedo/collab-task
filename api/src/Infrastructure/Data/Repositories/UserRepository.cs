@@ -10,7 +10,7 @@ namespace Infrastructure.Data.Repositories
     {
         private readonly AppDbContext _db = db;
 
-        public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct = default)
+        public async Task<IReadOnlyList<User>> ListAsync(CancellationToken ct = default)
             => await _db.Users
                         .AsNoTracking()
                         .OrderBy(u => u.Name)

@@ -79,34 +79,34 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task GetAllAsync_Returns_All_Users_List()
+        public async Task ListAsync_Returns_All_Users_List()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
             TestDataFactory.SeedUser(db);
-            var list = await repo.GetAllAsync();
+            var list = await repo.ListAsync();
             list.Should().NotBeNull();
             list.Count.Should().Be(1);
 
             TestDataFactory.SeedUser(db);
-            list = await repo.GetAllAsync();
+            list = await repo.ListAsync();
             list.Count.Should().Be(2);
 
             TestDataFactory.SeedUser(db);
-            list = await repo.GetAllAsync();
+            list = await repo.ListAsync();
             list.Count.Should().Be(3);
         }
 
         [Fact]
-        public async Task GetAllAsync_Returns_Empty_List_When_No_Users()
+        public async Task ListAsync_Returns_Empty_List_When_No_Users()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var list = await repo.GetAllAsync();
+            var list = await repo.ListAsync();
             list.Should().BeEmpty();
         }
 
