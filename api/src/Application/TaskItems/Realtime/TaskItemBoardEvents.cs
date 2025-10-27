@@ -7,14 +7,14 @@ namespace Application.TaskItems.Realtime
     public sealed record TaskItemDeletedPayload(Guid TaskId);
 
     public sealed record TaskItemCreatedEvent(Guid ProjectId, TaskItemCreatedPayload Payload)
-        : Application.Realtime.BoardEvent<TaskItemCreatedPayload>("task.created", ProjectId, DateTimeOffset.UtcNow, Payload);
+        : Application.Realtime.RealtimeEvent<TaskItemCreatedPayload>("task.created", ProjectId, DateTimeOffset.UtcNow, Payload);
 
     public sealed record TaskItemUpdatedEvent(Guid ProjectId, TaskItemUpdatedPayload Payload)
-        : Application.Realtime.BoardEvent<TaskItemUpdatedPayload>("task.updated", ProjectId, DateTimeOffset.UtcNow, Payload);
+        : Application.Realtime.RealtimeEvent<TaskItemUpdatedPayload>("task.updated", ProjectId, DateTimeOffset.UtcNow, Payload);
 
     public sealed record TaskItemMovedEvent(Guid ProjectId, TaskItemMovedPayload Payload)
-        : Application.Realtime.BoardEvent<TaskItemMovedPayload>("task.moved", ProjectId, DateTimeOffset.UtcNow, Payload);
+        : Application.Realtime.RealtimeEvent<TaskItemMovedPayload>("task.moved", ProjectId, DateTimeOffset.UtcNow, Payload);
 
     public sealed record TaskItemDeletedEvent(Guid ProjectId, TaskItemDeletedPayload Payload)
-        : Application.Realtime.BoardEvent<TaskItemDeletedPayload>("task.deleted", ProjectId, DateTimeOffset.UtcNow, Payload);
+        : Application.Realtime.RealtimeEvent<TaskItemDeletedPayload>("task.deleted", ProjectId, DateTimeOffset.UtcNow, Payload);
 }
