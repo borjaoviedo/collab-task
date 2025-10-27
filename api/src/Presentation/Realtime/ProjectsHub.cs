@@ -1,11 +1,12 @@
+using Api.Auth.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Api.Realtime
 {
+    [Authorize(Policy = Policies.ProjectReader)]
     public sealed class ProjectsHub : Hub
     {
-        [Authorize]
         public override async Task OnConnectedAsync()
             => await base.OnConnectedAsync();
 
