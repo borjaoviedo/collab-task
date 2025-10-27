@@ -23,12 +23,12 @@ namespace Infrastructure.Data.Repositories
                         .Where(a => a.UserId == userId)
                         .ToListAsync(ct);
 
-        public async Task<TaskAssignment?> GetAsync(Guid taskId, Guid userId, CancellationToken ct = default)
+        public async Task<TaskAssignment?> GetByTaskAndUserIdAsync(Guid taskId, Guid userId, CancellationToken ct = default)
             => await _db.TaskAssignments
                         .AsNoTracking()
                         .FirstOrDefaultAsync(a => a.TaskId == taskId && a.UserId == userId, ct);
 
-        public async Task<TaskAssignment?> GetTrackedAsync(Guid taskId, Guid userId, CancellationToken ct = default)
+        public async Task<TaskAssignment?> GetTrackedByTaskAndUserIdAsync(Guid taskId, Guid userId, CancellationToken ct = default)
             => await _db.TaskAssignments
                         .FirstOrDefaultAsync(a => a.TaskId == taskId && a.UserId == userId, ct);
 
@@ -42,7 +42,7 @@ namespace Infrastructure.Data.Repositories
             byte[] rowVersion,
             CancellationToken ct = default)
         {
-            var existing = await GetTrackedAsync(taskId, userId, ct);
+            var existing = await GetTrackedByTaskAndUserIdAsync(taskId, userId, ct);
             if (existing is null) return (PrecheckStatus.NotFound, null);
             if (existing.Role == newRole) return (PrecheckStatus.NoOp, null);
 
@@ -62,7 +62,7 @@ namespace Infrastructure.Data.Repositories
 
         public async Task<PrecheckStatus> DeleteAsync(Guid taskId, Guid userId, byte[] rowVersion, CancellationToken ct = default)
         {
-            var existing = await GetTrackedAsync(taskId, userId, ct);
+            var existing = await GetTrackedByTaskAndUserIdAsync(taskId, userId, ct);
             if (existing is null) return PrecheckStatus.NotFound;
 
             _db.Entry(existing).Property(a => a.RowVersion).OriginalValue = rowVersion;
