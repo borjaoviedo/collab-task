@@ -74,7 +74,7 @@ namespace Application.TaskNotes.Services
             {
                 var notification = new TaskNoteUpdated(
                     projectId,
-                    new TaskNoteUpdatedPayload(taskId, noteId, content));
+                    new TaskNoteUpdatedPayload(taskId, noteId, content.Value));
                 await mediator.Publish(notification, ct);
             }
 
