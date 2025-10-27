@@ -56,12 +56,20 @@ namespace Infrastructure.Tests.Repositories
                 TaskActivityType.NoteAdded,
                 ActivityPayload.Create(payload1),
                 createdAt: TestTime.FromFixedMinutes(-3));
+
+            await repo.AddAsync(a1);
+            await uow.SaveAsync(MutationKind.Create);
+
             var a2 = TaskActivity.Create
                 (taskId,
                 userId,
                 TaskActivityType.NoteEdited,
                 ActivityPayload.Create(payload2),
                 createdAt: TestTime.FromFixedMinutes(-2));
+
+            await repo.AddAsync(a2);
+            await uow.SaveAsync(MutationKind.Create);
+
             var a3 = TaskActivity.Create(
                 taskId,
                 userId,
@@ -69,7 +77,7 @@ namespace Infrastructure.Tests.Repositories
                 ActivityPayload.Create(payload3),
                 createdAt: TestTime.FromFixedMinutes(-1));
 
-            await repo.AddRangeAsync([a2, a3, a1]);
+            await repo.AddAsync(a3);
             await uow.SaveAsync(MutationKind.Create);
 
             var list = await repo.ListByTaskAsync(taskId);
@@ -95,13 +103,18 @@ namespace Infrastructure.Tests.Repositories
                 TaskActivityType.NoteAdded,
                 ActivityPayload.Create(payload1),
                 createdAt: TestTime.FixedNow);
+
+            await repo.AddAsync(a1);
+            await uow.SaveAsync(MutationKind.Create);
+
             var a2 = TaskActivity.Create(
                 taskId,
                 userId2,
                 TaskActivityType.NoteEdited,
                 ActivityPayload.Create(payload2),
                 createdAt: TestTime.FixedNow);
-            await repo.AddRangeAsync([a1, a2]);
+
+            await repo.AddAsync(a2);
             await uow.SaveAsync(MutationKind.Create);
 
             var list1 = await repo.ListByUserAsync(userId1);
@@ -127,13 +140,18 @@ namespace Infrastructure.Tests.Repositories
                 TaskActivityType.TaskCreated,
                 ActivityPayload.Create("{\"e\":\"c\"}"),
                 createdAt: TestTime.FixedNow);
+
+            await repo.AddAsync(created);
+            await uow.SaveAsync(MutationKind.Create);
+
             var noteAdded = TaskActivity.Create(
                 taskId,
                 userId,
                 TaskActivityType.NoteAdded,
                 ActivityPayload.Create("{\"e\":\"m\"}"),
                 createdAt: TestTime.FixedNow);
-            await repo.AddRangeAsync([created, noteAdded]);
+
+            await repo.AddAsync(noteAdded);
             await uow.SaveAsync(MutationKind.Create);
 
             var onlyComments = await repo.ListByTypeAsync(taskId, TaskActivityType.TaskCreated);

@@ -37,8 +37,5 @@ namespace Infrastructure.Data.Repositories
 
         public async Task AddAsync(TaskActivity activity, CancellationToken ct = default)
             => await _db.TaskActivities.AddAsync(activity, ct);
-
-        public async Task AddRangeAsync(IEnumerable<TaskActivity> activities, CancellationToken ct = default)
-            => await _db.TaskActivities.AddRangeAsync(activities, ct);
     }
 }

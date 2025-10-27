@@ -11,6 +11,5 @@ namespace Application.TaskActivities.Abstractions
         Task<TaskActivity?> GetByIdAsync(Guid activityId, CancellationToken ct = default);
 
         Task AddAsync(TaskActivity activity, CancellationToken ct = default);
-        Task AddRangeAsync(IEnumerable<TaskActivity> activities, CancellationToken ct = default);
     }
 }
