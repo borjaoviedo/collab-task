@@ -8,8 +8,8 @@ namespace Application.TaskAssignments.Abstractions
     {
         Task<IReadOnlyList<TaskAssignment>> ListByTaskAsync(Guid taskId, CancellationToken ct = default);
         Task<IReadOnlyList<TaskAssignment>> ListByUserAsync(Guid userId, CancellationToken ct = default);
-        Task<TaskAssignment?> GetAsync(Guid taskId, Guid userId, CancellationToken ct = default);
-        Task<TaskAssignment?> GetTrackedAsync(Guid taskId, Guid userId, CancellationToken ct = default);
+        Task<TaskAssignment?> GetByTaskAndUserIdAsync(Guid taskId, Guid userId, CancellationToken ct = default);
+        Task<TaskAssignment?> GetTrackedByTaskAndUserIdAsync(Guid taskId, Guid userId, CancellationToken ct = default);
 
         Task AddAsync(TaskAssignment assignment, CancellationToken ct = default);
 

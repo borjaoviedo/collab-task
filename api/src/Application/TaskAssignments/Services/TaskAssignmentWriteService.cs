@@ -25,7 +25,7 @@ namespace Application.TaskAssignments.Services
             Guid executedBy,
             CancellationToken ct = default)
         {
-            var existing = await repo.GetTrackedAsync(taskId, targetUserId, ct);
+            var existing = await repo.GetTrackedByTaskAndUserIdAsync(taskId, targetUserId, ct);
             if (existing is not null)
             {
                 if (existing.Role == role)

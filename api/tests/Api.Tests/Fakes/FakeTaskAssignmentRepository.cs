@@ -2,7 +2,6 @@ using Application.TaskAssignments.Abstractions;
 using Application.TaskAssignments.Changes;
 using Domain.Entities;
 using Domain.Enums;
-using System.Threading.Tasks;
 
 namespace Api.Tests.Fakes
 {
@@ -12,10 +11,10 @@ namespace Api.Tests.Fakes
 
         private static byte[] NextRowVersion() => Guid.NewGuid().ToByteArray();
 
-        public Task<TaskAssignment?> GetAsync(Guid taskId, Guid userId, CancellationToken ct = default)
+        public Task<TaskAssignment?> GetByTaskAndUserIdAsync(Guid taskId, Guid userId, CancellationToken ct = default)
             => Task.FromResult(_map.TryGetValue((taskId, userId), out var a) ? Clone(a) : null);
 
-        public Task<TaskAssignment?> GetTrackedAsync(Guid taskId, Guid userId, CancellationToken ct = default)
+        public Task<TaskAssignment?> GetTrackedByTaskAndUserIdAsync(Guid taskId, Guid userId, CancellationToken ct = default)
             => Task.FromResult(_map.TryGetValue((taskId, userId), out var a) ? a : null);
 
         public Task<IReadOnlyList<TaskAssignment>> ListByTaskAsync(Guid taskId, CancellationToken ct = default)

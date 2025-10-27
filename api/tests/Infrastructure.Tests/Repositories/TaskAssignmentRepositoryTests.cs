@@ -32,7 +32,7 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task GetAsync_Returns_Assignment_Or_Null()
+        public async Task GetByTaskAndUserIdAsync_Returns_Assignment_Or_Null()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -42,10 +42,10 @@ namespace Infrastructure.Tests.Repositories
             var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
             TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.Owner);
 
-            var found = await repo.GetAsync(taskId, userId);
+            var found = await repo.GetByTaskAndUserIdAsync(taskId, userId);
             found.Should().NotBeNull();
 
-            var notFound = await repo.GetAsync(taskId, Guid.NewGuid());
+            var notFound = await repo.GetByTaskAndUserIdAsync(taskId, Guid.NewGuid());
             notFound.Should().BeNull();
         }
 
