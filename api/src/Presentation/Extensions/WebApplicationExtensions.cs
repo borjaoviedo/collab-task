@@ -6,7 +6,7 @@ namespace Api.Extensions
     {
         public static WebApplication MapApiLayer(this WebApplication app)
         {
-            app.MapHub<BoardHub>("/hubs/board").RequireAuthorization();
+            app.MapHub<ProjectsHub>("/hubs/board").RequireAuthorization();
             return app;
         }
     }
