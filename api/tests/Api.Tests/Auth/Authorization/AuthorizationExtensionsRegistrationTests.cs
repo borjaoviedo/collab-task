@@ -1,11 +1,11 @@
 using Api.Auth.Authorization;
 using Api.Extensions;
-using Api.Tests.Fakes;
 using Application.ProjectMembers.Abstractions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using TestHelpers.Api.Fakes;
 
 namespace Api.Tests.Auth.Authorization
 {

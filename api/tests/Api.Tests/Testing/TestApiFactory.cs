@@ -1,5 +1,4 @@
 using Api.Filters;
-using Api.Tests.Fakes;
 using Application.Columns.Abstractions;
 using Application.Columns.Services;
 using Application.Common.Abstractions.Persistence;
@@ -28,6 +27,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using TestHelpers.Api.Fakes;
 
 namespace Api.Tests.Testing
 {

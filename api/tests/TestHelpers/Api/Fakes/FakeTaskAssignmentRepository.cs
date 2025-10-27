@@ -3,7 +3,7 @@ using Application.TaskAssignments.Changes;
 using Domain.Entities;
 using Domain.Enums;
 
-namespace Api.Tests.Fakes
+namespace TestHelpers.Api.Fakes
 {
     public sealed class FakeTaskAssignmentRepository : ITaskAssignmentRepository
     {

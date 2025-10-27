@@ -6,7 +6,7 @@ using Domain.Enums;
 using Domain.ValueObjects;
 using System.Collections.Concurrent;
 
-namespace Api.Tests.Fakes
+namespace TestHelpers.Api.Fakes
 {
     public sealed class FakeProjectRepository(IProjectMemberRepository pmRepo) : IProjectRepository
     {

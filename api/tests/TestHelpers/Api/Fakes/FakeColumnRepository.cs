@@ -3,7 +3,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 
-namespace Api.Tests.Fakes
+namespace TestHelpers.Api.Fakes
 {
     public sealed class FakeColumnRepository : IColumnRepository
     {
@@ -162,7 +162,7 @@ namespace Api.Tests.Fakes
         private static Column Clone(Column c)
         {
             var clone = Column.Create(c.ProjectId, c.LaneId, ColumnName.Create(c.Name), c.Order);
-            var rowVersion = (c.RowVersion is null) ? Array.Empty<byte>() : c.RowVersion.ToArray();
+            var rowVersion = c.RowVersion is null ? Array.Empty<byte>() : c.RowVersion.ToArray();
             clone.SetRowVersion(rowVersion);
             return clone;
         }

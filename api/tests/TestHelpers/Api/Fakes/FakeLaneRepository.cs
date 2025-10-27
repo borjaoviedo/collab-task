@@ -3,7 +3,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 
-namespace Api.Tests.Fakes
+namespace TestHelpers.Api.Fakes
 {
     public sealed class FakeLaneRepository : ILaneRepository
     {
@@ -148,7 +148,7 @@ namespace Api.Tests.Fakes
         private static Lane Clone(Lane l)
         {
             var clone = Lane.Create(l.ProjectId, LaneName.Create(l.Name), l.Order);
-            var rowVersion = (l.RowVersion is null) ? Array.Empty<byte>() : l.RowVersion.ToArray();
+            var rowVersion = l.RowVersion is null ? Array.Empty<byte>() : l.RowVersion.ToArray();
             clone.SetRowVersion(rowVersion);
             return clone;
         }

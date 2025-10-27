@@ -4,7 +4,7 @@ using Domain.Enums;
 using Domain.ValueObjects;
 using TestHelpers.Time;
 
-namespace Api.Tests.Fakes
+namespace TestHelpers.Api.Fakes
 {
     public sealed class FakeTaskActivityRepository : ITaskActivityRepository
     {

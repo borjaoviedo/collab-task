@@ -4,7 +4,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 
-namespace Api.Tests.Fakes
+namespace TestHelpers.Api.Fakes
 {
     public sealed class FakeTaskItemRepository : ITaskItemRepository
     {

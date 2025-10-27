@@ -1,10 +1,10 @@
 using Api.Auth.Authorization;
-using Api.Tests.Fakes;
 using Domain.Enums;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using TestHelpers.Api.Fakes;
 
 namespace Api.Tests.Auth.Authorization
 {
