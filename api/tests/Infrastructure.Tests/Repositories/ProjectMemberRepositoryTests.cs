@@ -10,7 +10,7 @@ namespace Infrastructure.Tests.Repositories
     public sealed class ProjectMemberRepositoryTests
     {
         [Fact]
-        public async Task GetAsync_Returns_Member_When_Exists_Else_Null()
+        public async Task GetByProjectAndUserIdAsync_Returns_Member_When_Exists_Else_Null()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -18,16 +18,16 @@ namespace Infrastructure.Tests.Repositories
 
             var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
 
-            var found = await repo.GetAsync(pId, uId);
+            var found = await repo.GetByProjectAndUserIdAsync(pId, uId);
             found.Should().NotBeNull();
             found!.Role.Should().Be(ProjectRole.Owner);
 
-            var missing = await repo.GetAsync(pId, Guid.NewGuid());
+            var missing = await repo.GetByProjectAndUserIdAsync(pId, Guid.NewGuid());
             missing.Should().BeNull();
         }
 
         [Fact]
-        public async Task GetTrackedByIdAsync_Returns_Member_When_Exists_Else_Null()
+        public async Task GetTrackedByProjectAndUserIdAsync_Returns_Member_When_Exists_Else_Null()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -35,23 +35,23 @@ namespace Infrastructure.Tests.Repositories
 
             var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
 
-            var found = await repo.GetTrackedByIdAsync(pId, uId);
+            var found = await repo.GetTrackedByProjectAndUserIdAsync(pId, uId);
             found.Should().NotBeNull();
             found!.Role.Should().Be(ProjectRole.Owner);
 
-            var missing = await repo.GetTrackedByIdAsync(pId, Guid.NewGuid());
+            var missing = await repo.GetTrackedByProjectAndUserIdAsync(pId, Guid.NewGuid());
             missing.Should().BeNull();
         }
 
         [Fact]
-        public async Task GetByProjectAsync_Returns_Members_List_When_Exists()
+        public async Task ListByProjectAsync_Returns_Members_List_When_Exists()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
 
             var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-            var list = await repo.GetByProjectAsync(pId);
+            var list = await repo.ListByProjectAsync(pId);
             list.Should().NotBeEmpty();
             list.Count.Should().Be(1);
         }
@@ -84,7 +84,7 @@ namespace Infrastructure.Tests.Repositories
             await repo.AddAsync(newProjectMember);
             await uow.SaveAsync(MutationKind.Create);
 
-            var fromDb = await repo.GetAsync(pId, newUser.Id);
+            var fromDb = await repo.GetByProjectAndUserIdAsync(pId, newUser.Id);
             fromDb!.Role.Should().Be(ProjectRole.Member);
         }
 
@@ -97,7 +97,7 @@ namespace Infrastructure.Tests.Repositories
 
             var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
 
-            var current = await repo.GetAsync(pId, uId);
+            var current = await repo.GetByProjectAndUserIdAsync(pId, uId);
             var res = await repo.UpdateRoleAsync(pId, uId, ProjectRole.Owner, current!.RowVersion!);
 
             res.Should().Be(PrecheckStatus.NoOp);
@@ -112,7 +112,7 @@ namespace Infrastructure.Tests.Repositories
             var uow = new UnitOfWork(db);
 
             var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
-            var current = await repo.GetAsync(pId, uId);
+            var current = await repo.GetByProjectAndUserIdAsync(pId, uId);
 
             // remove
             var removeResult = await repo.SetRemovedAsync(pId, uId, current!.RowVersion);
@@ -120,7 +120,7 @@ namespace Infrastructure.Tests.Repositories
 
             await uow.SaveAsync(MutationKind.Update);
 
-            var removed = await repo.GetAsync(pId, uId);
+            var removed = await repo.GetByProjectAndUserIdAsync(pId, uId);
             removed!.RemovedAt.Should().NotBeNull();
 
             // restore with stale token should fail on SaveChanges
@@ -129,7 +129,7 @@ namespace Infrastructure.Tests.Repositories
 
             await uow.SaveAsync(MutationKind.Update);
 
-            var restored = await repo.GetAsync(pId, uId);
+            var restored = await repo.GetByProjectAndUserIdAsync(pId, uId);
             restored!.RemovedAt.Should().Be(null);
         }
 

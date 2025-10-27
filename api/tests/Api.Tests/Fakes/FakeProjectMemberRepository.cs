@@ -16,7 +16,7 @@ namespace Api.Tests.Fakes
         // simple rowversion counter
         private long _rv = 1;
 
-        public Task<IReadOnlyList<ProjectMember>> GetByProjectAsync(
+        public Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(
             Guid projectId,
             bool includeRemoved = false,
             CancellationToken ct = default)
@@ -36,7 +36,7 @@ namespace Api.Tests.Fakes
             return Task.FromResult<IReadOnlyList<ProjectMember>>(list);
         }
 
-        public Task<ProjectMember?> GetAsync(Guid projectId, Guid userId, CancellationToken ct = default)
+        public Task<ProjectMember?> GetByProjectAndUserIdAsync(Guid projectId, Guid userId, CancellationToken ct = default)
         {
             var key = (projectId, userId);
 
@@ -46,7 +46,7 @@ namespace Api.Tests.Fakes
             return Task.FromResult<ProjectMember?>(null);
         }
 
-        public Task<ProjectMember?> GetTrackedByIdAsync(Guid projectId, Guid userId, CancellationToken ct = default)
+        public Task<ProjectMember?> GetTrackedByProjectAndUserIdAsync(Guid projectId, Guid userId, CancellationToken ct = default)
         {
             _byKey.TryGetValue((projectId, userId), out var pm);
             // Return the tracked instance directly to simulate EF tracking.

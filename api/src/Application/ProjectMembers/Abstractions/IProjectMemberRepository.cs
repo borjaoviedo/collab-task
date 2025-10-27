@@ -5,12 +5,12 @@ namespace Application.ProjectMembers.Abstractions
 {
     public interface IProjectMemberRepository
     {
-        Task<IReadOnlyList<ProjectMember>> GetByProjectAsync(
+        Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(
             Guid projectId,
             bool includeRemoved = false,
             CancellationToken ct = default);
-        Task<ProjectMember?> GetAsync(Guid projectId, Guid userId, CancellationToken ct = default);
-        Task<ProjectMember?> GetTrackedByIdAsync(Guid projectId, Guid userId, CancellationToken ct = default);
+        Task<ProjectMember?> GetByProjectAndUserIdAsync(Guid projectId, Guid userId, CancellationToken ct = default);
+        Task<ProjectMember?> GetTrackedByProjectAndUserIdAsync(Guid projectId, Guid userId, CancellationToken ct = default);
         Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default);
 
         Task AddAsync(ProjectMember member, CancellationToken ct = default);
