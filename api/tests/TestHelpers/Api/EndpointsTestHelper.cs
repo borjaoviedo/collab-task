@@ -9,7 +9,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace TestHelpers
+namespace TestHelpers.Api
 {
     public static class EndpointsTestHelper
     {

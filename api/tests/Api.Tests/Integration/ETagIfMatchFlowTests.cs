@@ -6,7 +6,7 @@ using FluentAssertions;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using TestHelpers;
+using TestHelpers.Api;
 
 namespace Api.Tests.Integration
 {
