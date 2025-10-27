@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.TaskAssignments.Realtime
 {
-    public sealed class TaskAssignmentChangedHandler(IBoardNotifier notifier) :
+    public sealed class TaskAssignmentChangedHandler(IRealtimeNotifier notifier) :
     INotificationHandler<TaskAssignmentCreated>,
     INotificationHandler<TaskAssignmentUpdated>,
     INotificationHandler<TaskAssignmentRemoved>

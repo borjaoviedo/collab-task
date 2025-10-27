@@ -7,11 +7,20 @@ namespace Application.TaskAssignments.Realtime
     public sealed record TaskAssignmentRemovedPayload(Guid TaskId, Guid UserId);
 
     public sealed record TaskAssignmentCreatedEvent(Guid ProjectId, TaskAssignmentCreatedPayload Payload)
-        : Application.Realtime.BoardEvent<TaskAssignmentCreatedPayload>("assignment.created", ProjectId, DateTimeOffset.UtcNow, Payload);
+        : Application.Realtime.RealtimeEvent<TaskAssignmentCreatedPayload>(TypeName, ProjectId, DateTimeOffset.UtcNow, Payload)
+    {
+        public const string TypeName = "assignment.created";
+    }
 
     public sealed record TaskAssignmentUpdatedEvent(Guid ProjectId, TaskAssignmentUpdatedPayload Payload)
-        : Application.Realtime.BoardEvent<TaskAssignmentUpdatedPayload>("assignment.updated", ProjectId, DateTimeOffset.UtcNow, Payload);
+        : Application.Realtime.RealtimeEvent<TaskAssignmentUpdatedPayload>(TypeName, ProjectId, DateTimeOffset.UtcNow, Payload)
+    {
+        public const string TypeName = "assignment.updated";
+    }
 
     public sealed record TaskAssignmentRemovedEvent(Guid ProjectId, TaskAssignmentRemovedPayload Payload)
-        : Application.Realtime.BoardEvent<TaskAssignmentRemovedPayload>("assignment.removed", ProjectId, DateTimeOffset.UtcNow, Payload);
+        : Application.Realtime.RealtimeEvent<TaskAssignmentRemovedPayload>(TypeName, ProjectId, DateTimeOffset.UtcNow, Payload)
+    {
+        public const string TypeName = "assignment.removed";
+    }
 }

@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.TaskItems.Realtime
 {
-    public sealed class TaskItemChangedHandler(IBoardNotifier notifier) :
+    public sealed class TaskItemChangedHandler(IRealtimeNotifier notifier) :
     INotificationHandler<TaskItemCreated>,
     INotificationHandler<TaskItemUpdated>,
     INotificationHandler<TaskItemMoved>,

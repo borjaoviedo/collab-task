@@ -7,10 +7,10 @@ namespace Application.Tests.TaskItems.Realtime
     public class TaskItemHandlersTests
     {
         [Fact]
-        public async Task CreatedHandler_calls_notifier_with_TaskCreatedEvent()
+        public async Task CreatedHandler_Calls_Notifier_With_TaskCreatedEvent()
         {
             // Arrange
-            var notifier = new Mock<IBoardNotifier>();
+            var notifier = new Mock<IRealtimeNotifier>();
             var handler = new TaskItemChangedHandler(notifier.Object);
             var projectId = Guid.NewGuid();
             var payload = new TaskItemCreatedPayload(
@@ -27,7 +27,7 @@ namespace Application.Tests.TaskItems.Realtime
             // Assert
             notifier.Verify(n => n.NotifyAsync(
                 projectId,
-                It.Is<BoardEvent<TaskItemCreatedPayload>>(e =>
+                It.Is<RealtimeEvent<TaskItemCreatedPayload>>(e =>
                     e.Type == "task.created" &&
                     e.ProjectId == projectId &&
                     e.Payload == payload),
@@ -36,9 +36,9 @@ namespace Application.Tests.TaskItems.Realtime
         }
 
         [Fact]
-        public async Task UpdatedHandler_calls_notifier_with_TaskUpdatedEvent()
+        public async Task UpdatedHandler_Calls_Notifier_With_TaskUpdatedEvent()
         {
-            var notifier = new Mock<IBoardNotifier>();
+            var notifier = new Mock<IRealtimeNotifier>();
             var handler = new TaskItemChangedHandler(notifier.Object);
             var projectId = Guid.NewGuid();
             var payload = new TaskItemUpdatedPayload(
@@ -51,7 +51,7 @@ namespace Application.Tests.TaskItems.Realtime
 
             notifier.Verify(n => n.NotifyAsync(
                 projectId,
-                It.Is<BoardEvent<TaskItemUpdatedPayload>>(e =>
+                It.Is<RealtimeEvent<TaskItemUpdatedPayload>>(e =>
                     e.Type == "task.updated" &&
                     e.ProjectId == projectId &&
                     e.Payload == payload),
@@ -60,9 +60,9 @@ namespace Application.Tests.TaskItems.Realtime
         }
 
         [Fact]
-        public async Task MovedHandler_calls_notifier_with_TaskMovedEvent()
+        public async Task MovedHandler_Calls_Notifier_With_TaskMovedEvent()
         {
-            var notifier = new Mock<IBoardNotifier>();
+            var notifier = new Mock<IRealtimeNotifier>();
             var handler = new TaskItemChangedHandler(notifier.Object);
             var projectId = Guid.NewGuid();
             var payload = new TaskItemMovedPayload(
@@ -77,7 +77,7 @@ namespace Application.Tests.TaskItems.Realtime
 
             notifier.Verify(n => n.NotifyAsync(
                 projectId,
-                It.Is<BoardEvent<TaskItemMovedPayload>>(e =>
+                It.Is<RealtimeEvent<TaskItemMovedPayload>>(e =>
                     e.Type == "task.moved" &&
                     e.ProjectId == projectId &&
                     e.Payload == payload),
@@ -86,10 +86,10 @@ namespace Application.Tests.TaskItems.Realtime
         }
 
         [Fact]
-        public async Task DeletedHandler_calls_notifier_with_TaskDeletedEvent()
+        public async Task DeletedHandler_Calls_Notifier_With_TaskDeletedEvent()
         {
             // Arrange
-            var notifier = new Mock<IBoardNotifier>();
+            var notifier = new Mock<IRealtimeNotifier>();
             var handler = new TaskItemChangedHandler(notifier.Object);
             var projectId = Guid.NewGuid();
             var payload = new TaskItemDeletedPayload(Guid.NewGuid());
@@ -100,7 +100,7 @@ namespace Application.Tests.TaskItems.Realtime
             // Assert
             notifier.Verify(n => n.NotifyAsync(
                 projectId,
-                It.Is<BoardEvent<TaskItemDeletedPayload>>(e =>
+                It.Is<RealtimeEvent<TaskItemDeletedPayload>>(e =>
                     e.Type == "task.deleted" &&
                     e.ProjectId == projectId &&
                     e.Payload == payload),
