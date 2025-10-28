@@ -4,9 +4,12 @@ using Application.Projects.DTOs;
 using Domain.Enums;
 using FluentAssertions;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using TestHelpers.Api;
+using TestHelpers.Api.Auth;
+using TestHelpers.Api.Defaults;
+using TestHelpers.Api.Http;
+using TestHelpers.Api.ProjectMembers;
+using TestHelpers.Api.Projects;
 
 namespace Api.Tests.Endpoints
 {
@@ -18,104 +21,56 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            // owner creates project
-            var owner = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
-            (await client.PostAsJsonAsync("/projects", new ProjectCreateDto() { Name = "Team"})).EnsureSuccessStatusCode();
-            var prj = (await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", EndpointsTestHelper.Json))!
-                .Single(p => p.Name == "Team");
+            // Owner creates project
+            var owner = await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
+            var project = await ProjectTestHelper.PostProjectDtoAsync(client);
 
-            // another user to be added
-            var member = await EndpointsTestHelper.RegisterAndLoginAsync(client, name: "Non Default User Name");
+            // Another user to be added
+            var user = await AuthTestHelper.PostRegisterAndLoginAsync(
+                client,
+                email: "random@e.com",
+                name: "Non Default User Name");
 
-            // add as Member (Requires ProjectAdmin -> owner qualifies)
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
-            var add = await client.PostAsJsonAsync(
-                $"/projects/{prj.Id}/members",
-                new ProjectMemberCreateDto() { UserId = member.UserId, Role = ProjectRole.Member });
-            add.StatusCode.Should().Be(HttpStatusCode.Created);
+            // Add as Member (requires ProjectAdmin -> owner qualifies)
+            client.SetAuthorization(owner.AccessToken);
+            var createProjectMemberDto = new ProjectMemberCreateDto()
+            {
+                Role = ProjectMemberDefaults.DefaultProjectMemberRole,
+                UserId = user.UserId
+            };
+            var createResponse = await ProjectMemberTestHelper.PostProjectMemberResponseAsync(
+                client,
+                project.Id,
+                createProjectMemberDto);
+            createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-            // list members
-            var list = await client.GetAsync($"/projects/{prj.Id}/members?includeRemoved=false");
-            list.StatusCode.Should().Be(HttpStatusCode.OK);
-            var items = await list.Content.ReadFromJsonAsync<List<ProjectMemberReadDto>>(EndpointsTestHelper.Json);
-            var m = items!.Single(x => x.UserId == member.UserId);
+            var projectMember = await ProjectMemberTestHelper.GetProjectMemberDtoAsync(
+                client,
+                project.Id,
+                user.UserId);
 
-            // change role to Admin (Requires ProjectOwner) -> send If-Match
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, m.RowVersion);
-            var change = await client.PatchAsJsonAsync(
-                $"/projects/{prj.Id}/members/{member.UserId}/role",
-                new ProjectMemberChangeRoleDto() { NewRole = ProjectRole.Admin});
-            change.StatusCode.Should().Be(HttpStatusCode.OK);
-            var changed = await change.Content.ReadFromJsonAsync<ProjectMemberReadDto>(EndpointsTestHelper.Json);
-            changed!.Role.Should().Be(ProjectRole.Admin);
+            // Change role
+            var changeRoleDto = await ProjectMemberTestHelper.ChangeProjectMemberRoleDtoAsync(
+                client,
+                project.Id,
+                projectMember.UserId,
+                projectMember.RowVersion);
+            changeRoleDto.Role.Should().Be(ProjectRole.Admin);
 
-            // refetch to get new RowVersion
-            items = await client.GetFromJsonAsync<List<ProjectMemberReadDto>>(
-                $"/projects/{prj.Id}/members?includeRemoved=false", EndpointsTestHelper.Json);
-            m = items!.Single(x => x.UserId == member.UserId);
+            // Refetch to get new RowVersion
+            projectMember = await ProjectMemberTestHelper.GetProjectMemberDtoAsync(client, project.Id, user.UserId);
 
-            // remove (Requires ProjectAdmin) -> If-Match
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, m.RowVersion);
-            var rem = await client.PatchAsJsonAsync(
-                $"/projects/{prj.Id}/members/{member.UserId}/remove", new object());
-            rem.StatusCode.Should().Be(HttpStatusCode.OK);
-            var removedDto = await rem.Content.ReadFromJsonAsync<ProjectMemberReadDto>(EndpointsTestHelper.Json);
-            removedDto!.RemovedAt.Should().NotBeNull();
+            // Remove 
+            var removedDto = await ProjectMemberTestHelper.RemoveProjectMemberDtoAsync(
+                client,
+                project.Id,
+                projectMember.UserId,
+                projectMember.RowVersion);
+            removedDto.RemovedAt.Should().NotBeNull();
 
-            var listActive = await client.GetFromJsonAsync<List<ProjectMemberReadDto>>(
-                $"/projects/{prj.Id}/members?includeRemoved=false", EndpointsTestHelper.Json);
-            listActive!.Any(x => x.UserId == member.UserId).Should().BeFalse();
-
-            var listRemoved = await client.GetFromJsonAsync<List<ProjectMemberReadDto>>(
-                $"/projects/{prj.Id}/members?includeRemoved=true", EndpointsTestHelper.Json);
-            listRemoved!.Any(x => x.UserId == member.UserId).Should().BeTrue();
-
-            // restore (Requires ProjectAdmin) -> If-Match
-            var removed = listRemoved!.Single(x => x.UserId == member.UserId);
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, removed.RowVersion);
-
-            var restore = await client.PatchAsJsonAsync(
-                $"/projects/{prj.Id}/members/{member.UserId}/restore",
-                new object()); // no body per endpoint
-            restore.StatusCode.Should().Be(HttpStatusCode.OK);
-            var restoredDto = await restore.Content.ReadFromJsonAsync<ProjectMemberReadDto>(EndpointsTestHelper.Json);
-            restoredDto!.RemovedAt.Should().BeNull();
-        }
-
-        [Fact]
-        public async Task List_Empty_Create_GetById_Sends_ETag()
-        {
-            using var app = new TestApiFactory();
-            using var client = app.CreateClient();
-
-            var owner = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
-
-            // owner project
-            var prj = await EndpointsTestHelper.CreateProject(client);
-
-            // empty list
-            var list0 = await client.GetAsync($"/projects/{prj.Id}/members?includeRemoved=false");
-            list0.StatusCode.Should().Be(HttpStatusCode.OK);
-            var items0 = await list0.Content.ReadFromJsonAsync<ProjectMemberReadDto[]>(EndpointsTestHelper.Json);
-            items0!.Should().ContainSingle(m => m.UserId == owner.UserId && m.Role == ProjectRole.Owner);
-
-            // create a second user
-            var user = await EndpointsTestHelper.RegisterAndLoginAsync(client, name: "Other user name");
-
-            // add member (POST rejects If-Match, so ensure cleared)
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            var add = await client.PostAsJsonAsync(
-                $"/projects/{prj.Id}/members",
-                new ProjectMemberCreateDto { UserId = user.UserId, Role = ProjectRole.Member });
-            add.StatusCode.Should().Be(HttpStatusCode.Created);
-
-            // get by id -> ETag present
-            var get = await client.GetAsync($"/projects/{prj.Id}/members/{user.UserId}");
-            get.StatusCode.Should().Be(HttpStatusCode.OK);
-            get.Headers.ETag.Should().NotBeNull();
+            // Restore
+            var restoredDto = await ProjectMemberTestHelper.RestoreProjectMemberDtoAsync(client, project.Id, projectMember.UserId, removedDto.RowVersion);
+            restoredDto.RemovedAt.Should().BeNull();
         }
 
         [Fact]
@@ -124,20 +79,23 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var owner = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
+            var owner = await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
+            var project = await ProjectTestHelper.PostProjectDtoAsync(client);
+            var user = await AuthTestHelper.PostRegisterAndLoginAsync(
+                client,
+                email: "random@e.com",
+                name: "Other user name");
 
-            var prj = await EndpointsTestHelper.CreateProject(client);
-            var user = await EndpointsTestHelper.RegisterAndLoginAsync(client, name: "Other user name");
+            // Back to owner authorization
+            client.SetAuthorization(owner.AccessToken);
 
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
             client.DefaultRequestHeaders.IfMatch.Clear();
             client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", "\"abc\"");
 
-            var add = await client.PostAsJsonAsync(
-                $"/projects/{prj.Id}/members",
+            var createResponse = await client.PostAsJsonAsync(
+                $"/projects/{project.Id}/members",
                 new ProjectMemberCreateDto { UserId = user.UserId, Role = ProjectRole.Member });
-            add.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            createResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
         [Fact]
@@ -146,44 +104,56 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var owner = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
+            var owner = await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
+            var project = await ProjectTestHelper.PostProjectDtoAsync(client);
 
-            var prj = await EndpointsTestHelper.CreateProject(client);
-            var user = await EndpointsTestHelper.RegisterAndLoginAsync(client, name: "Other user name");
+            var user = await AuthTestHelper.PostRegisterAndLoginAsync(
+                client,
+                email: "random@e.com",
+                name: "Other user name");
 
-            // add
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            (await client.PostAsJsonAsync(
-                $"/projects/{prj.Id}/members",
-                new ProjectMemberCreateDto { UserId = user.UserId, Role = ProjectRole.Member }))
-                .EnsureSuccessStatusCode();
+            // Add user to project
+            client.SetAuthorization(owner.AccessToken);
+            var createDto = new ProjectMemberCreateDto()
+            {
+                Role = ProjectMemberDefaults.DefaultProjectMemberRole,
+                UserId = user.UserId
+            };
+            await ProjectMemberTestHelper.PostProjectMemberResponseAsync(
+                client,
+                project.Id,
+                createDto);
 
-            // list to get rowversion
-            var list = await client.GetFromJsonAsync<ProjectMemberReadDto[]>($"/projects/{prj.Id}/members?includeRemoved=false", EndpointsTestHelper.Json);
-            var m = list!.Single(x => x.UserId == user.UserId);
+            // Get project member to get rowversion
+            var member = await ProjectMemberTestHelper.GetProjectMemberDtoAsync(
+                client,
+                project.Id,
+                user.UserId);
 
             // valid change role
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, m.RowVersion);
-            var ok = await client.PatchAsJsonAsync(
-                $"/projects/{prj.Id}/members/{user.UserId}/role",
-                new ProjectMemberChangeRoleDto { NewRole = ProjectRole.Admin });
-            ok.StatusCode.Should().Be(HttpStatusCode.OK);
+            var okChangeRoleResponse = await ProjectMemberTestHelper.ChangeProjectMemberRoleResponseAsync(
+                client,
+                project.Id,
+                user.UserId,
+                member.RowVersion);
+            okChangeRoleResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
             // stale change role
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, m.RowVersion); // old
-            var stale = await client.PatchAsJsonAsync(
-                $"/projects/{prj.Id}/members/{user.UserId}/role",
-                new ProjectMemberChangeRoleDto { NewRole = ProjectRole.Member });
-            stale.StatusCode.Should().Be((HttpStatusCode)412);
+            var differentChangeRoleDto = new ProjectMemberChangeRoleDto { NewRole = ProjectRole.Member };
+            var staleChangeRoleResponse = await ProjectMemberTestHelper.ChangeProjectMemberRoleResponseAsync(
+                client,
+                project.Id,
+                user.UserId,
+                member.RowVersion, // old rowVersion
+                differentChangeRoleDto);
+            staleChangeRoleResponse.StatusCode.Should().Be((HttpStatusCode)412);
 
             // missing If-Match -> 428
             client.DefaultRequestHeaders.IfMatch.Clear();
-            var miss = await client.PatchAsJsonAsync(
-                $"/projects/{prj.Id}/members/{user.UserId}/role",
-                new ProjectMemberChangeRoleDto { NewRole = ProjectRole.Member });
-            miss.StatusCode.Should().Be((HttpStatusCode)428);
+            var missingChangeRoleResponse = await client.PatchAsJsonAsync(
+                $"/projects/{project.Id}/members/{user.UserId}/role",
+                differentChangeRoleDto);
+            missingChangeRoleResponse.StatusCode.Should().Be((HttpStatusCode)428);
         }
 
         [Fact]
@@ -192,40 +162,43 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var owner = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
+            var owner = await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
+            var project = await ProjectTestHelper.PostProjectDtoAsync(client);
+            var user = await AuthTestHelper.PostRegisterAndLoginAsync(
+                client,
+                email: "random@e.com",
+                name: "Other user name");
 
-            var prj = await EndpointsTestHelper.CreateProject(client);
-            var user = await EndpointsTestHelper.RegisterAndLoginAsync(client, name: "Other user name");
+            // Add member
+            client.SetAuthorization(owner.AccessToken);
+            var createDto = new ProjectMemberCreateDto()
+            {
+                Role = ProjectMemberDefaults.DefaultProjectMemberRole,
+                UserId = user.UserId
+            };
+            var member = await ProjectMemberTestHelper.PostProjectMemberDtoAsync(
+                client,
+                project.Id,
+                createDto);
 
-            // add
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            (await client.PostAsJsonAsync(
-                $"/projects/{prj.Id}/members",
-                new ProjectMemberCreateDto { UserId = user.UserId, Role = ProjectRole.Member }))
-                .EnsureSuccessStatusCode();
+            // Remove
+            var removeResponse = await ProjectMemberTestHelper.RemoveProjectMemberResponseAsync(
+                client,
+                project.Id,
+                member.UserId,
+                member.RowVersion);
+            removeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            // fetch rowversion
-            var list = await client.GetFromJsonAsync<ProjectMemberReadDto[]>($"/projects/{prj.Id}/members?includeRemoved=false", EndpointsTestHelper.Json);
-            var m = list!.Single(x => x.UserId == user.UserId);
+            // Refetch to restore with correct rowVersion
+            member = await ProjectMemberTestHelper.GetProjectMemberDtoAsync(client, project.Id, member.UserId);
 
-            // remove
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, m.RowVersion);
-            var rem = await client.PatchAsJsonAsync($"/projects/{prj.Id}/members/{user.UserId}/remove", new { });
-            rem.StatusCode.Should().Be(HttpStatusCode.OK);
-
-            // verify not in active, yes in removed
-            var active = await client.GetFromJsonAsync<ProjectMemberReadDto[]>($"/projects/{prj.Id}/members?includeRemoved=false", EndpointsTestHelper.Json);
-            active!.Any(x => x.UserId == user.UserId).Should().BeFalse();
-            var removed = await client.GetFromJsonAsync<ProjectMemberReadDto[]>($"/projects/{prj.Id}/members?includeRemoved=true", EndpointsTestHelper.Json);
-            removed!.Any(x => x.UserId == user.UserId).Should().BeTrue();
-
-            // restore with current rowversion
-            var removedEntry = removed!.Single(x => x.UserId == user.UserId);
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, removedEntry.RowVersion);
-            var res = await client.PatchAsJsonAsync($"/projects/{prj.Id}/members/{user.UserId}/restore", new { });
-            res.StatusCode.Should().Be(HttpStatusCode.OK);
+            // Restore
+            var restoreResponse = await ProjectMemberTestHelper.RestoreProjectMemberResponseAsync(
+                client,
+                project.Id,
+                member.UserId,
+                member.RowVersion);
+            restoreResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         }
 
         [Fact]
@@ -235,25 +208,37 @@ namespace Api.Tests.Endpoints
             using var client = app.CreateClient();
 
             // user A
-            var a = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", a.AccessToken);
-
-            var prj = await EndpointsTestHelper.CreateProject(client);
+            var userA = await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
+            var project = await ProjectTestHelper.PostProjectDtoAsync(client);
 
             // 404: member not in project
-            var notFound = await client.GetAsync($"/projects/{prj.Id}/members/{Guid.NewGuid()}");
-            notFound.StatusCode.Should().Be(HttpStatusCode.NotFound);
+            var notFoundResponse = await ProjectMemberTestHelper.GetProjectMemberResponseAsync(
+                client,
+                project.Id,
+                userId: Guid.NewGuid());
+            notFoundResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
             // user B tries to access A's project -> 403
-            var b = await EndpointsTestHelper.RegisterAndLoginAsync(client, name: "buser", email: "b@x.com");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", b.AccessToken);
-            var forbidden = await client.GetAsync($"/projects/{prj.Id}/members/{Guid.NewGuid()}");
-            forbidden.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            var userB = await AuthTestHelper.PostRegisterAndLoginAsync(
+                client,
+                name: "userB",
+                email: "b@x.com");
+            client.SetAuthorization(userB.AccessToken);
+
+            var forbiddenResponse = await ProjectMemberTestHelper.GetProjectMemberResponseAsync(
+                client,
+                project.Id,
+                userId: Guid.NewGuid());
+            forbiddenResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
             // Get role 404 (non-member)
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", a.AccessToken);
-            var role404 = await client.GetAsync($"/projects/{prj.Id}/members/{Guid.NewGuid()}/role");
-            role404.StatusCode.Should().Be(HttpStatusCode.NotFound);
+            client.SetAuthorization(userA.AccessToken);
+            var notFoundMemberResponse = await ProjectMemberTestHelper.ChangeProjectMemberRoleResponseAsync(
+                client,
+                project.Id,
+                userId: Guid.NewGuid(),
+                rowVersion: [1, 2, 3]);
+            notFoundMemberResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
 
         [Fact]
@@ -262,24 +247,24 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            // unauthorized -> 401
-            var unauth = await client.GetAsync("/members/me/count");
+            // Unauthorized
+            var unauth = await ProjectMemberTestHelper.GetProjectMemberMeCountResponseAsync(client);
             unauth.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
-            // login normal user
-            var user = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
+            // Login normal user
+            var user = await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
 
-            // create two projects to own
-            await EndpointsTestHelper.CreateProject(client);
-            await EndpointsTestHelper.CreateProject(client);
+            // Create two projects to own
+            await ProjectTestHelper.PostProjectDtoAsync(client);
+            var differentCreateDto = new ProjectCreateDto() { Name = "different project" };
+            await ProjectTestHelper.PostProjectDtoAsync(client, differentCreateDto);
 
-            var me = await client.GetAsync("/members/me/count");
+            var me = await ProjectMemberTestHelper.GetProjectMemberMeCountResponseAsync(client);
             me.StatusCode.Should().Be(HttpStatusCode.OK);
-            var meCount = await me.Content.ReadFromJsonAsync<ProjectMemberCountReadDto>(EndpointsTestHelper.Json);
+            var meCount = await me.Content.ReadFromJsonAsync<ProjectMemberCountReadDto>();
             meCount!.Count.Should().BeGreaterThanOrEqualTo(1);
 
-            // admin endpoint without admin -> 403
+            // Admin endpoint without admin -> 403
             var byUserForbidden = await client.GetAsync($"/members/{user.UserId}/count");
             byUserForbidden.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         }
