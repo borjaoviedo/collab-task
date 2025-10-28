@@ -151,7 +151,7 @@ namespace Api.Tests.Endpoints
 
             var renameResponse = await client.PutAsJsonAsync(
                 $"/projects/{project.Id}/lanes/{lane.Id}/rename",
-                LaneDefaults.DefaultLaneRename);
+                LaneDefaults.DefaultLaneRenameDto);
             renameResponse.StatusCode.Should().Be((HttpStatusCode)428);
         }
 
