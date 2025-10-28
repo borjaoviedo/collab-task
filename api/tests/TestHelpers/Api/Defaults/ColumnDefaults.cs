@@ -5,7 +5,9 @@ namespace TestHelpers.Api.Defaults
     public static class ColumnDefaults
     {
         public readonly static string DefaultColumnName = "column";
+        public readonly static string DefaultColumnRename = "different name";
         public readonly static int DefaultColumnOrder = 0;
+        public readonly static int DefaultColumnReorder = 1;
 
         public readonly static ColumnCreateDto DefaultColumnCreateDto = new()
         {
@@ -13,9 +15,8 @@ namespace TestHelpers.Api.Defaults
             Order = DefaultColumnOrder
         };
 
-        public readonly static string DefaultColumnRenameName = "different name";
+        public readonly static ColumnRenameDto DefaultColumnRenameDto = new() { NewName = DefaultColumnRename };
 
-        public readonly static ColumnRenameDto DefaultColumnRenameDto = new() { NewName = DefaultColumnRenameName };
-
+        public readonly static ColumnReorderDto DefaultColumnReorderDto = new() { NewOrder = DefaultColumnReorder };
     }
 }
