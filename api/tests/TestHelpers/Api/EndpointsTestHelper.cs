@@ -13,36 +13,108 @@ namespace TestHelpers.Api
 {
     public static class EndpointsTestHelper
     {
+        public readonly static string DefaultEmail = $"{Guid.NewGuid():N}@demo.com";
+        public readonly static string DefaultUserName = "User name";
+        public readonly static string DefaultPassword = "Str0ngP@ss!";
+
+        public readonly static UserRegisterDto DefaultUserRegisterDto = new()
+        {
+            Email = DefaultEmail,
+            Name = DefaultUserName,
+            Password = DefaultPassword
+        };
+
+        public readonly static UserLoginDto DefaultUserLoginDto = new()
+        {
+            Email = DefaultEmail,
+            Password = DefaultPassword
+        };
+
+        public readonly static ColumnCreateDto DefaultColumnCreateDto = new()
+        {
+            Name = "Todo",
+            Order = 0
+        };
+
+        public readonly static ColumnRenameDto DefaultColumnRenameDto = new() { NewName = "In Progress" };
+
         public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
         {
             Converters = { new JsonStringEnumConverter() }
         };
 
-        public static async Task<AuthTokenReadDto> RegisterAndLoginAsync(HttpClient client, string? email = null, string name = "User Name", string password = "Str0ngP@ss!")
+        public static async Task<T> ReadContentAsDtoAsync<T>(this HttpResponseMessage response)
         {
-            // ensure anonymous for register/login
-            client.DefaultRequestHeaders.Authorization = null;
+            var result = await response.Content.ReadFromJsonAsync<T>(Json);
+            return result ?? throw new InvalidOperationException($"Response content could not be deserialized to {typeof(T).Name}.");
+        }
 
+        public static void SetAuthorization(this HttpClient client, string? parameter, string scheme = "Bearer")
+            => client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(scheme, parameter);
+
+        public static async Task<HttpResponseMessage> RegisterAsync(HttpClient client, UserRegisterDto? registerDto = null)
+        {
+            // ensure anonymous for register
+            client.SetAuthorization(null);
+
+            registerDto ??= DefaultUserRegisterDto;
+
+            var registerResponse = await client.PostAsJsonAsync("/auth/register", registerDto);
+            registerResponse.EnsureSuccessStatusCode();
+
+            return registerResponse;
+        }
+
+        public static async Task<HttpResponseMessage> LoginAsync(HttpClient client, UserLoginDto? loginDto = null)
+        {
+            // ensure anonymous for login
+            client.SetAuthorization(null);
+
+            loginDto ??= DefaultUserLoginDto;
+            var loginResponse = await client.PostAsJsonAsync("/auth/login", loginDto);
+            loginResponse.EnsureSuccessStatusCode();
+
+            return loginResponse;
+        }
+
+        public static async Task<AuthTokenReadDto> RegisterAndLoginAsync(
+            HttpClient client,
+            string? email = null,
+            string name = "User Name",
+            string password = "Str0ngP@ss!")
+        {
             email ??= $"{Guid.NewGuid():N}@demo.com";
 
-            var register = await client.PostAsJsonAsync("/auth/register", new UserRegisterDto { Email = email, Name = name, Password = password });
-            register.EnsureSuccessStatusCode();
+            var userRegisterDto = new UserRegisterDto { Email = email, Name = name, Password = password };
+            await RegisterAsync(client, userRegisterDto);
 
-            var login = await client.PostAsJsonAsync("/auth/login", new { Email = email, Password = password });
-            login.EnsureSuccessStatusCode();
+            var userLoginDto = new UserLoginDto { Email = userRegisterDto.Email, Password = password };
+            var login = await LoginAsync(client, userLoginDto);
 
             var token = await login.Content.ReadFromJsonAsync<AuthTokenReadDto>(Json);
             return token!;
         }
 
+        public static async Task<AuthTokenReadDto> RegisterLoginAndSetAuthorizationAsync(
+            HttpClient client,
+            string? email = null,
+            string name = "User Name",
+            string password = "Str0ngP@ss!")
+        {
+            var token = await RegisterAndLoginAsync(client, email, name, password);
+            client.SetAuthorization(token.AccessToken);
+
+            return token!;
+        }
+
         public static async Task<UserReadDto> GetUser(HttpClient client, Guid userId, string adminBearer)
         {
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminBearer);
+            client.SetAuthorization(adminBearer);
 
-            var resp = await client.GetAsync($"/users/{userId}");
-            resp.EnsureSuccessStatusCode();
+            var response = await client.GetAsync($"/users/{userId}");
+            response.EnsureSuccessStatusCode();
 
-            var user = await resp.Content.ReadFromJsonAsync<UserReadDto>(Json);
+            var user = await response.Content.ReadFromJsonAsync<UserReadDto>(Json);
             return user!;
         }
 
@@ -55,7 +127,11 @@ namespace TestHelpers.Api
             return project!;
         }
 
-        public static async Task<LaneReadDto> CreateLane(HttpClient client, Guid projectId, string name = "Lane", int order = 0)
+        public static async Task<LaneReadDto> CreateLane(
+            HttpClient client,
+            Guid projectId,
+            string name = "Lane",
+            int order = 0)
         {
             var createDto = new LaneCreateDto() { Name = name, Order = order };
             var response = await PostWithoutIfMatchAsync(client, $"/projects/{projectId}/lanes", createDto);
@@ -64,7 +140,12 @@ namespace TestHelpers.Api
             return lane!;
         }
 
-        public static async Task<ColumnReadDto> CreateColumn(HttpClient client, Guid projectId, Guid laneId, string name = "Column", int order = 0)
+        public static async Task<ColumnReadDto> CreateColumn(
+            HttpClient client,
+            Guid projectId,
+            Guid laneId,
+            string name = "Column",
+            int order = 0)
         {
             var createDto = new ColumnCreateDto() { Name = name, Order = order };
             var response = await PostWithoutIfMatchAsync(client, $"/projects/{projectId}/lanes/{laneId}/columns", createDto);
@@ -73,8 +154,15 @@ namespace TestHelpers.Api
             return column!;
         }
 
-        public static async Task<TaskItemReadDto> CreateTask(HttpClient client, Guid projectId, Guid laneId, Guid columnId,
-            string title = "Task Title", string description = "Task Description", DateTimeOffset? dueDate = null, decimal sortKey = 0m)
+        public static async Task<TaskItemReadDto> CreateTask(
+            HttpClient client,
+            Guid projectId,
+            Guid laneId,
+            Guid columnId,
+            string title = "Task Title",
+            string description = "Task Description",
+            DateTimeOffset? dueDate = null,
+            decimal sortKey = 0m)
         {
             var createDto = new TaskItemCreateDto { Title = title, Description = description, DueDate = dueDate, SortKey = sortKey };
             var response = await PostWithoutIfMatchAsync(client, $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks", createDto);
@@ -84,7 +172,10 @@ namespace TestHelpers.Api
         }
 
         public static async Task<(ProjectReadDto project, LaneReadDto lane)> CreateProjectAndLane(
-            HttpClient client, string projectName = "Project", string laneName = "Lane", int laneOrder = 0)
+            HttpClient client,
+            string projectName = "Project",
+            string laneName = "Lane",
+            int laneOrder = 0)
         {
             var project = await CreateProject(client, projectName);
             var lane = await CreateLane(client, project.Id, laneName, laneOrder);
@@ -93,7 +184,12 @@ namespace TestHelpers.Api
         }
 
         public static async Task<(ProjectReadDto project, LaneReadDto lane, ColumnReadDto column)> CreateProjectLaneAndColumn(
-            HttpClient client, string projectName = "Project", string laneName = "Lane", int laneOrder = 0, string columnName = "Column", int columnOrder = 0)
+            HttpClient client,
+            string projectName = "Project",
+            string laneName = "Lane",
+            int laneOrder = 0,
+            string columnName = "Column",
+            int columnOrder = 0)
         {
             var (project, lane) = await CreateProjectAndLane(client, projectName, laneName, laneOrder);
             var column = await CreateColumn(client, project.Id, lane.Id, columnName, columnOrder);
@@ -101,15 +197,39 @@ namespace TestHelpers.Api
             return (project, lane, column);
         }
 
-        public static async Task<(ProjectReadDto project, LaneReadDto lane, ColumnReadDto column, TaskItemReadDto task, AuthTokenReadDto user)> SetupBoard(
-            HttpClient client, string projectName = "Project", string laneName = "Lane", int laneOrder = 0, string columnName = "Column", int columnOrder = 0,
-            string taskTitle = "Task", string taskDescription = "Description", DateTimeOffset? taskDueDate = null)
+        public static async Task<(
+            ProjectReadDto project,
+            LaneReadDto lane,
+            ColumnReadDto column,
+            TaskItemReadDto task,
+            AuthTokenReadDto user)>
+            SetupBoard(
+            HttpClient client,
+            string projectName = "Project",
+            string laneName = "Lane",
+            int laneOrder = 0,
+            string columnName = "Column",
+            int columnOrder = 0,
+            string taskTitle = "Task",
+            string taskDescription = "Description",
+            DateTimeOffset? taskDueDate = null)
         {
-            var user = await RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
-
-            var (project, lane, column) = await CreateProjectLaneAndColumn(client, projectName, laneName, laneOrder, columnName, columnOrder);
-            var task = await CreateTask(client, project.Id, lane.Id, column.Id, taskTitle, taskDescription, taskDueDate);
+            var user = await RegisterLoginAndSetAuthorizationAsync(client);
+            var (project, lane, column) = await CreateProjectLaneAndColumn(
+                client,
+                projectName,
+                laneName,
+                laneOrder,
+                columnName,
+                columnOrder);
+            var task = await CreateTask(
+                client,
+                project.Id,
+                lane.Id,
+                column.Id,
+                taskTitle,
+                taskDescription,
+                taskDueDate);
 
             return (project, lane, column, task, user);
         }
