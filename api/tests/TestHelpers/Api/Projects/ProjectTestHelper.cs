@@ -1,5 +1,4 @@
 using Application.Projects.DTOs;
-using Application.TaskItems.DTOs;
 using TestHelpers.Api.Defaults;
 using TestHelpers.Api.Http;
 
@@ -51,7 +50,23 @@ namespace TestHelpers.Api.Projects
             return response;
         }
 
-        // ----- PUT RENAME -----
+        // ----- GET PROJECTS ME -----
+
+        public static async Task<HttpResponseMessage> GetProjectsMeResponseAsync(HttpClient client)
+        {
+            var response = await client.GetAsync("/projects/me");
+            return response;
+        }
+
+        // ----- GET PROJECTS BY USER -----
+
+        public static async Task<HttpResponseMessage> GetProjectsByUserResponseAsync(HttpClient client, Guid userId)
+        {
+            var response = await client.GetAsync($"/projects/users/{userId}");
+            return response;
+        }
+
+        // ----- PATCH RENAME -----
 
         public static async Task<HttpResponseMessage> RenameProjectResponseAsync(
             HttpClient client,
@@ -62,7 +77,7 @@ namespace TestHelpers.Api.Projects
             var newName = dto is null ? ProjectDefaults.DefaultProjectRename : dto.NewName;
             var renameDto = new ProjectRenameDto() { NewName = newName };
 
-            var renameResponse = await HttpRequestExtensions.PutWithIfMatchAsync(
+            var renameResponse = await HttpRequestExtensions.PatchWithIfMatchAsync(
                 client,
                 rowVersion,
                 $"/projects/{projectId}/rename",
@@ -85,27 +100,5 @@ namespace TestHelpers.Api.Projects
 
             return deleteResponse;
         }
-
-
-        public static async Task<TaskItemReadDto> CreateTask(
-            HttpClient client,
-            Guid projectId,
-            Guid laneId,
-            Guid columnId,
-            string title = "Task Title",
-            string description = "Task Description",
-            DateTimeOffset? dueDate = null,
-            decimal sortKey = 0m)
-        {
-            var createDto = new TaskItemCreateDto { Title = title, Description = description, DueDate = dueDate, SortKey = sortKey };
-            var response = await HttpRequestExtensions.PostWithoutIfMatchAsync(
-                client,
-                $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks",
-                createDto);
-            var task = await response.ReadContentAsDtoAsync<TaskItemReadDto>();
-
-            return task!;
-        }
-
     }
 }
