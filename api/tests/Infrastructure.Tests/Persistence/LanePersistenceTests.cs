@@ -7,10 +7,10 @@ using Microsoft.Extensions.DependencyInjection;
 using TestHelpers;
 using Infrastructure.Tests.Containers;
 
-namespace Infrastructure.Tests.Persistence.Contracts
+namespace Infrastructure.Tests.Persistence
 {
     [Collection("SqlServerContainer")]
-    public sealed class LanePersistenceContractTests(MsSqlContainerFixture fx)
+    public sealed class LanePersistenceTests(MsSqlContainerFixture fx)
     {
         private readonly MsSqlContainerFixture _fx = fx;
         private readonly string _cs = fx.ConnectionString;

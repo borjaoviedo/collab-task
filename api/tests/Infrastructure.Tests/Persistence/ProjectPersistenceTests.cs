@@ -8,11 +8,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TestHelpers;
 
-namespace Infrastructure.Tests.Persistence.Contracts
+namespace Infrastructure.Tests.Persistence
 {
 
     [Collection("SqlServerContainer")]
-    public sealed class ProjectPersistenceContractTests(MsSqlContainerFixture fx)
+    public sealed class ProjectPersistenceTests(MsSqlContainerFixture fx)
     {
         private readonly MsSqlContainerFixture _fx = fx;
         private readonly string _cs = fx.ConnectionString;

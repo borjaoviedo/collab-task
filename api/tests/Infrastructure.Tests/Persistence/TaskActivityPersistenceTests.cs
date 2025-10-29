@@ -7,10 +7,10 @@ using Microsoft.EntityFrameworkCore;
 using TestHelpers;
 using TestHelpers.Time;
 
-namespace Infrastructure.Tests.Persistence.Contracts
+namespace Infrastructure.Tests.Persistence
 {
     [Collection("SqlServerContainer")]
-    public sealed class TaskActivityPersistenceContractTests(MsSqlContainerFixture fx)
+    public sealed class TaskActivityPersistenceTests(MsSqlContainerFixture fx)
     {
         private readonly MsSqlContainerFixture _fx = fx;
         private readonly string _cs = fx.ConnectionString;
