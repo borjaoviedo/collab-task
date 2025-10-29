@@ -5,7 +5,8 @@ using FluentAssertions;
 using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Repositories
 {
@@ -18,14 +19,14 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            var column = TestDataFactory.SeedColumn(db, pId, lId);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var column = TestDataFactory.SeedColumn(db, projectId, laneId);
 
             var existing = await repo.GetByIdAsync(column.Id);
             existing.Should().NotBeNull();
 
-            var notFound = await repo.GetByIdAsync(Guid.NewGuid());
-            notFound.Should().Be(null);
+            var notFound = await repo.GetByIdAsync(columnId: Guid.NewGuid());
+            notFound.Should().BeNull();
         }
 
         [Fact]
@@ -35,13 +36,13 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            var column = TestDataFactory.SeedColumn(db, pId, lId);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var column = TestDataFactory.SeedColumn(db, projectId, laneId);
 
             var existing = await repo.GetTrackedByIdAsync(column.Id);
             existing.Should().NotBeNull();
 
-            var notFound = await repo.GetTrackedByIdAsync(Guid.NewGuid());
+            var notFound = await repo.GetTrackedByIdAsync(columnId: Guid.NewGuid());
             notFound.Should().Be(null);
         }
 
@@ -52,14 +53,14 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            var column = TestDataFactory.SeedColumn(db, pId, lId);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var column = TestDataFactory.SeedColumn(db, projectId, laneId);
 
-            var existing = await repo.ExistsWithNameAsync(lId, column.Name);
-            existing.Should().Be(true);
+            var existing = await repo.ExistsWithNameAsync(laneId, column.Name);
+            existing.Should().BeTrue();
 
-            var notFound = await repo.ExistsWithNameAsync(lId, ColumnName.Create("other name"));
-            notFound.Should().Be(false);
+            var notFound = await repo.ExistsWithNameAsync(laneId, ColumnName.Create("other name"));
+            notFound.Should().BeFalse();
         }
 
         [Fact]
@@ -69,22 +70,22 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            TestDataFactory.SeedColumn(db, pId, lId, order: 0);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            TestDataFactory.SeedColumn(db, projectId, laneId, order: 0);
 
-            var maxOrder = await repo.GetMaxOrderAsync(lId);
+            var maxOrder = await repo.GetMaxOrderAsync(laneId);
             maxOrder.Should().Be(0);
 
-            TestDataFactory.SeedColumn(db, pId, lId, order: 1);
-            maxOrder = await repo.GetMaxOrderAsync(lId);
+            TestDataFactory.SeedColumn(db, projectId, laneId, order: 1);
+            maxOrder = await repo.GetMaxOrderAsync(laneId);
             maxOrder.Should().Be(1);
 
-            TestDataFactory.SeedColumn(db, pId, lId, order: 7);
-            maxOrder = await repo.GetMaxOrderAsync(lId);
+            TestDataFactory.SeedColumn(db, projectId, laneId, order: 7);
+            maxOrder = await repo.GetMaxOrderAsync(laneId);
             maxOrder.Should().Be(7);
 
-            TestDataFactory.SeedColumn(db, pId, lId, order: 3);
-            maxOrder = await repo.GetMaxOrderAsync(lId);
+            TestDataFactory.SeedColumn(db, projectId, laneId, order: 3);
+            maxOrder = await repo.GetMaxOrderAsync(laneId);
             maxOrder.Should().Be(7);
         }
 
@@ -95,17 +96,17 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            TestDataFactory.SeedColumn(db, pId, lId, order: 0);
-            var list = await repo.ListByLaneAsync(lId);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            TestDataFactory.SeedColumn(db, projectId, laneId, order: 0);
+            var list = await repo.ListByLaneAsync(laneId);
             list.Should().HaveCount(1);
 
-            TestDataFactory.SeedColumn(db, pId, lId, order: 1);
-            list = await repo.ListByLaneAsync(lId);
+            TestDataFactory.SeedColumn(db, projectId, laneId, order: 1);
+            list = await repo.ListByLaneAsync(laneId);
             list.Should().HaveCount(2);
 
-            TestDataFactory.SeedColumn(db, pId, lId, order: 2);
-            list = await repo.ListByLaneAsync(lId);
+            TestDataFactory.SeedColumn(db, projectId, laneId, order: 2);
+            list = await repo.ListByLaneAsync(laneId);
             list.Should().HaveCount(3);
         }
 
@@ -116,8 +117,9 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
 
-            var (_, lId) = TestDataFactory.SeedProjectWithLane(db);
-            var list = await repo.ListByLaneAsync(lId);
+            var (_, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var list = await repo.ListByLaneAsync(laneId);
+
             list.Should().BeEmpty();
         }
 
@@ -129,15 +131,20 @@ namespace Infrastructure.Tests.Repositories
             var repo = new ColumnRepository(db);
             var uow = new UnitOfWork(db);
 
-            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
-            var laneId = TestDataFactory.SeedLane(db, projectId).Id;
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             var columnName = "Column name";
 
-            var column = Column.Create(projectId, laneId, ColumnName.Create(columnName), 0);
+            var column = Column.Create(
+                projectId,
+                laneId,
+                ColumnName.Create(columnName),
+                order: 0);
             await repo.AddAsync(column);
             await uow.SaveAsync(MutationKind.Create);
 
-            var fromDb = await db.Columns.AsNoTracking().SingleAsync(c => c.Id == column.Id);
+            var fromDb = await db.Columns
+                .AsNoTracking()
+                .SingleAsync(c => c.Id == column.Id);
             fromDb.Name.Value.Should().Be(columnName);
             fromDb.Order.Should().Be(0);
         }
@@ -150,17 +157,23 @@ namespace Infrastructure.Tests.Repositories
             var repo = new ColumnRepository(db);
             var uow = new UnitOfWork(db);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            var column = TestDataFactory.SeedColumn(db, pId, lId);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var column = TestDataFactory.SeedColumn(db, projectId, laneId);
 
             var newName = "new name";
+            var rowVersion = column.RowVersion ?? [];
+            var result = await repo.RenameAsync(
+                column.Id,
+                ColumnName.Create(newName),
+                rowVersion);
 
-            var res = await repo.RenameAsync(column.Id, ColumnName.Create(newName), column.RowVersion ?? []);
-            res.Should().Be(PrecheckStatus.Ready);
+            result.Should().Be(PrecheckStatus.Ready);
 
             await uow.SaveAsync(MutationKind.Update);
 
-            var fromDb = await db.Columns.AsNoTracking().SingleAsync(c => c.Id == column.Id);
+            var fromDb = await db.Columns
+                .AsNoTracking()
+                .SingleAsync(c => c.Id == column.Id);
             fromDb.Name.Value.Should().Be(newName);
         }
 
@@ -171,12 +184,15 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             var sameName = "Same Column Name";
-            var column = TestDataFactory.SeedColumn(db, pId, lId, sameName);
+            var column = TestDataFactory.SeedColumn(db, projectId, laneId, sameName);
 
-            var res = await repo.RenameAsync(column.Id, ColumnName.Create(sameName), column.RowVersion!);
-            res.Should().Be(PrecheckStatus.NoOp);
+            var result = await repo.RenameAsync(
+                column.Id,
+                ColumnName.Create(sameName),
+                column.RowVersion);
+            result.Should().Be(PrecheckStatus.NoOp);
         }
 
         [Fact]
@@ -186,15 +202,22 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
 
             var sameName = "Same Column Name";
-            TestDataFactory.SeedColumn(db, pId, lId, name: sameName);
+            TestDataFactory.SeedColumn(db, projectId, laneId, sameName);
 
-            var defaultNameColumn = TestDataFactory.SeedColumn(db, pId, lId, order: 1);
+            var defaultNameColumn = TestDataFactory.SeedColumn(
+                db,
+                projectId,
+                laneId,
+                order: 1);
+            var result = await repo.RenameAsync(
+                defaultNameColumn.Id,
+                ColumnName.Create(sameName),
+                defaultNameColumn.RowVersion);
 
-            var res = await repo.RenameAsync(defaultNameColumn.Id, ColumnName.Create(sameName), defaultNameColumn.RowVersion!);
-            res.Should().Be(PrecheckStatus.Conflict);
+            result.Should().Be(PrecheckStatus.Conflict);
         }
 
         [Fact]
@@ -205,22 +228,38 @@ namespace Infrastructure.Tests.Repositories
             var repo = new ColumnRepository(db);
             var uow = new UnitOfWork(db);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            TestDataFactory.SeedColumn(db, pId, lId, "Column A", 0);
-            TestDataFactory.SeedColumn(db, pId, lId, "Column B", 1);
-            var columnC = TestDataFactory.SeedColumn(db, pId, lId, "Column C", 2);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            TestDataFactory.SeedColumn(
+                db,
+                projectId,
+                laneId,
+                name: "Column A",
+                order: 0);
+            TestDataFactory.SeedColumn(
+                db,
+                projectId,
+                laneId,
+                name: "Column B",
+                order: 1);
+            var columnC = TestDataFactory.SeedColumn(
+                db,
+                projectId,
+                laneId,
+                name: "Column C",
+                order: 2);
 
-            // reload tracked 'c' to get current RowVersion
+            // Reload tracked 'c' to get current RowVersion
             var trackedC = await db.Columns.SingleAsync(c => c.Id == columnC.Id);
 
-            await repo.ReorderPhase1Async(trackedC.Id, 0, trackedC.RowVersion!);
+            await repo.ReorderPhase1Async(trackedC.Id, newOrder: 0, trackedC.RowVersion);
             await uow.SaveAsync(MutationKind.Update);
 
             await repo.ApplyReorderPhase2Async(trackedC.Id);
             await uow.SaveAsync(MutationKind.Update);
 
-            var columns = await db.Columns.AsNoTracking()
-                .Where(c => c.ProjectId == pId && c.LaneId == lId)
+            var columns = await db.Columns
+                .AsNoTracking()
+                .Where(c => c.ProjectId == projectId && c.LaneId == laneId)
                 .OrderBy(c => c.Order)
                 .ToListAsync();
 
@@ -236,17 +275,16 @@ namespace Infrastructure.Tests.Repositories
             var repo = new ColumnRepository(db);
             var uow = new UnitOfWork(db);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            var column = TestDataFactory.SeedColumn(db, pId, lId);
+            var (_, _, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
 
-            var tracked = await db.Columns.SingleAsync(c => c.Id == column.Id);
+            var tracked = await db.Columns.SingleAsync(c => c.Id == columnId);
 
-            var res = await repo.DeleteAsync(tracked.Id, tracked.RowVersion!);
-            res.Should().Be(PrecheckStatus.Ready);
+            var result = await repo.DeleteAsync(tracked.Id, tracked.RowVersion);
+            result.Should().Be(PrecheckStatus.Ready);
 
             await uow.SaveAsync(MutationKind.Delete);
 
-            var exists = await db.Columns.AnyAsync(c => c.Id == column.Id);
+            var exists = await db.Columns.AnyAsync(c => c.Id == columnId);
             exists.Should().BeFalse();
         }
 
@@ -257,8 +295,8 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
 
-            var res = await repo.DeleteAsync(Guid.NewGuid(), []);
-            res.Should().Be(PrecheckStatus.NotFound);
+            var result = await repo.DeleteAsync(columnId: Guid.NewGuid(), rowVersion: []);
+            result.Should().Be(PrecheckStatus.NotFound);
         }
     }
 }

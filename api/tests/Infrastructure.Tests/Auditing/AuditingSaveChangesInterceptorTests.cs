@@ -1,8 +1,9 @@
 using FluentAssertions;
 using Domain.Entities;
 using Domain.ValueObjects;
-using TestHelpers;
 using Infrastructure.Tests.Containers;
+using TestHelpers.Persistence;
+using TestHelpers.Common;
 
 namespace Infrastructure.Tests.Auditing
 {
@@ -21,19 +22,19 @@ namespace Infrastructure.Tests.Auditing
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var u = User.Create(
+            var user = User.Create(
                 Email.Create($"{Guid.NewGuid()}@demo.com"),
                 UserName.Create("Project user"),
                 _validHash,
                 _validSalt);
-            var p = Project.Create(u.Id, ProjectName.Create("Audit Test"));
+            var project = Project.Create(user.Id, ProjectName.Create("Audit Test"));
 
-            db.AddRange(u, p);
+            db.AddRange(user, project);
             await db.SaveChangesAsync();
 
-            p.CreatedAt.Should().NotBe(default);
-            p.UpdatedAt.Should().NotBe(default);
-            p.UpdatedAt!.Should().BeOnOrAfter(p.CreatedAt);
+            project.CreatedAt.Should().NotBe(default);
+            project.UpdatedAt.Should().NotBe(default);
+            project.UpdatedAt.Should().BeOnOrAfter(project.CreatedAt);
         }
 
         [Fact]
@@ -42,27 +43,27 @@ namespace Infrastructure.Tests.Auditing
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var u = User.Create(
+            var user = User.Create(
                 Email.Create($"{Guid.NewGuid()}@demo.com"),
                 UserName.Create("Project user"),
                 _validHash,
                 _validSalt);
-            var p = Project.Create(u.Id, ProjectName.Create("Audit Test 2"));
+            var project = Project.Create(user.Id, ProjectName.Create("Audit Test 2"));
 
-            db.AddRange(u, p);
+            db.AddRange(user, project);
             await db.SaveChangesAsync();
 
-            var createdAt = p.CreatedAt;
-            p.Rename(ProjectName.Create("Audit Test 2 Updated"));
+            var createdAt = project.CreatedAt;
+            project.Rename(ProjectName.Create("Audit Test 2 Updated"));
             await db.SaveChangesAsync();
 
-            p.CreatedAt.Should().Be(createdAt);
-            p.UpdatedAt.Should().NotBe(null);
-            var updatedAt1 = p.UpdatedAt;
+            project.CreatedAt.Should().Be(createdAt);
+            project.UpdatedAt.Should().NotBe(null);
+            var updatedAt1 = project.UpdatedAt;
 
-            // Save without changes → UpdatedAt must remain the same
+            // Save without changes -> UpdatedAt must remain the same
             await db.SaveChangesAsync();
-            p.UpdatedAt.Should().Be(updatedAt1);
+            project.UpdatedAt.Should().Be(updatedAt1);
         }
     }
 }

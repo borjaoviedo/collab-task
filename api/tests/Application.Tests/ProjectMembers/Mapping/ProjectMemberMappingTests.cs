@@ -2,7 +2,7 @@ using Application.ProjectMembers.Mapping;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
-using TestHelpers;
+using TestHelpers.Common;
 
 namespace Application.Tests.ProjectMembers.Mapping
 {
@@ -34,8 +34,16 @@ namespace Application.Tests.ProjectMembers.Mapping
         [Fact]
         public void ToReadDto_Maps_UserName_And_Email_When_User_Is_Present()
         {
-            var projectMember = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Admin);
-            var user = User.Create(Email.Create("test@demo.com"), UserName.Create("Test User"), _validHash, _validSalt, UserRole.User);
+            var projectMember = ProjectMember.Create(
+                projectId: Guid.NewGuid(),
+                userId: Guid.NewGuid(),
+                ProjectRole.Admin);
+            var user = User.Create(
+                Email.Create("test@demo.com"),
+                UserName.Create("Test User"),
+                _validHash,
+                _validSalt,
+                UserRole.User);
             projectMember.SetUser(user);
 
             var dto = projectMember.ToReadDto();
@@ -47,9 +55,14 @@ namespace Application.Tests.ProjectMembers.Mapping
         [Fact]
         public void ToReadDto_Maps_RemovedAt_When_ProjectMember_Is_Removed()
         {
-            var projectMember = ProjectMember.Create(Guid.NewGuid(), Guid.NewGuid(), ProjectRole.Reader);
+            var projectMember = ProjectMember.Create(
+                projectId: Guid.NewGuid(),
+                userId: Guid.NewGuid(),
+                ProjectRole.Reader);
+
             var removedAt = DateTimeOffset.UtcNow;
             projectMember.Remove(removedAt);
+
             var dto = projectMember.ToReadDto();
             Assert.Equal(removedAt, dto.RemovedAt);
         }

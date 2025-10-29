@@ -3,7 +3,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
-using TestHelpers.Time;
+using TestHelpers.Common.Time;
 
 namespace Application.Tests.TaskActivities.Mapping
 {
@@ -12,20 +12,20 @@ namespace Application.Tests.TaskActivities.Mapping
         [Fact]
         public void Entity_To_ReadDto_Maps_With_Timestamps()
         {
-            var e = TaskActivity.Create(
+            var entity = TaskActivity.Create(
                 Guid.NewGuid(),
                 Guid.NewGuid(),
                 TaskActivityType.TaskCreated,
                 ActivityPayload.Create("{\"a\":1}"),
                 createdAt: TestTime.FixedNow);
-            e.GetType().GetProperty("Id")!.SetValue(e, Guid.NewGuid());
+            entity.GetType().GetProperty("Id")!.SetValue(entity, Guid.NewGuid());
 
-            var read = e.ToReadDto();
-            read.Id.Should().Be(e.Id);
-            read.TaskId.Should().Be(e.TaskId);
-            read.Type.Should().Be(e.Type);
-            read.Payload.Should().Be(e.Payload.Value);
-            read.CreatedAt.Should().Be(e.CreatedAt);
+            var read = entity.ToReadDto();
+            read.Id.Should().Be(entity.Id);
+            read.TaskId.Should().Be(entity.TaskId);
+            read.Type.Should().Be(entity.Type);
+            read.Payload.Should().Be(entity.Payload.Value);
+            read.CreatedAt.Should().Be(entity.CreatedAt);
         }
     }
 }

@@ -92,7 +92,7 @@ namespace Application.Tests.TaskItems.Realtime
             var notifier = new Mock<IRealtimeNotifier>();
             var handler = new TaskItemChangedHandler(notifier.Object);
             var projectId = Guid.NewGuid();
-            var payload = new TaskItemDeletedPayload(Guid.NewGuid());
+            var payload = new TaskItemDeletedPayload(TaskId: Guid.NewGuid());
 
             // Act
             await handler.Handle(new TaskItemDeleted(projectId, payload), CancellationToken.None);

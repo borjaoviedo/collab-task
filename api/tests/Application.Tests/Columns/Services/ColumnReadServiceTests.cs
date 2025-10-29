@@ -1,7 +1,8 @@
 using Application.Columns.Services;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Application.Tests.Columns.Services
 {
@@ -13,15 +14,15 @@ namespace Application.Tests.Columns.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
-            var svc = new ColumnReadService(repo);
+            var readSvc = new ColumnReadService(repo);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            var column = TestDataFactory.SeedColumn(db, pId, lId);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var column = TestDataFactory.SeedColumn(db, projectId, laneId);
 
-            var existing = await svc.GetAsync(column.Id);
+            var existing = await readSvc.GetAsync(column.Id);
             existing.Should().NotBeNull();
 
-            var notFound = await svc.GetAsync(Guid.NewGuid());
+            var notFound = await readSvc.GetAsync(Guid.NewGuid());
             notFound.Should().Be(null);
         }
 
@@ -31,20 +32,20 @@ namespace Application.Tests.Columns.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
-            var svc = new ColumnReadService(repo);
+            var readSvc = new ColumnReadService(repo);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            TestDataFactory.SeedColumn(db, pId, lId);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            TestDataFactory.SeedColumn(db, projectId, laneId);
 
-            var list = await svc.ListByLaneAsync(lId);
+            var list = await readSvc.ListByLaneAsync(laneId);
             list.Should().HaveCount(1);
 
-            TestDataFactory.SeedColumn(db, pId, lId, order: 1);
-            list = await svc.ListByLaneAsync(lId);
+            TestDataFactory.SeedColumn(db, projectId, laneId, order: 1);
+            list = await readSvc.ListByLaneAsync(laneId);
             list.Should().HaveCount(2);
 
-            TestDataFactory.SeedColumn(db, pId, lId, order: 3);
-            list = await svc.ListByLaneAsync(lId);
+            TestDataFactory.SeedColumn(db, projectId, laneId, order: 3);
+            list = await readSvc.ListByLaneAsync(laneId);
             list.Should().HaveCount(3);
         }
 
@@ -54,10 +55,10 @@ namespace Application.Tests.Columns.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
-            var svc = new ColumnReadService(repo);
+            var readSvc = new ColumnReadService(repo);
 
-            var (_, lId) = TestDataFactory.SeedProjectWithLane(db);
-            var list = await svc.ListByLaneAsync(lId);
+            var (_, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var list = await readSvc.ListByLaneAsync(laneId);
             list.Should().BeEmpty();
         }
     }

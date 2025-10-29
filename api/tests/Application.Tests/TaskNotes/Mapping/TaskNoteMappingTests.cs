@@ -10,18 +10,21 @@ namespace Application.Tests.TaskNotes.Mapping
         [Fact]
         public void Entity_To_ReadDto_Reflects_Optional_UpdatedAt()
         {
-            var e = TaskNote.Create(Guid.NewGuid(), Guid.NewGuid(), NoteContent.Create("cotent"));
-            e.GetType().GetProperty("Id")!.SetValue(e, Guid.NewGuid());
-            e.GetType().GetProperty("RowVersion")!.SetValue(e, new byte[] { 2 });
+            var entity = TaskNote.Create(
+                taskId: Guid.NewGuid(),
+                userId: Guid.NewGuid(),
+                NoteContent.Create("cotent"));
+            entity.GetType().GetProperty("Id")!.SetValue(entity, Guid.NewGuid());
+            entity.GetType().GetProperty("RowVersion")!.SetValue(entity, new byte[] { 2 });
 
-            var read = e.ToReadDto();
-            read.Id.Should().Be(e.Id);
-            read.TaskId.Should().Be(e.TaskId);
-            read.UserId.Should().Be(e.UserId);
+            var read = entity.ToReadDto();
+            read.Id.Should().Be(entity.Id);
+            read.TaskId.Should().Be(entity.TaskId);
+            read.UserId.Should().Be(entity.UserId);
             read.Content.Should().Be("cotent");
-            read.CreatedAt.Should().Be(e.CreatedAt);
-            read.UpdatedAt.Should().Be(e.UpdatedAt); // null initially
-            read.RowVersion.Should().Equal(e.RowVersion);
+            read.CreatedAt.Should().Be(entity.CreatedAt);
+            read.UpdatedAt.Should().Be(entity.UpdatedAt); // null initially
+            read.RowVersion.Should().Equal(entity.RowVersion);
         }
     }
 }

@@ -35,7 +35,10 @@ namespace Application.Tests.TaskNotes.Realtime
             var notifier = new Mock<IRealtimeNotifier>();
             var handler = new TaskNoteChangedHandler(notifier.Object);
             var projectId = Guid.NewGuid();
-            var payload = new TaskNoteUpdatedPayload(TaskId: Guid.NewGuid(), NoteId: Guid.NewGuid(), NewContent: "new");
+            var payload = new TaskNoteUpdatedPayload(
+                TaskId: Guid.NewGuid(),
+                NoteId: Guid.NewGuid(),
+                NewContent: "new");
 
             await handler.Handle(new TaskNoteUpdated(projectId, payload), CancellationToken.None);
 

@@ -1,12 +1,13 @@
 using Api.Tests.Testing;
 using Application.Columns.DTOs;
-using Application.Lanes.DTOs;
-using Application.Projects.DTOs;
 using FluentAssertions;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using TestHelpers;
+using TestHelpers.Api.Auth;
+using TestHelpers.Api.Columns;
+using TestHelpers.Api.Defaults;
+using TestHelpers.Api.Http;
+using TestHelpers.Api.Projects;
 
 namespace Api.Tests.Endpoints
 {
@@ -18,49 +19,58 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var auth = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
 
-            var (prj, lane) = await EndpointsTestHelper.CreateProjectAndLane(client);
+            var (project, lane) = await BoardSetupHelper.CreateProjectAndLane(client);
 
-            // list columns empty
-            var list0 = await client.GetAsync($"/projects/{prj.Id}/lanes/{lane.Id}/columns");
-            list0.StatusCode.Should().Be(HttpStatusCode.OK);
-            var empty = await list0.Content.ReadFromJsonAsync<List<ColumnReadDto>>(EndpointsTestHelper.Json);
-            empty!.Should().BeEmpty();
+            // List columns empty
+            var getResponse = await ColumnTestHelper.GetColumnsResponseAsync(client, project.Id, lane.Id);
+            getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            // create
-            var create = await client.PostAsJsonAsync($"/projects/{prj.Id}/lanes/{lane.Id}/columns", new ColumnCreateDto { Name = "Todo", Order = 0 });
-            create.StatusCode.Should().Be(HttpStatusCode.Created);
-            var col = await create.Content.ReadFromJsonAsync<ColumnReadDto>(EndpointsTestHelper.Json);
+            var columnsList = await getResponse.ReadContentAsDtoAsync<List<ColumnReadDto>>();
+            columnsList.Should().BeEmpty();
 
-            // rename (If-Match)
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, col!.RowVersion);
-            var rename = await client.PutAsJsonAsync($"/projects/{prj.Id}/lanes/{lane.Id}/columns/{col.Id}/rename", new ColumnRenameDto { NewName = "In Progress" });
-            rename.StatusCode.Should().Be(HttpStatusCode.OK);
-            var col2 = await rename.Content.ReadFromJsonAsync<ColumnReadDto>(EndpointsTestHelper.Json);
-            col2!.Name.Should().Be("In Progress");
+            // Create
+            var column = await ColumnTestHelper.PostColumnDtoAsync(client, project.Id, lane.Id);
 
+            // Rename
+            var renameResponse = await ColumnTestHelper.RenameColumnResponseAsync(
+                client,
+                project.Id,
+                lane.Id,
+                column.Id,
+                column.RowVersion);
+            renameResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var renamedColumn = await renameResponse.ReadContentAsDtoAsync<ColumnReadDto>();
+            renamedColumn.Name.Should().Be(ColumnDefaults.DefaultColumnRename);
+
+            // Create another column so index 1 exists
             client.DefaultRequestHeaders.IfMatch.Clear();
 
-            // create another column so index 1 exists
-            var create2 = await client.PostAsJsonAsync(
-                $"/projects/{prj.Id}/lanes/{lane.Id}/columns",
-                new ColumnCreateDto { Name = "Review", Order = 1 });
-            create2.StatusCode.Should().Be(HttpStatusCode.Created);
-            await create2.Content.ReadFromJsonAsync<ColumnReadDto>(EndpointsTestHelper.Json);
+            var secondColumnCreateDto = new ColumnCreateDto { Name = "Review", Order = 1 };
+            await ColumnTestHelper.PostColumnResponseAsync(client, project.Id, lane.Id, secondColumnCreateDto);
 
-            // reorder (If-Match)
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, col2.RowVersion);
-            var reorder = await client.PutAsJsonAsync($"/projects/{prj.Id}/lanes/{lane.Id}/columns/{col.Id}/reorder", new ColumnReorderDto { NewOrder = 1 });
-            reorder.StatusCode.Should().Be(HttpStatusCode.OK);
-            var col3 = await reorder.Content.ReadFromJsonAsync<ColumnReadDto>(EndpointsTestHelper.Json);
-            col3!.Order.Should().Be(1);
+            // Reorder
+            var reorderResponse = await ColumnTestHelper.ReorderColumnResponseAsync(
+                client,
+                project.Id,
+                lane.Id,
+                column.Id,
+                renamedColumn.RowVersion);
+            reorderResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            // delete (If-Match)
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, col3.RowVersion);
-            var del = await client.DeleteAsync($"/projects/{prj.Id}/lanes/{lane.Id}/columns/{col.Id}");
-            del.StatusCode.Should().Be(HttpStatusCode.NoContent);
+            var reorderedColumn = await reorderResponse.ReadContentAsDtoAsync<ColumnReadDto>();
+            reorderedColumn.Order.Should().Be(1);
+
+            // Delete
+            var deleteResponse = await ColumnTestHelper.DeleteColumnResponseAsync(
+                client,
+                project.Id,
+                lane.Id,
+                column.Id,
+                reorderedColumn.RowVersion);
+            deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
 
         [Fact]
@@ -68,23 +78,24 @@ namespace Api.Tests.Endpoints
         {
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
-            var auth = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-            var (prj, lane) = await EndpointsTestHelper.CreateProjectAndLane(client);
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
 
-            var list0 = await client.GetAsync($"/projects/{prj.Id}/lanes/{lane.Id}/columns");
-            list0.StatusCode.Should().Be(HttpStatusCode.OK);
-            (await list0.Content.ReadFromJsonAsync<ColumnReadDto[]>(EndpointsTestHelper.Json))!.Should().BeEmpty();
+            var (project, lane) = await BoardSetupHelper.CreateProjectAndLane(client);
 
-            var create = await EndpointsTestHelper.PostWithoutIfMatchAsync(client, $"/projects/{prj.Id}/lanes/{lane.Id}/columns",
-                new ColumnCreateDto { Name = "Todo", Order = 0 });
-            create.StatusCode.Should().Be(HttpStatusCode.Created);
-            var col = await create.Content.ReadFromJsonAsync<ColumnReadDto>(EndpointsTestHelper.Json);
+            // No columns created -> empty list
+            var columnsList = await ColumnTestHelper.GetColumnsDtoAsync(client, project.Id, lane.Id);
+            columnsList.Should().BeEmpty();
 
-            var get = await client.GetAsync($"/projects/{prj.Id}/lanes/{lane.Id}/columns/{col!.Id}");
-            get.StatusCode.Should().Be(HttpStatusCode.OK);
-            get.Headers.ETag.Should().NotBeNull();
+            // Create column
+            var column = await ColumnTestHelper.PostColumnDtoAsync(client, project.Id, lane.Id);
+
+            // Get created column
+            var getColumnResponse = await ColumnTestHelper.GetColumnResponseAsync(client, project.Id, lane.Id, column.Id);
+
+            // Response includes ETag
+            getColumnResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+            getColumnResponse.Headers.ETag.Should().NotBeNull();
         }
 
         [Fact]
@@ -92,16 +103,17 @@ namespace Api.Tests.Endpoints
         {
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
-            var auth = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-            var (prj, lane) = await EndpointsTestHelper.CreateProjectAndLane(client);
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
+
+            var (project, lane) = await BoardSetupHelper.CreateProjectAndLane(client);
 
             client.DefaultRequestHeaders.IfMatch.Clear();
             client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", "\"abc\"");
 
-            var create = await client.PostAsJsonAsync($"/projects/{prj.Id}/lanes/{lane.Id}/columns",
-                new ColumnCreateDto { Name = "X", Order = 0 });
+            var create = await client.PostAsJsonAsync(
+                $"/projects/{project.Id}/lanes/{lane.Id}/columns",
+                ColumnDefaults.DefaultColumnCreateDto);
             create.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
@@ -110,20 +122,17 @@ namespace Api.Tests.Endpoints
         {
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
-            var auth = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-            var (prj, lane) = await EndpointsTestHelper.CreateProjectAndLane(client);
-            var create = await EndpointsTestHelper.PostWithoutIfMatchAsync(client, $"/projects/{prj.Id}/lanes/{lane.Id}/columns",
-                new ColumnCreateDto { Name = "Todo", Order = 0 });
-            var col = await create.Content.ReadFromJsonAsync<ColumnReadDto>(EndpointsTestHelper.Json);
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
+
+            var (project, lane, column) = await BoardSetupHelper.CreateProjectLaneAndColumn(client);
 
             client.DefaultRequestHeaders.IfMatch.Clear(); // missing
-            var rename = await client.PutAsJsonAsync(
-                $"/projects/{prj.Id}/lanes/{lane.Id}/columns/{col!.Id}/rename",
-                new ColumnRenameDto { NewName = "In Progress" });
 
-            rename.StatusCode.Should().Be((HttpStatusCode)428);
+            var renameResponse = await client.PutAsJsonAsync(
+                $"/projects/{project.Id}/lanes/{lane.Id}/columns/{column!.Id}/rename",
+                ColumnDefaults.DefaultColumnRenameDto);
+            renameResponse.StatusCode.Should().Be((HttpStatusCode)428);
         }
 
         [Fact]
@@ -131,28 +140,30 @@ namespace Api.Tests.Endpoints
         {
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
-            var auth = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-            var (prj, lane) = await EndpointsTestHelper.CreateProjectAndLane(client);
-            var create = await EndpointsTestHelper.PostWithoutIfMatchAsync(client, $"/projects/{prj.Id}/lanes/{lane.Id}/columns",
-                new ColumnCreateDto { Name = "Todo", Order = 0 });
-            var col = await create.Content.ReadFromJsonAsync<ColumnReadDto>(EndpointsTestHelper.Json);
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
+
+            var (project, lane, column) = await BoardSetupHelper.CreateProjectLaneAndColumn(client);
 
             // valid
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, col!.RowVersion);
-            var ok = await client.PutAsJsonAsync(
-                $"/projects/{prj.Id}/lanes/{lane.Id}/columns/{col.Id}/rename",
-                new ColumnRenameDto { NewName = "In Progress" });
-            ok.StatusCode.Should().Be(HttpStatusCode.OK);
-            await ok.Content.ReadFromJsonAsync<ColumnReadDto>(EndpointsTestHelper.Json);
+            var okRenameResponse = await ColumnTestHelper.RenameColumnResponseAsync(
+                client,
+                project.Id,
+                lane.Id,
+                column.Id,
+                column.RowVersion);
+            okRenameResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
             // stale
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, col.RowVersion); // old
-            var stale = await client.PutAsJsonAsync(
-                $"/projects/{prj.Id}/lanes/{lane.Id}/columns/{col.Id}/rename",
-                new ColumnRenameDto { NewName = "Done" });
-            stale.StatusCode.Should().Be((HttpStatusCode)412);
+            var notDefaultRenameDto = new ColumnRenameDto() { NewName = "not default" };
+            var staleRenameResponse = await ColumnTestHelper.RenameColumnResponseAsync(
+                client,
+                project.Id,
+                lane.Id,
+                column.Id,
+                column.RowVersion,  // old rowVersion
+                notDefaultRenameDto);
+            staleRenameResponse.StatusCode.Should().Be((HttpStatusCode)412);
         }
 
         [Fact]
@@ -160,27 +171,32 @@ namespace Api.Tests.Endpoints
         {
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
-            var auth = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-            var (prj, lane) = await EndpointsTestHelper.CreateProjectAndLane(client);
-            var c1 = await EndpointsTestHelper.PostWithoutIfMatchAsync(client, $"/projects/{prj.Id}/lanes/{lane.Id}/columns",
-                new ColumnCreateDto { Name = "Column A", Order = 0 });
-            var col = await c1.Content.ReadFromJsonAsync<ColumnReadDto>(EndpointsTestHelper.Json);
-            await EndpointsTestHelper.PostWithoutIfMatchAsync(client, $"/projects/{prj.Id}/lanes/{lane.Id}/columns",
-                new ColumnCreateDto { Name = "Column B", Order = 1 });
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
+
+            var (project, lane, column) = await BoardSetupHelper.CreateProjectLaneAndColumn(client);
+
+            // create second column
+            var secondColumnCreateDto = new ColumnCreateDto() { Name = "Second column", Order = 1 };
+            await ColumnTestHelper.PostColumnResponseAsync(
+                client,
+                project.Id,
+                lane.Id,
+                secondColumnCreateDto);
 
             // reorder ok
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, col!.RowVersion);
-            var reorder = await client.PutAsJsonAsync(
-                $"/projects/{prj.Id}/lanes/{lane.Id}/columns/{col.Id}/reorder",
-                new ColumnReorderDto { NewOrder = 1 });
-            reorder.StatusCode.Should().Be(HttpStatusCode.OK);
+            var reorderResponse = await ColumnTestHelper.ReorderColumnResponseAsync(
+                client,
+                project.Id,
+                lane.Id,
+                column.Id,
+                column.RowVersion);
+            reorderResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
             // delete missing If-Match -> 428
             client.DefaultRequestHeaders.IfMatch.Clear();
-            var del = await client.DeleteAsync($"/projects/{prj.Id}/lanes/{lane.Id}/columns/{col.Id}");
-            del.StatusCode.Should().Be((HttpStatusCode)428);
+            var deleteResponse = await client.DeleteAsync($"/projects/{project.Id}/lanes/{lane.Id}/columns/{column.Id}");
+            deleteResponse.StatusCode.Should().Be((HttpStatusCode)428);
         }
 
         [Fact]
@@ -189,23 +205,24 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            // 401 sin auth
-            var list401 = await client.GetAsync($"/projects/{Guid.NewGuid()}/lanes/{Guid.NewGuid()}/columns");
+            // 401 no auth
+            var list401 = await ColumnTestHelper.GetColumnsResponseAsync(
+                client,
+                projectId: Guid.NewGuid(),
+                laneId: Guid.NewGuid());
             list401.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
-            // auth + proyecto/lane propios
-            var auth = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
 
-            var prj = await (await client.PostAsJsonAsync("/projects", new ProjectCreateDto { Name = "P1" }))
-                .Content.ReadFromJsonAsync<ProjectReadDto>(EndpointsTestHelper.Json);
-            var lane = await (await client.PostAsJsonAsync($"/projects/{prj!.Id}/lanes",
-                new LaneCreateDto { Name = "L1", Order = 0 }))
-                .Content.ReadFromJsonAsync<LaneReadDto>(EndpointsTestHelper.Json);
+            var (project, lane) = await BoardSetupHelper.CreateProjectAndLane(client);
 
-            // 404: columnId inexistente dentro de un proyecto/lane accesibles
-            var notFound = await client.GetAsync($"/projects/{prj.Id}/lanes/{lane!.Id}/columns/{Guid.NewGuid()}");
-            notFound.StatusCode.Should().Be(HttpStatusCode.NotFound);
+            // 404 not found column
+            var notFoundResponse = await ColumnTestHelper.GetColumnResponseAsync(
+                client,
+                project.Id,
+                lane.Id,
+                columnId: Guid.NewGuid());
+            notFoundResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
     }
 }

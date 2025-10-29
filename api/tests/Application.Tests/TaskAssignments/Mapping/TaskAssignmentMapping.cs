@@ -9,14 +9,14 @@ namespace Application.Tests.TaskAssignments.Mapping
         [Fact]
         public void Entity_To_ReadDto()
         {
-            var e = TaskAssignment.AssignOwner(Guid.NewGuid(), Guid.NewGuid());
-            e.GetType().GetProperty("RowVersion")!.SetValue(e, new byte[] { 4 });
+            var entity = TaskAssignment.AssignOwner(taskId: Guid.NewGuid(), userId: Guid.NewGuid());
+            entity.GetType().GetProperty("RowVersion")!.SetValue(entity, new byte[] { 4 });
 
-            var read = e.ToReadDto();
-            read.TaskId.Should().Be(e.TaskId);
-            read.UserId.Should().Be(e.UserId);
-            read.Role.Should().Be(e.Role);
-            read.RowVersion.Should().Equal(e.RowVersion);
+            var read = entity.ToReadDto();
+            read.TaskId.Should().Be(entity.TaskId);
+            read.UserId.Should().Be(entity.UserId);
+            read.Role.Should().Be(entity.Role);
+            read.RowVersion.Should().Equal(entity.RowVersion);
         }
     }
 }

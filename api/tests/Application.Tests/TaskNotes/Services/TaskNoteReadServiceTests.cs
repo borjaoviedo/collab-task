@@ -1,7 +1,8 @@
 using Application.TaskNotes.Services;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Application.Tests.TaskNotes.Services
 {
@@ -13,15 +14,15 @@ namespace Application.Tests.TaskNotes.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
-            var svc = new TaskNoteReadService(repo);
+            var readSvc = new TaskNoteReadService(repo);
 
-            var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, _, noteId, _) = TestDataFactory.SeedFullBoard(db);
 
-            var existing = await svc.GetAsync(nId);
+            var existing = await readSvc.GetAsync(noteId);
             existing.Should().NotBeNull();
-            existing.Id.Should().Be(nId);
+            existing.Id.Should().Be(noteId);
 
-            var notFound = await svc.GetAsync(Guid.NewGuid());
+            var notFound = await readSvc.GetAsync(noteId: Guid.NewGuid());
             notFound.Should().BeNull();
         }
 
@@ -31,16 +32,16 @@ namespace Application.Tests.TaskNotes.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
-            var svc = new TaskNoteReadService(repo);
+            var readSvc = new TaskNoteReadService(repo);
 
-            var (_, _, _, tId, _, uId) = TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
 
-            var list = await svc.ListByTaskAsync(tId);
+            var list = await readSvc.ListByTaskAsync(taskId);
             list.Should().NotBeNull();
             list.Count.Should().Be(1);
 
-            TestDataFactory.SeedTaskNote(db, tId, uId);
-            list = await svc.ListByTaskAsync(tId);
+            TestDataFactory.SeedTaskNote(db, taskId, userId);
+            list = await readSvc.ListByTaskAsync(taskId);
             list.Count.Should().Be(2);
         }
 
@@ -50,11 +51,11 @@ namespace Application.Tests.TaskNotes.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
-            var svc = new TaskNoteReadService(repo);
+            var readSvc = new TaskNoteReadService(repo);
 
-            var (_, _, _, tId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, _) = TestDataFactory.SeedColumnWithTask(db);
 
-            var list = await svc.ListByTaskAsync(tId);
+            var list = await readSvc.ListByTaskAsync(taskId);
             list.Should().BeEmpty();
         }
 
@@ -64,9 +65,9 @@ namespace Application.Tests.TaskNotes.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
-            var svc = new TaskNoteReadService(repo);
+            var readSvc = new TaskNoteReadService(repo);
 
-            var list = await svc.ListByTaskAsync(Guid.NewGuid());
+            var list = await readSvc.ListByTaskAsync(taskId: Guid.NewGuid());
             list.Should().BeEmpty();
         }
 
@@ -76,16 +77,16 @@ namespace Application.Tests.TaskNotes.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
-            var svc = new TaskNoteReadService(repo);
+            var readSvc = new TaskNoteReadService(repo);
 
-            var (_, _, _, tId, _, uId) = TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
 
-            var list = await svc.ListByUserAsync(uId);
+            var list = await readSvc.ListByUserAsync(userId);
             list.Should().NotBeNull();
             list.Count.Should().Be(1);
 
-            TestDataFactory.SeedTaskNote(db, tId, uId);
-            list = await svc.ListByUserAsync(uId);
+            TestDataFactory.SeedTaskNote(db, taskId, userId);
+            list = await readSvc.ListByUserAsync(userId);
             list.Count.Should().Be(2);
         }
 
@@ -95,11 +96,11 @@ namespace Application.Tests.TaskNotes.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
-            var svc = new TaskNoteReadService(repo);
+            var readSvc = new TaskNoteReadService(repo);
 
-            var (_, _, _, tId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, _) = TestDataFactory.SeedColumnWithTask(db);
 
-            var list = await svc.ListByUserAsync(tId);
+            var list = await readSvc.ListByUserAsync(taskId);
             list.Should().BeEmpty();
         }
 
@@ -109,9 +110,9 @@ namespace Application.Tests.TaskNotes.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
-            var svc = new TaskNoteReadService(repo);
+            var readSvc = new TaskNoteReadService(repo);
 
-            var list = await svc.ListByUserAsync(Guid.NewGuid());
+            var list = await readSvc.ListByUserAsync(userId: Guid.NewGuid());
             list.Should().BeEmpty();
         }
     }

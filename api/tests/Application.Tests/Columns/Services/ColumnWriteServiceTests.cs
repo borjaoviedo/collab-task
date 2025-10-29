@@ -5,7 +5,8 @@ using FluentAssertions;
 using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Application.Tests.Columns.Services
 {
@@ -18,16 +19,18 @@ namespace Application.Tests.Columns.Services
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new ColumnWriteService(repo, uow);
+            var writeSvc = new ColumnWriteService(repo, uow);
 
             var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
             var laneId = TestDataFactory.SeedLane(db, projectId).Id;
             var columnName = "Column name";
 
-            await svc.CreateAsync(projectId, laneId, ColumnName.Create(columnName));
+            await writeSvc.CreateAsync(projectId, laneId, ColumnName.Create(columnName));
             await uow.SaveAsync(MutationKind.Create);
 
-            var fromDb = await db.Columns.AsNoTracking().SingleAsync(c => c.Name == columnName);
+            var fromDb = await db.Columns
+                .AsNoTracking()
+                .SingleAsync(c => c.Name == columnName);
             fromDb.Name.Value.Should().Be(columnName);
             fromDb.Order.Should().Be(0);
         }
@@ -39,16 +42,20 @@ namespace Application.Tests.Columns.Services
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new ColumnWriteService(repo, uow);
+            var writeSvc = new ColumnWriteService(repo, uow);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            var column = TestDataFactory.SeedColumn(db, pId, lId);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var column = TestDataFactory.SeedColumn(db, projectId, laneId);
 
             var newName = "new name";
 
-            var res = await svc.RenameAsync(column.Id, ColumnName.Create(newName), column.RowVersion ?? []);
-            res.Should().Be(DomainMutation.Updated);
-            var fromDb = await db.Columns.AsNoTracking().SingleAsync(c => c.Id == column.Id);
+            var rowVersion = column.RowVersion ?? [];
+            var result = await writeSvc.RenameAsync(column.Id, ColumnName.Create(newName), rowVersion);
+            result.Should().Be(DomainMutation.Updated);
+
+            var fromDb = await db.Columns
+                .AsNoTracking()
+                .SingleAsync(c => c.Id == column.Id);
             fromDb.Name.Value.Should().Be(newName);
         }
 
@@ -59,14 +66,14 @@ namespace Application.Tests.Columns.Services
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new ColumnWriteService(repo, uow);
+            var writeSvc = new ColumnWriteService(repo, uow);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             var sameName = "Same Column Name";
-            var column = TestDataFactory.SeedColumn(db, pId, lId, sameName);
+            var column = TestDataFactory.SeedColumn(db, projectId, laneId, sameName);
 
-            var res = await svc.RenameAsync(column.Id, ColumnName.Create(sameName), column.RowVersion!);
-            res.Should().Be(DomainMutation.NoOp);
+            var result = await writeSvc.RenameAsync(column.Id, ColumnName.Create(sameName), column.RowVersion);
+            result.Should().Be(DomainMutation.NoOp);
         }
 
         [Fact]
@@ -76,17 +83,20 @@ namespace Application.Tests.Columns.Services
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new ColumnWriteService(repo, uow);
+            var writeSvc = new ColumnWriteService(repo, uow);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
 
             var sameName = "Same Column Name";
-            TestDataFactory.SeedColumn(db, pId, lId, name: sameName);
+            TestDataFactory.SeedColumn(db, projectId, laneId, sameName);
 
-            var defaultNameColumn = TestDataFactory.SeedColumn(db, pId, lId, order: 1);
+            var defaultNameColumn = TestDataFactory.SeedColumn(db, projectId, laneId, order: 1);
 
-            var res = await svc.RenameAsync(defaultNameColumn.Id, ColumnName.Create(sameName), defaultNameColumn.RowVersion!);
-            res.Should().Be(DomainMutation.Conflict);
+            var result = await writeSvc.RenameAsync(
+                defaultNameColumn.Id,
+                ColumnName.Create(sameName),
+                defaultNameColumn.RowVersion);
+            result.Should().Be(DomainMutation.Conflict);
         }
 
         [Fact]
@@ -96,21 +106,21 @@ namespace Application.Tests.Columns.Services
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new ColumnWriteService(repo, uow);
+            var writeSvc = new ColumnWriteService(repo, uow);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            TestDataFactory.SeedColumn(db, pId, lId, "Column A", 0);
-            TestDataFactory.SeedColumn(db, pId, lId, "Column B", 1);
-            var columnC = TestDataFactory.SeedColumn(db, pId, lId, "Column C", 2);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            TestDataFactory.SeedColumn(db, projectId, laneId, "Column A", order: 0);
+            TestDataFactory.SeedColumn(db, projectId, laneId, "Column B", order: 1);
+            var columnC = TestDataFactory.SeedColumn(db, projectId, laneId, "Column C", order: 2);
 
-            // reload tracked 'c' to get current RowVersion
+            // Reload tracked 'c' to get current RowVersion
             var trackedC = await db.Columns.SingleAsync(c => c.Id == columnC.Id);
 
-            var res = await svc.ReorderAsync(trackedC.Id, 0, trackedC.RowVersion!);
-            res.Should().Be(DomainMutation.Updated);
+            var result = await writeSvc.ReorderAsync(trackedC.Id, newOrder: 0, trackedC.RowVersion);
+            result.Should().Be(DomainMutation.Updated);
 
             var columns = await db.Columns.AsNoTracking()
-                .Where(c => c.ProjectId == pId && c.LaneId == lId)
+                .Where(c => c.ProjectId == projectId && c.LaneId == laneId)
                 .OrderBy(c => c.Order)
                 .ToListAsync();
 
@@ -125,15 +135,15 @@ namespace Application.Tests.Columns.Services
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new ColumnWriteService(repo, uow);
+            var writeSvc = new ColumnWriteService(repo, uow);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            var column = TestDataFactory.SeedColumn(db, pId, lId);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var column = TestDataFactory.SeedColumn(db, projectId, laneId);
 
             var tracked = await db.Columns.SingleAsync(c => c.Id == column.Id);
 
-            var res = await svc.DeleteAsync(tracked.Id, tracked.RowVersion!);
-            res.Should().Be(DomainMutation.Deleted);
+            var result = await writeSvc.DeleteAsync(tracked.Id, tracked.RowVersion!);
+            result.Should().Be(DomainMutation.Deleted);
 
             var exists = await db.Columns.AnyAsync(c => c.Id == column.Id);
             exists.Should().BeFalse();
@@ -146,10 +156,10 @@ namespace Application.Tests.Columns.Services
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new ColumnWriteService(repo, uow);
+            var writeSvc = new ColumnWriteService(repo, uow);
 
-            var res = await svc.DeleteAsync(Guid.NewGuid(), []);
-            res.Should().Be(DomainMutation.NotFound);
+            var result = await writeSvc.DeleteAsync(columnId: Guid.NewGuid(), rowVersion: []);
+            result.Should().Be(DomainMutation.NotFound);
         }
 
         [Fact]
@@ -159,13 +169,13 @@ namespace Application.Tests.Columns.Services
             await using var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new ColumnWriteService(repo, uow);
+            var writeSvc = new ColumnWriteService(repo, uow);
 
-            var (pId, lId) = TestDataFactory.SeedProjectWithLane(db);
-            var column = TestDataFactory.SeedColumn(db, pId, lId);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var column = TestDataFactory.SeedColumn(db, projectId, laneId);
 
-            var res = await svc.DeleteAsync(column.Id, []);
-            res.Should().Be(DomainMutation.Conflict);
+            var result = await writeSvc.DeleteAsync(column.Id, rowVersion: []);
+            result.Should().Be(DomainMutation.Conflict);
 
             var stillExists = await db.Columns.AnyAsync(c => c.Id == column.Id);
             stillExists.Should().BeTrue();

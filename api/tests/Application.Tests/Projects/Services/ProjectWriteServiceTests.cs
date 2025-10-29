@@ -5,7 +5,8 @@ using FluentAssertions;
 using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Application.Tests.Projects.Services
 {
@@ -19,14 +20,14 @@ namespace Application.Tests.Projects.Services
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new ProjectWriteService(repo, uow);
+            var writeSvc = new ProjectWriteService(repo, uow);
 
             var owner = TestDataFactory.SeedUser(db);
 
-            var (res, id) = await svc.CreateAsync(owner.Id, ProjectName.Create("Alpha Board"));
+            var (result, projectId) = await writeSvc.CreateAsync(owner.Id, ProjectName.Create("Alpha Board"));
 
-            res.Should().Be(DomainMutation.Created);
-            id.Should().NotBeNull();
+            result.Should().Be(DomainMutation.Created);
+            projectId.Should().NotBeNull();
         }
 
         [Fact]
@@ -36,13 +37,13 @@ namespace Application.Tests.Projects.Services
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new ProjectWriteService(repo, uow);
+            var writeSvc = new ProjectWriteService(repo, uow);
 
             var user = TestDataFactory.SeedUser(db);
             var project = TestDataFactory.SeedProject(db, user.Id);
 
-            var res = await svc.RenameAsync(project.Id, ProjectName.Create("New Name"), project.RowVersion);
-            res.Should().Be(DomainMutation.Updated);
+            var result = await writeSvc.RenameAsync(project.Id, ProjectName.Create("New Name"), project.RowVersion);
+            result.Should().Be(DomainMutation.Updated);
 
             var fromDb = await db.Projects.AsNoTracking().SingleAsync();
             fromDb.Name.Value.Should().Be("New Name");
@@ -56,14 +57,14 @@ namespace Application.Tests.Projects.Services
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new ProjectWriteService(repo, uow);
+            var writeSvc = new ProjectWriteService(repo, uow);
 
             var user = TestDataFactory.SeedUser(db);
             var project = TestDataFactory.SeedProject(db, user.Id);
 
-            var res = await svc.DeleteAsync(project.Id, [9, 9, 9, 9]);
+            var result = await writeSvc.DeleteAsync(project.Id, [9, 9, 9, 9]);
 
-            res.Should().Be(DomainMutation.Conflict);
+            result.Should().Be(DomainMutation.Conflict);
         }
     }
 }

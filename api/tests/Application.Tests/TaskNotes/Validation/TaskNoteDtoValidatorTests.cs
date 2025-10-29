@@ -9,41 +9,41 @@ namespace Application.Tests.TaskNotes.Validation
         [Fact]
         public void Create_Valid_Passes()
         {
-            var v = new TaskNoteCreateDtoValidator();
+            var validator = new TaskNoteCreateDtoValidator();
             var dto = new TaskNoteCreateDto { Content = "Valid Note Content" };
 
-            var r = v.TestValidate(dto);
-            r.ShouldNotHaveAnyValidationErrors();
+            var validationResult = validator.TestValidate(dto);
+            validationResult.ShouldNotHaveAnyValidationErrors();
         }
 
         [Fact]
         public void Create_Invalid_Fails()
         {
-            var v = new TaskNoteCreateDtoValidator();
+            var validator = new TaskNoteCreateDtoValidator();
             var dto = new TaskNoteCreateDto { Content = "" };
 
-            var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(n => n.Content);
+            var validationResult = validator.TestValidate(dto);
+            validationResult.ShouldHaveValidationErrorFor(n => n.Content);
         }
 
         [Fact]
         public void Edit_Valid_Passes()
         {
-            var v = new TaskNoteEditDtoValidator();
+            var validator = new TaskNoteEditDtoValidator();
             var dto = new TaskNoteEditDto { NewContent = "Valid Note Content" };
 
-            var r = v.TestValidate(dto);
-            r.ShouldNotHaveAnyValidationErrors();
+            var validationResult = validator.TestValidate(dto);
+            validationResult.ShouldNotHaveAnyValidationErrors();
         }
 
         [Fact]
         public void Edit_Invalid_Fails()
         {
-            var v = new TaskNoteEditDtoValidator();
+            var validator = new TaskNoteEditDtoValidator();
             var dto = new TaskNoteEditDto { NewContent = ""};
 
-            var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(n => n.NewContent);
+            var validationResult = validator.TestValidate(dto);
+            validationResult.ShouldHaveValidationErrorFor(n => n.NewContent);
         }
     }
 }

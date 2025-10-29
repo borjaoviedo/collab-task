@@ -10,44 +10,44 @@ namespace Application.Tests.ProjectMembers.Validation
         [Fact]
         public void Create_Valid_Passes()
         {
-            var v = new ProjectMemberCreateDtoValidator();
+            var validator = new ProjectMemberCreateDtoValidator();
             var dto = new ProjectMemberCreateDto { UserId = Guid.NewGuid(), Role = ProjectRole.Admin };
 
-            var r = v.TestValidate(dto);
-            r.ShouldNotHaveAnyValidationErrors();
+            var validationResult = validator.TestValidate(dto);
+            validationResult.ShouldNotHaveAnyValidationErrors();
         }
 
         [Fact]
         public void Create_Invalid_Fails()
         {
-            var v = new ProjectMemberCreateDtoValidator();
+            var validator = new ProjectMemberCreateDtoValidator();
             var dto = new ProjectMemberCreateDto { UserId = Guid.Empty, Role = (ProjectRole)999 };
 
-            var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(m => m.UserId)
+            var validationResult = validator.TestValidate(dto);
+            validationResult.ShouldHaveValidationErrorFor(m => m.UserId)
              .WithErrorMessage("Id is required.");
-            r.ShouldHaveValidationErrorFor(m => m.Role)
+            validationResult.ShouldHaveValidationErrorFor(m => m.Role)
              .WithErrorMessage("Invalid project role value.");
         }
 
         [Fact]
         public void ChangeRole_Valid_Passes()
         {
-            var v = new ProjectMemberChangeRoleDtoValidator();
+            var validator = new ProjectMemberChangeRoleDtoValidator();
             var dto = new ProjectMemberChangeRoleDto { NewRole = ProjectRole.Member };
 
-            var r = v.TestValidate(dto);
-            r.ShouldNotHaveAnyValidationErrors();
+            var validationResult = validator.TestValidate(dto);
+            validationResult.ShouldNotHaveAnyValidationErrors();
         }
 
         [Fact]
         public void ChangeRole_Invalid_Fails()
         {
-            var v = new ProjectMemberChangeRoleDtoValidator();
+            var validator = new ProjectMemberChangeRoleDtoValidator();
             var dto = new ProjectMemberChangeRoleDto { NewRole = (ProjectRole)999 };
 
-            var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(m => m.NewRole)
+            var validationResult = validator.TestValidate(dto);
+            validationResult.ShouldHaveValidationErrorFor(m => m.NewRole)
              .WithErrorMessage("Invalid project role value.");
         }
     }

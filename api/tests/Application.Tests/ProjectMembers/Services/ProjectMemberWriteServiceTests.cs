@@ -4,7 +4,8 @@ using FluentAssertions;
 using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Application.Tests.ProjectMembers.Services
 {
@@ -17,13 +18,13 @@ namespace Application.Tests.ProjectMembers.Services
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new ProjectMemberWriteService(repo, uow);
+            var writeSvc = new ProjectMemberWriteService(repo, uow);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
             var user = TestDataFactory.SeedUser(db);
 
-            var (res, projectMember) = await svc.CreateAsync(pId, user.Id, ProjectRole.Member);
-            res.Should().Be(DomainMutation.Created);
+            var (result, projectMember) = await writeSvc.CreateAsync(projectId, user.Id, ProjectRole.Member);
+            result.Should().Be(DomainMutation.Created);
             projectMember.Should().NotBeNull();
         }
 
@@ -34,12 +35,12 @@ namespace Application.Tests.ProjectMembers.Services
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new ProjectMemberWriteService(repo, uow);
+            var writeSvc = new ProjectMemberWriteService(repo, uow);
 
-            var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
-            var res = await svc.ChangeRoleAsync(pId, uId, ProjectRole.Admin, [1, 2, 3, 4]);
+            var (projectId, uId) = TestDataFactory.SeedUserWithProject(db);
+            var result = await writeSvc.ChangeRoleAsync(projectId, uId, ProjectRole.Admin, [1, 2, 3, 4]);
 
-            res.Should().Be(DomainMutation.Conflict);
+            result.Should().Be(DomainMutation.Conflict);
         }
 
         [Fact]
@@ -49,20 +50,20 @@ namespace Application.Tests.ProjectMembers.Services
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new ProjectMemberWriteService(repo, uow);
+            var writeSvc = new ProjectMemberWriteService(repo, uow);
 
-            var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
-            var member = await db.ProjectMembers.SingleAsync(m => m.ProjectId == pId && m.UserId == uId);
+            var (projectId, uId) = TestDataFactory.SeedUserWithProject(db);
+            var member = await db.ProjectMembers.SingleAsync(m => m.ProjectId == projectId && m.UserId == uId);
 
-            var removeResult = await svc.RemoveAsync(member.ProjectId, member.UserId, member.RowVersion);
+            var removeResult = await writeSvc.RemoveAsync(member.ProjectId, member.UserId, member.RowVersion);
             removeResult.Should().Be(DomainMutation.Updated);
 
-            var removed = await db.ProjectMembers.SingleAsync(m => m.ProjectId == pId && m.UserId == uId);
-            member.RemovedAt.Should().NotBe(null);
+            var removed = await db.ProjectMembers.SingleAsync(m => m.ProjectId == projectId && m.UserId == uId);
+            member.RemovedAt.Should().NotBeNull();
 
-            var restoreResult = await svc.RestoreAsync(member.ProjectId, member.UserId, removed.RowVersion);
+            var restoreResult = await writeSvc.RestoreAsync(member.ProjectId, member.UserId, removed.RowVersion);
             restoreResult.Should().Be(DomainMutation.Updated);
-            member.RemovedAt.Should().Be(null);
+            member.RemovedAt.Should().BeNull();
         }
     }
 }

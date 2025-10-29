@@ -18,8 +18,9 @@ namespace Infrastructure.Tests.Database
                 .Options;
 
             await using var db = new AppDbContext(opts);
+            var databaseCanConnect = await db.Database.CanConnectAsync();
 
-            (await db.Database.CanConnectAsync()).Should().BeTrue();
+            databaseCanConnect.Should().BeTrue();
 
             var tableCount = await db.Database
                                     .SqlQueryRaw<int>("SELECT CAST(COUNT(*) AS int) AS [Value] FROM sys.tables")

@@ -6,59 +6,78 @@ using System.Security.Claims;
 
 namespace Api.Tests.Auth.Services
 {
-    public class CurrentUserService_Tests
+    public class CurrentUserServiceTests
     {
-        private static DefaultHttpContext BuildContext(Guid userId, string email, string role)
-        {
-            var claims = new[]
-            {
-            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-            new Claim(ClaimTypes.Email, email),
-            new Claim(ClaimTypes.Role, role)
-        };
-            var identity = new ClaimsIdentity(claims, authenticationType: "Test");
-            var principal = new ClaimsPrincipal(identity);
-            var ctx = new DefaultHttpContext { User = principal };
-            return ctx;
-        }
+        // ---------- TESTS ----------
 
         [Fact]
         public void WhenAuthenticated_ExposesUserId()
         {
             var userId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
             var ctx = BuildContext(userId, "user@demo.com", "Admin");
+            var sut = BuildSut(ctx);
 
-            var accessor = new Mock<IHttpContextAccessor>();
-            accessor.Setup(a => a.HttpContext).Returns(ctx);
-
-            var sut = new CurrentUserService(accessor.Object);
             sut.UserId.Should().Be(userId);
         }
 
-        [Fact]
-        public void WhenNoPrincipal_NullUserId()
+        [Theory]
+        [InlineData(null, false)] // no HttpContext at all
+        [InlineData("empty", true)] // HttpContext exists but no principal claims
+        [InlineData("only-email", true)] // Missing NameIdentifier claim
+        [InlineData("invalid-guid", true)] // Invalid GUID in NameIdentifier
+        public void NullUserId_On_Absent_Context_Or_Missing_Or_Invalid_Claims(
+            string? scenarioKey,
+            bool hasEmail)
         {
-            var accessor = new Mock<IHttpContextAccessor>();
-            accessor.Setup(a => a.HttpContext).Returns(new DefaultHttpContext());
+            HttpContext? http = scenarioKey switch
+            {
+                null => null, // accessor.HttpContext = null
+                "empty" => new DefaultHttpContext(), // empty principal, no claims
+                "only-email" => BuildContext(userId: null, email: "user@demo.com"),
+                "invalid-guid" => new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [
+                    new Claim(ClaimTypes.NameIdentifier, "not-a-guid"),
+                    new Claim(ClaimTypes.Email, hasEmail ? "user@demo.com" : "")
+                ], "Test"))
+                },
+                _ => throw new ArgumentOutOfRangeException(nameof(scenarioKey))
+            };
 
-            var sut = new CurrentUserService(accessor.Object);
+            var sut = BuildSut(http);
+
             sut.UserId.Should().BeNull();
         }
 
-        [Fact]
-        public void MissingRequiredClaims_NullUserId()
+        // ---------- HELPERS ----------
+
+        private static DefaultHttpContext BuildContext(
+            Guid? userId = null,
+            string? email = null,
+            string? role = null)
         {
             var identity = new ClaimsIdentity(authenticationType: "Test");
-            identity.AddClaim(new Claim(ClaimTypes.Email, "user@demo.com"));
+
+            if (userId.HasValue)
+                identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, userId.Value.ToString()));
+
+            if (!string.IsNullOrWhiteSpace(email))
+                identity.AddClaim(new Claim(ClaimTypes.Email, email));
+
+            if (!string.IsNullOrWhiteSpace(role))
+                identity.AddClaim(new Claim(ClaimTypes.Role, role));
 
             var principal = new ClaimsPrincipal(identity);
-            var ctx = new DefaultHttpContext { User = principal };
+            return new DefaultHttpContext { User = principal };
+        }
 
+        private static CurrentUserService BuildSut(HttpContext? httpContext)
+        {
             var accessor = new Mock<IHttpContextAccessor>();
-            accessor.Setup(a => a.HttpContext).Returns(ctx);
+            accessor.Setup(a => a.HttpContext).Returns(httpContext);
 
-            var sut = new CurrentUserService(accessor.Object);
-            sut.UserId.Should().BeNull();
+            return new CurrentUserService(accessor.Object);
         }
     }
 }

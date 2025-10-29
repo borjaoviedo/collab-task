@@ -1,10 +1,13 @@
 using Api.Tests.Testing;
 using Application.Projects.DTOs;
+using Application.Users.DTOs;
 using FluentAssertions;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using TestHelpers;
+using TestHelpers.Api.Auth;
+using TestHelpers.Api.Defaults;
+using TestHelpers.Api.Http;
+using TestHelpers.Api.Projects;
 
 namespace Api.Tests.Endpoints
 {
@@ -16,19 +19,15 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var auth = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
 
-            var create = await client.PostAsJsonAsync("/projects", new ProjectCreateDto() { Name = "My Project"});
-            create.StatusCode.Should().Be(HttpStatusCode.Created);
+            // Create default project
+            await ProjectTestHelper.PostProjectDtoAsync(client);
 
-            var list = await client.GetAsync("/projects");
-            list.StatusCode.Should().Be(HttpStatusCode.OK);
+            var projectList = await ProjectTestHelper.GetProjectsDtoAsync(client);
 
-            var items = await list.Content.ReadFromJsonAsync<List<ProjectReadDto>>(EndpointsTestHelper.Json);
-            items.Should().NotBeNull();
-            items!.Any().Should().BeTrue();
-            items!.Should().Contain(p => p != null && p.Name == "My Project");
+            projectList.Should().NotBeNull();
+            projectList.Should().Contain(p => p.Name == ProjectDefaults.DefaultProjectName);
         }
 
         [Fact]
@@ -37,17 +36,14 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var auth = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
 
-            var create = await client.PostAsJsonAsync("/projects", new ProjectCreateDto() { Name = "P1" });
-            create.StatusCode.Should().Be(HttpStatusCode.Created);
+            // Create default project
+            var project = await ProjectTestHelper.PostProjectDtoAsync(client);
 
-            var list = await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", EndpointsTestHelper.Json);
-            var prj = list!.Single(p => p.Name == "P1");
-
-            var resp = await client.GetAsync($"/projects/{prj.Id}");
-            resp.StatusCode.Should().Be(HttpStatusCode.OK);
+            // Get project by id
+            var response = await ProjectTestHelper.GetProjectResponseAsync(client, project.Id);
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
         }
 
         [Fact]
@@ -56,25 +52,20 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var auth = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
 
-            (await client.PostAsJsonAsync("/projects", new ProjectCreateDto() { Name = "ToRename" }))
-                .EnsureSuccessStatusCode();
+            // Create default project
+            var project = await ProjectTestHelper.PostProjectDtoAsync(client);
 
-            var prj = (await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", EndpointsTestHelper.Json))!
-                .Single(p => p.Name == "ToRename");
+            // Rename project with default rename DTO
+            var renameResponse = await ProjectTestHelper.RenameProjectResponseAsync(
+                client,
+                project.Id,
+                project.RowVersion);
+            renameResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            // If-Match header from current RowVersion
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, prj.RowVersion);
-
-            // Align DTO and route
-            var resp = await client.PatchAsJsonAsync($"/projects/{prj.Id}/rename", new ProjectRenameDto() { NewName =  "Renamed"});
-
-            resp.StatusCode.Should().Be(HttpStatusCode.OK);
-            var body = await resp.Content.ReadFromJsonAsync<ProjectReadDto>();
-            body!.Name.Should().Be("Renamed");
+            var renamed = await renameResponse.ReadContentAsDtoAsync<ProjectReadDto>();
+            renamed.Name.Should().Be(ProjectDefaults.DefaultProjectRename);
         }
 
         [Fact]
@@ -83,25 +74,17 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var auth = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
 
-            (await client.PostAsJsonAsync("/projects", new ProjectCreateDto() { Name = "ToDelete" }))
-                .EnsureSuccessStatusCode();
+            // Create default project
+            var project = await ProjectTestHelper.PostProjectDtoAsync(client);
 
-            var prj = (await client.GetFromJsonAsync<List<ProjectReadDto>>("/projects", EndpointsTestHelper.Json))!
-                .Single(p => p.Name == "ToDelete");
-
-            // If-Match header from current RowVersion
-            var base64 = Convert.ToBase64String(prj.RowVersion);
-            var req = new HttpRequestMessage(HttpMethod.Delete, $"/projects/{prj.Id}");
-            req.Headers.TryAddWithoutValidation("If-Match", $"W/\"{base64}\"");
-
-            // No body for DELETE
-            var resp = await client.SendAsync(req);
-
-            resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
+            // Delete response: 204 no content
+            var deleteResponse = await ProjectTestHelper.DeleteProjectResponseAsync(
+                client,
+                project.Id,
+                project.RowVersion);
+            deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
 
         [Fact]
@@ -110,25 +93,22 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var owner = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
 
-            // Create
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            var create = await client.PostAsJsonAsync("/projects", new ProjectCreateDto { Name = "My Project" });
-            create.StatusCode.Should().Be(HttpStatusCode.Created);
+            // Create default project
+            var project = await ProjectTestHelper.PostProjectDtoAsync(client);
 
             // List
-            var list = await client.GetAsync("/projects");
-            list.StatusCode.Should().Be(HttpStatusCode.OK);
-            var items = await list.Content.ReadFromJsonAsync<ProjectReadDto[]>(EndpointsTestHelper.Json);
-            items!.Should().ContainSingle(p => p.Name == "My Project");
+            var getProjectsResponse = await ProjectTestHelper.GetProjectsResponseAsync(client);
+            getProjectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var projectList = await getProjectsResponse.ReadContentAsDtoAsync<List<ProjectReadDto>>();
+            projectList.Should().ContainSingle(p => p.Name == ProjectDefaults.DefaultProjectName);
 
             // GetById -> ETag
-            var prj = items.Single(p => p.Name == "My Project");
-            var get = await client.GetAsync($"/projects/{prj.Id}");
-            get.StatusCode.Should().Be(HttpStatusCode.OK);
-            get.Headers.ETag.Should().NotBeNull();
+            var getProjectResponse = await ProjectTestHelper.GetProjectResponseAsync(client, project.Id);
+            getProjectResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+            getProjectResponse.Headers.ETag.Should().NotBeNull();
         }
 
         [Fact]
@@ -137,16 +117,22 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var a = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", a.AccessToken);
-            (await client.PostAsJsonAsync("/projects", new ProjectCreateDto { Name = "P1" })).EnsureSuccessStatusCode();
-            var prj = (await client.GetFromJsonAsync<ProjectReadDto[]>("/projects", EndpointsTestHelper.Json))!.Single(p => p.Name == "P1");
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
 
-            var b = await EndpointsTestHelper.RegisterAndLoginAsync(client, name: "other", email: "other@x.com");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", b.AccessToken);
+            // Create default project
+            var project = await ProjectTestHelper.PostProjectDtoAsync(client);
 
-            var resp = await client.GetAsync($"/projects/{prj.Id}");
-            resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            var userRegisterDto = new UserRegisterDto()
+            {
+                Email = "random@e.com",
+                Name = "random",
+                Password = "Passw0rd!"
+            };
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client, userRegisterDto);
+
+            // 403 when not project member user tries to get the project
+            var response = await ProjectTestHelper.GetProjectResponseAsync(client, project.Id);
+            response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         }
 
         [Fact]
@@ -155,27 +141,34 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var owner = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
 
-            (await client.PostAsJsonAsync("/projects", new ProjectCreateDto { Name = "ToRename" })).EnsureSuccessStatusCode();
-            var prj = (await client.GetFromJsonAsync<ProjectReadDto[]>("/projects", EndpointsTestHelper.Json))!.Single(p => p.Name == "ToRename");
+            // Create default project
+            var project = await ProjectTestHelper.PostProjectDtoAsync(client);
 
             // OK with valid If-Match
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, prj.RowVersion);
-            var ok = await client.PatchAsJsonAsync($"/projects/{prj.Id}/rename", new ProjectRenameDto { NewName = "Renamed" });
-            ok.StatusCode.Should().Be(HttpStatusCode.OK);
-            var renamed = await ok.Content.ReadFromJsonAsync<ProjectReadDto>(EndpointsTestHelper.Json);
+            var okRenameResponse = await ProjectTestHelper.RenameProjectResponseAsync(
+                client,
+                project.Id,
+                project.RowVersion);
+            okRenameResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+            var renamed = await okRenameResponse.ReadContentAsDtoAsync<ProjectReadDto>();
 
             // Stale 412 (use old rowversion)
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, prj.RowVersion);
-            var stale = await client.PatchAsJsonAsync($"/projects/{renamed!.Id}/rename", new ProjectRenameDto { NewName = "Again" });
-            stale.StatusCode.Should().Be((HttpStatusCode)412);
+            var differentRenameDto = new ProjectRenameDto { NewName = "different rename" };
+            var staleRenameResponse = await ProjectTestHelper.RenameProjectResponseAsync(
+                client,
+                project.Id,
+                project.RowVersion,
+                differentRenameDto);
+            staleRenameResponse.StatusCode.Should().Be((HttpStatusCode)412);
 
             // Missing If-Match -> 428
             client.DefaultRequestHeaders.IfMatch.Clear();
-            var missing = await client.PatchAsJsonAsync($"/projects/{renamed.Id}/rename", new ProjectRenameDto { NewName = "PX" });
-            missing.StatusCode.Should().Be((HttpStatusCode)428);
+            var missingRenameResponse = await client.PatchAsJsonAsync(
+                $"/projects/{renamed.Id}/rename",
+                differentRenameDto);
+            missingRenameResponse.StatusCode.Should().Be((HttpStatusCode)428);
         }
 
         [Fact]
@@ -184,21 +177,22 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var owner = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
 
-            (await client.PostAsJsonAsync("/projects", new ProjectCreateDto { Name = "ToDelete" })).EnsureSuccessStatusCode();
-            var prj = (await client.GetFromJsonAsync<ProjectReadDto[]>("/projects", EndpointsTestHelper.Json))!.Single(p => p.Name == "ToDelete");
+            // Create default project
+            var project = await ProjectTestHelper.PostProjectDtoAsync(client);
 
             // 428 missing If-Match
             client.DefaultRequestHeaders.IfMatch.Clear();
-            var miss = await client.DeleteAsync($"/projects/{prj.Id}");
-            miss.StatusCode.Should().Be((HttpStatusCode)428);
+            var missingDeleteResponse = await client.DeleteAsync($"/projects/{project.Id}");
+            missingDeleteResponse.StatusCode.Should().Be((HttpStatusCode)428);
 
             // 204 with If-Match
-            EndpointsTestHelper.SetIfMatchFromRowVersion(client, prj.RowVersion);
-            var del = await client.DeleteAsync($"/projects/{prj.Id}");
-            del.StatusCode.Should().Be(HttpStatusCode.NoContent);
+            var deleteResponse = await ProjectTestHelper.DeleteProjectResponseAsync(
+                client,
+                project.Id,
+                project.RowVersion);
+            deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
 
         [Fact]
@@ -207,18 +201,23 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var user = await EndpointsTestHelper.RegisterAndLoginAsync(client);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
+            var user = await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
 
-            // create two projects
-            await client.PostAsJsonAsync("/projects", new ProjectCreateDto { Name = "PA" });
-            await client.PostAsJsonAsync("/projects", new ProjectCreateDto { Name = "PB" });
+            // Create default project
+            await ProjectTestHelper.PostProjectDtoAsync(client);
 
-            var me = await client.GetAsync("/projects/me");
-            me.StatusCode.Should().Be(HttpStatusCode.OK);
+            // Create non default project
+            var differentCreateDto = new ProjectCreateDto { Name = "PB" };
+            await ProjectTestHelper.PostProjectDtoAsync(client, differentCreateDto);
+
+            // /projects/me OK
+            var meResponse = await ProjectTestHelper.GetProjectsMeResponseAsync(client);
+            meResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
             // /users/{id} requires SystemAdmin
-            var byUserForbidden = await client.GetAsync($"/projects/users/{user.UserId}");
+            var byUserForbidden = await ProjectTestHelper.GetProjectsByUserResponseAsync(
+                client,
+                user.UserId);
             byUserForbidden.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         }
     }

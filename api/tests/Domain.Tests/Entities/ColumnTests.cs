@@ -112,7 +112,6 @@ namespace Domain.Tests.Entities
             var newColumnName = "new";
 
             column.Rename(ColumnName.Create(newColumnName));
-
             column.Name.Value.Should().Be(newColumnName);
         }
 
@@ -122,7 +121,6 @@ namespace Domain.Tests.Entities
             var column = _defaultColumn;
 
             column.Rename(_defaultColumnName);
-
             column.Name.Value.Should().Be(_defaultColumnName.Value);
         }
 
@@ -132,7 +130,6 @@ namespace Domain.Tests.Entities
             var column = _defaultColumn;
 
             column.Reorder(2);
-
             column.Order.Should().Be(2);
         }
 
@@ -142,7 +139,6 @@ namespace Domain.Tests.Entities
             var column = _defaultColumn;
 
             column.Reorder(_defaultColumnOrder);
-
             column.Order.Should().Be(_defaultColumnOrder);
         }
 
@@ -150,7 +146,6 @@ namespace Domain.Tests.Entities
         public void Reorder_Negative_Order_Throws()
         {
             var column = _defaultColumn;
-
             var act = () => column.Reorder(-1);
 
             act.Should().Throw<ArgumentOutOfRangeException>();

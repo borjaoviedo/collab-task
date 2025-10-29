@@ -1,7 +1,8 @@
 using Application.TaskItems.Services;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Application.Tests.TaskItems.Services
 {
@@ -13,15 +14,15 @@ namespace Application.Tests.TaskItems.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskItemRepository(db);
-            var svc = new TaskItemReadService(repo);
+            var readSvc = new TaskItemReadService(repo);
 
-            var (_, _, _, tId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, _) = TestDataFactory.SeedColumnWithTask(db);
 
-            var existing = await svc.GetAsync(tId);
+            var existing = await readSvc.GetAsync(taskId);
             existing.Should().NotBeNull();
-            existing.Id.Should().Be(tId);
+            existing.Id.Should().Be(taskId);
 
-            var notFound = await svc.GetAsync(Guid.NewGuid());
+            var notFound = await readSvc.GetAsync(taskId: Guid.NewGuid());
             notFound.Should().BeNull();
         }
 
@@ -31,16 +32,16 @@ namespace Application.Tests.TaskItems.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskItemRepository(db);
-            var svc = new TaskItemReadService(repo);
+            var readSvc = new TaskItemReadService(repo);
 
-            var (pId, lId, cId, _) = TestDataFactory.SeedColumnWithTask(db);
+            var (projectId, laneId, columnId, _, _) = TestDataFactory.SeedColumnWithTask(db);
 
-            var list = await svc.ListByColumnAsync(cId);
+            var list = await readSvc.ListByColumnAsync(columnId);
             list.Should().NotBeNull();
             list.Count.Should().Be(1);
 
-            TestDataFactory.SeedTaskItem(db, pId, lId, cId, sortKey: 1);
-            list = await svc.ListByColumnAsync(cId);
+            TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId, sortKey: 1);
+            list = await readSvc.ListByColumnAsync(columnId);
             list.Count.Should().Be(2);
         }
 
@@ -50,11 +51,11 @@ namespace Application.Tests.TaskItems.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskItemRepository(db);
-            var svc = new TaskItemReadService(repo);
+            var readSvc = new TaskItemReadService(repo);
 
-            var (_, _, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (_, _, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
 
-            var list = await svc.ListByColumnAsync(cId);
+            var list = await readSvc.ListByColumnAsync(columnId);
             list.Should().BeEmpty();
         }
 
@@ -64,11 +65,11 @@ namespace Application.Tests.TaskItems.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new TaskItemRepository(db);
-            var svc = new TaskItemReadService(repo);
+            var readSvc = new TaskItemReadService(repo);
 
             TestDataFactory.SeedColumnWithTask(db);
 
-            var list = await svc.ListByColumnAsync(Guid.NewGuid());
+            var list = await readSvc.ListByColumnAsync(columnId: Guid.NewGuid());
             list.Should().BeEmpty();
         }
     }

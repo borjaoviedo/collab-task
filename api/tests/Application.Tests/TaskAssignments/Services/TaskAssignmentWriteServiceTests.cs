@@ -7,8 +7,9 @@ using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using MediatR;
 using Moq;
-using TestHelpers;
-using TestHelpers.Time;
+using TestHelpers.Common;
+using TestHelpers.Common.Time;
+using TestHelpers.Persistence;
 
 namespace Application.Tests.TaskAssignments.Services
 {
@@ -23,22 +24,30 @@ namespace Application.Tests.TaskAssignments.Services
             await using var db = dbh.CreateContext();
 
             var uow = new UnitOfWork(db);
-            var repo = new TaskAssignmentRepository(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var assignmentRepo = new TaskAssignmentRepository(db);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskAssignmentWriteService(repo, uow, actSvc, mediator.Object);
+            var assignmentWriteSvc = new TaskAssignmentWriteService(
+                assignmentRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
-            var (pId, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (projectId, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
 
-            var (m, a) = await svc.CreateAsync(pId, taskId, targetUserId: userId, role: TaskRole.Owner, executedBy: userId);
+            var (result, assignment) = await assignmentWriteSvc.CreateAsync(
+                projectId,
+                taskId,
+                targetUserId: userId,
+                role: TaskRole.Owner,
+                executedBy: userId);
 
-            m.Should().Be(DomainMutation.Created);
-            a.Should().NotBeNull();
+            result.Should().Be(DomainMutation.Created);
+            assignment.Should().NotBeNull();
 
-            var exists = await repo.ExistsAsync(taskId, userId);
+            var exists = await assignmentRepo.ExistsAsync(taskId, userId);
             exists.Should().BeTrue();
         }
 
@@ -49,25 +58,28 @@ namespace Application.Tests.TaskAssignments.Services
             await using var db = dbh.CreateContext();
 
             var uow = new UnitOfWork(db);
-            var repo = new TaskAssignmentRepository(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var assignmentRepo = new TaskAssignmentRepository(db);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskAssignmentWriteService(repo, uow, actSvc, mediator.Object);
+            var assignmentWriteSvc = new TaskAssignmentWriteService(
+                assignmentRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
-            var (pId, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (projectId, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
             var assignment = TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.CoOwner);
 
-            var res = await svc.ChangeRoleAsync(
-                pId,
+            var result = await assignmentWriteSvc.ChangeRoleAsync(
+                projectId,
                 taskId,
                 targetUserId: userId,
                 newRole: TaskRole.Owner,
                 executedBy: userId,
                 rowVersion: assignment.RowVersion);
-            res.Should().Be(DomainMutation.Updated);
+            result.Should().Be(DomainMutation.Updated);
         }
 
         [Fact]
@@ -77,24 +89,27 @@ namespace Application.Tests.TaskAssignments.Services
             await using var db = dbh.CreateContext();
 
             var uow = new UnitOfWork(db);
-            var repo = new TaskAssignmentRepository(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var assignmentRepo = new TaskAssignmentRepository(db);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskAssignmentWriteService(repo, uow, actSvc, mediator.Object);
+            var assignmentWriteSvc = new TaskAssignmentWriteService(
+                assignmentRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
-            var (pId, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (projectId, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
             var assignment = TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.Owner);
 
-            var res = await svc.DeleteAsync(
-                pId,
+            var result = await assignmentWriteSvc.DeleteAsync(
+                projectId,
                 taskId,
                 targetUserId: userId,
                 executedBy: userId,
                 rowVersion: assignment.RowVersion);
-            res.Should().Be(DomainMutation.Deleted);
+            result.Should().Be(DomainMutation.Deleted);
         }
     }
 }

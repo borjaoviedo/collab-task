@@ -78,7 +78,6 @@ namespace Domain.Tests.Entities
             var newLaneName = "new";
 
             lane.Rename(LaneName.Create(newLaneName));
-
             lane.Name.Value.Should().Be(newLaneName);
         }
 
@@ -88,7 +87,6 @@ namespace Domain.Tests.Entities
             var lane = _defaultLane;
 
             lane.Rename(_defaultLaneName);
-
             lane.Name.Value.Should().Be(_defaultLaneName.Value);
         }
 
@@ -99,7 +97,6 @@ namespace Domain.Tests.Entities
             var lane = _defaultLane;
 
             lane.Reorder(differentOrder);
-
             lane.Order.Should().Be(differentOrder);
         }
 
@@ -109,7 +106,6 @@ namespace Domain.Tests.Entities
             var lane = _defaultLane;
 
             lane.Reorder(_defaultLaneOrder);
-
             lane.Order.Should().Be(_defaultLaneOrder);
         }
 
@@ -117,7 +113,6 @@ namespace Domain.Tests.Entities
         public void Reorder_Negative_Order_Throws()
         {
             var lane = _defaultLane;
-
             var act = () => lane.Reorder(-1);
 
             act.Should().Throw<ArgumentOutOfRangeException>();

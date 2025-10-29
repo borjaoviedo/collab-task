@@ -2,7 +2,7 @@ using Application.Users.Mapping;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
-using TestHelpers;
+using TestHelpers.Common;
 
 namespace Application.Tests.Users.Mapping
 {
@@ -18,18 +18,22 @@ namespace Application.Tests.Users.Mapping
             var userId = Guid.NewGuid();
             var projectRole = ProjectRole.Member;
 
-            var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Demo User"), _validHash, _validSalt);
-            u.ProjectMemberships.Add(ProjectMember.Create(projectId, userId, projectRole));
-            u.ProjectMemberships.Add(ProjectMember.Create(projectId, userId, projectRole));
+            var entity = User.Create(
+                Email.Create("user@demo.com"),
+                UserName.Create("Demo User"),
+                _validHash,
+                _validSalt);
+            entity.ProjectMemberships.Add(ProjectMember.Create(projectId, userId, projectRole));
+            entity.ProjectMemberships.Add(ProjectMember.Create(projectId, userId, projectRole));
 
-            var dto = u.ToReadDto();
+            var dto = entity.ToReadDto();
 
-            Assert.Equal(u.Id, dto.Id);
-            Assert.Equal((string)u.Email, dto.Email);
-            Assert.Equal((string)u.Name, dto.Name);
-            Assert.Equal(u.Role, dto.Role);
-            Assert.Equal(u.CreatedAt, dto.CreatedAt);
-            Assert.Equal(u.UpdatedAt, dto.UpdatedAt);
+            Assert.Equal(entity.Id, dto.Id);
+            Assert.Equal((string)entity.Email, dto.Email);
+            Assert.Equal((string)entity.Name, dto.Name);
+            Assert.Equal(entity.Role, dto.Role);
+            Assert.Equal(entity.CreatedAt, dto.CreatedAt);
+            Assert.Equal(entity.UpdatedAt, dto.UpdatedAt);
             Assert.Equal(2, dto.ProjectMembershipsCount);
         }
     }

@@ -5,7 +5,7 @@ using Infrastructure.Data.Seeders;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using TestHelpers;
+using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Seed
 {
@@ -28,16 +28,25 @@ namespace Infrastructure.Tests.Seed
             var hasher = provider.GetRequiredService<IPasswordHasher>();
 
             // Users
-            var emails = await db.Users.AsNoTracking().Select(u => u.Email.Value).ToListAsync();
+            var emails = await db.Users
+                .AsNoTracking()
+                .Select(u => u.Email.Value)
+                .ToListAsync();
             emails.Should().Contain(["admin@demo.com", "user@demo.com", "guest@demo.com"]);
 
-            var admin = await db.Users.AsNoTracking().SingleAsync(u => u.Email == Email.Create("admin@demo.com"));
+            var admin = await db.Users
+                .AsNoTracking()
+                .SingleAsync(u => u.Email == Email.Create("admin@demo.com"));
             hasher.Verify("Admin123!", admin.PasswordSalt, admin.PasswordHash).Should().BeTrue();
 
-            var user = await db.Users.AsNoTracking().SingleAsync(u => u.Email == Email.Create("user@demo.com"));
+            var user = await db.Users
+                .AsNoTracking()
+                .SingleAsync(u => u.Email == Email.Create("user@demo.com"));
             hasher.Verify("User123!", user.PasswordSalt, user.PasswordHash).Should().BeTrue();
 
-            var guest = await db.Users.AsNoTracking().SingleAsync(u => u.Email == Email.Create("guest@demo.com"));
+            var guest = await db.Users
+                .AsNoTracking()
+                .SingleAsync(u => u.Email == Email.Create("guest@demo.com"));
             hasher.Verify("Guest123!", guest.PasswordSalt, guest.PasswordHash).Should().BeTrue();
 
             // Projects

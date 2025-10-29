@@ -2,7 +2,8 @@ using Application.ProjectMembers.Services;
 using Domain.Enums;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Application.Tests.ProjectMembers.Services
 {
@@ -14,17 +15,17 @@ namespace Application.Tests.ProjectMembers.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
-            var svc = new ProjectMemberReadService(repo);
+            var readSvc = new ProjectMemberReadService(repo);
 
-            var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
+            var (projectId, userId) = TestDataFactory.SeedUserWithProject(db);
 
-            var existingResult = await svc.GetAsync(pId, uId);
+            var existingResult = await readSvc.GetAsync(projectId, userId);
             existingResult.Should().NotBeNull();
-            existingResult.ProjectId.Should().Be(pId);
-            existingResult.UserId.Should().Be(uId);
+            existingResult.ProjectId.Should().Be(projectId);
+            existingResult.UserId.Should().Be(userId);
 
-            var notFoundResult = await svc.GetAsync(pId, Guid.Empty);
-            notFoundResult.Should().Be(null);
+            var notFoundResult = await readSvc.GetAsync(projectId, userId: Guid.Empty);
+            notFoundResult.Should().BeNull();
         }
 
         [Fact]
@@ -33,16 +34,16 @@ namespace Application.Tests.ProjectMembers.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
-            var svc = new ProjectMemberReadService(repo);
+            var readSvc = new ProjectMemberReadService(repo);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-            var list = await svc.ListByProjectAsync(pId);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
+            var list = await readSvc.ListByProjectAsync(projectId);
             list.Should().NotBeNull();
             list.Count.Should().Be(1);
 
             var newUser = TestDataFactory.SeedUser(db);
-            TestDataFactory.SeedProjectMember(db, pId, newUser.Id);
-            list = await svc.ListByProjectAsync(pId);
+            TestDataFactory.SeedProjectMember(db, projectId, newUser.Id);
+            list = await readSvc.ListByProjectAsync(projectId);
             list.Count.Should().Be(2);
         }
 
@@ -52,9 +53,9 @@ namespace Application.Tests.ProjectMembers.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
-            var svc = new ProjectMemberReadService(repo);
+            var readSvc = new ProjectMemberReadService(repo);
 
-            var list = await svc.ListByProjectAsync(Guid.NewGuid());
+            var list = await readSvc.ListByProjectAsync(projectId: Guid.NewGuid());
             list.Should().BeEmpty();
         }
 
@@ -64,13 +65,13 @@ namespace Application.Tests.ProjectMembers.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
-            var svc = new ProjectMemberReadService(repo);
+            var readSvc = new ProjectMemberReadService(repo);
 
-            var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
+            var (projectId, userId) = TestDataFactory.SeedUserWithProject(db);
 
-            var role = await svc.GetRoleAsync(pId, uId);
+            var role = await readSvc.GetRoleAsync(projectId, userId);
             role.Should().NotBeNull();
-            role!.Value.Should().Be(ProjectRole.Owner);
+            role.Value.Should().Be(ProjectRole.Owner);
         }
 
         [Fact]
@@ -79,11 +80,11 @@ namespace Application.Tests.ProjectMembers.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
-            var svc = new ProjectMemberReadService(repo);
+            var readSvc = new ProjectMemberReadService(repo);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
 
-            var role = await svc.GetRoleAsync(pId, Guid.NewGuid());
+            var role = await readSvc.GetRoleAsync(projectId, userId: Guid.NewGuid());
             role.Should().BeNull();
         }
 
@@ -93,29 +94,29 @@ namespace Application.Tests.ProjectMembers.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
-            var svc = new ProjectMemberReadService(repo);
+            var readSvc = new ProjectMemberReadService(repo);
 
             var user = TestDataFactory.SeedUser(db);
-            var count = await svc.CountActiveAsync(user.Id);
+            var count = await readSvc.CountActiveAsync(user.Id);
             count.Should().Be(0);
 
             TestDataFactory.SeedProject(db, user.Id);
-            count = await svc.CountActiveAsync(user.Id);
+            count = await readSvc.CountActiveAsync(user.Id);
             count.Should().Be(1);
 
             var otherUser = TestDataFactory.SeedUser(db);
             var secondProject = TestDataFactory.SeedProject(db, otherUser.Id); // new project with different owner
-            count = await svc.CountActiveAsync(user.Id);
+            count = await readSvc.CountActiveAsync(user.Id);
             count.Should().Be(1);
 
             TestDataFactory.SeedProjectMember(db, secondProject.Id, user.Id);
-            count = await svc.CountActiveAsync(user.Id);
+            count = await readSvc.CountActiveAsync(user.Id);
             count.Should().Be(2);
 
-            secondProject.RemoveMember(user.Id, DateTimeOffset.UtcNow);
+            secondProject.RemoveMember(user.Id, removedAtUtc: DateTimeOffset.UtcNow);
             await db.SaveChangesAsync();
 
-            count = await svc.CountActiveAsync(user.Id);
+            count = await readSvc.CountActiveAsync(user.Id);
             count.Should().Be(1);
         }
     }

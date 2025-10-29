@@ -3,7 +3,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
-using TestHelpers.Time;
+using TestHelpers.Common.Time;
 
 namespace Domain.Tests.Entities
 {
@@ -82,7 +82,6 @@ namespace Domain.Tests.Entities
         public void Add_Owner_Member_Throws()
         {
             var project = _defaultProject;
-
             var act = () => project.AddMember(userId: Guid.NewGuid(), ProjectRole.Owner);
 
             act.Should().Throw<DomainRuleViolationException>();
@@ -92,8 +91,9 @@ namespace Domain.Tests.Entities
         public void Remove_Not_Found_Member_Throws()
         {
             var project = _defaultProject;
-
-            var act = () => project.RemoveMember(userId: Guid.NewGuid(), removedAtUtc: TestTime.FixedNow);
+            var act = () => project.RemoveMember(
+                userId: Guid.NewGuid(),
+                removedAtUtc: TestTime.FixedNow);
 
             act.Should().Throw<EntityNotFoundException>();
         }
@@ -102,10 +102,11 @@ namespace Domain.Tests.Entities
         public void Remove_Owner_Member_Throws()
         {
             var project = _defaultProject;
-
             project.AddMember(userId: Guid.NewGuid(), ProjectRole.Reader);
 
-            var act = () => project.RemoveMember(_defaultOwnerId, removedAtUtc: TestTime.FromFixedMinutes(60));
+            var act = () => project.RemoveMember(
+                _defaultOwnerId,
+                removedAtUtc: TestTime.FromFixedMinutes(60));
             act.Should().Throw<DomainRuleViolationException>();
         }
 
@@ -144,8 +145,8 @@ namespace Domain.Tests.Entities
         public void Change_Owner_Role_Without_Transfering_Ownership_Throws()
         {
             var project = _defaultProject;
-
             var act = () => project.ChangeMemberRole(_defaultOwnerId, ProjectRole.Member);
+
             act.Should().Throw<DomainRuleViolationException>();
 
             project.AddMember(userId: Guid.NewGuid(), ProjectRole.Reader);

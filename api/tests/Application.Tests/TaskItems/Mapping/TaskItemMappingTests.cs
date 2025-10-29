@@ -10,21 +10,27 @@ namespace Application.Tests.TaskItems.Mapping
         [Fact]
         public void Entity_To_ReadDto_Maps_All()
         {
-            var e = TaskItem.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
-                TaskTitle.Create("Title"), TaskDescription.Create("Description"), DateTimeOffset.UtcNow.AddDays(2), 10m);
-            e.GetType().GetProperty("Id")!.SetValue(e, Guid.NewGuid());
-            e.GetType().GetProperty("RowVersion")!.SetValue(e, new byte[] { 7 });
+            var entity = TaskItem.Create(
+                columnId: Guid.NewGuid(),
+                laneId: Guid.NewGuid(),
+                projectId: Guid.NewGuid(),
+                title: TaskTitle.Create("Title"),
+                description: TaskDescription.Create("Description"),
+                dueDate: DateTimeOffset.UtcNow.AddDays(2),
+                sortKey: 10m);
+            entity.GetType().GetProperty("Id")!.SetValue(entity, Guid.NewGuid());
+            entity.GetType().GetProperty("RowVersion")!.SetValue(entity, new byte[] { 7 });
 
-            var dto = e.ToReadDto();
-            dto.Id.Should().Be(e.Id);
-            dto.ProjectId.Should().Be(e.ProjectId);
-            dto.LaneId.Should().Be(e.LaneId);
-            dto.ColumnId.Should().Be(e.ColumnId);
-            dto.Title.Should().Be(e.Title.Value);
-            dto.Description.Should().Be(e.Description.Value);
-            dto.DueDate.Should().Be(e.DueDate);
-            dto.SortKey.Should().Be(e.SortKey);
-            dto.RowVersion.Should().Equal(e.RowVersion);
+            var dto = entity.ToReadDto();
+            dto.Id.Should().Be(entity.Id);
+            dto.ProjectId.Should().Be(entity.ProjectId);
+            dto.LaneId.Should().Be(entity.LaneId);
+            dto.ColumnId.Should().Be(entity.ColumnId);
+            dto.Title.Should().Be(entity.Title.Value);
+            dto.Description.Should().Be(entity.Description.Value);
+            dto.DueDate.Should().Be(entity.DueDate);
+            dto.SortKey.Should().Be(entity.SortKey);
+            dto.RowVersion.Should().Equal(entity.RowVersion);
         }
     }
 }

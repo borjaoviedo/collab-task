@@ -138,8 +138,8 @@ namespace Application.Tests.Common.Validation.Extensions
         [Fact]
         public void RequiredGuid_Empty_Fails()
         {
-            var v = new IdsEnumsValidator();
-            v.TestValidate(new IdsEnumsDto { ProjectId = Guid.Empty })
+            var validator = new IdsEnumsValidator();
+            validator.TestValidate(new IdsEnumsDto { ProjectId = Guid.Empty })
              .ShouldHaveValidationErrorFor(x => x.ProjectId)
              .WithErrorMessage("Id is required.");
         }
@@ -147,8 +147,8 @@ namespace Application.Tests.Common.Validation.Extensions
         [Fact]
         public void Enums_Invalid_Fail()
         {
-            var v = new IdsEnumsValidator();
-            v.TestValidate(new IdsEnumsDto
+            var validator = new IdsEnumsValidator();
+            validator.TestValidate(new IdsEnumsDto
             {
                 ProjectId = Guid.NewGuid(),
                 ProjectRole = (ProjectRole)999,
@@ -162,8 +162,8 @@ namespace Application.Tests.Common.Validation.Extensions
         [Fact]
         public void Enums_Valid_Pass()
         {
-            var v = new IdsEnumsValidator();
-            v.TestValidate(new IdsEnumsDto
+            var validator = new IdsEnumsValidator();
+            validator.TestValidate(new IdsEnumsDto
             {
                 ProjectId = Guid.NewGuid(),
                 ProjectRole = ProjectRole.Member,
@@ -191,17 +191,17 @@ namespace Application.Tests.Common.Validation.Extensions
         [InlineData(null)]
         public void DueDate_Null_Passes(DateTimeOffset? d)
         {
-            var v = new DatesValidator();
-            v.TestValidate(new DatesDto { DueDate = d })
+            var validator = new DatesValidator();
+            validator.TestValidate(new DatesDto { DueDate = d })
              .ShouldNotHaveValidationErrorFor(x => x.DueDate);
         }
 
         [Fact]
         public void DueDate_Past_Fails()
         {
-            var v = new DatesValidator();
+            var validator = new DatesValidator();
             var past = DateTimeOffset.UtcNow.AddDays(-1);
-            v.TestValidate(new DatesDto { DueDate = past })
+            validator.TestValidate(new DatesDto { DueDate = past })
              .ShouldHaveValidationErrorFor(x => x.DueDate)
              .WithErrorMessage("DueDate must be null or a UTC date/time in the future.");
         }
@@ -209,18 +209,18 @@ namespace Application.Tests.Common.Validation.Extensions
         [Fact]
         public void DueDate_NotUtc_Fails()
         {
-            var v = new DatesValidator();
+            var validator = new DatesValidator();
             var local = new DateTimeOffset(2025, 10, 12, 12, 0, 0, TimeSpan.FromHours(+2));
-            v.TestValidate(new DatesDto { DueDate = local })
+            validator.TestValidate(new DatesDto { DueDate = local })
              .ShouldHaveValidationErrorFor(x => x.DueDate);
         }
 
         [Fact]
         public void DueDate_FutureUtc_Passes()
         {
-            var v = new DatesValidator();
+            var validator = new DatesValidator();
             var future = DateTimeOffset.UtcNow.AddDays(1);
-            v.TestValidate(new DatesDto { DueDate = future })
+            validator.TestValidate(new DatesDto { DueDate = future })
              .ShouldNotHaveValidationErrorFor(x => x.DueDate);
         }
 
@@ -249,8 +249,8 @@ namespace Application.Tests.Common.Validation.Extensions
         [Fact]
         public void ColumnName_Whitespace_Fails()
         {
-            var v = new BoardNamesValidator();
-            v.TestValidate(new BoardNamesDto { ColumnName = "   " })
+            var validator = new BoardNamesValidator();
+            validator.TestValidate(new BoardNamesDto { ColumnName = "   " })
              .ShouldHaveValidationErrorFor(x => x.ColumnName)
              .WithErrorMessage("Column name cannot be whitespace.");
         }
@@ -258,8 +258,8 @@ namespace Application.Tests.Common.Validation.Extensions
         [Fact]
         public void LaneName_ConsecutiveSpaces_Fails()
         {
-            var v = new BoardNamesValidator();
-            v.TestValidate(new BoardNamesDto { LaneName = "Doing  Now" })
+            var validator = new BoardNamesValidator();
+            validator.TestValidate(new BoardNamesDto { LaneName = "Doing  Now" })
              .ShouldHaveValidationErrorFor(x => x.LaneName)
              .WithErrorMessage("Lane name cannot contain consecutive spaces.");
         }
@@ -267,8 +267,8 @@ namespace Application.Tests.Common.Validation.Extensions
         [Fact]
         public void TaskTitle_TooLong_Fails()
         {
-            var v = new BoardNamesValidator();
-            v.TestValidate(new BoardNamesDto { TaskTitle = new string('x', 101) })
+            var validator = new BoardNamesValidator();
+            validator.TestValidate(new BoardNamesDto { TaskTitle = new string('x', 101) })
              .ShouldHaveValidationErrorFor(x => x.TaskTitle)
              .WithErrorMessage("Task title length must be at most 100 characters.");
         }
@@ -276,8 +276,8 @@ namespace Application.Tests.Common.Validation.Extensions
         [Fact]
         public void TaskDescription_Empty_Fails()
         {
-            var v = new BoardNamesValidator();
-            v.TestValidate(new BoardNamesDto { TaskDescription = "" })
+            var validator = new BoardNamesValidator();
+            validator.TestValidate(new BoardNamesDto { TaskDescription = "" })
              .ShouldHaveValidationErrorFor(x => x.TaskDescription)
              .WithErrorMessage("Task description is required.");
         }
@@ -285,9 +285,9 @@ namespace Application.Tests.Common.Validation.Extensions
         [Fact]
         public void TaskDescription_TooLong_Fails()
         {
-            var v = new BoardNamesValidator();
+            var validator = new BoardNamesValidator();
             var tooLong = new string('y', 2001);
-            v.TestValidate(new BoardNamesDto { TaskDescription = tooLong })
+            validator.TestValidate(new BoardNamesDto { TaskDescription = tooLong })
              .ShouldHaveValidationErrorFor(x => x.TaskDescription)
              .WithErrorMessage("Task description length must be at most 2000 characters.");
         }
@@ -295,9 +295,9 @@ namespace Application.Tests.Common.Validation.Extensions
         [Fact]
         public void NoteContent_Length_TooLong_Fails()
         {
-            var v = new BoardNamesValidator();
+            var validator = new BoardNamesValidator();
             var tooLong = new string('n', 501);
-            v.TestValidate(new BoardNamesDto { NoteContent = tooLong })
+            validator.TestValidate(new BoardNamesDto { NoteContent = tooLong })
              .ShouldHaveValidationErrorFor(x => x.NoteContent)
              .WithErrorMessage("Note content length must be at most 500 characters.");
         }
@@ -305,8 +305,8 @@ namespace Application.Tests.Common.Validation.Extensions
         [Fact]
         public void BoardNames_Valid_Pass()
         {
-            var v = new BoardNamesValidator();
-            v.TestValidate(new BoardNamesDto
+            var validator = new BoardNamesValidator();
+            validator.TestValidate(new BoardNamesDto
             {
                 ColumnName = "To Do",
                 LaneName = "Backlog",
@@ -333,8 +333,8 @@ namespace Application.Tests.Common.Validation.Extensions
         [Fact]
         public void ConcurrencyToken_Empty_Fails()
         {
-            var v = new ConcurrencyValidator();
-            v.TestValidate(new ConcurrencyDto { RowVersion = Array.Empty<byte>() })
+            var validator = new ConcurrencyValidator();
+            validator.TestValidate(new ConcurrencyDto { RowVersion = Array.Empty<byte>() })
              .ShouldHaveValidationErrorFor(x => x.RowVersion)
              .WithErrorMessage("RowVersion cannot be empty.");
         }
@@ -342,8 +342,8 @@ namespace Application.Tests.Common.Validation.Extensions
         [Fact]
         public void ConcurrencyToken_NonEmpty_Passes()
         {
-            var v = new ConcurrencyValidator();
-            v.TestValidate(new ConcurrencyDto { RowVersion = Encoding.UTF8.GetBytes("rv") })
+            var validator = new ConcurrencyValidator();
+            validator.TestValidate(new ConcurrencyDto { RowVersion = Encoding.UTF8.GetBytes("rv") })
              .ShouldNotHaveValidationErrorFor(x => x.RowVersion);
         }
 
@@ -366,16 +366,16 @@ namespace Application.Tests.Common.Validation.Extensions
         [InlineData(9999)]
         public void Order_Valid_Passes(int value)
         {
-            var v = new OrderValidator();
-            v.TestValidate(new OrderDto { Order = value })
+            var validator = new OrderValidator();
+            validator.TestValidate(new OrderDto { Order = value })
              .ShouldNotHaveValidationErrorFor(x => x.Order);
         }
 
         [Fact]
         public void Order_Negative_Fails()
         {
-            var v = new OrderValidator();
-            v.TestValidate(new OrderDto { Order = -1 })
+            var validator = new OrderValidator();
+            validator.TestValidate(new OrderDto { Order = -1 })
              .ShouldHaveValidationErrorFor(x => x.Order)
              .WithErrorMessage("Order must be ≥ 0.");
         }
@@ -399,16 +399,16 @@ namespace Application.Tests.Common.Validation.Extensions
         [InlineData(123.456)]
         public void SortKey_Valid_Passes(decimal value)
         {
-            var v = new SortKeyValidator();
-            v.TestValidate(new SortKeyDto { SortKey = value })
+            var validator = new SortKeyValidator();
+            validator.TestValidate(new SortKeyDto { SortKey = value })
              .ShouldNotHaveValidationErrorFor(x => x.SortKey);
         }
 
         [Fact]
         public void SortKey_Negative_Fails()
         {
-            var v = new SortKeyValidator();
-            v.TestValidate(new SortKeyDto { SortKey = -0.01m })
+            var validator = new SortKeyValidator();
+            validator.TestValidate(new SortKeyDto { SortKey = -0.01m })
              .ShouldHaveValidationErrorFor(x => x.SortKey)
              .WithErrorMessage("SortKey must be ≥ 0.");
         }
