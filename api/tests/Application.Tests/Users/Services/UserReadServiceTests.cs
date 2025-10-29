@@ -14,10 +14,10 @@ namespace Application.Tests.Users.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
-            var svc = new UserReadService(repo);
+            var readSvc = new UserReadService(repo);
 
             var user = TestDataFactory.SeedUser(db);
-            var found = await svc.GetAsync(user.Id);
+            var found = await readSvc.GetAsync(user.Id);
 
             found.Should().NotBeNull();
         }
@@ -28,9 +28,9 @@ namespace Application.Tests.Users.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
-            var svc = new UserReadService(repo);
+            var readSvc = new UserReadService(repo);
 
-            var found = await svc.GetAsync(Guid.Empty);
+            var found = await readSvc.GetAsync(userId: Guid.Empty);
             found.Should().BeNull();
         }
 
@@ -40,10 +40,10 @@ namespace Application.Tests.Users.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
-            var svc = new UserReadService(repo);
+            var readSvc = new UserReadService(repo);
 
             var user = TestDataFactory.SeedUser(db);
-            var found = await svc.GetByEmailAsync(user.Email);
+            var found = await readSvc.GetByEmailAsync(user.Email);
 
             found.Should().NotBeNull();
         }
@@ -54,9 +54,9 @@ namespace Application.Tests.Users.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
-            var svc = new UserReadService(repo);
+            var readSvc = new UserReadService(repo);
 
-            var found = await svc.GetByEmailAsync(Email.Create("email@e.com"));
+            var found = await readSvc.GetByEmailAsync(Email.Create("email@e.com"));
             found.Should().BeNull();
         }
 
@@ -66,14 +66,14 @@ namespace Application.Tests.Users.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
-            var svc = new UserReadService(repo);
+            var readSvc = new UserReadService(repo);
 
             var firstUserName = "User A";
             var secondUserName = "User B";
             TestDataFactory.SeedUser(db, name: firstUserName);
             TestDataFactory.SeedUser(db, name: secondUserName);
 
-            var list = await svc.ListAsync();
+            var list = await readSvc.ListAsync();
             list.Select(x => x.Name.Value).Should().ContainInOrder(firstUserName, secondUserName);
         }
 
@@ -83,9 +83,9 @@ namespace Application.Tests.Users.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
-            var svc = new UserReadService(repo);
+            var readSvc = new UserReadService(repo);
 
-            var list = await svc.ListAsync();
+            var list = await readSvc.ListAsync();
             list.Should().BeEmpty();
         }
     }

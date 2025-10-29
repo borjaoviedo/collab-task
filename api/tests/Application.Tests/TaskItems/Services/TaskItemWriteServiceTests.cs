@@ -27,24 +27,34 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
+            var taskWriteSvc = new TaskItemWriteService(
+                taskRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
             var taskTitle = TaskTitle.Create("Task Title");
             var taskDescription = TaskDescription.Create("Description");
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
 
-            var (res, task) = await svc.CreateAsync(pId, lId, cId, user.Id, taskTitle, taskDescription);
+            var (result, task) = await taskWriteSvc.CreateAsync(
+                projectId,
+                laneId,
+                columnId,
+                user.Id,
+                taskTitle,
+                taskDescription);
 
-            res.Should().Be(DomainMutation.Created);
+            result.Should().Be(DomainMutation.Created);
             task.Should().NotBeNull();
 
             mediator.Verify(m => m.Publish(
-                It.Is<TaskItemCreated>(n => n.ProjectId == pId && n.Payload.TaskId == task!.Id),
+                It.Is<TaskItemCreated>(n => n.ProjectId == projectId && n.Payload.TaskId == task!.Id),
                 It.IsAny<CancellationToken>()),
                 Times.Once);
         }
@@ -57,31 +67,49 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
+            var taskWriteSvc = new TaskItemWriteService(
+                taskRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
-            var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
+            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
             var newTitle = TaskTitle.Create("New Title");
-            var res = await svc.EditAsync(pId, task.Id, user.Id, newTitle, newDescription: null, newDueDate: null, task.RowVersion);
-            res.Should().Be(DomainMutation.Updated);
+            var result = await taskWriteSvc.EditAsync(
+                projectId,
+                task.Id,
+                user.Id,
+                newTitle,
+                newDescription: null,
+                newDueDate: null,
+                task.RowVersion);
+            result.Should().Be(DomainMutation.Updated);
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
             fromDb.Title.Value.Should().Be(newTitle);
 
             mediator.Verify(m => m.Publish(
-                It.Is<TaskItemUpdated>(n => n.ProjectId == pId && n.Payload.TaskId == task.Id && n.Payload.NewTitle == newTitle),
+                It.Is<TaskItemUpdated>(n => n.ProjectId == projectId && n.Payload.TaskId == task.Id && n.Payload.NewTitle == newTitle),
                 It.IsAny<CancellationToken>()),
                 Times.Once);
 
             var newDescription = TaskDescription.Create("New Description");
-            res = await svc.EditAsync(pId, task.Id, user.Id, newTitle: null, newDescription, newDueDate: null, fromDb.RowVersion);
-            res.Should().Be(DomainMutation.Updated);
+            result = await taskWriteSvc.EditAsync(
+                projectId,
+                task.Id,
+                user.Id,
+                newTitle: null,
+                newDescription,
+                newDueDate: null,
+                fromDb.RowVersion);
+            result.Should().Be(DomainMutation.Updated);
 
             fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
             fromDb.Description!.Value.Should().Be(newDescription);
@@ -95,30 +123,51 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
+            var taskWriteSvc = new TaskItemWriteService(
+                taskRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
 
             var sameTitle = TaskTitle.Create("Title");
             var sameDescription = TaskDescription.Create("Description");
             var sameDueDate = DateTimeOffset.UtcNow.AddDays(10);
             sameDueDate = DateTimeOffset.FromUnixTimeMilliseconds(sameDueDate.ToUnixTimeMilliseconds());
-            var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId, sameTitle, sameDescription, sameDueDate);
+            var task = TestDataFactory.SeedTaskItem(
+                db,
+                projectId,
+                laneId,
+                columnId,
+                sameTitle,
+                sameDescription,
+                sameDueDate);
 
-            var res = await svc.EditAsync(pId, task.Id, user.Id, sameTitle, sameDescription, sameDueDate, task.RowVersion);
-            res.Should().Be(DomainMutation.NoOp);
+            var result = await taskWriteSvc.EditAsync(
+                projectId,
+                task.Id,
+                user.Id,
+                sameTitle,
+                sameDescription,
+                sameDueDate,
+                task.RowVersion);
+            result.Should().Be(DomainMutation.NoOp);
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
             fromDb.Title.Value.Should().Be(sameTitle);
             fromDb.Description!.Value.Should().Be(sameDescription);
             fromDb.DueDate.Should().Be(sameDueDate);
 
-            mediator.Verify(m => m.Publish(It.IsAny<TaskItemUpdated>(), It.IsAny<CancellationToken>()), Times.Never);
+            mediator.Verify(m => m.Publish(
+                It.IsAny<TaskItemUpdated>(),
+                It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [Fact]
@@ -129,26 +178,40 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
-            var actRepo = new TaskActivityRepository(db);
+            var activityRepo = new TaskActivityRepository(db);
 
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
-            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
+            var taskWriteSvc = new TaskItemWriteService(
+                taskRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
 
             var oldTitle = TaskTitle.Create("Old");
             var newTitle = TaskTitle.Create("New");
-            var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId, oldTitle);
+            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId, oldTitle);
 
-            var res = await svc.EditAsync(pId, task.Id, user.Id, newTitle, newDescription: null, newDueDate: null, rowVersion: [1, 2]);
-            res.Should().Be(DomainMutation.Conflict);
+            var result = await taskWriteSvc.EditAsync(
+                projectId,
+                task.Id,
+                user.Id,
+                newTitle,
+                newDescription: null,
+                newDueDate: null,
+                rowVersion: [1, 2]);
+            result.Should().Be(DomainMutation.Conflict);
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
             fromDb.Title.Value.Should().Be(oldTitle);
 
-            mediator.Verify(m => m.Publish(It.IsAny<TaskItemUpdated>(), It.IsAny<CancellationToken>()), Times.Never);
+            mediator.Verify(m => m.Publish(
+                It.IsAny<TaskItemUpdated>(),
+                It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [Fact]
@@ -159,25 +222,36 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
+            var taskWriteSvc = new TaskItemWriteService(
+                taskRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
-            var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
+            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
-            var differentLane = TestDataFactory.SeedLane(db, pId, order: 1);
-            var differentColumn = TestDataFactory.SeedColumn(db, pId, differentLane.Id);
+            var differentLane = TestDataFactory.SeedLane(db, projectId, order: 1);
+            var differentColumn = TestDataFactory.SeedColumn(db, projectId, differentLane.Id);
             await db.SaveChangesAsync();
 
-            var res = await svc.MoveAsync(pId, task.Id, differentColumn.Id, differentLane.Id, user.Id, targetSortKey: 1, task.RowVersion);
-            res.Should().Be(DomainMutation.Updated);
+            var result = await taskWriteSvc.MoveAsync(
+                projectId,
+                task.Id,
+                differentColumn.Id,
+                differentLane.Id,
+                user.Id,
+                targetSortKey: 1,
+                task.RowVersion);
+            result.Should().Be(DomainMutation.Updated);
 
             mediator.Verify(m => m.Publish(
-                It.Is<TaskItemMoved>(n => n.ProjectId == pId &&
+                It.Is<TaskItemMoved>(n => n.ProjectId == projectId &&
                                           n.Payload.TaskId == task.Id &&
                                           n.Payload.ToLaneId == differentLane.Id &&
                                           n.Payload.ToColumnId == differentColumn.Id &&
@@ -194,21 +268,32 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
+            var taskWriteSvc = new TaskItemWriteService(
+                taskRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
-            var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
+            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
-            var differentColumn = TestDataFactory.SeedColumn(db, pId, lId, order: 1);
+            var differentColumn = TestDataFactory.SeedColumn(db, projectId, laneId, order: 1);
             await db.SaveChangesAsync();
 
-            var res = await svc.MoveAsync(pId, task.Id, differentColumn.Id, lId, user.Id, targetSortKey: 1, task.RowVersion);
-            res.Should().Be(DomainMutation.Updated);
+            var result = await taskWriteSvc.MoveAsync(
+                projectId,
+                task.Id,
+                differentColumn.Id,
+                laneId,
+                user.Id,
+                targetSortKey: 1,
+                task.RowVersion);
+            result.Should().Be(DomainMutation.Updated);
         }
 
         [Fact]
@@ -219,18 +304,29 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
+            var taskWriteSvc = new TaskItemWriteService(
+                taskRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
-            var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
+            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
-            var res = await svc.MoveAsync(pId, task.Id, cId, lId, user.Id, targetSortKey: 1, task.RowVersion);
-            res.Should().Be(DomainMutation.Updated);
+            var result = await taskWriteSvc.MoveAsync(
+                projectId,
+                task.Id,
+                columnId,
+                laneId,
+                user.Id,
+                targetSortKey: 1,
+                task.RowVersion);
+            result.Should().Be(DomainMutation.Updated);
         }
 
         [Fact]
@@ -241,20 +337,34 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
+            var taskWriteSvc = new TaskItemWriteService(
+                taskRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
-            var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
+            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
-            var res = await svc.MoveAsync(pId, task.Id, cId, lId, user.Id, targetSortKey: 0, task.RowVersion);
-            res.Should().Be(DomainMutation.NoOp);
+            var result = await taskWriteSvc.MoveAsync(
+                projectId,
+                task.Id,
+                columnId,
+                laneId,
+                user.Id,
+                targetSortKey: 0,
+                task.RowVersion);
+            result.Should().Be(DomainMutation.NoOp);
 
-            mediator.Verify(m => m.Publish(It.IsAny<TaskItemMoved>(), It.IsAny<CancellationToken>()), Times.Never);
+            mediator.Verify(m => m.Publish(
+                It.IsAny<TaskItemMoved>(),
+                It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [Fact]
@@ -265,23 +375,44 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
+            var taskWriteSvc = new TaskItemWriteService(
+                taskRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
-            var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
+            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
-            var res = await svc.MoveAsync(pId, task.Id, Guid.NewGuid(), lId, user.Id, targetSortKey: 0, task.RowVersion);
-            res.Should().Be(DomainMutation.NotFound);
+            var result = await taskWriteSvc.MoveAsync(
+                projectId,
+                task.Id,
+                targetColumnId: Guid.NewGuid(),
+                laneId,
+                user.Id,
+                targetSortKey: 0,
+                task.RowVersion);
+            result.Should().Be(DomainMutation.NotFound);
 
-            res = await svc.MoveAsync(pId, task.Id, cId, Guid.NewGuid(), user.Id, targetSortKey: 0, task.RowVersion);
-            res.Should().Be(DomainMutation.NotFound);
+            result = await taskWriteSvc.MoveAsync(
+                projectId,
+                task.Id,
+                columnId,
+                targetLaneId: Guid.NewGuid(),
+                user.Id,
+                targetSortKey: 0,
+                task.RowVersion);
+            result.Should().Be(DomainMutation.NotFound);
 
-            mediator.Verify(m => m.Publish(It.IsAny<TaskItemMoved>(), It.IsAny<CancellationToken>()), Times.Never);
+            mediator.Verify(m => m.Publish(
+                It.IsAny<TaskItemMoved>(),
+                It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [Fact]
@@ -292,20 +423,34 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
+            var taskWriteSvc = new TaskItemWriteService(
+                taskRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
-            var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
+            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
-            var res = await svc.MoveAsync(pId, task.Id, cId, lId, user.Id, targetSortKey: 1, rowVersion: [1, 2]);
-            res.Should().Be(DomainMutation.Conflict);
+            var result = await taskWriteSvc.MoveAsync(
+                projectId,
+                task.Id,
+                columnId,
+                laneId,
+                user.Id,
+                targetSortKey: 1,
+                rowVersion: [1, 2]);
+            result.Should().Be(DomainMutation.Conflict);
 
-            mediator.Verify(m => m.Publish(It.IsAny<TaskItemMoved>(), It.IsAny<CancellationToken>()), Times.Never);
+            mediator.Verify(m => m.Publish(
+                It.IsAny<TaskItemMoved>(),
+                It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [Fact]
@@ -316,23 +461,33 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
+            var taskWriteSvc = new TaskItemWriteService(taskRepo, uow, activityWriteSvc, mediator.Object);
 
             var (firstProjectId, firstProjectLaneId, firstProjectColumnId) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, firstProjectId, firstProjectLaneId, firstProjectColumnId);
 
-            var (pId, secondProjectLaneId, secondProjectColumnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, secondProjectLaneId, secondProjectColumnId) = TestDataFactory.SeedLaneWithColumn(db);
             await db.SaveChangesAsync();
 
-            var res = await svc.MoveAsync(pId, task.Id, secondProjectColumnId, secondProjectLaneId, user.Id, targetSortKey: 1, task.RowVersion);
-            res.Should().Be(DomainMutation.Conflict);
+            var result = await taskWriteSvc.MoveAsync(
+                projectId,
+                task.Id,
+                secondProjectColumnId,
+                secondProjectLaneId,
+                user.Id,
+                targetSortKey: 1,
+                task.RowVersion);
+            result.Should().Be(DomainMutation.Conflict);
 
-            mediator.Verify(m => m.Publish(It.IsAny<TaskItemMoved>(), It.IsAny<CancellationToken>()), Times.Never);
+            mediator.Verify(m => m.Publish(
+                It.IsAny<TaskItemMoved>(),
+                It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [Fact]
@@ -343,29 +498,37 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>(MockBehavior.Strict);
 
-            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
+            var taskWriteSvc = new TaskItemWriteService(
+                taskRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
             TestDataFactory.SeedUser(db);
-            var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
+            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
             mediator
                 .Setup(m => m.Publish(
-                    It.Is<TaskItemDeleted>(n => n.ProjectId == pId && n.Payload.TaskId == task.Id),
+                    It.Is<TaskItemDeleted>(n =>
+                                           n.ProjectId == projectId &&
+                                           n.Payload.TaskId == task.Id),
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask)
                 .Verifiable();
 
-            var res = await svc.DeleteAsync(pId, task.Id, task.RowVersion);
+            var result = await taskWriteSvc.DeleteAsync(projectId, task.Id, task.RowVersion);
 
-            res.Should().Be(DomainMutation.Deleted);
+            result.Should().Be(DomainMutation.Deleted);
 
             mediator.Verify(m => m.Publish(
-                It.Is<TaskItemDeleted>(n => n.ProjectId == pId && n.Payload.TaskId == task.Id),
+                It.Is<TaskItemDeleted>(n =>
+                                       n.ProjectId == projectId &&
+                                       n.Payload.TaskId == task.Id),
                 It.IsAny<CancellationToken>()), Times.Once);
 
             mediator.VerifyNoOtherCalls();
@@ -379,20 +542,27 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
+            var taskWriteSvc = new TaskItemWriteService(
+                taskRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
             TestDataFactory.SeedUser(db);
-            var task = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
+            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
-            var res = await svc.DeleteAsync(pId, task.Id, [9, 9, 9, 9]);
+            var result = await taskWriteSvc.DeleteAsync(projectId, task.Id, [9, 9, 9, 9]);
 
-            res.Should().Be(DomainMutation.Conflict);
-            mediator.Verify(m => m.Publish(It.IsAny<INotification>(), It.IsAny<CancellationToken>()), Times.Never);
+            result.Should().Be(DomainMutation.Conflict);
+            mediator.Verify(m => m.Publish(
+                It.IsAny<INotification>(),
+                It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [Fact]
@@ -403,20 +573,30 @@ namespace Application.Tests.TaskItems.Services
 
             var taskRepo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
-            var actRepo = new TaskActivityRepository(db);
-            var actSvc = new TaskActivityWriteService(actRepo, _clock);
+            var activityRepo = new TaskActivityRepository(db);
+            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
             var mediator = new Mock<IMediator>();
 
-            var svc = new TaskItemWriteService(taskRepo, uow, actSvc, mediator.Object);
+            var taskWriteSvc = new TaskItemWriteService(
+                taskRepo,
+                uow,
+                activityWriteSvc,
+                mediator.Object);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
             TestDataFactory.SeedUser(db);
-            TestDataFactory.SeedTaskItem(db, pId, lId, cId);
+            TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
-            var res = await svc.DeleteAsync(pId, Guid.NewGuid(), [1, 2, 3, 4]);
+            var result = await taskWriteSvc.DeleteAsync(
+                projectId,
+                taskId: Guid.NewGuid(),
+                rowVersion: [1, 2, 3, 4]);
 
-            res.Should().Be(DomainMutation.NotFound);
-            mediator.Verify(m => m.Publish(It.IsAny<INotification>(), It.IsAny<CancellationToken>()), Times.Never);
+            result.Should().Be(DomainMutation.NotFound);
+            mediator.Verify(m => m.Publish(
+                It.IsAny<INotification>(),
+                It.IsAny<CancellationToken>()),
+                Times.Never);
         }
     }
 }

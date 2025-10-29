@@ -22,18 +22,18 @@ namespace Application.Tests.TaskActivities.Services
 
             var repo = new TaskActivityRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new TaskActivityWriteService(repo, _clock);
+            var writeSvc = new TaskActivityWriteService(repo, _clock);
 
             var (_, _, _, taskId, _, actor) = TestDataFactory.SeedFullBoard(db);
 
-            var (m, activity) = await svc.CreateAsync(
+            var (result, activity) = await writeSvc.CreateAsync(
                 taskId,
                 actor,
                 TaskActivityType.TaskCreated,
                 ActivityPayload.Create("{\"event\":\"create\"}")
             );
 
-            m.Should().Be(DomainMutation.Created);
+            result.Should().Be(DomainMutation.Created);
             activity.Should().NotBeNull();
 
             await uow.SaveAsync(MutationKind.Create);

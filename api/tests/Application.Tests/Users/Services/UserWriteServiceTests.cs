@@ -21,9 +21,9 @@ namespace Application.Tests.Users.Services
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new UserWriteService(repo, uow);
+            var writeSvc = new UserWriteService(repo, uow);
 
-            var (created, user) = await svc.CreateAsync(
+            var (created, user) = await writeSvc.CreateAsync(
                 Email.Create("email@e.com"),
                 UserName.Create("user name"),
                 _validHash,
@@ -41,12 +41,15 @@ namespace Application.Tests.Users.Services
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new UserWriteService(repo, uow);
+            var writeSvc = new UserWriteService(repo, uow);
 
             var user = TestDataFactory.SeedUser(db);
+            var current = await db.Users.FirstAsync(user => user.Id == user.Id);
+            var result = await writeSvc.RenameAsync(
+                user.Id,
+                UserName.Create("new name"),
+                current.RowVersion);
 
-            var current = await db.Users.FirstAsync(u => u.Id == user!.Id);
-            var result = await svc.RenameAsync(user!.Id, UserName.Create("new name"), current.RowVersion);
             result.Should().Be(DomainMutation.Updated);
         }
 
@@ -57,13 +60,13 @@ namespace Application.Tests.Users.Services
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new UserWriteService(repo, uow);
+            var writeSvc = new UserWriteService(repo, uow);
 
             var sameName = UserName.Create("same name");
-            var u = TestDataFactory.SeedUser(db, name: sameName);
+            var user = TestDataFactory.SeedUser(db, name: sameName);
+            var result = await writeSvc.RenameAsync(user.Id, sameName, user.RowVersion);
 
-            var res = await svc.RenameAsync(u!.Id, sameName, u.RowVersion);
-            res.Should().Be(DomainMutation.NoOp);
+            result.Should().Be(DomainMutation.NoOp);
         }
 
         [Fact]
@@ -73,12 +76,15 @@ namespace Application.Tests.Users.Services
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new UserWriteService(repo, uow);
+            var writeSvc = new UserWriteService(repo, uow);
 
-            var u = TestDataFactory.SeedUser(db);
+            var user = TestDataFactory.SeedUser(db);
+            var result = await writeSvc.ChangeRoleAsync(
+                user.Id,
+                UserRole.Admin,
+                rowVersion: [1, 2, 3, 4]);
 
-            var res = await svc.ChangeRoleAsync(u!.Id, UserRole.Admin, [1, 2, 3, 4]);
-            res.Should().Be(DomainMutation.Conflict);
+            result.Should().Be(DomainMutation.Conflict);
         }
 
         [Fact]
@@ -88,13 +94,13 @@ namespace Application.Tests.Users.Services
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
             var uow = new UnitOfWork(db);
-            var svc = new UserWriteService(repo, uow);
+            var writeSvc = new UserWriteService(repo, uow);
 
             var user = TestDataFactory.SeedUser(db);
+            var current = await db.Users.FirstAsync(u => u.Id == user.Id);
+            var result = await writeSvc.DeleteAsync(user.Id, current.RowVersion);
 
-            var current = await db.Users.FirstAsync(x => x.Id == user!.Id);
-            var del = await svc.DeleteAsync(user!.Id, current.RowVersion);
-            del.Should().Be(DomainMutation.Deleted);
+            result.Should().Be(DomainMutation.Deleted);
         }
     }
 }

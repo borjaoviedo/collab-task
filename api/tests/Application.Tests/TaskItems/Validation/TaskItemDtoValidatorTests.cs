@@ -9,7 +9,7 @@ namespace Application.Tests.TaskItems.Validation
         [Fact]
         public void Create_Valid_Passes()
         {
-            var v = new TaskItemCreateDtoValidator();
+            var validator = new TaskItemCreateDtoValidator();
             var dto = new TaskItemCreateDto
             {
                 Title = "Title",
@@ -17,13 +17,13 @@ namespace Application.Tests.TaskItems.Validation
                 DueDate = null,
                 SortKey = 0m
             };
-            v.TestValidate(dto).ShouldNotHaveAnyValidationErrors();
+            validator.TestValidate(dto).ShouldNotHaveAnyValidationErrors();
         }
 
         [Fact]
         public void Create_Past_DueDate_Fails()
         {
-            var v = new TaskItemCreateDtoValidator();
+            var validator = new TaskItemCreateDtoValidator();
             var dto = new TaskItemCreateDto
             {
                 Title = "Title",
@@ -31,39 +31,39 @@ namespace Application.Tests.TaskItems.Validation
                 DueDate = DateTimeOffset.UtcNow.AddMinutes(-1),
                 SortKey = 0m
             };
-            v.TestValidate(dto).ShouldHaveValidationErrorFor(t => t.DueDate);
+            validator.TestValidate(dto).ShouldHaveValidationErrorFor(t => t.DueDate);
         }
 
         [Fact]
         public void Edit_Optional_Fields_Respect_Rules()
         {
-            var v = new TaskItemEditDtoValidator();
+            var validator = new TaskItemEditDtoValidator();
             var dto = new TaskItemEditDto
             {
                 NewTitle = null, // optional
                 NewDescription = "", // invalid if provided
                 NewDueDate = null // valid
             };
-            var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(t => t.NewDescription);
-            r.ShouldNotHaveValidationErrorFor(t => t.NewTitle);
-            r.ShouldNotHaveValidationErrorFor(t => t.NewDueDate);
+            var validationResult = validator.TestValidate(dto);
+            validationResult.ShouldHaveValidationErrorFor(t => t.NewDescription);
+            validationResult.ShouldNotHaveValidationErrorFor(t => t.NewTitle);
+            validationResult.ShouldNotHaveValidationErrorFor(t => t.NewDueDate);
         }
 
         [Fact]
         public void Move_Invalid_Targets_Fail()
         {
-            var v = new TaskItemMoveDtoValidator();
+            var validator = new TaskItemMoveDtoValidator();
             var dto = new TaskItemMoveDto
             {
                 NewLaneId = Guid.Empty,
                 NewColumnId = Guid.Empty,
                 NewSortKey = -1m,
             };
-            var r = v.TestValidate(dto);
-            r.ShouldHaveValidationErrorFor(t => t.NewLaneId);
-            r.ShouldHaveValidationErrorFor(t => t.NewColumnId);
-            r.ShouldHaveValidationErrorFor(t => t.NewSortKey);
+            var validationResult = validator.TestValidate(dto);
+            validationResult.ShouldHaveValidationErrorFor(t => t.NewLaneId);
+            validationResult.ShouldHaveValidationErrorFor(t => t.NewColumnId);
+            validationResult.ShouldHaveValidationErrorFor(t => t.NewSortKey);
         }
     }
 }

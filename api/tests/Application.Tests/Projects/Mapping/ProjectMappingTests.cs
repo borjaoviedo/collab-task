@@ -14,40 +14,61 @@ namespace Application.Tests.Projects.Mapping
         [Fact]
         public void ToReadDto_Maps_All_Fields()
         {
-            var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Demo User"), _validHash, _validSalt);
-            var p = Project.Create(u.Id, ProjectName.Create("Project Name"));
+            var user = User.Create(
+                Email.Create("user@demo.com"),
+                UserName.Create("Demo User"),
+                _validHash,
+                _validSalt);
+            var project = Project.Create(user.Id, ProjectName.Create("Project Name"));
 
-            var dto = p.ToReadDto(u.Id);
+            var dto = project.ToReadDto(user.Id);
 
-            Assert.Equal(p.Id, dto.Id);
-            Assert.Equal(p.Name.Value, dto.Name);
-            Assert.Equal(p.Slug.Value, dto.Slug);
-            Assert.Equal(p.CreatedAt, dto.CreatedAt);
-            Assert.Equal(p.UpdatedAt, dto.UpdatedAt);
-            Assert.Equal(p.RowVersion, dto.RowVersion);
-            Assert.Equal(p.Members.Count, dto.MembersCount);
+            Assert.Equal(project.Id, dto.Id);
+            Assert.Equal(project.Name.Value, dto.Name);
+            Assert.Equal(project.Slug.Value, dto.Slug);
+            Assert.Equal(project.CreatedAt, dto.CreatedAt);
+            Assert.Equal(project.UpdatedAt, dto.UpdatedAt);
+            Assert.Equal(project.RowVersion, dto.RowVersion);
+            Assert.Equal(project.Members.Count, dto.MembersCount);
             Assert.Equal(ProjectRole.Owner, dto.CurrentUserRole);
         }
 
         [Fact]
         public void ToReadDto_CurrentUserRole_Depends_On_User_Role()
         {
-            var u1 = User.Create(Email.Create("user@demo.com"), UserName.Create("Owner User"), _validHash, _validSalt);
-            var p = Project.Create(u1.Id, ProjectName.Create("Project Name"));
+            var u1 = User.Create(
+                Email.Create("user@demo.com"),
+                UserName.Create("Owner User"),
+                _validHash,
+                _validSalt);
+            var project = Project.Create(u1.Id, ProjectName.Create("Project Name"));
 
-            var u2 = User.Create(Email.Create("user2@demo.com"), UserName.Create("Member User"), _validHash, _validSalt);
-            p.AddMember(u2.Id, ProjectRole.Member);
+            var u2 = User.Create(
+                Email.Create("user2@demo.com"),
+                UserName.Create("Member User"),
+                _validHash,
+                _validSalt);
+            project.AddMember(u2.Id, ProjectRole.Member);
 
-            var u3 = User.Create(Email.Create("user3@demo.com"), UserName.Create("Reader User"), _validHash, _validSalt);
-            p.AddMember(u3.Id, ProjectRole.Reader);
+            var u3 = User.Create(
+                Email.Create("user3@demo.com"),
+                UserName.Create("Reader User"),
+                _validHash,
+                _validSalt);
+            project.AddMember(u3.Id, ProjectRole.Reader);
 
-            var u4 = User.Create(Email.Create("user4@demo.com"), UserName.Create("Admin User"), _validHash, _validSalt);
-            p.AddMember(u4.Id, ProjectRole.Admin);
+            var u4 = User.Create(
+                Email.Create("user4@demo.com"),
+                UserName.Create("Admin User"),
+                _validHash,
+                _validSalt);
+            project.AddMember(u4.Id, ProjectRole.Admin);
 
-            var dto1 = p.ToReadDto(u1.Id);
-            var dto2 = p.ToReadDto(u2.Id);
-            var dto3 = p.ToReadDto(u3.Id);
-            var dto4 = p.ToReadDto(u4.Id);
+            var dto1 = project.ToReadDto(u1.Id);
+            var dto2 = project.ToReadDto(u2.Id);
+            var dto3 = project.ToReadDto(u3.Id);
+            var dto4 = project.ToReadDto(u4.Id);
+
             Assert.Equal(ProjectRole.Owner, dto1.CurrentUserRole);
             Assert.Equal(ProjectRole.Member, dto2.CurrentUserRole);
             Assert.Equal(ProjectRole.Reader, dto3.CurrentUserRole);
@@ -57,14 +78,24 @@ namespace Application.Tests.Projects.Mapping
         [Fact]
         public void ToReadDto_Ignores_Removed_Members()
         {
-            var u = User.Create(Email.Create("user@demo.com"), UserName.Create("Owner User"), _validHash, _validSalt);
-            var p = Project.Create(u.Id, ProjectName.Create("Project Name"));
+            var user = User.Create(
+                Email.Create("user@demo.com"),
+                UserName.Create("Owner User"),
+                _validHash,
+                _validSalt);
+            var project = Project.Create(user.Id, ProjectName.Create("Project Name"));
 
-            var m = User.Create(Email.Create("removed@demo.com"), UserName.Create("Removed User"), _validHash, _validSalt);
-            p.AddMember(m.Id, ProjectRole.Member);
-            p.Members.First(x => x.UserId == m.Id).Remove(DateTimeOffset.UtcNow);
+            var member = User.Create(
+                Email.Create("removed@demo.com"),
+                UserName.Create("Removed User"),
+                _validHash,
+                _validSalt);
+            project.AddMember(member.Id, ProjectRole.Member);
+            project.Members
+                .First(m => m.UserId == member.Id)
+                .Remove(removedAtUtc: DateTimeOffset.UtcNow);
 
-            var dto = p.ToReadDto(u.Id);
+            var dto = project.ToReadDto(user.Id);
 
             Assert.Equal(1, dto.MembersCount);
         }

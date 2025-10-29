@@ -13,14 +13,14 @@ namespace Application.Tests.Projects.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
-            var svc = new ProjectReadService(repo);
+            var readSvc = new ProjectReadService(repo);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
 
-            var existingResult = await svc.GetAsync(pId);
+            var existingResult = await readSvc.GetAsync(projectId);
             existingResult.Should().NotBeNull();
 
-            var notFoundResult = await svc.GetAsync(Guid.Empty);
+            var notFoundResult = await readSvc.GetAsync(projectId: Guid.Empty);
             notFoundResult.Should().BeNull();
         }
 
@@ -30,27 +30,31 @@ namespace Application.Tests.Projects.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
-            var svc = new ProjectReadService(repo);
+            var readSvc = new ProjectReadService(repo);
 
             var firstProjectName = "First";
             var secondProjectName = "Second";
-            var (_, firstUserId) = TestDataFactory.SeedUserWithProject(db, projectName: firstProjectName);
+            var thirdProjectName = "Third";
+            var (_, firstUserId) = TestDataFactory.SeedUserWithProject(
+                db,
+                userName: firstProjectName);
 
-            var firstUserList = await svc.ListByUserAsync(firstUserId);
+            var firstUserList = await readSvc.ListByUserAsync(firstUserId);
             firstUserList.Should().NotBeNull();
             firstUserList.Should().HaveCount(1);
-            var (_, secondUserId) = TestDataFactory.SeedUserWithProject(db, projectName: secondProjectName);
+            var (_, secondUserId) = TestDataFactory.SeedUserWithProject(
+                db,
+                userName: secondProjectName);
 
-            var secondUserList = await svc.ListByUserAsync(secondUserId);
+            var secondUserList = await readSvc.ListByUserAsync(secondUserId);
             secondUserList.Should().NotBeNull();
             secondUserList.Should().HaveCount(1);
 
-            var thirdProjectName = "Third";
             TestDataFactory.SeedProject(db, firstUserId, thirdProjectName);
-            firstUserList = await svc.ListByUserAsync(firstUserId);
+            firstUserList = await readSvc.ListByUserAsync(firstUserId);
             firstUserList.Should().HaveCount(2);
 
-            secondUserList = await svc.ListByUserAsync(secondUserId);
+            secondUserList = await readSvc.ListByUserAsync(secondUserId);
             secondUserList.Should().HaveCount(1);
         }
 
@@ -60,9 +64,9 @@ namespace Application.Tests.Projects.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
-            var svc = new ProjectReadService(repo);
+            var readSvc = new ProjectReadService(repo);
 
-            var list = await svc.ListByUserAsync(Guid.NewGuid());
+            var list = await readSvc.ListByUserAsync(userId: Guid.NewGuid());
             list.Should().BeEmpty();
         }
 
@@ -72,10 +76,10 @@ namespace Application.Tests.Projects.Services
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
-            var svc = new ProjectReadService(repo);
+            var readSvc = new ProjectReadService(repo);
 
             var user = TestDataFactory.SeedUser(db);
-            var list = await svc.ListByUserAsync(user.Id);
+            var list = await readSvc.ListByUserAsync(user.Id);
             list.Should().BeEmpty();
         }
     }

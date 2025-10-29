@@ -8,17 +8,25 @@ namespace Application.Tests.Realtime
 {
     public class BoardEvent_Serialization_Tests
     {
+        private readonly JsonSerializerOptions _jsonOptions = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
         [Fact]
         public void TaskCreatedEvent_serializes_flat_payload()
         {
             var projectId = Guid.NewGuid();
-            var payload = new TaskItemCreatedPayload(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Title", "Description", 1m);
+            var payload = new TaskItemCreatedPayload(
+                TaskId: Guid.NewGuid(),
+                ColumnId: Guid.NewGuid(),
+                LaneId: Guid.NewGuid(),
+                Title: "Title",
+                Description: "Description",
+                SortKey: 1m);
             var evt = new TaskItemCreatedEvent(projectId, payload);
 
-            var json = JsonSerializer.Serialize(evt, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            var json = JsonSerializer.Serialize(evt, _jsonOptions);
 
             Assert.Contains("\"type\":\"task.created\"", json);
             Assert.Contains("\"payload\"", json);
@@ -36,10 +44,7 @@ namespace Application.Tests.Realtime
                 Content: "Note content");
             var evt = new TaskNoteCreatedEvent(projectId, payload);
 
-            var json = JsonSerializer.Serialize(evt, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            var json = JsonSerializer.Serialize(evt, _jsonOptions);
 
             Assert.Contains("\"type\":\"note.created\"", json);
             Assert.Contains("\"payload\"", json);
@@ -57,10 +62,7 @@ namespace Application.Tests.Realtime
                 Role: TaskRole.Owner);
             var evt = new TaskAssignmentCreatedEvent(projectId, payload);
 
-            var json = JsonSerializer.Serialize(evt, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            var json = JsonSerializer.Serialize(evt, _jsonOptions);
 
             Assert.Contains("\"type\":\"assignment.created\"", json);
             Assert.Contains("\"payload\"", json);
