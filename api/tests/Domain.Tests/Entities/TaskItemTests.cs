@@ -181,7 +181,10 @@ namespace Domain.Tests.Entities
             var task = _defaultTaskItem;
             var newTaskTitle = "New Title";
 
-            task.Edit(title: TaskTitle.Create(newTaskTitle), description: null, dueDate: null);
+            task.Edit(
+                title: TaskTitle.Create(newTaskTitle),
+                description: null,
+                dueDate: null);
 
             task.Title.Value.Should().Be(newTaskTitle);
         }
@@ -192,7 +195,10 @@ namespace Domain.Tests.Entities
             var task = _defaultTaskItem;
             var newTaskDescription = "New Description";
 
-            task.Edit(title: null, description: TaskDescription.Create(newTaskDescription), dueDate: null);
+            task.Edit(
+                title: null,
+                description: TaskDescription.Create(newTaskDescription),
+                dueDate: null);
 
             task.Description.Value.Should().Be(newTaskDescription);
         }

@@ -79,7 +79,6 @@ namespace Domain.Tests.Entities
             var newContent = NoteContent.Create("new content");
 
             note.Edit(newContent);
-
             note.Content.Should().Be(newContent);
         }
 
@@ -89,7 +88,6 @@ namespace Domain.Tests.Entities
             var note = _defaultTaskNote;
 
             note.Edit(_defaultNoteContent);
-
             note.Content.Should().Be(_defaultNoteContent);
         }
 
@@ -97,7 +95,6 @@ namespace Domain.Tests.Entities
         public void Edit_Throws_When_Invalid_NoteContent()
         {
             var note = _defaultTaskNote;
-
             var act = () => note.Edit(NoteContent.Create(""));
 
             act.Should().Throw<ArgumentException>();
