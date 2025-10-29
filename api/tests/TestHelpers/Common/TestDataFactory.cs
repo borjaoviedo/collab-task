@@ -8,6 +8,9 @@ namespace TestHelpers.Common
 {
     public static class TestDataFactory
     {
+
+        // --- Primitives / Generators ---
+
         public static byte[] Bytes(int n, byte fill = 0x5A) => Enumerable.Repeat(fill, n).ToArray();
 
         public static string GetRandomString(int length)
@@ -19,6 +22,9 @@ namespace TestHelpers.Common
 
             return new string(chars);
         }
+
+
+        // --- Seed: Core Entities ---
 
         public static User SeedUser(
             AppDbContext db,
@@ -74,6 +80,9 @@ namespace TestHelpers.Common
             db.SaveChanges();
             return projectMember;
         }
+
+
+        // --- Seed: Board Structure ---
 
         public static Lane SeedLane(
             AppDbContext db,
@@ -138,6 +147,9 @@ namespace TestHelpers.Common
             db.SaveChanges();
             return task;
         }
+
+
+        // --- Seed: Task Details ---
 
         public static TaskNote SeedTaskNote(
             AppDbContext db,
