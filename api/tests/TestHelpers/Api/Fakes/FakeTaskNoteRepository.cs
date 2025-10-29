@@ -31,7 +31,11 @@ namespace TestHelpers.Api.Fakes
             return Task.CompletedTask;
         }
 
-        public async Task<PrecheckStatus> EditAsync(Guid noteId, NoteContent newContent, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> EditAsync(
+            Guid noteId,
+            NoteContent newContent,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var note = await GetTrackedByIdAsync(noteId, ct);
             if (note is null) return PrecheckStatus.NotFound;

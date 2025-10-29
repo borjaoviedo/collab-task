@@ -109,8 +109,10 @@ namespace Api.Tests.Auth.Authorization
         private static ClaimsPrincipal BuildUser(Guid? userId)
         {
             var id = new ClaimsIdentity("test");
+
             if (userId is Guid uid)
                 id.AddClaim(new Claim("sub", uid.ToString()));
+
             return new ClaimsPrincipal(id);
         }
     }

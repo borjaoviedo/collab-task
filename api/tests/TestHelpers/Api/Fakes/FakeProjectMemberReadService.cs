@@ -32,7 +32,10 @@ namespace TestHelpers.Api.Fakes
             return Task.FromResult<ProjectMember?>(null);
         }
 
-        public Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(Guid projectId, bool includeRemoved = false, CancellationToken ct = default)
+        public Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(
+            Guid projectId,
+            bool includeRemoved = false,
+            CancellationToken ct = default)
         {
             var list = _byKey.Values
                 .Where(pm => pm.ProjectId == projectId && (includeRemoved || pm.RemovedAt is null))
@@ -49,9 +52,9 @@ namespace TestHelpers.Api.Fakes
                 return Task.FromResult<ProjectRole?>(pm.Role);
 
             if (_roleSelector is not null)
-                return Task.FromResult<ProjectRole?>(_roleSelector(projectId, userId));
+                return Task.FromResult(_roleSelector(projectId, userId));
 
-            return Task.FromResult<ProjectRole?>(_fixedRole);
+            return Task.FromResult(_fixedRole);
         }
 
         public Task<int> CountActiveAsync(Guid userId, CancellationToken ct = default)
@@ -74,8 +77,10 @@ namespace TestHelpers.Api.Fakes
         {
             var clone = ProjectMember.Create(m.ProjectId, m.UserId, m.Role);
             var rowVersion = (m.RowVersion is null) ? [] : m.RowVersion.ToArray();
+
             clone.SetRowVersion(rowVersion);
             clone.Remove(m.RemovedAt);
+
             return clone;
         }
     }

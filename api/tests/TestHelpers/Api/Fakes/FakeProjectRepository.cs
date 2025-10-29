@@ -21,7 +21,10 @@ namespace TestHelpers.Api.Fakes
 
         private readonly IProjectMemberRepository _pmRepo = pmRepo;
 
-        public Task<IReadOnlyList<Project>> ListByUserAsync(Guid userId, ProjectFilter? filter = null, CancellationToken ct = default)
+        public Task<IReadOnlyList<Project>> ListByUserAsync(
+            Guid userId,
+            ProjectFilter? filter = null,
+            CancellationToken ct = default)
         {
             filter ??= new ProjectFilter();
             var includeRemoved = filter.IncludeRemoved == true;
@@ -40,7 +43,9 @@ namespace TestHelpers.Api.Fakes
             if (filter.Role is not null)
             {
                 var role = filter.Role.Value;
-                q = q.Where(p => p.Members.Any(m => m.UserId == userId && m.Role == role && (includeRemoved || m.RemovedAt is null)));
+                q = q
+                    .Where(p => p.Members
+                    .Any(m => m.UserId == userId && m.Role == role && (includeRemoved || m.RemovedAt is null)));
             }
 
             q = filter.OrderBy switch
@@ -113,7 +118,11 @@ namespace TestHelpers.Api.Fakes
             return Task.CompletedTask;
         }
 
-        public Task<PrecheckStatus> RenameAsync(Guid id, ProjectName newName, byte[] rowVersion, CancellationToken ct = default)
+        public Task<PrecheckStatus> RenameAsync(
+            Guid id,
+            ProjectName newName,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             if (rowVersion is null || rowVersion.Length == 0)
                 return Task.FromResult(PrecheckStatus.Conflict);

@@ -62,93 +62,106 @@ namespace Api.Tests.Testing
                 services.RemoveAll(typeof(IUserRepository));
                 services.AddSingleton<IUserRepository, FakeUserRepository>();
                 services.RemoveAll(typeof(IUserReadService));
-                services.AddScoped<IUserReadService>(sp => new UserReadService(sp.GetRequiredService<IUserRepository>()));
+                services.AddScoped<IUserReadService>(sp => new UserReadService(
+                    sp.GetRequiredService<IUserRepository>()));
                 services.RemoveAll(typeof(IUserWriteService));
-                services.AddScoped<IUserWriteService>(sp => new UserWriteService(sp.GetRequiredService<IUserRepository>(), sp.GetRequiredService<IUnitOfWork>()));
+                services.AddScoped<IUserWriteService>(sp => new UserWriteService(
+                    sp.GetRequiredService<IUserRepository>(),
+                    sp.GetRequiredService<IUnitOfWork>()));
 
                 // ===== Projects =====
                 services.RemoveAll(typeof(IProjectRepository));
                 services.AddSingleton<IProjectRepository, FakeProjectRepository>();
                 services.RemoveAll(typeof(IProjectReadService));
-                services.AddScoped<IProjectReadService>(sp => new ProjectReadService(sp.GetRequiredService<IProjectRepository>()));
+                services.AddScoped<IProjectReadService>(sp => new ProjectReadService(
+                    sp.GetRequiredService<IProjectRepository>()));
                 services.RemoveAll(typeof(IProjectWriteService));
-                services.AddScoped<IProjectWriteService>(sp
-                    => new ProjectWriteService(sp.GetRequiredService<IProjectRepository>(), sp.GetRequiredService<IUnitOfWork>()));
+                services.AddScoped<IProjectWriteService>(sp => new ProjectWriteService(
+                    sp.GetRequiredService<IProjectRepository>(),
+                    sp.GetRequiredService<IUnitOfWork>()));
 
                 // ===== Project Members =====
                 services.RemoveAll(typeof(IProjectMemberRepository));
                 services.AddSingleton<IProjectMemberRepository, FakeProjectMemberRepository>();
                 services.RemoveAll(typeof(IProjectMemberReadService));
-                services.AddScoped<IProjectMemberReadService>(sp => new ProjectMemberReadService(sp.GetRequiredService<IProjectMemberRepository>()));
+                services.AddScoped<IProjectMemberReadService>(sp => new ProjectMemberReadService(
+                    sp.GetRequiredService<IProjectMemberRepository>()));
                 services.RemoveAll(typeof(IProjectMemberWriteService));
-                services.AddScoped<IProjectMemberWriteService>(sp
-                    => new ProjectMemberWriteService(sp.GetRequiredService<IProjectMemberRepository>(), sp.GetRequiredService<IUnitOfWork>()));
+                services.AddScoped<IProjectMemberWriteService>(sp => new ProjectMemberWriteService(
+                    sp.GetRequiredService<IProjectMemberRepository>(),
+                    sp.GetRequiredService<IUnitOfWork>()));
 
                 // ===== Lanes =====
                 services.RemoveAll(typeof(ILaneRepository));
                 services.AddSingleton<ILaneRepository, FakeLaneRepository>();
                 services.RemoveAll(typeof(ILaneReadService));
-                services.AddScoped<ILaneReadService>(sp => new LaneReadService(sp.GetRequiredService<ILaneRepository>()));
+                services.AddScoped<ILaneReadService>(sp => new LaneReadService(
+                    sp.GetRequiredService<ILaneRepository>()));
                 services.RemoveAll(typeof(ILaneWriteService));
-                services.AddScoped<ILaneWriteService>(sp
-                    => new LaneWriteService(sp.GetRequiredService<ILaneRepository>(), sp.GetRequiredService<IUnitOfWork>()));
+                services.AddScoped<ILaneWriteService>(sp => new LaneWriteService(
+                    sp.GetRequiredService<ILaneRepository>(),
+                    sp.GetRequiredService<IUnitOfWork>()));
 
                 // ===== Columns =====
                 services.RemoveAll(typeof(IColumnRepository));
                 services.AddSingleton<IColumnRepository, FakeColumnRepository>();
                 services.RemoveAll(typeof(IColumnReadService));
-                services.AddScoped<IColumnReadService>(sp => new ColumnReadService(sp.GetRequiredService<IColumnRepository>()));
+                services.AddScoped<IColumnReadService>(sp => new ColumnReadService(
+                    sp.GetRequiredService<IColumnRepository>()));
                 services.RemoveAll(typeof(IColumnWriteService));
-                services.AddScoped<IColumnWriteService>(sp
-                    => new ColumnWriteService(sp.GetRequiredService<IColumnRepository>(), sp.GetRequiredService<IUnitOfWork>()));
+                services.AddScoped<IColumnWriteService>(sp => new ColumnWriteService(
+                    sp.GetRequiredService<IColumnRepository>(),
+                    sp.GetRequiredService<IUnitOfWork>()));
 
                 // ===== Task Items =====
                 services.RemoveAll(typeof(ITaskItemRepository));
                 services.AddSingleton<ITaskItemRepository, FakeTaskItemRepository>();
                 services.RemoveAll(typeof(ITaskItemReadService));
-                services.AddScoped<ITaskItemReadService>(sp => new TaskItemReadService(sp.GetRequiredService<ITaskItemRepository>()));
+                services.AddScoped<ITaskItemReadService>(sp => new TaskItemReadService(
+                    sp.GetRequiredService<ITaskItemRepository>()));
                 services.RemoveAll(typeof(ITaskItemWriteService));
-                services.AddScoped<ITaskItemWriteService>(sp
-                    => new TaskItemWriteService(
-                        sp.GetRequiredService<ITaskItemRepository>(),
-                        sp.GetRequiredService<IUnitOfWork>(),
-                        sp.GetRequiredService<ITaskActivityWriteService>(),
-                        sp.GetRequiredService<IMediator>()));
+                services.AddScoped<ITaskItemWriteService>(sp => new TaskItemWriteService(
+                    sp.GetRequiredService<ITaskItemRepository>(),
+                    sp.GetRequiredService<IUnitOfWork>(),
+                    sp.GetRequiredService<ITaskActivityWriteService>(),
+                    sp.GetRequiredService<IMediator>()));
 
                 // ===== Task Notes =====
                 services.RemoveAll(typeof(ITaskNoteRepository));
                 services.AddSingleton<ITaskNoteRepository, FakeTaskNoteRepository>();
                 services.RemoveAll(typeof(ITaskNoteReadService));
-                services.AddScoped<ITaskNoteReadService>(sp => new TaskNoteReadService(sp.GetRequiredService<ITaskNoteRepository>()));
+                services.AddScoped<ITaskNoteReadService>(sp => new TaskNoteReadService(
+                    sp.GetRequiredService<ITaskNoteRepository>()));
                 services.RemoveAll(typeof(ITaskNoteWriteService));
-                services.AddScoped<ITaskNoteWriteService>(sp
-                    => new TaskNoteWriteService(
-                        sp.GetRequiredService<ITaskNoteRepository>(),
-                        sp.GetRequiredService<IUnitOfWork>(),
-                        sp.GetRequiredService<ITaskActivityWriteService>(),
-                        sp.GetRequiredService<IMediator>()));
+                services.AddScoped<ITaskNoteWriteService>(sp => new TaskNoteWriteService(
+                    sp.GetRequiredService<ITaskNoteRepository>(),
+                    sp.GetRequiredService<IUnitOfWork>(),
+                    sp.GetRequiredService<ITaskActivityWriteService>(),
+                    sp.GetRequiredService<IMediator>()));
 
                 // ===== Task Assignments =====
                 services.RemoveAll(typeof(ITaskAssignmentRepository));
                 services.AddSingleton<ITaskAssignmentRepository, FakeTaskAssignmentRepository>();
                 services.RemoveAll(typeof(ITaskAssignmentReadService));
-                services.AddScoped<ITaskAssignmentReadService>(sp => new TaskAssignmentReadService(sp.GetRequiredService<ITaskAssignmentRepository>()));
+                services.AddScoped<ITaskAssignmentReadService>(sp => new TaskAssignmentReadService(
+                    sp.GetRequiredService<ITaskAssignmentRepository>()));
                 services.RemoveAll(typeof(ITaskAssignmentWriteService));
-                services.AddScoped<ITaskAssignmentWriteService>(sp
-                    => new TaskAssignmentWriteService(
-                        sp.GetRequiredService<ITaskAssignmentRepository>(),
-                        sp.GetRequiredService<IUnitOfWork>(),
-                        sp.GetRequiredService<ITaskActivityWriteService>(),
-                        sp.GetRequiredService<IMediator>()));
+                services.AddScoped<ITaskAssignmentWriteService>(sp => new TaskAssignmentWriteService(
+                    sp.GetRequiredService<ITaskAssignmentRepository>(),
+                    sp.GetRequiredService<IUnitOfWork>(),
+                    sp.GetRequiredService<ITaskActivityWriteService>(),
+                    sp.GetRequiredService<IMediator>()));
 
                 // ===== Task Activities =====
                 services.RemoveAll(typeof(ITaskActivityRepository));
                 services.AddSingleton<ITaskActivityRepository, FakeTaskActivityRepository>();
                 services.RemoveAll(typeof(ITaskActivityReadService));
-                services.AddScoped<ITaskActivityReadService>(sp => new TaskActivityReadService(sp.GetRequiredService<ITaskActivityRepository>()));
+                services.AddScoped<ITaskActivityReadService>(sp => new TaskActivityReadService(
+                    sp.GetRequiredService<ITaskActivityRepository>()));
                 services.RemoveAll(typeof(ITaskActivityWriteService));
-                services.AddScoped<ITaskActivityWriteService>(sp
-                    => new TaskActivityWriteService(sp.GetRequiredService<ITaskActivityRepository>(), sp.GetRequiredService<IDateTimeProvider>()));
+                services.AddScoped<ITaskActivityWriteService>(sp => new TaskActivityWriteService(
+                    sp.GetRequiredService<ITaskActivityRepository>(),
+                    sp.GetRequiredService<IDateTimeProvider>()));
 
                 // ===== Endpoint filter para If-Match =====
                 services.RemoveAll(typeof(IfMatchRowVersionFilter));

@@ -41,10 +41,14 @@ namespace TestHelpers.Api.Fakes
             var column = await GetTrackedByIdAsync(columnId, ct);
             if (column is null) return PrecheckStatus.NotFound;
 
-            if (!column.RowVersion.SequenceEqual(rowVersion)) return PrecheckStatus.Conflict;
-            if (string.Equals(column.Name, newName, StringComparison.Ordinal)) return PrecheckStatus.NoOp;
+            if (!column.RowVersion.SequenceEqual(rowVersion))
+                return PrecheckStatus.Conflict;
 
-            if (await ExistsWithNameAsync(column.LaneId, newName, column.Id, ct)) return PrecheckStatus.Conflict;
+            if (string.Equals(column.Name, newName, StringComparison.Ordinal))
+                return PrecheckStatus.NoOp;
+
+            if (await ExistsWithNameAsync(column.LaneId, newName, column.Id, ct))
+                return PrecheckStatus.Conflict;
 
             column.Rename(newName);
             column.SetRowVersion(NextRowVersion());
@@ -139,7 +143,11 @@ namespace TestHelpers.Api.Fakes
             return PrecheckStatus.Ready;
         }
 
-        public Task<bool> ExistsWithNameAsync(Guid laneId, ColumnName name, Guid? excludeColumnId = null, CancellationToken ct = default)
+        public Task<bool> ExistsWithNameAsync(
+            Guid laneId,
+            ColumnName name,
+            Guid? excludeColumnId = null,
+            CancellationToken ct = default)
         {
             var q = _columns.Values.Where(c => c.LaneId == laneId && c.Name == name);
 
@@ -161,8 +169,13 @@ namespace TestHelpers.Api.Fakes
 
         private static Column Clone(Column c)
         {
-            var clone = Column.Create(c.ProjectId, c.LaneId, ColumnName.Create(c.Name), c.Order);
-            var rowVersion = c.RowVersion is null ? Array.Empty<byte>() : c.RowVersion.ToArray();
+            var clone = Column.Create(
+                c.ProjectId,
+                c.LaneId,
+                ColumnName.Create(c.Name),
+                c.Order);
+            var rowVersion = c.RowVersion is null ? [] : c.RowVersion.ToArray();
+
             clone.SetRowVersion(rowVersion);
             return clone;
         }

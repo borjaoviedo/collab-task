@@ -70,7 +70,8 @@ namespace Api.Tests.Realtime
             using var cts = new CancellationTokenSource();
             await cts.CancelAsync();
 
-            await Assert.ThrowsAsync<TaskCanceledException>(() => notifier.NotifyAsync(projectId, evt, cts.Token));
+            await Assert.ThrowsAsync<TaskCanceledException>(()
+                => notifier.NotifyAsync(projectId, evt, cts.Token));
         }
 
         [Fact]

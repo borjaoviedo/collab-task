@@ -75,7 +75,10 @@ namespace Api.Tests.Auth.Authorization
             ProjectRole.Member => Policies.ProjectMember,
             ProjectRole.Admin => Policies.ProjectAdmin,
             ProjectRole.Owner => Policies.ProjectOwner,
-            _ => throw new ArgumentOutOfRangeException(nameof(required), required, "Invalid ProjectRole for policy mapping.")
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(required),
+                required,
+                "Invalid ProjectRole for policy mapping.")
         };
 
         // ---------- TEST DOUBLE ----------

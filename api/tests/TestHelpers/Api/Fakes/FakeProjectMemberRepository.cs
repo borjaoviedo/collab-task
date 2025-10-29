@@ -50,7 +50,7 @@ namespace TestHelpers.Api.Fakes
         {
             _byKey.TryGetValue((projectId, userId), out var pm);
             // Return the tracked instance directly to simulate EF tracking.
-            return Task.FromResult<ProjectMember?>(pm);
+            return Task.FromResult(pm);
         }
 
         public Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
@@ -196,6 +196,7 @@ namespace TestHelpers.Api.Fakes
         {
             var clone = User.Create(u.Email, u.Name, u.PasswordHash, u.PasswordSalt, u.Role);
             var rowVersion = (u.RowVersion is null) ? [] : u.RowVersion;
+
             clone.SetRowVersion(rowVersion);
             return clone;
         }

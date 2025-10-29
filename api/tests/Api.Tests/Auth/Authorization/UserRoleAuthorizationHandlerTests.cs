@@ -49,7 +49,6 @@ namespace Api.Tests.Auth.Authorization
             var principal = new ClaimsPrincipal(id);
 
             var context = BuildContext(UserRole.Admin, principal);
-
             await _sut.HandleAsync(context);
 
             context.HasSucceeded.Should().BeTrue();
@@ -86,7 +85,6 @@ namespace Api.Tests.Auth.Authorization
                 : BuildPrincipalFromRaw(roleValue, claimType);
 
             var context = BuildContext(minimumRole, principal);
-
             await _sut.HandleAsync(context);
 
             context.HasSucceeded.Should().BeFalse();
@@ -104,6 +102,7 @@ namespace Api.Tests.Auth.Authorization
         {
             var id = new ClaimsIdentity("test");
             id.AddClaim(new Claim(claimType, role.ToString()));
+
             return new ClaimsPrincipal(id);
         }
 
@@ -111,6 +110,7 @@ namespace Api.Tests.Auth.Authorization
         {
             var id = new ClaimsIdentity("test");
             id.AddClaim(new Claim(claimType, value));
+
             return new ClaimsPrincipal(id);
         }
     }

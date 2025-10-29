@@ -15,7 +15,6 @@ namespace Api.Tests.Auth.Services
         {
             var userId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
             var ctx = BuildContext(userId, "user@demo.com", "Admin");
-
             var sut = BuildSut(ctx);
 
             sut.UserId.Should().Be(userId);
@@ -59,9 +58,15 @@ namespace Api.Tests.Auth.Services
             string? role = null)
         {
             var identity = new ClaimsIdentity(authenticationType: "Test");
-            if (userId.HasValue) identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, userId.Value.ToString()));
-            if (!string.IsNullOrWhiteSpace(email)) identity.AddClaim(new Claim(ClaimTypes.Email, email));
-            if (!string.IsNullOrWhiteSpace(role)) identity.AddClaim(new Claim(ClaimTypes.Role, role));
+
+            if (userId.HasValue)
+                identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, userId.Value.ToString()));
+
+            if (!string.IsNullOrWhiteSpace(email))
+                identity.AddClaim(new Claim(ClaimTypes.Email, email));
+
+            if (!string.IsNullOrWhiteSpace(role))
+                identity.AddClaim(new Claim(ClaimTypes.Role, role));
 
             var principal = new ClaimsPrincipal(identity);
             return new DefaultHttpContext { User = principal };
@@ -71,6 +76,7 @@ namespace Api.Tests.Auth.Services
         {
             var accessor = new Mock<IHttpContextAccessor>();
             accessor.Setup(a => a.HttpContext).Returns(httpContext);
+
             return new CurrentUserService(accessor.Object);
         }
     }

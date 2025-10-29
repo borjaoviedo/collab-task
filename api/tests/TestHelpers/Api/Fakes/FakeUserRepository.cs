@@ -58,7 +58,11 @@ namespace TestHelpers.Api.Fakes
             return Task.CompletedTask;
         }
 
-        public Task<PrecheckStatus> RenameAsync(Guid id, UserName newName, byte[] rowVersion, CancellationToken ct = default)
+        public Task<PrecheckStatus> RenameAsync(
+            Guid id,
+            UserName newName,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             if (rowVersion is null || rowVersion.Length == 0) return Task.FromResult(PrecheckStatus.Conflict);
             if (!_byId.TryGetValue(id, out var user)) return Task.FromResult(PrecheckStatus.NotFound);
@@ -80,7 +84,11 @@ namespace TestHelpers.Api.Fakes
             return Task.FromResult(PrecheckStatus.Ready);
         }
 
-        public Task<PrecheckStatus> ChangeRoleAsync(Guid id, UserRole newRole, byte[] rowVersion, CancellationToken ct = default)
+        public Task<PrecheckStatus> ChangeRoleAsync(
+            Guid id,
+            UserRole newRole,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             if (rowVersion is null || rowVersion.Length == 0) return Task.FromResult(PrecheckStatus.Conflict);
             if (!_byId.TryGetValue(id, out var user)) return Task.FromResult(PrecheckStatus.NotFound);
@@ -114,6 +122,7 @@ namespace TestHelpers.Api.Fakes
         public Task<bool> ExistsWithEmailAsync(Email email, Guid? excludeUserId = null, CancellationToken ct = default)
         {
             if (email is null) return Task.FromResult(false);
+
             var exists = _idByEmail.TryGetValue(email, out var id);
             if (!exists) return Task.FromResult(false);
             return Task.FromResult(!excludeUserId.HasValue || excludeUserId.Value != id);
@@ -122,16 +131,11 @@ namespace TestHelpers.Api.Fakes
         public Task<bool> ExistsWithNameAsync(UserName name, Guid? excludeUserId = null, CancellationToken ct = default)
         {
             if (name is null) return Task.FromResult(false);
+
             var exists = _idByName.TryGetValue(name, out var id);
             if (!exists) return Task.FromResult(false);
             return Task.FromResult(!excludeUserId.HasValue || excludeUserId.Value != id);
         }
-
-        public Task<bool> AnyAdminAsync(CancellationToken ct = default)
-            => Task.FromResult(_byId.Values.Any(u => u.Role == UserRole.Admin));
-
-        public Task<int> CountAdminsAsync(CancellationToken ct = default)
-            => Task.FromResult(_byId.Values.Count(u => u.Role == UserRole.Admin));
 
         // ----------------- helpers -----------------
         private static bool RowVersionEquals(byte[] a, byte[] b)

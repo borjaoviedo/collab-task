@@ -31,14 +31,6 @@ namespace TestHelpers.Api.Fakes
             return Task.CompletedTask;
         }
 
-        public Task AddRangeAsync(IEnumerable<TaskActivity> activities, CancellationToken ct = default)
-        {
-            foreach (var a in activities) _store[a.Id] = a;
-            return Task.CompletedTask;
-        }
-
-        public Task<int> SaveChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
-
         private static TaskActivity Clone(TaskActivity a)
             => TaskActivity.Create(
                             a.TaskId,

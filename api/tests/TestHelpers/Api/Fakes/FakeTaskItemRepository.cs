@@ -52,7 +52,9 @@ namespace TestHelpers.Api.Fakes
 
             task.Edit(newTitle, newDescription, newDueDate);
 
-            if (Equals(beforeTitle, task.Title) && Equals(beforeDesc, task.Description) && Nullable.Equals(beforeDue, task.DueDate))
+            if (Equals(beforeTitle, task.Title)
+                && Equals(beforeDesc, task.Description)
+                && Nullable.Equals(beforeDue, task.DueDate))
                 return (PrecheckStatus.NoOp, null);
 
             task.SetRowVersion(NextRowVersion());
@@ -89,7 +91,11 @@ namespace TestHelpers.Api.Fakes
             return PrecheckStatus.Ready;
         }
 
-        public Task<bool> ExistsWithTitleAsync(Guid columnId, TaskTitle title, Guid? excludeTaskId = null, CancellationToken ct = default)
+        public Task<bool> ExistsWithTitleAsync(
+            Guid columnId,
+            TaskTitle title,
+            Guid? excludeTaskId = null,
+            CancellationToken ct = default)
         {
             var q = _tasks.Values.Where(t => t.ColumnId == columnId && t.Title == title);
             if (excludeTaskId is Guid id) q = q.Where(t => t.Id != id);

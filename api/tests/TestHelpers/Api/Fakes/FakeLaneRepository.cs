@@ -30,15 +30,23 @@ namespace TestHelpers.Api.Fakes
             return Task.CompletedTask;
         }
 
-        public async Task<PrecheckStatus> RenameAsync(Guid laneId, LaneName newName, byte[] rowVersion, CancellationToken ct = default)
+        public async Task<PrecheckStatus> RenameAsync(
+            Guid laneId,
+            LaneName newName,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var lane = await GetTrackedByIdAsync(laneId, ct);
             if (lane is null) return PrecheckStatus.NotFound;
 
-            if (!lane.RowVersion.SequenceEqual(rowVersion)) return PrecheckStatus.Conflict;
-            if (string.Equals(lane.Name, newName, StringComparison.Ordinal)) return PrecheckStatus.NoOp;
+            if (!lane.RowVersion.SequenceEqual(rowVersion))
+                return PrecheckStatus.Conflict;
 
-            if (await ExistsWithNameAsync(lane.ProjectId, newName, lane.Id, ct)) return PrecheckStatus.Conflict;
+            if (string.Equals(lane.Name, newName, StringComparison.Ordinal))
+                return PrecheckStatus.NoOp;
+
+            if (await ExistsWithNameAsync(lane.ProjectId, newName, lane.Id, ct))
+                return PrecheckStatus.Conflict;
 
             lane.Rename(LaneName.Create(newName));
             lane.SetRowVersion(NextRowVersion());
@@ -132,7 +140,11 @@ namespace TestHelpers.Api.Fakes
             return PrecheckStatus.Ready;
         }
 
-        public Task<bool> ExistsWithNameAsync(Guid projectId, LaneName name, Guid? excludeLaneId = null, CancellationToken ct = default)
+        public Task<bool> ExistsWithNameAsync(
+            Guid projectId,
+            LaneName name,
+            Guid? excludeLaneId = null,
+            CancellationToken ct = default)
         {
             var q = _lanes.Values.Where(l => l.ProjectId == projectId && l.Name == name);
             if (excludeLaneId is Guid id) q = q.Where(l => l.Id != id);
@@ -141,14 +153,18 @@ namespace TestHelpers.Api.Fakes
 
         public Task<int> GetMaxOrderAsync(Guid projectId, CancellationToken ct = default)
         {
-            var max = _lanes.Values.Where(l => l.ProjectId == projectId).Select(l => (int?)l.Order).DefaultIfEmpty(null).Max();
+            var max = _lanes.Values
+                .Where(l => l.ProjectId == projectId)
+                .Select(l => (int?)l.Order)
+                .DefaultIfEmpty(null)
+                .Max();
             return Task.FromResult(max ?? -1);
         }
 
         private static Lane Clone(Lane l)
         {
             var clone = Lane.Create(l.ProjectId, LaneName.Create(l.Name), l.Order);
-            var rowVersion = l.RowVersion is null ? Array.Empty<byte>() : l.RowVersion.ToArray();
+            var rowVersion = l.RowVersion is null ? [] : l.RowVersion.ToArray();
             clone.SetRowVersion(rowVersion);
             return clone;
         }

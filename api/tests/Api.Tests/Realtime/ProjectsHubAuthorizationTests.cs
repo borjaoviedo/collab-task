@@ -30,8 +30,8 @@ namespace Api.Tests.Realtime
                 })
                 .Build();
 
-            var ex = await Assert.ThrowsAsync<HttpRequestException>(() => connection.StartAsync());
-            Assert.Equal(HttpStatusCode.Forbidden, ex.StatusCode);
+            var exception = await Assert.ThrowsAsync<HttpRequestException>(() => connection.StartAsync());
+            Assert.Equal(HttpStatusCode.Forbidden, exception.StatusCode);
         }
 
         private sealed class UnauthorizedClientFactory : WebApplicationFactory<Program>
