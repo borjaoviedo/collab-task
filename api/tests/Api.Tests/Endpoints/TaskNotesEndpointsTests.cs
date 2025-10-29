@@ -104,7 +104,7 @@ namespace Api.Tests.Endpoints
             using var client = app.CreateClient();
 
             // Create full board: project, lane, column, task and note
-            var (_, _, _, _, user, _) = await BoardSetupHelper.SetupBoardWithNote(client);
+            var (_, _, _, _, _, user) = await BoardSetupHelper.SetupBoardWithNote(client);
             client.DefaultRequestHeaders.IfMatch.Clear();
 
             // Get me: OK
@@ -112,7 +112,7 @@ namespace Api.Tests.Endpoints
             getMeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
             // Get other user notes without being admin: forbidden
-            var getNotesByUserIdResponse = await TaskNoteTestHelper.GetTaskNotesByUserResponseAsync(client, user.Id);
+            var getNotesByUserIdResponse = await TaskNoteTestHelper.GetTaskNotesByUserResponseAsync(client, user.UserId);
             getNotesByUserIdResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
             // Create admin
