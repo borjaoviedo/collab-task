@@ -105,7 +105,6 @@ namespace Api.Tests.Endpoints
 
             // Create full board: project, lane, column, task and note
             var (_, _, _, _, _, user) = await BoardSetupHelper.SetupBoardWithNote(client);
-            client.DefaultRequestHeaders.IfMatch.Clear();
 
             // Get me: OK
             var getMeResponse = await client.GetAsync("/notes/me");
@@ -129,7 +128,7 @@ namespace Api.Tests.Endpoints
             client.SetAuthorization(adminBearer);
 
             // Get other user notes being admin: OK
-            getNotesByUserIdResponse = await client.GetAsync($"/notes/users/{user.UserId}");
+            getNotesByUserIdResponse = await TaskNoteTestHelper.GetTaskNotesByUserResponseAsync(client, user.UserId);
             getNotesByUserIdResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         }
     }
