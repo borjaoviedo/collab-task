@@ -3,7 +3,8 @@ using Domain.Enums;
 using FluentAssertions;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Persistence
 {

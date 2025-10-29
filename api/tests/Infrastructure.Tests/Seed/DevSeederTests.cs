@@ -5,7 +5,7 @@ using Infrastructure.Data.Seeders;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using TestHelpers;
+using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Seed
 {

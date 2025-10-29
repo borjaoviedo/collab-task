@@ -5,7 +5,8 @@ using FluentAssertions;
 using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Application.Tests.Users.Services
 {
@@ -44,7 +45,7 @@ namespace Application.Tests.Users.Services
             var writeSvc = new UserWriteService(repo, uow);
 
             var user = TestDataFactory.SeedUser(db);
-            var current = await db.Users.FirstAsync(user => user.Id == user.Id);
+            var current = await db.Users.FirstAsync(u => u.Id == user.Id);
             var result = await writeSvc.RenameAsync(
                 user.Id,
                 UserName.Create("new name"),

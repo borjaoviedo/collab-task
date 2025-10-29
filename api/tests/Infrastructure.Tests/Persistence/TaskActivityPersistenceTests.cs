@@ -4,8 +4,9 @@ using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
-using TestHelpers;
-using TestHelpers.Time;
+using TestHelpers.Common;
+using TestHelpers.Common.Time;
+using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Persistence
 {

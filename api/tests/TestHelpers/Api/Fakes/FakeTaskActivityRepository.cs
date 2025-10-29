@@ -2,7 +2,7 @@ using Application.TaskActivities.Abstractions;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
-using TestHelpers.Time;
+using TestHelpers.Common.Time;
 
 namespace TestHelpers.Api.Fakes
 {

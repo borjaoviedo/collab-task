@@ -2,7 +2,7 @@ using Application.Users.Mapping;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
-using TestHelpers;
+using TestHelpers.Common;
 
 namespace Application.Tests.Users.Mapping
 {

@@ -3,7 +3,8 @@ using Domain.Enums;
 using FluentAssertions;
 using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Repositories
 {

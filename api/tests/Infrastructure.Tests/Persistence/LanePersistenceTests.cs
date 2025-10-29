@@ -4,8 +4,9 @@ using FluentAssertions;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using TestHelpers;
 using Infrastructure.Tests.Containers;
+using TestHelpers.Persistence;
+using TestHelpers.Common;
 
 namespace Infrastructure.Tests.Persistence
 {

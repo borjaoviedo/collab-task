@@ -1,8 +1,9 @@
 using FluentAssertions;
 using Domain.Entities;
 using Domain.ValueObjects;
-using TestHelpers;
 using Infrastructure.Tests.Containers;
+using TestHelpers.Persistence;
+using TestHelpers.Common;
 
 namespace Infrastructure.Tests.Auditing
 {

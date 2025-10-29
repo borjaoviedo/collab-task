@@ -1,6 +1,6 @@
 using Application.Common.Abstractions.Time;
 
-namespace TestHelpers.Time
+namespace TestHelpers.Common.Time
 {
     public static class TestTime
     {

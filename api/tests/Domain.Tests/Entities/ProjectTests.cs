@@ -3,7 +3,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
-using TestHelpers.Time;
+using TestHelpers.Common.Time;
 
 namespace Domain.Tests.Entities
 {

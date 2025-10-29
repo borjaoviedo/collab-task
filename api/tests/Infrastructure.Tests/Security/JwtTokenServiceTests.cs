@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using TestHelpers.Time;
+using TestHelpers.Common.Time;
 
 namespace Infrastructure.Tests.Security
 {

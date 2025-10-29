@@ -7,8 +7,9 @@ using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using MediatR;
 using Moq;
-using TestHelpers;
-using TestHelpers.Time;
+using TestHelpers.Common;
+using TestHelpers.Common.Time;
+using TestHelpers.Persistence;
 
 namespace Application.Tests.TaskAssignments.Services
 {

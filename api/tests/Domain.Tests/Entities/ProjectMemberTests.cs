@@ -2,8 +2,8 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
-using TestHelpers;
-using TestHelpers.Time;
+using TestHelpers.Common;
+using TestHelpers.Common.Time;
 
 namespace Domain.Tests.Entities
 {

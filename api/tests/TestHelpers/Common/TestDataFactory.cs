@@ -2,9 +2,9 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using Infrastructure.Data;
-using TestHelpers.Time;
+using TestHelpers.Common.Time;
 
-namespace TestHelpers
+namespace TestHelpers.Common
 {
     public static class TestDataFactory
     {

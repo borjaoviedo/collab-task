@@ -2,7 +2,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Infrastructure.Data;
 
-namespace TestHelpers;
+namespace TestHelpers.Persistence;
 
 public sealed class SqliteTestDb : IDisposable
 {

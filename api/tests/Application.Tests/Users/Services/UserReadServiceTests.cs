@@ -2,7 +2,8 @@ using Application.Users.Services;
 using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Application.Tests.Users.Services
 {

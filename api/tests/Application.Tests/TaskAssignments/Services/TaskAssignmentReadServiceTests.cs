@@ -2,7 +2,8 @@ using Application.TaskAssignments.Services;
 using Domain.Enums;
 using FluentAssertions;
 using Infrastructure.Data.Repositories;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Application.Tests.TaskAssignments.Services
 {

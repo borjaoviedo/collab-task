@@ -4,7 +4,8 @@ using FluentAssertions;
 using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Repositories
 {

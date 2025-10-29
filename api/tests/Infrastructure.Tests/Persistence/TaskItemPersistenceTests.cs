@@ -5,7 +5,8 @@ using Infrastructure.Data;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Persistence
 {

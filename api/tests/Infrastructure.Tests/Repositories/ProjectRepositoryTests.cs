@@ -1,4 +1,3 @@
-using Application.Projects.Abstractions;
 using Application.Projects.Filters;
 using Domain.Entities;
 using Domain.Enums;
@@ -7,7 +6,8 @@ using FluentAssertions;
 using Infrastructure.Data;
 using Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
-using TestHelpers;
+using TestHelpers.Common;
+using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Repositories
 {

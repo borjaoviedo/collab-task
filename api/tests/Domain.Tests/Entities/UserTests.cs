@@ -2,7 +2,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
-using TestHelpers;
+using TestHelpers.Common;
 
 namespace Domain.Tests.Entities
 {

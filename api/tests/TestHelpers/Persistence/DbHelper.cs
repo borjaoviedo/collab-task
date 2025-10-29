@@ -2,7 +2,7 @@ using Infrastructure;
 using Infrastructure.Data;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace TestHelpers
+namespace TestHelpers.Persistence
 {
     public static class DbHelper
     {
