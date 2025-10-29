@@ -20,17 +20,14 @@ public sealed class SqliteTestDb : IDisposable
             .Options;
     }
 
-    public AppDbContext CreateContext(bool recreate = true)
+    public AppDbContext CreateContext()
     {
-        var ctx = new AppDbContext(_options);
+        var context = new AppDbContext(_options);
 
-        if (recreate)
-        {
-            ctx.Database.EnsureDeleted();
-            ctx.Database.EnsureCreated();
-        }
+        context.Database.EnsureDeleted();
+        context.Database.EnsureCreated();
 
-        return ctx;
+        return context;
     }
 
     public void Dispose() => _conn.Dispose();
