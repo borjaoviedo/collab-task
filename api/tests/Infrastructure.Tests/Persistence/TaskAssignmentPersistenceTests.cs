@@ -19,9 +19,7 @@ namespace Infrastructure.Tests.Persistence
         {
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
-
-            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
-            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
 
             var assignment = TaskAssignment.Create(taskId, userId, TaskRole.Owner);
             db.TaskAssignments.Add(assignment);
@@ -39,8 +37,7 @@ namespace Infrastructure.Tests.Persistence
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
-            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
 
             db.TaskAssignments.Add(TaskAssignment.Create(taskId, userId, TaskRole.Owner));
             await db.SaveChangesAsync();

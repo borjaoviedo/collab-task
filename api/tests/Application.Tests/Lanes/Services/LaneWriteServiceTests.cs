@@ -61,7 +61,7 @@ namespace Application.Tests.Lanes.Services
             var uow = new UnitOfWork(db);
             var writeSvc = new LaneWriteService(repo, uow);
 
-            var (_, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (_, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
 
             var current = await db.Lanes.FirstAsync(l => l.Id == laneId);
             var result = await writeSvc.RenameAsync(
@@ -83,7 +83,7 @@ namespace Application.Tests.Lanes.Services
             var firstLaneName = "Lane A";
             var secondLaneName = "Lane B";
             var thirdLaneName = "Lane C";
-            var (projectId, _) = TestDataFactory.SeedProjectWithLane(
+            var (projectId, _, _) = TestDataFactory.SeedProjectWithLane(
                 db,
                 laneName: firstLaneName,
                 order: 0);
@@ -114,7 +114,7 @@ namespace Application.Tests.Lanes.Services
             var uow = new UnitOfWork(db);
             var writeSvc = new LaneWriteService(repo, uow);
 
-            var (_, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (_, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
 
             var current = await db.Lanes.FirstAsync(x => x.Id == laneId);
             var result = await writeSvc.DeleteAsync(laneId, current.RowVersion);

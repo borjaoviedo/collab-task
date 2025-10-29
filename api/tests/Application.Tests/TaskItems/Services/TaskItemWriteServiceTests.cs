@@ -40,7 +40,7 @@ namespace Application.Tests.TaskItems.Services
 
             var taskTitle = TaskTitle.Create("Task Title");
             var taskDescription = TaskDescription.Create("Description");
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
 
             var (result, task) = await taskWriteSvc.CreateAsync(
@@ -78,7 +78,7 @@ namespace Application.Tests.TaskItems.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
@@ -134,7 +134,7 @@ namespace Application.Tests.TaskItems.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
 
             var sameTitle = TaskTitle.Create("Title");
@@ -189,7 +189,7 @@ namespace Application.Tests.TaskItems.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
 
             var oldTitle = TaskTitle.Create("Old");
@@ -233,7 +233,7 @@ namespace Application.Tests.TaskItems.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
@@ -279,7 +279,7 @@ namespace Application.Tests.TaskItems.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
@@ -315,7 +315,7 @@ namespace Application.Tests.TaskItems.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
@@ -348,7 +348,7 @@ namespace Application.Tests.TaskItems.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
@@ -386,7 +386,7 @@ namespace Application.Tests.TaskItems.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
@@ -434,7 +434,7 @@ namespace Application.Tests.TaskItems.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
@@ -468,11 +468,11 @@ namespace Application.Tests.TaskItems.Services
 
             var taskWriteSvc = new TaskItemWriteService(taskRepo, uow, activityWriteSvc, mediator.Object);
 
-            var (firstProjectId, firstProjectLaneId, firstProjectColumnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (firstProjectId, firstProjectLaneId, firstProjectColumnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, firstProjectId, firstProjectLaneId, firstProjectColumnId);
 
-            var (projectId, secondProjectLaneId, secondProjectColumnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, secondProjectLaneId, secondProjectColumnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             await db.SaveChangesAsync();
 
             var result = await taskWriteSvc.MoveAsync(
@@ -509,7 +509,7 @@ namespace Application.Tests.TaskItems.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
@@ -553,7 +553,7 @@ namespace Application.Tests.TaskItems.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
@@ -584,7 +584,7 @@ namespace Application.Tests.TaskItems.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             TestDataFactory.SeedUser(db);
             TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 

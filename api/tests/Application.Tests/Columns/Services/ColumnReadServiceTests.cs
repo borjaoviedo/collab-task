@@ -16,7 +16,7 @@ namespace Application.Tests.Columns.Services
             var repo = new ColumnRepository(db);
             var readSvc = new ColumnReadService(repo);
 
-            var (projectId, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             var column = TestDataFactory.SeedColumn(db, projectId, laneId);
 
             var existing = await readSvc.GetAsync(column.Id);
@@ -34,7 +34,7 @@ namespace Application.Tests.Columns.Services
             var repo = new ColumnRepository(db);
             var readSvc = new ColumnReadService(repo);
 
-            var (projectId, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             TestDataFactory.SeedColumn(db, projectId, laneId);
 
             var list = await readSvc.ListByLaneAsync(laneId);
@@ -57,7 +57,7 @@ namespace Application.Tests.Columns.Services
             var repo = new ColumnRepository(db);
             var readSvc = new ColumnReadService(repo);
 
-            var (_, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (_, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             var list = await readSvc.ListByLaneAsync(laneId);
             list.Should().BeEmpty();
         }

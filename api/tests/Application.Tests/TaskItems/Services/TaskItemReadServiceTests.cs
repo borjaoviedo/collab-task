@@ -16,7 +16,7 @@ namespace Application.Tests.TaskItems.Services
             var repo = new TaskItemRepository(db);
             var readSvc = new TaskItemReadService(repo);
 
-            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, _) = TestDataFactory.SeedColumnWithTask(db);
 
             var existing = await readSvc.GetAsync(taskId);
             existing.Should().NotBeNull();
@@ -34,7 +34,7 @@ namespace Application.Tests.TaskItems.Services
             var repo = new TaskItemRepository(db);
             var readSvc = new TaskItemReadService(repo);
 
-            var (projectId, laneId, columnId, _) = TestDataFactory.SeedColumnWithTask(db);
+            var (projectId, laneId, columnId, _, _) = TestDataFactory.SeedColumnWithTask(db);
 
             var list = await readSvc.ListByColumnAsync(columnId);
             list.Should().NotBeNull();
@@ -53,7 +53,7 @@ namespace Application.Tests.TaskItems.Services
             var repo = new TaskItemRepository(db);
             var readSvc = new TaskItemReadService(repo);
 
-            var (_, _, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (_, _, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
 
             var list = await readSvc.ListByColumnAsync(columnId);
             list.Should().BeEmpty();

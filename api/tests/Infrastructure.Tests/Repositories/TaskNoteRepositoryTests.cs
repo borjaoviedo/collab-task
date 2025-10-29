@@ -160,7 +160,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, _) = TestDataFactory.SeedColumnWithTask(db);
 
             var list = await repo.ListByTaskAsync(taskId);
             list.Should().BeEmpty();
@@ -202,7 +202,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, _) = TestDataFactory.SeedColumnWithTask(db);
 
             var list = await repo.ListByUserAsync(taskId);
             list.Should().BeEmpty();

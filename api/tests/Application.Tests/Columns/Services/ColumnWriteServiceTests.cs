@@ -44,7 +44,7 @@ namespace Application.Tests.Columns.Services
             var uow = new UnitOfWork(db);
             var writeSvc = new ColumnWriteService(repo, uow);
 
-            var (projectId, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             var column = TestDataFactory.SeedColumn(db, projectId, laneId);
 
             var newName = "new name";
@@ -68,7 +68,7 @@ namespace Application.Tests.Columns.Services
             var uow = new UnitOfWork(db);
             var writeSvc = new ColumnWriteService(repo, uow);
 
-            var (projectId, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             var sameName = "Same Column Name";
             var column = TestDataFactory.SeedColumn(db, projectId, laneId, sameName);
 
@@ -85,7 +85,7 @@ namespace Application.Tests.Columns.Services
             var uow = new UnitOfWork(db);
             var writeSvc = new ColumnWriteService(repo, uow);
 
-            var (projectId, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
 
             var sameName = "Same Column Name";
             TestDataFactory.SeedColumn(db, projectId, laneId, sameName);
@@ -108,7 +108,7 @@ namespace Application.Tests.Columns.Services
             var uow = new UnitOfWork(db);
             var writeSvc = new ColumnWriteService(repo, uow);
 
-            var (projectId, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             TestDataFactory.SeedColumn(db, projectId, laneId, "Column A", order: 0);
             TestDataFactory.SeedColumn(db, projectId, laneId, "Column B", order: 1);
             var columnC = TestDataFactory.SeedColumn(db, projectId, laneId, "Column C", order: 2);
@@ -137,7 +137,7 @@ namespace Application.Tests.Columns.Services
             var uow = new UnitOfWork(db);
             var writeSvc = new ColumnWriteService(repo, uow);
 
-            var (projectId, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             var column = TestDataFactory.SeedColumn(db, projectId, laneId);
 
             var tracked = await db.Columns.SingleAsync(c => c.Id == column.Id);
@@ -171,7 +171,7 @@ namespace Application.Tests.Columns.Services
             var uow = new UnitOfWork(db);
             var writeSvc = new ColumnWriteService(repo, uow);
 
-            var (projectId, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             var column = TestDataFactory.SeedColumn(db, projectId, laneId);
 
             var result = await writeSvc.DeleteAsync(column.Id, rowVersion: []);

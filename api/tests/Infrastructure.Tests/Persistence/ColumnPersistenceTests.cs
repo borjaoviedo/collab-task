@@ -22,7 +22,7 @@ namespace Infrastructure.Tests.Persistence
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (projectId, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             var column = Column.Create(
                 projectId,
                 laneId,
@@ -44,7 +44,7 @@ namespace Infrastructure.Tests.Persistence
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (projectId, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             var name = ColumnName.Create("Same");
 
             db.Columns.Add(Column.Create(projectId, laneId, name, order: 0));
@@ -67,7 +67,7 @@ namespace Infrastructure.Tests.Persistence
             await _fx.ResetAsync();
             var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var (projectId, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             var column = TestDataFactory.SeedColumn(
                 db,
                 projectId,

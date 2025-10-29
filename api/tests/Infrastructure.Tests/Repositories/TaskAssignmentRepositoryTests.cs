@@ -19,8 +19,7 @@ namespace Infrastructure.Tests.Repositories
             var uow = new UnitOfWork(db);
             var repo = new TaskAssignmentRepository(db);
 
-            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
-            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
 
             var assignment = TaskAssignment.Create(taskId, userId, TaskRole.Owner);
             await repo.AddAsync(assignment);
@@ -39,8 +38,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskAssignmentRepository(db);
 
-            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
-            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
             TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.Owner);
 
             var found = await repo.GetByTaskAndUserIdAsync(taskId, userId);
@@ -57,8 +55,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskAssignmentRepository(db);
 
-            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
-            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
             TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.Owner);
 
             var byTask = await repo.ListByTaskAsync(taskId);
@@ -75,8 +72,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskAssignmentRepository(db);
 
-            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
-            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
 
             var assignmentExists = await repo.ExistsAsync(taskId, userId);
             var taskHasOwner = await repo.AnyOwnerAsync(taskId);
@@ -102,8 +98,7 @@ namespace Infrastructure.Tests.Repositories
             var repo = new TaskAssignmentRepository(db);
 
             var (_, userA) = TestDataFactory.SeedUserWithProject(db);
-            var userB = TestDataFactory.SeedUser(db).Id;
-            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, userBId) = TestDataFactory.SeedColumnWithTask(db);
 
             // NotFound
             var (notFound, _) = await repo.ChangeRoleAsync(
@@ -127,14 +122,14 @@ namespace Infrastructure.Tests.Repositories
             noOp.Should().Be(PrecheckStatus.NoOp);
 
             // Create B CoOwner
-            var assignmentB = TaskAssignment.Create(taskId, userB, TaskRole.CoOwner);
+            var assignmentB = TaskAssignment.Create(taskId, userBId, TaskRole.CoOwner);
             await repo.AddAsync(assignmentB);
             await uow.SaveAsync(MutationKind.Create);
 
             // Conflict promoting B to Owner while A is Owner
             var (conflict1, _) = await repo.ChangeRoleAsync(
                 taskId,
-                userB,
+                userBId,
                 TaskRole.Owner,
                 rowVersion: [1, 2]);
             conflict1.Should().Be(PrecheckStatus.Conflict);
@@ -163,11 +158,11 @@ namespace Infrastructure.Tests.Repositories
             db.ChangeTracker.Clear();
             var rvUserB = await db.TaskAssignments
                                 .AsNoTracking()
-                                .Where(a => a.TaskId == taskId && a.UserId == userB)
+                                .Where(a => a.TaskId == taskId && a.UserId == userBId)
                                 .Select(a => a.RowVersion)
                                 .SingleAsync();
 
-            var (updBStage, _) = await repo.ChangeRoleAsync(taskId, userB, TaskRole.Owner, rvUserB);
+            var (updBStage, _) = await repo.ChangeRoleAsync(taskId, userBId, TaskRole.Owner, rvUserB);
             updBStage.Should().Be(PrecheckStatus.Ready);
             var update2 = await uow.SaveAsync(MutationKind.Update);
             update2.Should().Be(DomainMutation.Updated);
@@ -181,8 +176,7 @@ namespace Infrastructure.Tests.Repositories
             var uow = new UnitOfWork(db);
             var repo = new TaskAssignmentRepository(db);
 
-            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
-            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
 
             // NotFound
             var notFound = await repo.DeleteAsync(taskId, userId, rowVersion: [1, 2]);

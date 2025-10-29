@@ -70,7 +70,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
 
-            var (projectId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, _, _) = TestDataFactory.SeedProjectWithLane(db);
 
             var maxOrder = await repo.GetMaxOrderAsync(projectId);
             maxOrder.Should().Be(0);
@@ -95,7 +95,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
 
-            var (projectId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, _, _) = TestDataFactory.SeedProjectWithLane(db);
 
             var list = await repo.ListByProjectAsync(projectId);
             list.Should().HaveCount(1);
@@ -189,7 +189,7 @@ namespace Infrastructure.Tests.Repositories
             var repo = new LaneRepository(db);
 
             var sameName = LaneName.Create("Todo");
-            var (projectId, _) = TestDataFactory.SeedProjectWithLane(db, laneName: sameName);
+            var (projectId, _, _) = TestDataFactory.SeedProjectWithLane(db, laneName: sameName);
             var doingLane = TestDataFactory.SeedLane(db, projectId, "Doing", order: 1);
 
             var result = await repo.RenameAsync(doingLane.Id, sameName, doingLane.RowVersion);
@@ -207,7 +207,7 @@ namespace Infrastructure.Tests.Repositories
             var firstLaneName = "Lane A";
             var secondLaneName = "Lane B";
             var thirdLaneName = "Lane C";
-            var (projectId, _) = TestDataFactory.SeedProjectWithLane(
+            var (projectId, _, _) = TestDataFactory.SeedProjectWithLane(
                 db,
                 laneName: firstLaneName,
                 order: 0);
@@ -249,7 +249,7 @@ namespace Infrastructure.Tests.Repositories
             var repo = new LaneRepository(db);
             var uow = new UnitOfWork(db);
 
-            var (_, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (_, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
 
             var tracked = await db.Lanes.SingleAsync(l => l.Id == laneId);
 

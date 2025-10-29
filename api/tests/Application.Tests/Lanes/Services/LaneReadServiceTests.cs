@@ -16,7 +16,7 @@ namespace Application.Tests.Lanes.Services
             var repo = new LaneRepository(db);
             var readSvc = new LaneReadService(repo);
 
-            var (_, laneId) = TestDataFactory.SeedProjectWithLane(db);
+            var (_, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
 
             var found = await readSvc.GetAsync(laneId);
             found.Should().NotBeNull();
@@ -44,7 +44,7 @@ namespace Application.Tests.Lanes.Services
 
             var firstLaneName = "Lane A";
             var secondLaneName = "Lane B";
-            var (projectId, _) = TestDataFactory.SeedProjectWithLane(
+            var (projectId, _, _) = TestDataFactory.SeedProjectWithLane(
                 db,
                 laneName:
                 firstLaneName,

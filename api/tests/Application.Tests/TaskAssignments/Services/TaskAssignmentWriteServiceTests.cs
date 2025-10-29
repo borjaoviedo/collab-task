@@ -35,8 +35,7 @@ namespace Application.Tests.TaskAssignments.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
-            var (projectId, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (projectId, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
 
             var (result, assignment) = await assignmentWriteSvc.CreateAsync(
                 projectId,
@@ -70,8 +69,7 @@ namespace Application.Tests.TaskAssignments.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
-            var (projectId, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (projectId, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
             var assignment = TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.CoOwner);
 
             var result = await assignmentWriteSvc.ChangeRoleAsync(
@@ -102,8 +100,7 @@ namespace Application.Tests.TaskAssignments.Services
                 activityWriteSvc,
                 mediator.Object);
 
-            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
-            var (projectId, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (projectId, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
             var assignment = TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.Owner);
 
             var result = await assignmentWriteSvc.DeleteAsync(

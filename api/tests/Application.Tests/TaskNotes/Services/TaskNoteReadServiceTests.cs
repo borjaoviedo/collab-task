@@ -53,7 +53,7 @@ namespace Application.Tests.TaskNotes.Services
             var repo = new TaskNoteRepository(db);
             var readSvc = new TaskNoteReadService(repo);
 
-            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, _) = TestDataFactory.SeedColumnWithTask(db);
 
             var list = await readSvc.ListByTaskAsync(taskId);
             list.Should().BeEmpty();
@@ -98,7 +98,7 @@ namespace Application.Tests.TaskNotes.Services
             var repo = new TaskNoteRepository(db);
             var readSvc = new TaskNoteReadService(repo);
 
-            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId, _) = TestDataFactory.SeedColumnWithTask(db);
 
             var list = await readSvc.ListByUserAsync(taskId);
             list.Should().BeEmpty();

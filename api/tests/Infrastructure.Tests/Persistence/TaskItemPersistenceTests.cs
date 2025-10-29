@@ -24,7 +24,7 @@ namespace Infrastructure.Tests.Persistence
 
             var taskTitle = "Title";
             var taskDescription = "Description";
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var task = TaskItem.Create(
                 columnId,
                 laneId,
@@ -48,7 +48,7 @@ namespace Infrastructure.Tests.Persistence
             await _fx.ResetAsync();
             var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var task = TestDataFactory.SeedTaskItem(
                 db,
                 projectId,
@@ -83,7 +83,7 @@ namespace Infrastructure.Tests.Persistence
             await _fx.ResetAsync();
             var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
             var stale = task.RowVersion.ToArray();
 

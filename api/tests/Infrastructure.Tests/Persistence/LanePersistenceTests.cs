@@ -43,7 +43,7 @@ namespace Infrastructure.Tests.Persistence
             var (_, db) = DbHelper.BuildDb(_cs);
 
             var laneName = "Todo";
-            var (projectId, _) = TestDataFactory.SeedProjectWithLane(db, laneName: laneName);
+            var (projectId, _, _) = TestDataFactory.SeedProjectWithLane(db, laneName: laneName);
             var dup = Lane.Create(projectId, LaneName.Create(laneName), 1);
             db.Lanes.Add(dup);
             await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
@@ -65,7 +65,7 @@ namespace Infrastructure.Tests.Persistence
             var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
             var lane = TestDataFactory.SeedLane(db, projectId, "Lane A", order: 0);
 
-            var stale = lane.RowVersion!.ToArray();
+            var stale = lane.RowVersion.ToArray();
 
             lane.Rename(LaneName.Create("Lane B"));
             db.Entry(lane).Property(x => x.Name).IsModified = true;
