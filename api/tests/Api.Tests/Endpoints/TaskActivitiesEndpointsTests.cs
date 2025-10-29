@@ -1,12 +1,14 @@
 using Api.Tests.Testing;
 using Application.TaskActivities.DTOs;
-using Application.TaskNotes.DTOs;
+using Application.Users.DTOs;
 using Domain.Enums;
 using FluentAssertions;
 using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using TestHelpers.Api;
+using TestHelpers.Api.Auth;
+using TestHelpers.Api.Defaults;
+using TestHelpers.Api.Http;
+using TestHelpers.Api.Projects;
+using TestHelpers.Api.TaskActivities;
 
 namespace Api.Tests.Endpoints
 {
@@ -18,38 +20,49 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            var (project, lane, column, task, user) = await EndpointsTestHelper.SetupBoard(client);
+            // Create full board: project, lane, column, task and note
+            var (project, lane, column, task, _, user) = await BoardSetupHelper.SetupBoardWithNote(client);
 
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            (await client.PostAsJsonAsync(
-                $"/projects/{project.Id}/lanes/{lane.Id}/columns/{column.Id}/tasks/{task.Id}/notes",
-                new TaskNoteCreateDto { Content = "note" })).EnsureSuccessStatusCode();
+            // Get all activities
+            var getActivitiesResponse = await TaskActivityTestHelper.GetTaskActivitiesResponseAsync(
+                client,
+                project.Id,
+                lane.Id,
+                column.Id,
+                task.Id);
+            var list = await getActivitiesResponse.ReadContentAsDtoAsync<List<TaskActivityReadDto>>();
+            list.Should().NotBeNull().And.NotBeEmpty();
 
-            // list all
-            var listAll = await client.GetAsync($"/projects/{project.Id}/lanes/{lane.Id}/columns/{column.Id}/tasks/{task.Id}/activities");
-            listAll.StatusCode.Should().Be(HttpStatusCode.OK);
-            var all = (await listAll.Content.ReadFromJsonAsync<TaskActivityReadDto[]>(EndpointsTestHelper.Json))!;
-            all.Should().NotBeNull().And.NotBeEmpty();
-
-            // filter by type
-            var type = all[0].Type;
-            var listByType = await client.GetAsync($"/projects/{project.Id}/lanes/{lane.Id}/columns/{column.Id}/tasks/{task.Id}/activities?activityType={type}");
+            // Filter by type
+            var type = list[0].Type;
+            var listByType = await client.GetAsync(
+                $"/projects/{project.Id}/lanes/{lane.Id}/columns/{column.Id}/tasks/{task.Id}/activities?activityType={type}");
             listByType.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            // top-level me
-            var me = await client.GetAsync("/activities/me");
-            me.StatusCode.Should().Be(HttpStatusCode.OK);
+            // Get me
+            var getMeResponse = await client.GetAsync("/activities/me");
+            getMeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            // by user → 403 luego 200 como admin
-            var byUserForbidden = await client.GetAsync($"/activities/users/{user.UserId}");
-            byUserForbidden.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            // Get other user activities without being admin: forbidden
+            var getByUserResponse = await TaskActivityTestHelper.GetTaskActivitiesByUserResponseAsync(client, user.UserId);
+            getByUserResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-            var admin = await EndpointsTestHelper.RegisterAndLoginAsync(client, name: "sys", email: "sys@x.com");
-            var adminBearer = await UsersEndpointsTests.MintToken(app, admin.UserId, admin.Email, admin.Name, UserRole.Admin);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminBearer);
+            // Create admin
+            var admin = await AuthTestHelper.PostRegisterAndLoginAsync(
+                client,
+                name: "sys",
+                email: "sys@x.com");
+            var adminBearer = await UsersEndpointsTests.MintTokenAsync(
+                app,
+                admin.UserId,
+                admin.Email,
+                admin.Name,
+                UserRole.Admin);
+            client.SetAuthorization(adminBearer);
 
-            var byUser = await client.GetAsync($"/activities/users/{user.UserId}");
-            byUser.StatusCode.Should().Be(HttpStatusCode.OK);
+            // Get other user notes being admin: OK
+            getByUserResponse = await TaskActivityTestHelper.GetTaskActivitiesByUserResponseAsync(client, user.UserId);
+            getByUserResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         }
 
         [Fact]
@@ -57,15 +70,36 @@ namespace Api.Tests.Endpoints
         {
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
-            var anon = await client.GetAsync($"/projects/{Guid.NewGuid()}/lanes/{Guid.NewGuid()}/columns/{Guid.NewGuid()}/tasks/{Guid.NewGuid()}/activities");
-            anon.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
-            var (project, lane, column, task, _) = await EndpointsTestHelper.SetupBoard(client);
+            // Get activities without being authenticated: unauthorized
+            var getActivitiesResponse = await TaskActivityTestHelper.GetTaskActivitiesResponseAsync(
+                client,
+                projectId: Guid.NewGuid(),
+                laneId: Guid.NewGuid(),
+                columnId: Guid.NewGuid(),
+                taskId: Guid.NewGuid());
+            getActivitiesResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
-            var b = await EndpointsTestHelper.RegisterAndLoginAsync(client, name: "other", email: "b@x.com");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", b.AccessToken);
-            var forbidden = await client.GetAsync($"/projects/{project.Id}/lanes/{lane.Id}/columns/{column.Id}/tasks/{task.Id}/activities");
-            forbidden.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            // Create full board (without note): project, lane, column and task
+            var (project, lane, column, task, _) = await BoardSetupHelper.SetupBoard(client);
+
+            // Create different user
+            var userRegisterDto = new UserRegisterDto()
+            {
+                Email = "user@e.com",
+                Name = "user",
+                Password = UserDefaults.DefaultPassword
+            };
+            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client, userRegisterDto);
+
+            // Get activities without being a project member: forbidden
+            getActivitiesResponse = await TaskActivityTestHelper.GetTaskActivitiesResponseAsync(
+                client,
+                project.Id,
+                lane.Id,
+                column.Id,
+                task.Id);
+            getActivitiesResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         }
     }
 }
