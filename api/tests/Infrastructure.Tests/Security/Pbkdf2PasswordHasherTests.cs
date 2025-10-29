@@ -11,26 +11,26 @@ namespace Infrastructure.Tests.Security
         [Fact]
         public void Hash_SamePassword_ProducesDifferentHashesBecauseSaltIsRandom()
         {
-            var p = "Str0ng_Pass!";
-            var a = _sut.Hash(p);
-            var b = _sut.Hash(p);
+            var password = "Str0ng_Pass!";
+            var hashedPassword1 = _sut.Hash(password);
+            var hashedPassword2 = _sut.Hash(password);
 
-            a.hash.Should().NotBeNullOrEmpty();
-            a.salt.Should().NotBeNullOrEmpty();
-            b.hash.Should().NotBeNullOrEmpty();
-            b.salt.Should().NotBeNullOrEmpty();
+            hashedPassword1.hash.Should().NotBeNullOrEmpty();
+            hashedPassword1.salt.Should().NotBeNullOrEmpty();
+            hashedPassword2.hash.Should().NotBeNullOrEmpty();
+            hashedPassword2.salt.Should().NotBeNullOrEmpty();
 
-            a.salt.Should().NotEqual(b.salt);
-            a.hash.Should().NotEqual(b.hash);
+            hashedPassword1.salt.Should().NotEqual(hashedPassword2.salt);
+            hashedPassword1.hash.Should().NotEqual(hashedPassword2.hash);
         }
 
         [Fact]
         public void Verify_ReturnsTrue_ForCorrectPassword()
         {
-            var p = "Str0ng_Pass!";
-            var (hash, salt) = _sut.Hash(p);
+            var password = "Str0ng_Pass!";
+            var (hash, salt) = _sut.Hash(password);
 
-            var ok = _sut.Verify(p, salt, hash);
+            var ok = _sut.Verify(password, salt, hash);
 
             ok.Should().BeTrue();
         }
@@ -39,7 +39,6 @@ namespace Infrastructure.Tests.Security
         public void Verify_ReturnsFalse_ForWrongPassword()
         {
             var (hash, salt) = _sut.Hash("correct");
-
             var ok = _sut.Verify("wrong", salt, hash);
 
             ok.Should().BeFalse();

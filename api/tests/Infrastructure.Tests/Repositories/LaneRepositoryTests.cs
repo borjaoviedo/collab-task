@@ -18,13 +18,13 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-            var lane = TestDataFactory.SeedLane(db, pId);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
+            var lane = TestDataFactory.SeedLane(db, projectId);
 
             var existing = await repo.GetByIdAsync(lane.Id);
             existing.Should().NotBeNull();
 
-            var notFound = await repo.GetByIdAsync(Guid.NewGuid());
+            var notFound = await repo.GetByIdAsync(laneId: Guid.NewGuid());
             notFound.Should().BeNull();
         }
 
@@ -35,13 +35,13 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-            var lane = TestDataFactory.SeedLane(db, pId);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
+            var lane = TestDataFactory.SeedLane(db, projectId);
 
             var existing = await repo.GetTrackedByIdAsync(lane.Id);
             existing.Should().NotBeNull();
 
-            var notFound = await repo.GetTrackedByIdAsync(Guid.NewGuid());
+            var notFound = await repo.GetTrackedByIdAsync(laneId: Guid.NewGuid());
             notFound.Should().BeNull();
         }
 
@@ -52,13 +52,13 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-            var lane = TestDataFactory.SeedLane(db, pId);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
+            var lane = TestDataFactory.SeedLane(db, projectId);
 
-            var existing = await repo.ExistsWithNameAsync(pId, lane.Name);
+            var existing = await repo.ExistsWithNameAsync(projectId, lane.Name);
             existing.Should().BeTrue();
 
-            var notFound = await repo.ExistsWithNameAsync(pId, LaneName.Create("diff"));
+            var notFound = await repo.ExistsWithNameAsync(projectId, LaneName.Create("diff"));
             notFound.Should().BeFalse();
         }
 
@@ -69,21 +69,21 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
 
-            var (pId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, _) = TestDataFactory.SeedProjectWithLane(db);
 
-            var maxOrder = await repo.GetMaxOrderAsync(pId);
+            var maxOrder = await repo.GetMaxOrderAsync(projectId);
             maxOrder.Should().Be(0);
 
-            TestDataFactory.SeedLane(db, pId, order: 1);
-            maxOrder = await repo.GetMaxOrderAsync(pId);
+            TestDataFactory.SeedLane(db, projectId, order: 1);
+            maxOrder = await repo.GetMaxOrderAsync(projectId);
             maxOrder.Should().Be(1);
 
-            TestDataFactory.SeedLane(db, pId, order: 7);
-            maxOrder = await repo.GetMaxOrderAsync(pId);
+            TestDataFactory.SeedLane(db, projectId, order: 7);
+            maxOrder = await repo.GetMaxOrderAsync(projectId);
             maxOrder.Should().Be(7);
 
-            TestDataFactory.SeedLane(db, pId, order: 3);
-            maxOrder = await repo.GetMaxOrderAsync(pId);
+            TestDataFactory.SeedLane(db, projectId, order: 3);
+            maxOrder = await repo.GetMaxOrderAsync(projectId);
             maxOrder.Should().Be(7);
         }
 
@@ -94,17 +94,17 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
 
-            var (pId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var (projectId, _) = TestDataFactory.SeedProjectWithLane(db);
 
-            var list = await repo.ListByProjectAsync(pId);
+            var list = await repo.ListByProjectAsync(projectId);
             list.Should().HaveCount(1);
 
-            TestDataFactory.SeedLane(db, pId, order: 1);
-            list = await repo.ListByProjectAsync(pId);
+            TestDataFactory.SeedLane(db, projectId, order: 1);
+            list = await repo.ListByProjectAsync(projectId);
             list.Should().HaveCount(2);
 
-            TestDataFactory.SeedLane(db, pId, order: 2);
-            list = await repo.ListByProjectAsync(pId);
+            TestDataFactory.SeedLane(db, projectId, order: 2);
+            list = await repo.ListByProjectAsync(projectId);
             list.Should().HaveCount(3);
         }
 
@@ -115,8 +115,8 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-            var list = await repo.ListByProjectAsync(pId);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
+            var list = await repo.ListByProjectAsync(projectId);
             list.Should().BeEmpty();
         }
 
@@ -127,14 +127,18 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
             var uow = new UnitOfWork(db);
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
 
-            var lane = Lane.Create(pId, LaneName.Create("Backlog"), 0);
+            var laneName = "lane name";
+            var lane = Lane.Create(projectId, LaneName.Create(laneName), order: 0);
+
             await repo.AddAsync(lane);
             await uow.SaveAsync(MutationKind.Create);
 
-            var fromDb = await db.Lanes.AsNoTracking().SingleAsync(l => l.Id == lane.Id);
-            fromDb.Name.Value.Should().Be("Backlog");
+            var fromDb = await db.Lanes
+                .AsNoTracking()
+                .SingleAsync(l => l.Id == lane.Id);
+            fromDb.Name.Value.Should().Be(laneName);
             fromDb.Order.Should().Be(0);
         }
 
@@ -146,16 +150,19 @@ namespace Infrastructure.Tests.Repositories
             var repo = new LaneRepository(db);
             var uow = new UnitOfWork(db);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-            var lane = TestDataFactory.SeedLane(db, pId);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
+            var lane = TestDataFactory.SeedLane(db, projectId);
 
-            var res = await repo.RenameAsync(lane.Id, LaneName.Create("In Progress"), lane.RowVersion ?? Array.Empty<byte>());
-            res.Should().Be(PrecheckStatus.Ready);
+            var laneName = "lane name";
+            var rowVersion = lane.RowVersion ?? [];
+
+            var result = await repo.RenameAsync(lane.Id, LaneName.Create(laneName), rowVersion);
+            result.Should().Be(PrecheckStatus.Ready);
 
             await uow.SaveAsync(MutationKind.Update);
 
             var fromDb = await db.Lanes.AsNoTracking().SingleAsync(l => l.Id == lane.Id);
-            fromDb.Name.Value.Should().Be("In Progress");
+            fromDb.Name.Value.Should().Be(laneName);
         }
 
         [Fact]
@@ -166,11 +173,11 @@ namespace Infrastructure.Tests.Repositories
             var repo = new LaneRepository(db);
 
             var sameName = LaneName.Create("Todo");
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-            var lane = TestDataFactory.SeedLane(db, pId, sameName, 1);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
+            var lane = TestDataFactory.SeedLane(db, projectId, sameName, order: 1);
 
-            var res = await repo.RenameAsync(lane.Id, sameName, lane.RowVersion!);
-            res.Should().Be(PrecheckStatus.NoOp);
+            var result = await repo.RenameAsync(lane.Id, sameName, lane.RowVersion);
+            result.Should().Be(PrecheckStatus.NoOp);
         }
 
         [Fact]
@@ -181,11 +188,11 @@ namespace Infrastructure.Tests.Repositories
             var repo = new LaneRepository(db);
 
             var sameName = LaneName.Create("Todo");
-            var (pId, _) = TestDataFactory.SeedProjectWithLane(db, laneName: sameName);
-            var doingLane = TestDataFactory.SeedLane(db, pId, "Doing", 1);
+            var (projectId, _) = TestDataFactory.SeedProjectWithLane(db, laneName: sameName);
+            var doingLane = TestDataFactory.SeedLane(db, projectId, "Doing", order: 1);
 
-            var res = await repo.RenameAsync(doingLane.Id, sameName, doingLane.RowVersion!);
-            res.Should().Be(PrecheckStatus.Conflict);
+            var result = await repo.RenameAsync(doingLane.Id, sameName, doingLane.RowVersion);
+            result.Should().Be(PrecheckStatus.Conflict);
         }
 
         [Fact]
@@ -199,14 +206,25 @@ namespace Infrastructure.Tests.Repositories
             var firstLaneName = "Lane A";
             var secondLaneName = "Lane B";
             var thirdLaneName = "Lane C";
-            var (pId, _) = TestDataFactory.SeedProjectWithLane(db, laneName: firstLaneName, order: 0);
-            TestDataFactory.SeedLane(db, pId, secondLaneName, 1);
-            var laneC = TestDataFactory.SeedLane(db, pId, thirdLaneName, 2);
+            var (projectId, _) = TestDataFactory.SeedProjectWithLane(
+                db,
+                laneName: firstLaneName,
+                order: 0);
+            TestDataFactory.SeedLane(
+                db,
+                projectId,
+                secondLaneName,
+                order: 1);
+            var laneC = TestDataFactory.SeedLane(
+                db,
+                projectId,
+                thirdLaneName,
+                order: 2);
 
-            // reload tracked 'c' to get current RowVersion
+            // Reload tracked 'c' to get current RowVersion
             var trackedC = await db.Lanes.SingleAsync(l => l.Id == laneC.Id);
 
-            await repo.ReorderPhase1Async(trackedC.Id, 0, trackedC.RowVersion!);
+            await repo.ReorderPhase1Async(trackedC.Id, newOrder: 0, trackedC.RowVersion);
             await uow.SaveAsync(MutationKind.Update);
 
             await repo.ApplyReorderPhase2Async(trackedC.Id);
@@ -214,7 +232,7 @@ namespace Infrastructure.Tests.Repositories
 
             var lanes = await db.Lanes
                                 .AsNoTracking()
-                                .Where(l => l.ProjectId == pId)
+                                .Where(l => l.ProjectId == projectId)
                                 .OrderBy(l => l.Order)
                                 .ToListAsync();
 
@@ -230,16 +248,16 @@ namespace Infrastructure.Tests.Repositories
             var repo = new LaneRepository(db);
             var uow = new UnitOfWork(db);
 
-            var (_, lId) = TestDataFactory.SeedProjectWithLane(db);
+            var (_, laneId) = TestDataFactory.SeedProjectWithLane(db);
 
-            var tracked = await db.Lanes.SingleAsync(l => l.Id == lId);
+            var tracked = await db.Lanes.SingleAsync(l => l.Id == laneId);
 
-            var res = await repo.DeleteAsync(tracked.Id, tracked.RowVersion!);
-            res.Should().Be(PrecheckStatus.Ready);
+            var result = await repo.DeleteAsync(tracked.Id, tracked.RowVersion);
+            result.Should().Be(PrecheckStatus.Ready);
 
             await uow.SaveAsync(MutationKind.Delete);
 
-            var exists = await db.Lanes.AnyAsync(l => l.Id == lId);
+            var exists = await db.Lanes.AnyAsync(l => l.Id == laneId);
             exists.Should().BeFalse();
         }
 
@@ -250,8 +268,8 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
 
-            var res = await repo.DeleteAsync(Guid.NewGuid(), []);
-            res.Should().Be(PrecheckStatus.NotFound);
+            var result = await repo.DeleteAsync(laneId: Guid.NewGuid(), rowVersion: []);
+            result.Should().Be(PrecheckStatus.NotFound);
         }
     }
 }

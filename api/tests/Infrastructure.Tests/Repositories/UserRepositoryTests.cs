@@ -20,15 +20,21 @@ namespace Infrastructure.Tests.Repositories
             var uow = new UnitOfWork(db);
 
             var email = Email.Create("a@b.com");
-            var u = User.Create(email, UserName.Create("User Name"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            var user = User.Create(
+                email,
+                UserName.Create("User Name"),
+                TestDataFactory.Bytes(32),
+                TestDataFactory.Bytes(16));
 
-            await repo.AddAsync(u);
+            await repo.AddAsync(user);
             await uow.SaveAsync(MutationKind.Create);
 
-            var id = u.Id;
-            id.Should().Be(u.Id);
+            var userId = user.Id;
+            userId.Should().Be(user.Id);
 
-            var fromDb = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
+            var fromDb = await db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(user => user.Id == userId);
             fromDb.Should().NotBeNull();
             fromDb!.Email.Should().Be(email);
         }
@@ -41,12 +47,12 @@ namespace Infrastructure.Tests.Repositories
             var repo = new UserRepository(db);
 
             var email = Email.Create("user1@example.com");
-            var u = TestDataFactory.SeedUser(db, email);
+            var user = TestDataFactory.SeedUser(db, email);
 
             var found = await repo.GetByEmailAsync(email);
 
             found.Should().NotBeNull();
-            found!.Id.Should().Be(u.Id);
+            found.Id.Should().Be(user.Id);
         }
 
         [Fact]
@@ -56,7 +62,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var found = await repo.GetByEmailAsync(Email.Create("missing@example.com"));
+            var found = await repo.GetByEmailAsync(Email.Create("missing@e.com"));
 
             found.Should().BeNull();
         }
@@ -68,13 +74,13 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var u = TestDataFactory.SeedUser(db);
-            var found = await repo.GetTrackedByIdAsync(u.Id);
+            var user = TestDataFactory.SeedUser(db);
+            var found = await repo.GetTrackedByIdAsync(user.Id);
 
             found.Should().NotBeNull();
-            found.Id.Should().Be(u.Id);
+            found.Id.Should().Be(user.Id);
 
-            var notFound = await repo.GetTrackedByIdAsync(Guid.NewGuid());
+            var notFound = await repo.GetTrackedByIdAsync(id: Guid.NewGuid());
             notFound.Should().BeNull();
         }
 
@@ -120,8 +126,12 @@ namespace Infrastructure.Tests.Repositories
             var email = Email.Create("existing@e.com");
             TestDataFactory.SeedUser(db, email);
 
-            (await repo.ExistsWithEmailAsync(email)).Should().BeTrue();
-            (await repo.ExistsWithEmailAsync(Email.Create("nope@example.com"))).Should().BeFalse();
+            var existsWithExistingEmail = await repo.ExistsWithEmailAsync(email);
+            existsWithExistingEmail.Should().BeTrue();
+
+            var differentEmail = Email.Create("different@e.com");
+            var exisitsWithNonExistingEmail = await repo.ExistsWithEmailAsync(differentEmail);
+            exisitsWithNonExistingEmail.Should().BeFalse();
         }
 
         [Fact]
@@ -134,8 +144,12 @@ namespace Infrastructure.Tests.Repositories
             var name = UserName.Create("Name");
             TestDataFactory.SeedUser(db, name: name);
 
-            (await repo.ExistsWithNameAsync(name)).Should().BeTrue();
-            (await repo.ExistsWithNameAsync(UserName.Create("Diff User Name"))).Should().BeFalse();
+            var existsWithExistingName = await repo.ExistsWithNameAsync(name);
+            existsWithExistingName.Should().BeTrue();
+
+            var differentName = UserName.Create("Diff User Name");
+            var existsWithNonExistingName = await repo.ExistsWithNameAsync(differentName);
+            existsWithNonExistingName.Should().BeFalse();
         }
 
         [Fact]
@@ -146,11 +160,11 @@ namespace Infrastructure.Tests.Repositories
             var repo = new UserRepository(db);
 
             var name = UserName.Create("Same");
-            var u = TestDataFactory.SeedUser(db, name: name);
+            var user = TestDataFactory.SeedUser(db, name: name);
 
-            var res = await repo.RenameAsync(u.Id, name, u.RowVersion);
+            var result = await repo.RenameAsync(user.Id, name, user.RowVersion);
 
-            res.Should().Be(PrecheckStatus.NoOp);
+            result.Should().Be(PrecheckStatus.NoOp);
         }
 
         [Fact]
@@ -163,13 +177,14 @@ namespace Infrastructure.Tests.Repositories
 
             var user = TestDataFactory.SeedUser(db);
 
-            var res = await repo.RenameAsync(user.Id, UserName.Create("New"), user.RowVersion);
-            res.Should().Be(PrecheckStatus.Ready);
+            var userName = "user name";
+            var result = await repo.RenameAsync(user.Id, UserName.Create(userName), user.RowVersion);
+            result.Should().Be(PrecheckStatus.Ready);
 
             await uow.SaveAsync(MutationKind.Update);
 
             var fromDb = await db.Users.AsNoTracking().SingleAsync(u => u.Id == user.Id);
-            fromDb.Name.Value.Should().Be("New");
+            fromDb.Name.Value.Should().Be(userName);
         }
 
         [Fact]
@@ -181,9 +196,9 @@ namespace Infrastructure.Tests.Repositories
             var uow = new UnitOfWork(db);
 
             var user = TestDataFactory.SeedUser(db);
-            var res = await repo.ChangeRoleAsync(user.Id, UserRole.Admin, user.RowVersion);
+            var result = await repo.ChangeRoleAsync(user.Id, UserRole.Admin, user.RowVersion);
 
-            res.Should().Be(PrecheckStatus.Ready);
+            result.Should().Be(PrecheckStatus.Ready);
 
             await uow.SaveAsync(MutationKind.Update);
 
@@ -198,10 +213,10 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var u = TestDataFactory.SeedUser(db, role: UserRole.Admin);
+            var user = TestDataFactory.SeedUser(db, role: UserRole.Admin);
 
-            var res = await repo.ChangeRoleAsync(u.Id, UserRole.Admin, u.RowVersion);
-            res.Should().Be(PrecheckStatus.NoOp);
+            var result = await repo.ChangeRoleAsync(user.Id, UserRole.Admin, user.RowVersion);
+            result.Should().Be(PrecheckStatus.NoOp);
         }
 
         [Fact]
@@ -214,8 +229,8 @@ namespace Infrastructure.Tests.Repositories
 
             var user = TestDataFactory.SeedUser(db);
 
-            var res = await repo.DeleteAsync(user.Id, user.RowVersion);
-            res.Should().Be(PrecheckStatus.Ready);
+            var result = await repo.DeleteAsync(user.Id, user.RowVersion);
+            result.Should().Be(PrecheckStatus.Ready);
 
             await uow.SaveAsync(MutationKind.Delete);
 
@@ -230,8 +245,8 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var res = await repo.DeleteAsync(Guid.NewGuid(), [9, 9, 9]);
-            res.Should().Be(PrecheckStatus.NotFound);
+            var result = await repo.DeleteAsync(id: Guid.NewGuid(), rowVersion: [9, 9, 9]);
+            result.Should().Be(PrecheckStatus.NotFound);
         }
 
         [Fact]
@@ -243,8 +258,8 @@ namespace Infrastructure.Tests.Repositories
             var sameEmail = "same@e.com";
             TestDataFactory.SeedUser(db, sameEmail);
 
-            FluentActions.Invoking(() => TestDataFactory.SeedUser(db, sameEmail))
-                .Should().Throw<DbUpdateException>();
+            FluentActions.Invoking(()
+                => TestDataFactory.SeedUser(db, sameEmail)).Should().Throw<DbUpdateException>();
         }
 
         [Fact]
@@ -256,8 +271,8 @@ namespace Infrastructure.Tests.Repositories
             var sameName = "Same name";
             TestDataFactory.SeedUser(db, name: sameName);
 
-            FluentActions.Invoking(() => TestDataFactory.SeedUser(db, name: sameName))
-                .Should().Throw<DbUpdateException>();
+            FluentActions.Invoking(()
+                => TestDataFactory.SeedUser(db, name: sameName)).Should().Throw<DbUpdateException>();
         }
 
         [Fact]
@@ -267,12 +282,11 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var u = TestDataFactory.SeedUser(db, "SaMe@e.CoM");
-
+            var user = TestDataFactory.SeedUser(db, "SaMe@e.CoM");
             var found = await repo.GetByEmailAsync(Email.Create("same@e.com"));
 
             found.Should().NotBeNull();
-            found!.Id.Should().Be(u.Id);
+            found.Id.Should().Be(user.Id);
         }
     }
 }

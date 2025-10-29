@@ -20,11 +20,11 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-            var project = await repo.GetByIdAsync(pId);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
+            var project = await repo.GetByIdAsync(projectId);
 
             project.Should().NotBeNull();
-            project.Id.Should().Be(pId);
+            project.Id.Should().Be(projectId);
         }
 
         [Fact]
@@ -34,7 +34,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var project = await repo.GetByIdAsync(Guid.NewGuid());
+            var project = await repo.GetByIdAsync(id: Guid.NewGuid());
             project.Should().BeNull();
         }
 
@@ -45,11 +45,11 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-            var project = await repo.GetTrackedByIdAsync(pId);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
+            var project = await repo.GetTrackedByIdAsync(projectId);
 
             project.Should().NotBeNull();
-            project.Id.Should().Be(pId);
+            project.Id.Should().Be(projectId);
         }
 
         [Fact]
@@ -59,7 +59,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var project = await repo.GetTrackedByIdAsync(Guid.NewGuid());
+            var project = await repo.GetTrackedByIdAsync(id: Guid.NewGuid());
             project.Should().BeNull();
         }
 
@@ -72,20 +72,21 @@ namespace Infrastructure.Tests.Repositories
 
             // P1 owned by U1
             var firstProjectName = "Alpha Board";
-            var u1 = TestDataFactory.SeedUser(db);
-            TestDataFactory.SeedProject(db, u1.Id, firstProjectName);
+            var user1 = TestDataFactory.SeedUser(db);
+            TestDataFactory.SeedProject(db, user1.Id, firstProjectName);
+
             // P2 owned by U2
             var secondProjectName = "Beta Board";
-            var u2 = TestDataFactory.SeedUser(db);
-            var p2 = TestDataFactory.SeedProject(db, u2.Id, secondProjectName);
+            var user2 = TestDataFactory.SeedUser(db);
+            var project2 = TestDataFactory.SeedProject(db, user2.Id, secondProjectName);
 
             // Make U1 a member of P2 as well
-            TestDataFactory.SeedProjectMember(db, p2.Id, u1.Id);
+            TestDataFactory.SeedProjectMember(db, project2.Id, user1.Id);
 
-            var listUser1 = await repo.ListByUserAsync(u1.Id);
+            var listUser1 = await repo.ListByUserAsync(user1.Id);
             listUser1.Select(p => p.Name.Value).Should().BeEquivalentTo(firstProjectName, secondProjectName);
 
-            var listUser2 = await repo.ListByUserAsync(u2.Id);
+            var listUser2 = await repo.ListByUserAsync(user2.Id);
             listUser2.Select(p => p.Name.Value).Should().BeEquivalentTo(secondProjectName);
         }
 
@@ -102,10 +103,10 @@ namespace Infrastructure.Tests.Repositories
             var secondProject = TestDataFactory.SeedProject(db, secondUser.Id);
 
             TestDataFactory.SeedProjectMember(db, secondProject.Id, firstUserId);
-            secondProject.RemoveMember(firstUserId, DateTimeOffset.UtcNow.AddMinutes(1)); // sets RemovedAt
+            secondProject.RemoveMember(firstUserId, removedAtUtc: DateTimeOffset.UtcNow.AddMinutes(1)); // sets RemovedAt
             await db.SaveChangesAsync();
 
-            var list = await repo.ListByUserAsync(firstUserId, new ProjectFilter()); // IncludeRemoved=false
+            var list = await repo.ListByUserAsync(firstUserId, filter: new ProjectFilter()); // IncludeRemoved=false
 
             list.Select(p => p.Name.Value).Should().BeEquivalentTo(firstProjectName);
         }
@@ -124,7 +125,7 @@ namespace Infrastructure.Tests.Repositories
             var secondProject = TestDataFactory.SeedProject(db, secondUser.Id, secondProjectName);
 
             TestDataFactory.SeedProjectMember(db, secondProject.Id, firstUserId);
-            secondProject.RemoveMember(firstUserId, DateTimeOffset.UtcNow.AddMinutes(1));
+            secondProject.RemoveMember(firstUserId, removedAtUtc: DateTimeOffset.UtcNow.AddMinutes(1));
             await db.SaveChangesAsync();
 
             var filter = new ProjectFilter { IncludeRemoved = true };
@@ -143,14 +144,16 @@ namespace Infrastructure.Tests.Repositories
             var firstProjectName = "Gamma Board";
             var secondProjectName = "Beta Desk";
             var thirdProjectName = "Alpha Board";
+
             var(_, firstUserId) = TestDataFactory.SeedUserWithProject(db, projectName: firstProjectName);
             var (_, secondUserId) = TestDataFactory.SeedUserWithProject(db, projectName: secondProjectName);
             var thirdProject = TestDataFactory.SeedProject(db, secondUserId, thirdProjectName);
 
             TestDataFactory.SeedProjectMember(db, thirdProject.Id, firstUserId);
-            var list = await repo.ListByUserAsync(firstUserId, new ProjectFilter { NameContains = "Board", OrderBy = ProjectOrderBy.NameAsc });
+            var filter = new ProjectFilter { NameContains = "Board", OrderBy = ProjectOrderBy.NameAsc };
+            var list = await repo.ListByUserAsync(firstUserId, filter);
 
-            list.Select(p => p.Name.Value).Should().Equal("Alpha Board", "Gamma Board");
+            list.Select(p => p.Name.Value).Should().Equal(thirdProjectName, firstProjectName);
         }
 
         [Fact]
@@ -167,10 +170,12 @@ namespace Infrastructure.Tests.Repositories
 
             TestDataFactory.SeedProjectMember(db, secondProjectId, firstUserId, ProjectRole.Member);
 
-            var onlyOwner = await repo.ListByUserAsync(firstUserId, new ProjectFilter { Role = ProjectRole.Owner, OrderBy = ProjectOrderBy.NameAsc });
+            var firstFilter = new ProjectFilter { Role = ProjectRole.Owner, OrderBy = ProjectOrderBy.NameAsc };
+            var onlyOwner = await repo.ListByUserAsync(firstUserId, firstFilter);
             onlyOwner.Select(p => p.Name.Value).Should().Equal(firstProjectName);
 
-            var onlyMember = await repo.ListByUserAsync(firstUserId, new ProjectFilter { Role = ProjectRole.Member, OrderBy = ProjectOrderBy.NameAsc });
+            var secondFilter = new ProjectFilter { Role = ProjectRole.Member, OrderBy = ProjectOrderBy.NameAsc };
+            var onlyMember = await repo.ListByUserAsync(firstUserId, secondFilter);
             onlyMember.Select(p => p.Name.Value).Should().Equal(secondProjectName);
         }
 
@@ -184,6 +189,7 @@ namespace Infrastructure.Tests.Repositories
             var firstProjectName = "P1";
             var secondProjectName = "P2";
             var thirdProjectName = "P3";
+
             var (_, firstUserId) = TestDataFactory.SeedUserWithProject(db, projectName: firstProjectName);
             var (secondProjectId, _) = TestDataFactory.SeedUserWithProject(db, projectName: secondProjectName);
             var (thirdProjectId, _) = TestDataFactory.SeedUserWithProject(db, projectName: thirdProjectName);
@@ -191,10 +197,12 @@ namespace Infrastructure.Tests.Repositories
             TestDataFactory.SeedProjectMember(db, secondProjectId, firstUserId);
             TestDataFactory.SeedProjectMember(db, thirdProjectId, firstUserId);
 
-            var page1 = await repo.ListByUserAsync(firstUserId, new ProjectFilter { OrderBy = ProjectOrderBy.NameAsc, Skip = 0, Take = 2 });
+            var firstFilter = new ProjectFilter { OrderBy = ProjectOrderBy.NameAsc, Skip = 0, Take = 2 };
+            var page1 = await repo.ListByUserAsync(firstUserId, firstFilter);
             page1.Select(p => p.Name.Value).Should().Equal(firstProjectName, secondProjectName);
 
-            var page2 = await repo.ListByUserAsync(firstUserId, new ProjectFilter { OrderBy = ProjectOrderBy.NameAsc, Skip = 2, Take = 2 });
+            var secondFilter = new ProjectFilter { OrderBy = ProjectOrderBy.NameAsc, Skip = 2, Take = 2 };
+            var page2 = await repo.ListByUserAsync(firstUserId, secondFilter);
             page2.Select(p => p.Name.Value).Should().Equal(thirdProjectName);
         }
 
@@ -228,8 +236,8 @@ namespace Infrastructure.Tests.Repositories
             var owner = TestDataFactory.SeedUser(db);
             TestDataFactory.SeedProject(db, owner.Id, projectName);
 
-            var res = await repo.ExistsByNameAsync(owner.Id, projectName);
-            res.Should().BeTrue();
+            var result = await repo.ExistsByNameAsync(owner.Id, projectName);
+            result.Should().BeTrue();
         }
 
         [Fact]
@@ -245,8 +253,11 @@ namespace Infrastructure.Tests.Repositories
             var (_, firstUserId) = TestDataFactory.SeedUserWithProject(db, projectName: firstProjectName);
             var (_, secondUserId) = TestDataFactory.SeedUserWithProject(db, projectName: secondProjectName);
 
-            (await repo.ExistsByNameAsync(firstUserId, secondProjectName)).Should().BeFalse();
-            (await repo.ExistsByNameAsync(secondUserId, firstProjectName)).Should().BeFalse();
+            var firstUserExistsInSecondProject = await repo.ExistsByNameAsync(firstUserId, secondProjectName);
+            var secondUserExistsInFirstProject = await repo.ExistsByNameAsync(secondUserId, firstProjectName);
+
+            firstUserExistsInSecondProject.Should().BeFalse();
+            secondUserExistsInFirstProject.Should().BeFalse();
         }
 
         [Fact]
@@ -260,9 +271,8 @@ namespace Infrastructure.Tests.Repositories
             var user = TestDataFactory.SeedUser(db);
             var project = TestDataFactory.SeedProject(db, user.Id, projectName);
 
-            var res = await repo.RenameAsync(project.Id, projectName, project.RowVersion);
-
-            res.Should().Be(PrecheckStatus.NoOp);
+            var result = await repo.RenameAsync(project.Id, projectName, project.RowVersion);
+            result.Should().Be(PrecheckStatus.NoOp);
         }
 
         [Fact]
@@ -278,12 +288,14 @@ namespace Infrastructure.Tests.Repositories
             var user = TestDataFactory.SeedUser(db);
             var project = TestDataFactory.SeedProject(db, user.Id, oldProjectName);
 
-            var res = await repo.RenameAsync(project.Id, newProjectName, project.RowVersion);
-            res.Should().Be(PrecheckStatus.Ready);
+            var result = await repo.RenameAsync(project.Id, newProjectName, project.RowVersion);
+            result.Should().Be(PrecheckStatus.Ready);
 
             await uow.SaveAsync(MutationKind.Update);
 
-            var fromDb = await db.Projects.AsNoTracking().SingleAsync(p => p.Id == project.Id);
+            var fromDb = await db.Projects
+                .AsNoTracking()
+                .SingleAsync(p => p.Id == project.Id);
             fromDb.Name.Value.Should().Be(newProjectName);
             fromDb.Slug.Should().Be(ProjectSlug.Create(newProjectName));
         }
@@ -298,8 +310,8 @@ namespace Infrastructure.Tests.Repositories
             var user = TestDataFactory.SeedUser(db);
             var project = TestDataFactory.SeedProject(db, user.Id);
 
-            var res = await repo.DeleteAsync(project.Id, project.RowVersion);
-            res.Should().Be(PrecheckStatus.Ready);
+            var result = await repo.DeleteAsync(project.Id, project.RowVersion);
+            result.Should().Be(PrecheckStatus.Ready);
         }
 
         [Fact]
@@ -309,8 +321,8 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
 
-            var res = await repo.DeleteAsync(Guid.NewGuid(), [1, 2]);
-            res.Should().Be(PrecheckStatus.NotFound);
+            var result = await repo.DeleteAsync(id: Guid.NewGuid(), rowVersion: [1, 2]);
+            result.Should().Be(PrecheckStatus.NotFound);
         }
     }
 }

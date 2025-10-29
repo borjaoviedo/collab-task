@@ -16,13 +16,13 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
 
-            var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
+            var (projectId, userId) = TestDataFactory.SeedUserWithProject(db);
 
-            var found = await repo.GetByProjectAndUserIdAsync(pId, uId);
+            var found = await repo.GetByProjectAndUserIdAsync(projectId, userId);
             found.Should().NotBeNull();
-            found!.Role.Should().Be(ProjectRole.Owner);
+            found.Role.Should().Be(ProjectRole.Owner);
 
-            var missing = await repo.GetByProjectAndUserIdAsync(pId, Guid.NewGuid());
+            var missing = await repo.GetByProjectAndUserIdAsync(projectId, userId: Guid.NewGuid());
             missing.Should().BeNull();
         }
 
@@ -33,13 +33,13 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
 
-            var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
+            var (projectId, userId) = TestDataFactory.SeedUserWithProject(db);
 
-            var found = await repo.GetTrackedByProjectAndUserIdAsync(pId, uId);
+            var found = await repo.GetTrackedByProjectAndUserIdAsync(projectId, userId);
             found.Should().NotBeNull();
-            found!.Role.Should().Be(ProjectRole.Owner);
+            found.Role.Should().Be(ProjectRole.Owner);
 
-            var missing = await repo.GetTrackedByProjectAndUserIdAsync(pId, Guid.NewGuid());
+            var missing = await repo.GetTrackedByProjectAndUserIdAsync(projectId, userId: Guid.NewGuid());
             missing.Should().BeNull();
         }
 
@@ -50,8 +50,9 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-            var list = await repo.ListByProjectAsync(pId);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
+            var list = await repo.ListByProjectAsync(projectId);
+
             list.Should().NotBeEmpty();
             list.Count.Should().Be(1);
         }
@@ -63,10 +64,13 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
 
-            var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
+            var (projectId, userId) = TestDataFactory.SeedUserWithProject(db);
 
-            (await repo.ExistsAsync(pId, uId)).Should().BeTrue();
-            (await repo.ExistsAsync(pId, Guid.NewGuid())).Should().BeFalse();
+            var existingMemberExists = await repo.ExistsAsync(projectId, userId);
+            existingMemberExists.Should().BeTrue();
+
+            var nonExistingMemberExists = await repo.ExistsAsync(projectId, userId: Guid.NewGuid());
+            nonExistingMemberExists.Should().BeFalse();
         }
 
         [Fact]
@@ -77,14 +81,14 @@ namespace Infrastructure.Tests.Repositories
             var repo = new ProjectMemberRepository(db);
             var uow = new UnitOfWork(db);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
             var newUser = TestDataFactory.SeedUser(db);
-            var newProjectMember = ProjectMember.Create(pId, newUser.Id, ProjectRole.Member);
+            var newProjectMember = ProjectMember.Create(projectId, newUser.Id, ProjectRole.Member);
 
             await repo.AddAsync(newProjectMember);
             await uow.SaveAsync(MutationKind.Create);
 
-            var fromDb = await repo.GetByProjectAndUserIdAsync(pId, newUser.Id);
+            var fromDb = await repo.GetByProjectAndUserIdAsync(projectId, newUser.Id);
             fromDb!.Role.Should().Be(ProjectRole.Member);
         }
 
@@ -95,12 +99,15 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
 
-            var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
+            var (projectId, userId) = TestDataFactory.SeedUserWithProject(db);
+            var member = await repo.GetByProjectAndUserIdAsync(projectId, userId);
+            var result = await repo.UpdateRoleAsync(
+                projectId,
+                userId,
+                ProjectRole.Owner,
+                member!.RowVersion);
 
-            var current = await repo.GetByProjectAndUserIdAsync(pId, uId);
-            var res = await repo.UpdateRoleAsync(pId, uId, ProjectRole.Owner, current!.RowVersion!);
-
-            res.Should().Be(PrecheckStatus.NoOp);
+            result.Should().Be(PrecheckStatus.NoOp);
         }
 
         [Fact]
@@ -111,26 +118,26 @@ namespace Infrastructure.Tests.Repositories
             var repo = new ProjectMemberRepository(db);
             var uow = new UnitOfWork(db);
 
-            var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
-            var current = await repo.GetByProjectAndUserIdAsync(pId, uId);
+            var (projectId, userId) = TestDataFactory.SeedUserWithProject(db);
+            var member = await repo.GetByProjectAndUserIdAsync(projectId, userId);
 
-            // remove
-            var removeResult = await repo.SetRemovedAsync(pId, uId, current!.RowVersion);
+            // Remove
+            var removeResult = await repo.SetRemovedAsync(projectId, userId, member!.RowVersion);
             removeResult.Should().Be(PrecheckStatus.Ready);
 
             await uow.SaveAsync(MutationKind.Update);
 
-            var removed = await repo.GetByProjectAndUserIdAsync(pId, uId);
+            var removed = await repo.GetByProjectAndUserIdAsync(projectId, userId);
             removed!.RemovedAt.Should().NotBeNull();
 
-            // restore with stale token should fail on SaveChanges
-            var restoreResult = await repo.SetRestoredAsync(pId, uId, removed!.RowVersion);
+            // Restore with stale token should fail on SaveChanges
+            var restoreResult = await repo.SetRestoredAsync(projectId, userId, removed!.RowVersion);
             restoreResult.Should().Be(PrecheckStatus.Ready);
 
             await uow.SaveAsync(MutationKind.Update);
 
-            var restored = await repo.GetByProjectAndUserIdAsync(pId, uId);
-            restored!.RemovedAt.Should().Be(null);
+            var restored = await repo.GetByProjectAndUserIdAsync(projectId, userId);
+            restored!.RemovedAt.Should().BeNull();
         }
 
         [Fact]
@@ -140,24 +147,25 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
 
-            var (_, uId) = TestDataFactory.SeedUserWithProject(db);
+            var (_, userId) = TestDataFactory.SeedUserWithProject(db);
 
-            var count = await repo.CountUserActiveMembershipsAsync(uId);
+            var count = await repo.CountUserActiveMembershipsAsync(userId);
             count.Should().Be(1);
 
-            TestDataFactory.SeedProject(db, uId);
-            count = await repo.CountUserActiveMembershipsAsync(uId);
+            TestDataFactory.SeedProject(db, userId);
+            count = await repo.CountUserActiveMembershipsAsync(userId);
             count.Should().Be(2);
 
             var (otherProjectId, _) = TestDataFactory.SeedUserWithProject(db);
-            var pm = TestDataFactory.SeedProjectMember(db, otherProjectId, uId);
-            count = await repo.CountUserActiveMembershipsAsync(uId);
+            var member = TestDataFactory.SeedProjectMember(db, otherProjectId, userId);
+
+            count = await repo.CountUserActiveMembershipsAsync(userId);
             count.Should().Be(3);
 
-            pm.Remove(DateTimeOffset.UtcNow);
+            member.Remove(removedAtUtc: DateTimeOffset.UtcNow);
             await db.SaveChangesAsync();
 
-            count = await repo.CountUserActiveMembershipsAsync(uId);
+            count = await repo.CountUserActiveMembershipsAsync(userId);
             count.Should().Be(2);
         }
 
@@ -168,13 +176,13 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new ProjectMemberRepository(db);
 
-            var (pId, uId) = TestDataFactory.SeedUserWithProject(db);
+            var (projectId, userId) = TestDataFactory.SeedUserWithProject(db);
 
-            var role = await repo.GetRoleAsync(pId, uId);
+            var role = await repo.GetRoleAsync(projectId, userId);
             role.Should().NotBeNull();
             role.Should().Be(ProjectRole.Owner);
 
-            var nullRole = await repo.GetRoleAsync(pId, Guid.NewGuid());
+            var nullRole = await repo.GetRoleAsync(projectId, userId: Guid.NewGuid());
             nullRole.Should().BeNull();
         }
     }

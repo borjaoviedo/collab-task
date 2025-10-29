@@ -21,13 +21,17 @@ namespace Infrastructure.Tests.Persistence.Contracts
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-            var l = Lane.Create(pId, LaneName.Create("Backlog"), 0);
-            db.Lanes.Add(l);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
+
+            var laneName = "Backlog";
+            var lane = Lane.Create(projectId, LaneName.Create(laneName), order: 0);
+            db.Lanes.Add(lane);
             await db.SaveChangesAsync();
 
-            var fromDb = await db.Lanes.AsNoTracking().SingleAsync(x => x.Id == l.Id);
-            fromDb.Name.Value.Should().Be("Backlog");
+            var fromDb = await db.Lanes
+                .AsNoTracking()
+                .SingleAsync(l => l.Id == lane.Id);
+            fromDb.Name.Value.Should().Be(laneName);
             fromDb.Order.Should().Be(0);
         }
 
@@ -37,16 +41,17 @@ namespace Infrastructure.Tests.Persistence.Contracts
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (pId, _) = TestDataFactory.SeedProjectWithLane(db, laneName: "Todo");
-            var dup = Lane.Create(pId, LaneName.Create("Todo"), 1);
+            var laneName = "Todo";
+            var (projectId, _) = TestDataFactory.SeedProjectWithLane(db, laneName: laneName);
+            var dup = Lane.Create(projectId, LaneName.Create(laneName), 1);
             db.Lanes.Add(dup);
             await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
 
             db.Entry(dup).State = EntityState.Detached;
 
-            // same name in different project allowed
-            var (p2, _) = TestDataFactory.SeedUserWithProject(db);
-            db.Lanes.Add(Lane.Create(p2, LaneName.Create("Todo"), 0));
+            // Same name in different project allowed
+            var (project2, _) = TestDataFactory.SeedUserWithProject(db);
+            db.Lanes.Add(Lane.Create(project2, LaneName.Create(laneName), order: 0));
             await db.SaveChangesAsync();
         }
 
@@ -56,18 +61,19 @@ namespace Infrastructure.Tests.Persistence.Contracts
             await _fx.ResetAsync();
             var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var (pId, _) = TestDataFactory.SeedUserWithProject(db);
-            var l = TestDataFactory.SeedLane(db, pId, "Lane A", 0);
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
+            var lane = TestDataFactory.SeedLane(db, projectId, "Lane A", order: 0);
 
-            var stale = l.RowVersion!.ToArray();
+            var stale = lane.RowVersion!.ToArray();
 
-            l.Rename(LaneName.Create("Lane B"));
-            db.Entry(l).Property(x => x.Name).IsModified = true;
+            lane.Rename(LaneName.Create("Lane B"));
+            db.Entry(lane).Property(x => x.Name).IsModified = true;
             await db.SaveChangesAsync();
 
             using var scope2 = sp.CreateScope();
             var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
-            var same = await db2.Lanes.SingleAsync(x => x.Id == l.Id);
+            var same = await db2.Lanes.SingleAsync(x => x.Id == lane.Id);
+
             db2.Entry(same).Property(x => x.RowVersion).OriginalValue = stale;
             same.Rename(LaneName.Create("Lane C"));
             db2.Entry(same).Property(x => x.Name).IsModified = true;

@@ -21,14 +21,24 @@ namespace Infrastructure.Tests.Persistence.Contracts
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
-            var t = TaskItem.Create(cId, lId, pId, TaskTitle.Create("Title"), TaskDescription.Create("Desc"));
-            db.TaskItems.Add(t);
+            var taskTitle = "Title";
+            var taskDescription = "Description";
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var task = TaskItem.Create(
+                columnId,
+                laneId,
+                projectId,
+                TaskTitle.Create(taskTitle),
+                TaskDescription.Create(taskDescription));
+
+            db.TaskItems.Add(task);
             await db.SaveChangesAsync();
 
-            var fromDb = await db.TaskItems.AsNoTracking().SingleAsync(x => x.Id == t.Id);
-            fromDb.Title.Value.Should().Be("Title");
-            fromDb.Description.Value.Should().Be("Desc");
+            var fromDb = await db.TaskItems
+                .AsNoTracking()
+                .SingleAsync(t => t.Id == task.Id);
+            fromDb.Title.Value.Should().Be(taskTitle);
+            fromDb.Description.Value.Should().Be(taskDescription);
         }
 
         [Fact]
@@ -37,25 +47,30 @@ namespace Infrastructure.Tests.Persistence.Contracts
             await _fx.ResetAsync();
             var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
-            var t = TestDataFactory.SeedTaskItem(db, pId, lId, cId, TaskTitle.Create("Title A"));
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var task = TestDataFactory.SeedTaskItem(
+                db,
+                projectId,
+                laneId,
+                columnId,
+                TaskTitle.Create("Title A"));
+            var stale = task.RowVersion.ToArray();
 
-            var stale = t.RowVersion!.ToArray();
-
-            // first update
-            t.Edit(
+            // First update
+            task.Edit(
                 title: TaskTitle.Create("Title B"),
-                description: t.Description,
-                dueDate: t.DueDate);
-            db.Entry(t).Property(x => x.Title).IsModified = true;
+                description: task.Description,
+                dueDate: task.DueDate);
+            db.Entry(task).Property(x => x.Title).IsModified = true;
             await db.SaveChangesAsync();
 
-            // second context with stale token tries to edit
+            // Second context with stale token tries to edit
             using var scope2 = sp.CreateScope();
             var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
-            var same = await db2.TaskItems.SingleAsync(x => x.Id == t.Id);
+            var same = await db2.TaskItems.SingleAsync(t => t.Id == task.Id);
+
             db2.Entry(same).Property(x => x.RowVersion).OriginalValue = stale;
-            same.Edit(TaskTitle.Create("Other title"), description: t.Description, dueDate: t.DueDate);
+            same.Edit(TaskTitle.Create("Other title"), task.Description, task.DueDate);
             db2.Entry(same).Property(x => x.Title).IsModified = true;
 
             await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => db2.SaveChangesAsync());
@@ -67,22 +82,21 @@ namespace Infrastructure.Tests.Persistence.Contracts
             await _fx.ResetAsync();
             var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var (pId, lId, cId) = TestDataFactory.SeedLaneWithColumn(db);
-            var t = TestDataFactory.SeedTaskItem(db, pId, lId, cId);
+            var (projectId, laneId, columnId) = TestDataFactory.SeedLaneWithColumn(db);
+            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
+            var stale = task.RowVersion.ToArray();
 
-            var stale = t.RowVersion!.ToArray();
-
-            // mutate to bump RowVersion
-            t.Edit(
-                title: t.Title,
+            // Mutate to bump RowVersion
+            task.Edit(
+                title: task.Title,
                 description: TaskDescription.Create("upd"),
-                dueDate: t.DueDate);
-            db.Entry(t).Property(x => x.Description).IsModified = true;
+                dueDate: task.DueDate);
+            db.Entry(task).Property(x => x.Description).IsModified = true;
             await db.SaveChangesAsync();
 
             using var scope2 = sp.CreateScope();
             var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
-            var same = await db2.TaskItems.SingleAsync(x => x.Id == t.Id);
+            var same = await db2.TaskItems.SingleAsync(t => t.Id == task.Id);
             db2.Entry(same).Property(x => x.RowVersion).OriginalValue = stale;
             db2.TaskItems.Remove(same);
 

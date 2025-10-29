@@ -16,42 +16,59 @@ namespace Infrastructure.Tests.Persistence.Contracts
         private readonly MsSqlContainerFixture _fx = fx;
         private readonly string _cs = fx.ConnectionString;
 
+        private readonly static byte[] _validHash = TestDataFactory.Bytes(32);
+        private readonly static byte[] _validSalt = TestDataFactory.Bytes(16);
+
+        private readonly User _owner = User.Create(
+                Email.Create("o@demo.com"),
+                UserName.Create("Owner"),
+                _validHash,
+                _validSalt);
+
+        private readonly User _user = User.Create(
+                Email.Create("m@demo.com"),
+                UserName.Create("Member"),
+                _validHash,
+                _validSalt);
+
         [Fact]
         public async Task Unique_Index_ProjectId_UserId_Is_Enforced()
         {
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var owner = User.Create(Email.Create("o@demo.com"), UserName.Create("Owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Member"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            var p = Project.Create(owner.Id, ProjectName.Create("Alpha"));
+            var project = Project.Create(_owner.Id, ProjectName.Create("Alpha"));
 
-            db.AddRange(owner, u, p);
+            db.AddRange(_owner, _user, project);
             await db.SaveChangesAsync();
 
-            var m1 = ProjectMember.Create(p.Id, u.Id, ProjectRole.Member);
-            db.ProjectMembers.Add(m1);
+            var member1 = ProjectMember.Create(project.Id, _user.Id, ProjectRole.Member);
+            db.ProjectMembers.Add(member1);
             await db.SaveChangesAsync();
             db.ChangeTracker.Clear();
 
-            // duplicate key for (ProjectId, UserId)
-            var m2 = ProjectMember.Create(p.Id, u.Id, ProjectRole.Member);
-            db.ProjectMembers.Add(m2);
+            // Duplicate key for (ProjectId, UserId)
+            var member2 = ProjectMember.Create(project.Id, _user.Id, ProjectRole.Member);
+            db.ProjectMembers.Add(member2);
             await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
 
             // Detach failing entity to avoid retry on next SaveChanges
-            db.Entry(m2).State = EntityState.Detached;
+            db.Entry(member2).State = EntityState.Detached;
 
             // Different user is allowed
-            var other = User.Create(Email.Create("x@demo.com"), UserName.Create("Other"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
+            var other = User.Create(
+                Email.Create("x@demo.com"),
+                UserName.Create("Other"),
+                _validHash,
+                _validSalt);
             db.Users.Add(other);
             await db.SaveChangesAsync();
 
-            var m3 = ProjectMember.Create(p.Id, other.Id, ProjectRole.Member);
-            db.ProjectMembers.Add(m3);
+            var member3 = ProjectMember.Create(project.Id, other.Id, ProjectRole.Member);
+            db.ProjectMembers.Add(member3);
             await db.SaveChangesAsync();
 
-            var count = await db.ProjectMembers.CountAsync(pm => pm.ProjectId == p.Id);
+            var count = await db.ProjectMembers.CountAsync(projectMember => projectMember.ProjectId == project.Id);
             count.Should().Be(3);
         }
 
@@ -61,28 +78,27 @@ namespace Infrastructure.Tests.Persistence.Contracts
             await _fx.ResetAsync();
             var (sp, db) = DbHelper.BuildDb(_cs);
 
-            var owner = User.Create(Email.Create("o@demo.com"), UserName.Create("Owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Member"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            var p = Project.Create(owner.Id, ProjectName.Create("Alpha"));
-            p.AddMember(u.Id, ProjectRole.Member);
+            var project = Project.Create(_owner.Id, ProjectName.Create("Alpha"));
+            project.AddMember(_user.Id, ProjectRole.Member);
 
-            db.AddRange(owner, u, p);
+            db.AddRange(_owner, _user, project);
             await db.SaveChangesAsync();
 
-            var current = await db.ProjectMembers.AsNoTracking()
-                .SingleAsync(x => x.ProjectId == p.Id && x.UserId == u.Id);
+            var current = await db.ProjectMembers
+                .AsNoTracking()
+                .SingleAsync(m => m.ProjectId == project.Id && m.UserId == _user.Id);
             var stale = current.RowVersion!.ToArray();
 
-            // first update
-            var tracked = await db.ProjectMembers.SingleAsync(x => x.ProjectId == p.Id && x.UserId == u.Id);
+            // First update
+            var tracked = await db.ProjectMembers.SingleAsync(m => m.ProjectId == project.Id && m.UserId == _user.Id);
             tracked.ChangeRole(ProjectRole.Admin);
-            db.Entry(tracked).Property(x => x.Role).IsModified = true;
+            db.Entry(tracked).Property(m => m.Role).IsModified = true;
             await db.SaveChangesAsync();
 
-            // second context with stale token
+            // Second context with stale token
             using var scope2 = sp.CreateScope();
             var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
-            var same = await db2.ProjectMembers.SingleAsync(x => x.ProjectId == p.Id && x.UserId == u.Id);
+            var same = await db2.ProjectMembers.SingleAsync(m => m.ProjectId == project.Id && m.UserId == _user.Id);
 
             var entry = db2.Entry(same);
             entry.Property(x => x.RowVersion).OriginalValue = stale;
@@ -100,35 +116,33 @@ namespace Infrastructure.Tests.Persistence.Contracts
             var (_, db) = DbHelper.BuildDb(_cs);
 
             var now = DateTimeOffset.UtcNow;
-            var owner = User.Create(Email.Create("o@demo.com"), UserName.Create("Owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            var u = User.Create(Email.Create("m@demo.com"), UserName.Create("Member"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            var p = Project.Create(owner.Id, ProjectName.Create("Alpha"));
-            p.AddMember(u.Id, ProjectRole.Member);
+            var project = Project.Create(_owner.Id, ProjectName.Create("Alpha"));
+            project.AddMember(_user.Id, ProjectRole.Member);
 
-            db.AddRange(owner, u, p);
+            db.AddRange(_owner, _user, project);
             await db.SaveChangesAsync();
 
-            // set RemovedAt
-            var pm = await db.ProjectMembers.SingleAsync(x => x.ProjectId == p.Id && x.UserId == u.Id);
+            // Remove
+            var projectMember = await db.ProjectMembers.SingleAsync(x => x.ProjectId == project.Id && x.UserId == _user.Id);
             var removeAt = now.AddMinutes(10);
-            pm.Remove(removeAt);
-            db.Entry(pm).Property(x => x.RemovedAt).IsModified = true;
+            projectMember.Remove(removeAt);
+            db.Entry(projectMember).Property(x => x.RemovedAt).IsModified = true;
             await db.SaveChangesAsync();
 
             db.ChangeTracker.Clear();
             var removed = await db.ProjectMembers.AsNoTracking()
-                .SingleAsync(x => x.ProjectId == p.Id && x.UserId == u.Id);
+                .SingleAsync(x => x.ProjectId == project.Id && x.UserId == _user.Id);
             removed.RemovedAt.Should().Be(removeAt);
 
-            // clear RemovedAt
-            var tracked = await db.ProjectMembers.SingleAsync(x => x.ProjectId == p.Id && x.UserId == u.Id);
+            // Restore
+            var tracked = await db.ProjectMembers.SingleAsync(x => x.ProjectId == project.Id && x.UserId == _user.Id);
             tracked.Restore();
             db.Entry(tracked).Property(x => x.RemovedAt).IsModified = true;
             await db.SaveChangesAsync();
 
             db.ChangeTracker.Clear();
             var restored = await db.ProjectMembers.AsNoTracking()
-                .SingleAsync(x => x.ProjectId == p.Id && x.UserId == u.Id);
+                .SingleAsync(x => x.ProjectId == project.Id && x.UserId == _user.Id);
             restored.RemovedAt.Should().BeNull();
         }
 
@@ -138,17 +152,17 @@ namespace Infrastructure.Tests.Persistence.Contracts
             await _fx.ResetAsync();
             var (_, db) = DbHelper.BuildDb(_cs);
 
-            var owner = User.Create(Email.Create("o@d.com"), UserName.Create("Owner"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
-            var u = User.Create(Email.Create("m@d.com"), UserName.Create("Member"), TestDataFactory.Bytes(32), TestDataFactory.Bytes(16));
             var now = DateTimeOffset.UtcNow;
-            var p = Project.Create(owner.Id, ProjectName.Create("Alpha"));
-            db.AddRange(owner, u, p);
+            var project = Project.Create(_owner.Id, ProjectName.Create("Alpha"));
+
+            db.AddRange(_owner, _user, project);
             await db.SaveChangesAsync();
 
-            var pm = ProjectMember.Create(p.Id, u.Id, ProjectRole.Member);
+            var projectMember = ProjectMember.Create(project.Id, _user.Id, ProjectRole.Member);
             var removedAt = now.AddMinutes(-5);
-            pm.Remove(removedAt);
-            db.ProjectMembers.Add(pm);
+
+            projectMember.Remove(removedAt);
+            db.ProjectMembers.Add(projectMember);
 
             await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
         }

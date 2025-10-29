@@ -19,14 +19,17 @@ namespace Infrastructure.Tests.Repositories
             var repo = new TaskNoteRepository(db);
             var uow = new UnitOfWork(db);
 
-            var (_, _, _, tId, _, uId) = TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
 
             var noteContent = NoteContent.Create("Note content");
-            var note = TaskNote.Create(tId, uId, noteContent);
+            var note = TaskNote.Create(taskId, userId, noteContent);
+
             await repo.AddAsync(note);
             await uow.SaveAsync(MutationKind.Create);
 
-            var fromDb = await db.TaskNotes.AsNoTracking().SingleAsync(n => n.Id == note.Id);
+            var fromDb = await db.TaskNotes
+                .AsNoTracking()
+                .SingleAsync(n => n.Id == note.Id);
             fromDb.Content.Value.Should().Be(noteContent);
         }
 
@@ -38,12 +41,12 @@ namespace Infrastructure.Tests.Repositories
             var repo = new TaskNoteRepository(db);
             var uow = new UnitOfWork(db);
 
-            var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, _, noteId, _) = TestDataFactory.SeedFullBoard(db);
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
 
             var newContent = NoteContent.Create("New Content");
-            var res = await repo.EditAsync(nId, newContent, noteFromDb.RowVersion);
-            res.Should().Be(PrecheckStatus.Ready);
+            var result = await repo.EditAsync(noteId, newContent, noteFromDb.RowVersion);
+            result.Should().Be(PrecheckStatus.Ready);
 
             await uow.SaveAsync(MutationKind.Update);
 
@@ -60,11 +63,11 @@ namespace Infrastructure.Tests.Repositories
             var uow = new UnitOfWork(db);
 
             var originalNoteContent = NoteContent.Create("Note content");
-            var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db, noteContent: originalNoteContent);
+            var (_, _, _, _, noteId, _) = TestDataFactory.SeedFullBoard(db, noteContent: originalNoteContent);
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
 
-            var res = await repo.EditAsync(nId, originalNoteContent, noteFromDb.RowVersion);
-            res.Should().Be(PrecheckStatus.NoOp);
+            var result = await repo.EditAsync(noteId, originalNoteContent, noteFromDb.RowVersion);
+            result.Should().Be(PrecheckStatus.NoOp);
 
             await uow.SaveAsync(MutationKind.Update);
 
@@ -79,11 +82,11 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, _, noteId, _) = TestDataFactory.SeedFullBoard(db);
             var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
 
-            var res = await repo.DeleteAsync(nId, noteFromDb.RowVersion);
-            res.Should().Be(PrecheckStatus.Ready);
+            var result = await repo.DeleteAsync(noteId, noteFromDb.RowVersion);
+            result.Should().Be(PrecheckStatus.Ready);
         }
 
         [Fact]
@@ -93,8 +96,8 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var res = await repo.DeleteAsync(Guid.NewGuid(), [1, 2]);
-            res.Should().Be(PrecheckStatus.NotFound);
+            var result = await repo.DeleteAsync(noteId: Guid.NewGuid(), rowVersion: [1, 2]);
+            result.Should().Be(PrecheckStatus.NotFound);
         }
 
         [Fact]
@@ -104,13 +107,13 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, _, noteId, _) = TestDataFactory.SeedFullBoard(db);
 
-            var existing = await repo.GetByIdAsync(nId);
+            var existing = await repo.GetByIdAsync(noteId);
             existing.Should().NotBeNull();
-            existing.Id.Should().Be(nId);
+            existing.Id.Should().Be(noteId);
 
-            var notFound = await repo.GetByIdAsync(Guid.NewGuid());
+            var notFound = await repo.GetByIdAsync(noteId: Guid.NewGuid());
             notFound.Should().BeNull();
         }
 
@@ -121,13 +124,13 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var (_, _, _, _, nId, _) = TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, _, noteId, _) = TestDataFactory.SeedFullBoard(db);
 
-            var existing = await repo.GetTrackedByIdAsync(nId);
+            var existing = await repo.GetTrackedByIdAsync(noteId);
             existing.Should().NotBeNull();
-            existing.Id.Should().Be(nId);
+            existing.Id.Should().Be(noteId);
 
-            var notFound = await repo.GetTrackedByIdAsync(Guid.NewGuid());
+            var notFound = await repo.GetTrackedByIdAsync(noteId: Guid.NewGuid());
             notFound.Should().BeNull();
         }
 
@@ -138,14 +141,14 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var (_, _, _, tId, _, uId) = TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
 
-            var list = await repo.ListByTaskAsync(tId);
+            var list = await repo.ListByTaskAsync(taskId);
             list.Should().NotBeNull();
             list.Count.Should().Be(1);
 
-            TestDataFactory.SeedTaskNote(db, tId, uId);
-            list = await repo.ListByTaskAsync(tId);
+            TestDataFactory.SeedTaskNote(db, taskId, userId);
+            list = await repo.ListByTaskAsync(taskId);
             list.Count.Should().Be(2);
         }
 
@@ -156,9 +159,9 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var (_, _, _, tId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
 
-            var list = await repo.ListByTaskAsync(tId);
+            var list = await repo.ListByTaskAsync(taskId);
             list.Should().BeEmpty();
         }
 
@@ -169,7 +172,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var list = await repo.ListByTaskAsync(Guid.NewGuid());
+            var list = await repo.ListByTaskAsync(taskId: Guid.NewGuid());
             list.Should().BeEmpty();
         }
 
@@ -180,14 +183,14 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var (_, _, _, tId, _, uId) = TestDataFactory.SeedFullBoard(db);
+            var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
 
-            var list = await repo.ListByUserAsync(uId);
+            var list = await repo.ListByUserAsync(userId);
             list.Should().NotBeNull();
             list.Count.Should().Be(1);
 
-            TestDataFactory.SeedTaskNote(db, tId, uId);
-            list = await repo.ListByUserAsync(uId);
+            TestDataFactory.SeedTaskNote(db, taskId, userId);
+            list = await repo.ListByUserAsync(userId);
             list.Count.Should().Be(2);
         }
 
@@ -198,9 +201,9 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var (_, _, _, tId) = TestDataFactory.SeedColumnWithTask(db);
+            var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
 
-            var list = await repo.ListByUserAsync(tId);
+            var list = await repo.ListByUserAsync(taskId);
             list.Should().BeEmpty();
         }
 
@@ -211,7 +214,7 @@ namespace Infrastructure.Tests.Repositories
             await using var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var list = await repo.ListByUserAsync(Guid.NewGuid());
+            var list = await repo.ListByUserAsync(userId: Guid.NewGuid());
             list.Should().BeEmpty();
         }
     }

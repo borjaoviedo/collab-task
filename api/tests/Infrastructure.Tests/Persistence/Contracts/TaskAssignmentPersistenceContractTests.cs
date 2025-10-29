@@ -22,12 +22,13 @@ namespace Infrastructure.Tests.Persistence.Contracts
             var (_, userId) = TestDataFactory.SeedUserWithProject(db);
             var (_, _, _, taskId) = TestDataFactory.SeedColumnWithTask(db);
 
-            var a = TaskAssignment.Create(taskId, userId, TaskRole.Owner);
-            db.TaskAssignments.Add(a);
+            var assignment = TaskAssignment.Create(taskId, userId, TaskRole.Owner);
+            db.TaskAssignments.Add(assignment);
             await db.SaveChangesAsync();
 
-            var fromDb = await db.TaskAssignments.AsNoTracking()
-                .SingleAsync(x => x.TaskId == taskId && x.UserId == userId);
+            var fromDb = await db.TaskAssignments
+                .AsNoTracking()
+                .SingleAsync(a => a.TaskId == taskId && a.UserId == userId);
             fromDb.Role.Should().Be(TaskRole.Owner);
         }
 
@@ -51,12 +52,12 @@ namespace Infrastructure.Tests.Persistence.Contracts
             await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
             db.Entry(dup).State = EntityState.Detached; // prevent retry
 
-            // sanity: a different user is allowed
+            // sanity: assignment different user is allowed
             var otherUser = TestDataFactory.SeedUser(db).Id;
             db.TaskAssignments.Add(TaskAssignment.Create(taskId, otherUser, TaskRole.CoOwner));
             await db.SaveChangesAsync();
 
-            var count = await db.TaskAssignments.CountAsync(x => x.TaskId == taskId);
+            var count = await db.TaskAssignments.CountAsync(a => a.TaskId == taskId);
             count.Should().Be(2);
         }
     }
