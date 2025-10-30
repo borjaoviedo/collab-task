@@ -6,10 +6,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Data.Repositories
 {
+    /// <summary>
+    /// EF Core repository for <see cref="User"/> aggregates.
+    /// Supports listing, lookup by email/id, tracked fetch, rename and role change with concurrency,
+    /// deletion, and uniqueness checks for email and name.
+    /// </summary>
     public sealed class UserRepository(AppDbContext db) : IUserRepository
     {
         private readonly AppDbContext _db = db;
 
+        /// <summary>
+        /// Lists users ordered by name including their project memberships.
+        /// </summary>
         public async Task<IReadOnlyList<User>> ListAsync(CancellationToken ct = default)
             => await _db.Users
                         .AsNoTracking()
@@ -17,23 +25,38 @@ namespace Infrastructure.Data.Repositories
                         .Include(u => u.ProjectMemberships)
                         .ToListAsync(ct);
 
+        /// <summary>
+        /// Gets a user by email without tracking.
+        /// </summary>
         public async Task<User?> GetByEmailAsync(Email email, CancellationToken ct = default)
             => await _db.Users
                         .AsNoTracking()
                         .FirstOrDefaultAsync(u => u.Email == email, ct);
 
+        /// <summary>
+        /// Gets a user by id without tracking, including memberships.
+        /// </summary>
         public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
             => await _db.Users
                         .AsNoTracking()
                         .Include(u => u.ProjectMemberships)
                         .FirstOrDefaultAsync(u => u.Id == id, ct);
 
+        /// <summary>
+        /// Gets a tracked user by id.
+        /// </summary>
         public async Task<User?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default)
             => await _db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
 
+        /// <summary>
+        /// Adds a new user to the context.
+        /// </summary>
         public async Task AddAsync(User item, CancellationToken ct = default)
             => await _db.Users.AddAsync(item, ct);
 
+        /// <summary>
+        /// Renames a user with optimistic concurrency and uniqueness check on name.
+        /// </summary>
         public async Task<PrecheckStatus> RenameAsync(
             Guid id,
             UserName newName,
@@ -46,7 +69,7 @@ namespace Infrastructure.Data.Repositories
 
             _db.Entry(user).Property(u => u.RowVersion).OriginalValue = rowVersion;
 
-            // No-op check based on previous name
+            // No-op if identical and conflict if name already used by another user.
             if (string.Equals(user.Name, newName, StringComparison.Ordinal))
                 return PrecheckStatus.NoOp;
 
@@ -59,6 +82,9 @@ namespace Infrastructure.Data.Repositories
             return PrecheckStatus.Ready;
         }
 
+        /// <summary>
+        /// Changes a user's role with optimistic concurrency.
+        /// </summary>
         public async Task<PrecheckStatus> ChangeRoleAsync(
             Guid id,
             UserRole newRole,
@@ -71,15 +97,16 @@ namespace Infrastructure.Data.Repositories
 
             _db.Entry(user).Property(u => u.RowVersion).OriginalValue = rowVersion;
 
-            // No-op check based on previous role
-            if (user.Role == newRole) return PrecheckStatus.NoOp;
-
+            // No-op guard already checked above.
             user.ChangeRole(newRole);
             _db.Entry(user).Property(u => u.Role).IsModified = true;
 
             return PrecheckStatus.Ready;
         }
 
+        /// <summary>
+        /// Deletes a user with optimistic concurrency.
+        /// </summary>
         public async Task<PrecheckStatus> DeleteAsync(
             Guid id,
             byte[] rowVersion,
@@ -94,6 +121,9 @@ namespace Infrastructure.Data.Repositories
             return PrecheckStatus.Ready;
         }
 
+        /// <summary>
+        /// Checks if an email already exists, optionally excluding a user id.
+        /// </summary>
         public async Task<bool> ExistsWithEmailAsync(
             Email email,
             Guid? excludeUserId = null,
@@ -109,6 +139,9 @@ namespace Infrastructure.Data.Repositories
             return await q.AnyAsync(ct);
         }
 
+        /// <summary>
+        /// Checks if a name already exists, optionally excluding a user id.
+        /// </summary>
         public async Task<bool> ExistsWithNameAsync(
             UserName name,
             Guid? excludeUserId = null,
