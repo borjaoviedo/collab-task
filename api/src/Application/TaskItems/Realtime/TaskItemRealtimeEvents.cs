@@ -22,26 +22,46 @@ namespace Application.TaskItems.Realtime
         decimal SortKey);
     public sealed record TaskItemDeletedPayload(Guid TaskId);
 
+    /// <summary>Event emitted when a task is created.</summary>
     public sealed record TaskItemCreatedEvent(Guid ProjectId, TaskItemCreatedPayload Payload)
-        : Application.Realtime.RealtimeEvent<TaskItemCreatedPayload>(TypeName, ProjectId, DateTimeOffset.UtcNow, Payload)
+        : Application.Realtime.RealtimeEvent<TaskItemCreatedPayload>(
+            TypeName,
+            ProjectId,
+            DateTimeOffset.UtcNow,
+            Payload)
     {
         public const string TypeName = "task.created";
     }
 
+    /// <summary>Event emitted when a task is updated.</summary>
     public sealed record TaskItemUpdatedEvent(Guid ProjectId, TaskItemUpdatedPayload Payload)
-        : Application.Realtime.RealtimeEvent<TaskItemUpdatedPayload>(TypeName, ProjectId, DateTimeOffset.UtcNow, Payload)
+        : Application.Realtime.RealtimeEvent<TaskItemUpdatedPayload>(
+            TypeName,
+            ProjectId,
+            DateTimeOffset.UtcNow,
+            Payload)
     {
         public const string TypeName = "task.updated";
     }
 
+    /// <summary>Event emitted when a task is moved between columns or lanes.</summary>
     public sealed record TaskItemMovedEvent(Guid ProjectId, TaskItemMovedPayload Payload)
-        : Application.Realtime.RealtimeEvent<TaskItemMovedPayload>(TypeName, ProjectId, DateTimeOffset.UtcNow, Payload)
+        : Application.Realtime.RealtimeEvent<TaskItemMovedPayload>(
+            TypeName,
+            ProjectId,
+            DateTimeOffset.UtcNow,
+            Payload)
     {
         public const string TypeName = "task.moved";
     }
 
+    /// <summary>Event emitted when a task is deleted.</summary>
     public sealed record TaskItemDeletedEvent(Guid ProjectId, TaskItemDeletedPayload Payload)
-        : Application.Realtime.RealtimeEvent<TaskItemDeletedPayload>(TypeName, ProjectId, DateTimeOffset.UtcNow, Payload)
+        : Application.Realtime.RealtimeEvent<TaskItemDeletedPayload>(
+            TypeName,
+            ProjectId,
+            DateTimeOffset.UtcNow,
+            Payload)
     {
         public const string TypeName = "task.deleted";
     }
