@@ -25,10 +25,10 @@ For version history, see [CHANGELOG.md](./CHANGELOG.md).
 
 **CollabTask** is structured into four independent layers:
 
-**Domain** — Entities, Value Objects, invariants, and business rules.
-**Application** — Use cases, validation, and transactional orchestration via `IUnitOfWork`.
-**Infrastructure** — EF Core persistence, repositories, interceptors, migrations, and DI setup.
-**API** — Minimal APIs exposing project, board, and task endpoints (REST + Realtime).
+- **Domain** — Entities, Value Objects, invariants, and business rules.
+- **Application** — Use cases, validation, and transactional orchestration via `IUnitOfWork`.
+- **Infrastructure** — EF Core persistence, repositories, interceptors, migrations, and DI setup.
+- **API** — Minimal APIs exposing project, board, and task endpoints (REST + Realtime).
 
 Clean boundaries allow for isolated testing and maintainability.  
 
