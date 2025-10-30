@@ -2,7 +2,7 @@
 
 This document provides a detailed overview of the **CollabTask backend architecture**, patterns, and internal design principles.
 
-It complements the [README.md](./README.md) file by focusing on the **technical and architectural aspects** of the system.
+It complements the [README.md](../README.md) file by focusing on the **technical and architectural aspects** of the system.
 
 ---
 
@@ -219,20 +219,36 @@ OpenAPI documentation (`openapi.json`) is automatically generated and kept versi
 
 ## 8. Folder Structure (Backend)
 
-The repository is organized by Clean Architecture layers. Folder names may differ slightly across modules, but the mapping is:
+The repository is organized by Clean Architecture layers. Folders may differ slightly across modules, but the main structure is:
 
-- **Domain** — Entities, Value Objects, Enums, shared domain concerns.
-- **Application** — Services, validation, orchestrations, `IUnitOfWork`.
-- **Infrastructure** — EF Core DbContext, configurations, repositories, interceptors, migrations, initialization.
-- **API** — Minimal API endpoints, errors, realtime (SignalR).
-
-Typical backend layout:
-
-/api/
-  Domain/            # core model and rules
-  Application/       # use cases and validation
-  Infrastructure/    # persistence and external services
-  Api/               # HTTP endpoints and realtime
+```
+/src/
+ ├─ Api/
+ │   ├─ Endpoints/
+ │   ├─ Errors/
+ │   ├─ Filters/
+ │   └─ Realtime/
+ ├─ Application/
+ │   └─ Entity/
+ │       ├─ Abstractions/
+ │       ├─ DTOs/
+ │       ├─ Mapping/
+ │       ├─ Services/
+ │       └─ Validation/
+ ├─ Domain/
+ │   ├─ Common/
+ │   ├─ Entities/
+ │   ├─ ValueObjects/
+ │   └─ Enums/
+ └─ Infrastructure/
+     ├─ Common/
+     └─ Data/
+         ├─ Configurations/
+         ├─ Initialization/
+         ├─ Interceptors/
+         ├─ Repositories/
+         └─ Seeders/
+```
 
 ---
 
