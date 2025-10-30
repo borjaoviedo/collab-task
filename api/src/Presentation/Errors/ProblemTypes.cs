@@ -1,5 +1,9 @@
 namespace Api.Errors
 {
+    /// <summary>
+    /// Centralized URIs for <c>ProblemDetails.type</c> fields used across the API.
+    /// Provides consistent problem type identifiers aligned with RFC 7807 for error categorization.
+    /// </summary>
     public static class ProblemTypes
     {
         private const string Base = "/problems/";

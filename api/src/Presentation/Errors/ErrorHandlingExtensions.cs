@@ -7,8 +7,19 @@ using Domain.Common.Exceptions;
 
 namespace Api.Errors
 {
+    /// <summary>
+    /// Error handling and ProblemDetails configuration for the API layer.
+    /// Adds RFC 7807-compliant responses, centralizes exception-to-HTTP mapping,
+    /// and enriches payloads with trace identifiers and contextual details.
+    /// </summary>
     public static class ErrorHandlingExtensions
     {
+        /// <summary>
+        /// Registers ProblemDetails and configures a global customizer to include
+        /// request <c>instance</c> and <c>traceId</c> in every RFC 7807 response.
+        /// </summary>
+        /// <param name="services">The service collection to configure.</param>
+        /// <returns>The same service collection for chaining.</returns>
         public static IServiceCollection AddProblemDetailsAndExceptionMapping(this IServiceCollection services)
         {
             services.AddProblemDetails(options =>
@@ -22,6 +33,13 @@ namespace Api.Errors
             return services;
         }
 
+        /// <summary>
+        /// Enables a global exception handler that converts thrown exceptions into
+        /// RFC 7807 ProblemDetails using a consistent mapping strategy.
+        /// Ensures <c>application/problem+json</c> content type and appropriate status codes.
+        /// </summary>
+        /// <param name="app">The application builder.</param>
+        /// <returns>The same application builder for chaining.</returns>
         public static IApplicationBuilder UseGlobalExceptionHandling(this IApplicationBuilder app)
         {
             app.UseExceptionHandler(builder =>
@@ -51,7 +69,29 @@ namespace Api.Errors
             return app;
         }
 
-        private static (int status, string type, string title, string detail, IDictionary<string, object?> extensions)
+        /// <summary>
+        /// Maps a caught <see cref="Exception"/> to a ProblemDetails-compatible tuple,
+        /// selecting status code, problem <c>type</c>, <c>title</c>, human-readable <c>detail</c>,
+        /// and an <c>extensions</c> dictionary (e.g., <c>traceId</c>, validation errors, JSON path).
+        /// </summary>
+        /// <param name="ex">The exception to map (can be <c>null</c>).</param>
+        /// <param name="http">The current HTTP context for request/host information.</param>
+        /// <returns>
+        /// A tuple with:
+        /// <list type="bullet">
+        /// <item><description><c>status</c>: HTTP status code.</description></item>
+        /// <item><description><c>type</c>: problem type URI.</description></item>
+        /// <item><description><c>title</c>: short summary of the problem.</description></item>
+        /// <item><description><c>detail</c>: human-readable explanation.</description></item>
+        /// <item><description><c>extensions</c>: extra properties (e.g., <c>traceId</c>, <c>errors</c>).</description></item>
+        /// </list>
+        /// </returns>
+        private static (
+            int status,
+            string type,
+            string title,
+            string detail,
+            IDictionary<string, object?> extensions)
         MapException(Exception? ex, HttpContext http)
         {
             // Base
