@@ -2,6 +2,9 @@ using Domain.Common;
 
 namespace Domain.ValueObjects
 {
+    /// <summary>
+    /// Represents the validated title of a task.
+    /// </summary>
     public sealed class TaskTitle : IEquatable<TaskTitle>
     {
         public string Value { get; }

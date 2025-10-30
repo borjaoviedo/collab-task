@@ -4,6 +4,9 @@ using Domain.ValueObjects;
 
 namespace Domain.Entities
 {
+    /// <summary>
+    /// Represents a note added by a user to a task.
+    /// </summary>
     public sealed class TaskNote : IAuditable
     {
         public Guid Id { get; private set; }
@@ -16,6 +19,9 @@ namespace Domain.Entities
 
         private TaskNote() { }
 
+        /// <summary>
+        /// Creates a new note for a given task and user.
+        /// </summary>
         public static TaskNote Create(Guid taskId, Guid userId, NoteContent content)
         {
             Guards.NotEmpty(taskId);
@@ -30,12 +36,16 @@ namespace Domain.Entities
             };
         }
 
+        /// <summary>
+        /// Updates the note content if changed.
+        /// </summary>
         public void Edit(NoteContent content)
         {
             if (Content.Equals(content)) return;
             Content = content;
         }
 
+        /// <summary>Sets the concurrency token after persistence.</summary>
         internal void SetRowVersion(byte[] rowVersion)
         {
             Guards.NotNull(rowVersion);

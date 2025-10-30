@@ -7,8 +7,21 @@ using Domain.ValueObjects;
 
 namespace Application.Users.Services
 {
+    /// <summary>
+    /// Write-side application service for users.
+    /// </summary>
     public sealed class UserWriteService(IUserRepository repo, IUnitOfWork uow) : IUserWriteService
     {
+        /// <summary>
+        /// Creates a new user after validating uniqueness by email and name.
+        /// </summary>
+        /// <param name="email">Email value object.</param>
+        /// <param name="name">User name value object.</param>
+        /// <param name="hash">Password hash bytes.</param>
+        /// <param name="salt">Password salt bytes.</param>
+        /// <param name="role">Initial role.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>The mutation result and the created user when successful.</returns>
         public async Task<(DomainMutation, User?)> CreateAsync(
             Email email,
             UserName name,
@@ -33,7 +46,18 @@ namespace Application.Users.Services
             return (createResult, user);
         }
 
-        public async Task<DomainMutation> RenameAsync(Guid id, UserName newName, byte[] rowVersion, CancellationToken ct = default)
+        /// <summary>
+        /// Renames an existing user with concurrency enforcement.
+        /// </summary>
+        /// <param name="id">User identifier.</param>
+        /// <param name="newName">New user name.</param>
+        /// <param name="rowVersion">Concurrency token.</param>
+        /// <param name="ct">Cancellation token.</param>
+        public async Task<DomainMutation> RenameAsync(
+            Guid id,
+            UserName newName,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var rename = await repo.RenameAsync(id, newName, rowVersion, ct);
             if (rename != PrecheckStatus.Ready) return rename.ToErrorDomainMutation();
@@ -42,7 +66,18 @@ namespace Application.Users.Services
             return updateResult;
         }
 
-        public async Task<DomainMutation> ChangeRoleAsync(Guid id, UserRole newRole, byte[] rowVersion, CancellationToken ct = default)
+        /// <summary>
+        /// Changes the role of an existing user with concurrency enforcement.
+        /// </summary>
+        /// <param name="id">User identifier.</param>
+        /// <param name="newRole">New role.</param>
+        /// <param name="rowVersion">Concurrency token.</param>
+        /// <param name="ct">Cancellation token.</param>
+        public async Task<DomainMutation> ChangeRoleAsync(
+            Guid id,
+            UserRole newRole,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var changeRole = await repo.ChangeRoleAsync(id, newRole, rowVersion, ct);
             if (changeRole != PrecheckStatus.Ready) return changeRole.ToErrorDomainMutation();
@@ -51,7 +86,16 @@ namespace Application.Users.Services
             return updateResult;
         }
 
-        public async Task<DomainMutation> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default)
+        /// <summary>
+        /// Deletes a user with concurrency enforcement.
+        /// </summary>
+        /// <param name="id">User identifier.</param>
+        /// <param name="rowVersion">Concurrency token.</param>
+        /// <param name="ct">Cancellation token.</param>
+        public async Task<DomainMutation> DeleteAsync(
+            Guid id,
+            byte[] rowVersion,
+            CancellationToken ct = default)
         {
             var delete = await repo.DeleteAsync(id, rowVersion, ct);
             if (delete != PrecheckStatus.Ready) return delete.ToErrorDomainMutation();
@@ -60,4 +104,5 @@ namespace Application.Users.Services
             return deleteResult;
         }
     }
+
 }

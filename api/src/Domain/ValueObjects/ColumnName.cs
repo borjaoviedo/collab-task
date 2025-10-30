@@ -2,6 +2,9 @@ using Domain.Common;
 
 namespace Domain.ValueObjects
 {
+    /// <summary>
+    /// Represents the validated name of a column within a project board.
+    /// </summary>
     public sealed class ColumnName : IEquatable<ColumnName>
     {
         public string Value { get; }

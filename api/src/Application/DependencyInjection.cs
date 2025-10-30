@@ -21,10 +21,25 @@ using System.Reflection.Metadata;
 
 namespace Application
 {
+    /// <summary>
+    /// Application layer dependency registration.
+    /// </summary>
+    /// <remarks>
+    /// Registers application services and MediatR handlers for the Application assembly.
+    /// This method is intended to be called once at startup from the composition root
+    /// (e.g., Api layer). It is idempotent by design when invoked with the same
+    /// <see cref="IServiceCollection"/>.
+    /// </remarks>
     public static class DependencyInjection
     {
+        /// <summary>
+        /// Adds the Application layer services and MediatR handlers to the DI container.
+        /// </summary>
+        /// <param name="services">The service collection to add registrations to.</param>
+        /// <returns>The same <see cref="IServiceCollection"/> instance for chaining.</returns>
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
+            // Register use-case services with per-request lifetime
             services
                 .AddScoped<IUserWriteService, UserWriteService>()
                 .AddScoped<IUserReadService, UserReadService>()
@@ -45,7 +60,9 @@ namespace Application
                 .AddScoped<ITaskActivityWriteService, TaskActivityWriteService>()
                 .AddScoped<ITaskActivityReadService, TaskActivityReadService>();
 
-            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly));
+            // Register all MediatR handlers/behaviors from the Application assembly
+            services.AddMediatR(cfg =>
+                cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly));
 
             return services;
         }

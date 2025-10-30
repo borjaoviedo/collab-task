@@ -3,9 +3,10 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Api.Auth.Authorization
 {
-    public sealed class ProjectRoleRequirement : IAuthorizationRequirement
+    /// <summary>Minimum project role required to access a resource.</summary>
+    /// <param name="minimumRole">Lowest role that satisfies the requirement.</param>
+    public sealed class ProjectRoleRequirement(ProjectRole minimumRole) : IAuthorizationRequirement
     {
-        public ProjectRoleRequirement(ProjectRole minimumRole) => MinimumRole = minimumRole;
-        public ProjectRole MinimumRole { get; }
+        public ProjectRole MinimumRole { get; } = minimumRole;
     }
 }

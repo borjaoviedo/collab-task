@@ -11,12 +11,24 @@ using MediatR;
 
 namespace Application.TaskNotes.Services
 {
+    /// <summary>
+    /// Write-side application service for task notes.
+    /// </summary>
     public sealed class TaskNoteWriteService(
         ITaskNoteRepository repo,
         IUnitOfWork uow,
         ITaskActivityWriteService activityWriter,
         IMediator mediator) : ITaskNoteWriteService
     {
+        /// <summary>
+        /// Creates a new note, records a "note added" activity, and publishes a creation notification.
+        /// </summary>
+        /// <param name="projectId">Project identifier for notification scoping.</param>
+        /// <param name="taskId">Task to attach the note to.</param>
+        /// <param name="userId">Author user identifier.</param>
+        /// <param name="content">Note content.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>The mutation result and the created note when successful.</returns>
         public async Task<(DomainMutation, TaskNote?)> CreateAsync(
             Guid projectId,
             Guid taskId,
@@ -48,6 +60,17 @@ namespace Application.TaskNotes.Services
             return (saveCreateResult, note);
         }
 
+        /// <summary>
+        /// Edits an existing note, records an edit activity, and publishes an update notification.
+        /// </summary>
+        /// <param name="projectId">Project identifier for notification scoping.</param>
+        /// <param name="taskId">Task identifier.</param>
+        /// <param name="noteId">Note identifier.</param>
+        /// <param name="userId">Actor user identifier.</param>
+        /// <param name="content">New content.</param>
+        /// <param name="rowVersion">Concurrency token.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>A mutation describing the outcome.</returns>
         public async Task<DomainMutation> EditAsync(
             Guid projectId,
             Guid taskId,
@@ -81,6 +104,15 @@ namespace Application.TaskNotes.Services
             return saveUpdateResult;
         }
 
+        /// <summary>
+        /// Deletes a note, records a removal activity, and publishes a deletion notification.
+        /// </summary>
+        /// <param name="projectId">Project identifier for notification scoping.</param>
+        /// <param name="noteId">Note identifier.</param>
+        /// <param name="userId">Actor user identifier.</param>
+        /// <param name="rowVersion">Concurrency token.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>A mutation describing the outcome.</returns>
         public async Task<DomainMutation> DeleteAsync(
             Guid projectId,
             Guid noteId,
@@ -93,7 +125,7 @@ namespace Application.TaskNotes.Services
 
             var deleteStatus = await repo.DeleteAsync(noteId, rowVersion, ct);
             if (deleteStatus != PrecheckStatus.Ready) return deleteStatus.ToErrorDomainMutation();
-            
+
             var payload = ActivityPayloadFactory.NoteRemoved(noteId);
             await activityWriter.CreateAsync(
                 note.TaskId,
@@ -115,4 +147,5 @@ namespace Application.TaskNotes.Services
             return saveDeleteResult;
         }
     }
+
 }

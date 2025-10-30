@@ -10,14 +10,28 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
 {
+    /// <summary>
+    /// Task assignment endpoints: list, read, create-or-update, change role, and remove.
+    /// Uses Clean Architecture services and optimistic concurrency via ETag/If-Match.
+    /// </summary>
     public static class TaskAssignmentsEndpoints
     {
+        /// <summary>
+        /// Registers endpoints for task assignments under project-scoped and global routes.
+        /// Enforces per-endpoint authorization and documents success/error shapes.
+        /// </summary>
+        /// <param name="app">Endpoint route builder.</param>
+        /// <returns>The configured route group.</returns>
         public static RouteGroupBuilder MapTaskAssignments(this IEndpointRouteBuilder app)
         {
+            // Group task-scoped assignment endpoints; requires ProjectReader by default
             var nested = app
-                        .MapGroup("/projects/{projectId:guid}/lanes/{laneId:guid}/columns/{columnId:guid}/tasks/{taskId:guid}/assignments")
-                        .WithTags("Task Assignments")
-                        .RequireAuthorization(Policies.ProjectReader);
+                .MapGroup("/projects/{projectId:guid}/lanes/{laneId:guid}/columns/{columnId:guid}/tasks/{taskId:guid}/assignments")
+                .WithTags("Task Assignments")
+                .RequireAuthorization(Policies.ProjectReader);
+
+            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
+            // include consistent success/error shapes, auth requirements, and concurrency responses
 
             // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments
             nested.MapGet("/", async (
@@ -31,11 +45,17 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskAssignments.Get_All");
 
+                // List all assignments for a task from the read side
                 var assignments = await taskAssignmentReadSvc.ListByTaskAsync(taskId, ct);
                 var responseDto = assignments.Select(a => a.ToReadDto()).ToList();
 
-                log.LogInformation("Task assignments listed projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} count={Count}",
-                                    projectId, laneId, columnId, taskId, responseDto.Count);
+                log.LogInformation(
+                    "Task assignments listed projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} count={Count}",
+                    projectId,
+                    laneId,
+                    columnId,
+                    taskId,
+                    responseDto.Count);
                 return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<TaskAssignmentReadDto>>(StatusCodes.Status200OK)
@@ -59,19 +79,32 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskAssignments.Get_ById");
 
+                // Fetch a single assignment for a user in the given task. Return 404 if missing
                 var assignment = await taskAssignmentReadSvc.GetAsync(taskId, userId, ct);
                 if (assignment is null)
                 {
-                    log.LogInformation("Task assignment not found projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} userId={UserId}",
-                                        projectId, laneId, columnId, taskId, userId);
+                    log.LogInformation(
+                        "Task assignment not found projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} userId={UserId}",
+                        projectId,
+                        laneId,
+                        columnId,
+                        taskId,
+                        userId);
                     return Results.NotFound();
                 }
 
+                // Attach weak ETag from RowVersion so clients can perform conditional operations later
                 var responseDto = assignment.ToReadDto();
                 var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
-                log.LogInformation("Task assignment fetched projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} userId={UserId} etag={ETag}",
-                                    projectId, laneId, columnId, taskId, userId, etag);
+                log.LogInformation(
+                    "Task assignment fetched projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} userId={UserId} etag={ETag}",
+                    projectId,
+                    laneId,
+                    columnId,
+                    taskId,
+                    userId,
+                    etag);
                 return Results.Ok(responseDto).WithETag(etag);
             })
             .Produces<TaskAssignmentReadDto>(StatusCodes.Status200OK)
@@ -98,21 +131,36 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskAssignments.Create");
 
+                // Create or upgrade an assignment. The command includes the executor for audit purposes
+                // Service returns Conflict for illegal transitions; map DomainMutation to HTTP
                 var executedBy = (Guid)currentUserSvc.UserId!;
-
-                var (result, assignment) = await taskAssignmentWriteSvc.CreateAsync(projectId, taskId, targetUserId: dto.UserId, dto.Role, executedBy, ct);
+                var (result, assignment) = await taskAssignmentWriteSvc.CreateAsync(
+                    projectId,
+                    taskId,
+                    targetUserId: dto.UserId,
+                    dto.Role,
+                    executedBy,
+                    ct);
                 if (result == DomainMutation.Conflict || assignment is null)
                 {
-                    log.LogInformation("Task assignment create conflict projectId={ProjectId} taskId={TaskId} userId={UserId}",
-                                        projectId, taskId, dto.UserId);
+                    log.LogInformation(
+                        "Task assignment create conflict projectId={ProjectId} taskId={TaskId} userId={UserId}",
+                        projectId,
+                        taskId,
+                        dto.UserId);
                     return result.ToHttp(context);
                 }
 
+                // Read back canonical state and return 201 on create, 200 on update
+                // Always attach a fresh ETag so clients can proceed with If-Match semantics
                 var created = await taskAssignmentReadSvc.GetAsync(taskId, dto.UserId, ct);
                 if (created is null)
                 {
-                    log.LogInformation("Task assignment create readback missing projectId={ProjectId} taskId={TaskId} userId={UserId}",
-                                        projectId, taskId, dto.UserId);
+                    log.LogInformation(
+                        "Task assignment create readback missing projectId={ProjectId} taskId={TaskId} userId={UserId}",
+                        projectId,
+                        taskId,
+                        dto.UserId);
                     return Results.NotFound();
                 }
 
@@ -121,18 +169,30 @@ namespace Api.Endpoints
 
                 if (result != DomainMutation.Created)
                 {
-                    log.LogInformation("Task assignment updated projectId={ProjectId} taskId={TaskId} userId={UserId} role={Role} etag={ETag}",
-                                        projectId, taskId, dto.UserId, created.Role, etag);
-                    return Results.Ok(responseDto).WithETag(etag);
+                    log.LogInformation(
+                        "Task assignment updated projectId={ProjectId} taskId={TaskId} userId={UserId} role={Role} etag={ETag}",
+                        projectId,
+                        taskId,
+                        dto.UserId,
+                        created.Role,
+                        etag);
+                    return Results.Ok(responseDto).WithETag(etag);  // upsert-style update
                 }
 
-                log.LogInformation("Task assignment created projectId={ProjectId} taskId={TaskId} userId={UserId} role={Role} etag={ETag}",
-                                    projectId, taskId, dto.UserId, created.Role, etag);
-                return Results.CreatedAtRoute("TaskAssignments_Get_ById", new { projectId, laneId, columnId, taskId, userId = dto.UserId }, responseDto).WithETag(etag);
+                log.LogInformation(
+                    "Task assignment created projectId={ProjectId} taskId={TaskId} userId={UserId} role={Role} etag={ETag}",
+                    projectId,
+                    taskId,
+                    dto.UserId,
+                    created.Role,
+                    etag);
+
+                var routeValues = new { projectId, laneId, columnId, taskId, userId = dto.UserId };
+                return Results.CreatedAtRoute("TaskAssignments_Get_ById", routeValues, responseDto).WithETag(etag);
             })
-            .RequireAuthorization(Policies.ProjectAdmin)
+            .RequireAuthorization(Policies.ProjectAdmin)  // ProjectAdmin-only
             .RequireValidation<TaskAssignmentCreateDto>()
-            .RejectIfMatch()
+            .RejectIfMatch() // Reject If-Match on create-or-update entry point; the write model defines idempotency
             .Produces<TaskAssignmentReadDto>(StatusCodes.Status201Created)
             .Produces<TaskAssignmentReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -160,43 +220,71 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskAssignments.ChangeRole");
 
+                // Resolve current RowVersion from If-Match or storage fallback to guard against lost updates
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, ct => taskAssignmentReadSvc.GetAsync(taskId, userId, ct), a => a.RowVersion, ct);
+                    context,
+                    ct => taskAssignmentReadSvc.GetAsync(taskId, userId, ct),
+                    a => a.RowVersion,
+                    ct);
 
                 if (rowVersion is null)
                 {
-                    log.LogInformation("Task assignment not found when resolving row version projectId={ProjectId} taskId={TaskId} userId={UserId}",
-                                        projectId, taskId, userId);
+                    log.LogInformation(
+                        "Task assignment not found when resolving row version projectId={ProjectId} taskId={TaskId} userId={UserId}",
+                        projectId,
+                        taskId,
+                        userId);
                     return Results.NotFound();
                 }
 
+                // Change role under optimistic concurrency. 412 on stale, 404 if not found
                 var executedBy = (Guid)currentUserSvc.UserId!;
-                var result = await taskAssignmentWriteSvc.ChangeRoleAsync(projectId, taskId, targetUserId: userId, dto.NewRole, executedBy, rowVersion, ct);
+                var result = await taskAssignmentWriteSvc.ChangeRoleAsync(
+                    projectId,
+                    taskId,
+                    targetUserId: userId,
+                    dto.NewRole,
+                    executedBy,
+                    rowVersion,
+                    ct);
                 if (result != DomainMutation.Updated)
                 {
-                    log.LogInformation("Task assignment role change rejected projectId={ProjectId} taskId={TaskId} userId={UserId} mutation={Mutation}",
-                                        projectId, taskId, userId, result);
+                    log.LogInformation(
+                        "Task assignment role change rejected projectId={ProjectId} taskId={TaskId} userId={UserId} mutation={Mutation}",
+                        projectId,
+                        taskId,
+                        userId,
+                        result);
                     return result.ToHttp(context);
                 }
 
+                // Return updated representation with refreshed ETag
                 var updated = await taskAssignmentReadSvc.GetAsync(taskId, userId, ct);
                 if (updated is null)
                 {
-                    log.LogInformation("Task assignment role change readback missing projectId={ProjectId} taskId={TaskId} userId={UserId}",
-                                        projectId, taskId, userId);
+                    log.LogInformation(
+                        "Task assignment role change readback missing projectId={ProjectId} taskId={TaskId} userId={UserId}",
+                        projectId,
+                        taskId,
+                        userId);
                     return Results.NotFound();
                 }
 
                 var responseDto = updated.ToReadDto();
                 var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
-                log.LogInformation("Task assignment role changed projectId={ProjectId} taskId={TaskId} userId={UserId} newRole={NewRole} etag={ETag}",
-                                    projectId, taskId, userId, dto.NewRole, etag);
+                log.LogInformation(
+                    "Task assignment role changed projectId={ProjectId} taskId={TaskId} userId={UserId} newRole={NewRole} etag={ETag}",
+                    projectId,
+                    taskId,
+                    userId,
+                    dto.NewRole,
+                    etag);
                 return Results.Ok(responseDto).WithETag(etag);
             })
-            .RequireAuthorization(Policies.ProjectAdmin)
+            .RequireAuthorization(Policies.ProjectAdmin) // ProjectAdmin-only
             .RequireValidation<TaskAssignmentChangeRoleDto>()
-            .RequireIfMatch()
+            .RequireIfMatch() // Require If-Match to prevent overwriting concurrent role changes
             .Produces<TaskAssignmentReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -225,25 +313,44 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskAssignments.Remove");
 
+                // Conditional delete of an assignment. Includes executor for audit logging
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, ct => taskAssignmentReadSvc.GetAsync(taskId, userId, ct), a => a.RowVersion, ct);
+                    context,
+                    ct => taskAssignmentReadSvc.GetAsync(taskId, userId, ct),
+                    a => a.RowVersion,
+                    ct);
 
                 if (rowVersion is null)
                 {
-                    log.LogInformation("Task assignment not found when resolving row version projectId={ProjectId} taskId={TaskId} userId={UserId}",
-                                        projectId, taskId, userId);
+                    log.LogInformation(
+                        "Task assignment not found when resolving row version projectId={ProjectId} taskId={TaskId} userId={UserId}",
+                        projectId,
+                        taskId,
+                        userId);
                     return Results.NotFound();
                 }
 
                 var executedBy = (Guid)currentUserSvc.UserId!;
-                var result = await taskAssignmentWriteSvc.DeleteAsync(projectId, taskId, targetUserId: userId, executedBy, rowVersion, ct);
+                var result = await taskAssignmentWriteSvc.DeleteAsync(
+                    projectId,
+                    taskId,
+                    targetUserId: userId,
+                    executedBy,
+                    rowVersion,
+                    ct);
 
-                log.LogInformation("Task assignment removed projectId={ProjectId} taskId={TaskId} userId={UserId} mutation={Mutation}",
-                                    projectId, taskId, userId, result);
+                log.LogInformation(
+                    "Task assignment removed projectId={ProjectId} taskId={TaskId} userId={UserId} mutation={Mutation}",
+                    projectId,
+                    taskId,
+                    userId,
+                    result);
+
+                // Map DomainMutation to HTTP (204 on success, 409/412 on conflicts)
                 return result.ToHttp(context);
             })
-            .RequireAuthorization(Policies.ProjectAdmin)
-            .RequireIfMatch()
+            .RequireAuthorization(Policies.ProjectAdmin) // ProjectAdmin-only
+            .RequireIfMatch() // Requires If-Match to avoid deleting over stale state
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
@@ -254,7 +361,8 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Removes a task assignment using optimistic concurrency (If-Match).")
             .WithName("Assignments_Remove");
 
-            // top-level lists
+
+            // Global utilities for assignment queries by current user or admin context
             var top = app.MapGroup("/assignments")
                 .WithTags("Task Assignments")
                 .RequireAuthorization();
@@ -268,12 +376,15 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskAssignments.Get_Mine");
 
+                // Lists all assignments for the current user across accessible projects
                 var userId = (Guid)currentUserSvc.UserId!;
                 var assignments = await taskAssignmentReadSvc.ListByUserAsync(userId, ct);
                 var responseDto = assignments.Select(a => a.ToReadDto()).ToList();
 
-                log.LogInformation("Task assignments listed for current user userId={UserId} count={Count}",
-                                    userId, responseDto.Count);
+                log.LogInformation(
+                    "Task assignments listed for current user userId={UserId} count={Count}",
+                    userId,
+                    responseDto.Count);
                 return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<TaskAssignmentReadDto>>(StatusCodes.Status200OK)
@@ -291,14 +402,17 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskAssignments.Get_ByUser");
 
+                // Admin-only listing of assignments for a specific user across projects
                 var assignments = await taskAssignmentReadSvc.ListByUserAsync(userId, ct);
                 var responseDto = assignments.Select(a => a.ToReadDto()).ToList();
 
-                log.LogInformation("Task assignments listed for userId={UserId} count={Count}",
-                                    userId, responseDto.Count);
+                log.LogInformation(
+                    "Task assignments listed for userId={UserId} count={Count}",
+                    userId,
+                    responseDto.Count);
                 return Results.Ok(responseDto);
             })
-            .RequireAuthorization(Policies.SystemAdmin)
+            .RequireAuthorization(Policies.SystemAdmin) // SystemAdmin-only
             .Produces<IEnumerable<TaskAssignmentReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)

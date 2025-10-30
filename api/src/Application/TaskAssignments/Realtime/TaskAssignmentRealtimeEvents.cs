@@ -6,20 +6,35 @@ namespace Application.TaskAssignments.Realtime
     public sealed record TaskAssignmentUpdatedPayload(Guid TaskId, Guid UserId, TaskRole NewRole);
     public sealed record TaskAssignmentRemovedPayload(Guid TaskId, Guid UserId);
 
+    /// <summary>Event emitted when a task assignment is created.</summary>
     public sealed record TaskAssignmentCreatedEvent(Guid ProjectId, TaskAssignmentCreatedPayload Payload)
-        : Application.Realtime.RealtimeEvent<TaskAssignmentCreatedPayload>(TypeName, ProjectId, DateTimeOffset.UtcNow, Payload)
+        : Application.Realtime.RealtimeEvent<TaskAssignmentCreatedPayload>(
+            TypeName,
+            ProjectId,
+            DateTimeOffset.UtcNow,
+            Payload)
     {
         public const string TypeName = "assignment.created";
     }
 
+    /// <summary>Event emitted when a task assignment is updated.</summary>
     public sealed record TaskAssignmentUpdatedEvent(Guid ProjectId, TaskAssignmentUpdatedPayload Payload)
-        : Application.Realtime.RealtimeEvent<TaskAssignmentUpdatedPayload>(TypeName, ProjectId, DateTimeOffset.UtcNow, Payload)
+        : Application.Realtime.RealtimeEvent<TaskAssignmentUpdatedPayload>(
+            TypeName,
+            ProjectId,
+            DateTimeOffset.UtcNow,
+            Payload)
     {
         public const string TypeName = "assignment.updated";
     }
 
+    /// <summary>Event emitted when a task assignment is removed.</summary>
     public sealed record TaskAssignmentRemovedEvent(Guid ProjectId, TaskAssignmentRemovedPayload Payload)
-        : Application.Realtime.RealtimeEvent<TaskAssignmentRemovedPayload>(TypeName, ProjectId, DateTimeOffset.UtcNow, Payload)
+        : Application.Realtime.RealtimeEvent<TaskAssignmentRemovedPayload>(
+            TypeName,
+            ProjectId,
+            DateTimeOffset.UtcNow,
+            Payload)
     {
         public const string TypeName = "assignment.removed";
     }

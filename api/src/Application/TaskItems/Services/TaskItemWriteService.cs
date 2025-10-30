@@ -11,12 +11,18 @@ using MediatR;
 
 namespace Application.TaskItems.Services
 {
+    /// <summary>
+    /// Write-side application service for task items.
+    /// </summary>
     public sealed class TaskItemWriteService(
         ITaskItemRepository repo,
         IUnitOfWork uow,
         ITaskActivityWriteService activityWriter,
         IMediator mediator) : ITaskItemWriteService
     {
+        /// <summary>
+        /// Creates a new task, writes a creation activity, and publishes a creation notification.
+        /// </summary>
         public async Task<(DomainMutation, TaskItem?)> CreateAsync(
             Guid projectId,
             Guid laneId,
@@ -43,7 +49,12 @@ namespace Application.TaskItems.Services
             await repo.AddAsync(task, ct);
 
             var payload = ActivityPayloadFactory.TaskCreated(title);
-            await activityWriter.CreateAsync(task.Id, userId, TaskActivityType.TaskCreated, payload, ct);
+            await activityWriter.CreateAsync(
+                task.Id,
+                userId,
+                TaskActivityType.TaskCreated,
+                payload,
+                ct);
 
             var createResult = await uow.SaveAsync(MutationKind.Create, ct);
 
@@ -60,10 +71,13 @@ namespace Application.TaskItems.Services
                     task.SortKey));
                 await mediator.Publish(notification, ct);
             }
-            
+
             return (createResult, task);
         }
 
+        /// <summary>
+        /// Edits an existing task, records an edit activity, and publishes an update notification.
+        /// </summary>
         public async Task<DomainMutation> EditAsync(
             Guid projectId,
             Guid taskId,
@@ -91,7 +105,12 @@ namespace Application.TaskItems.Services
                 taskItemChange.NewTitle,
                 taskItemChange.OldDescription,
                 taskItemChange.NewDescription);
-            await activityWriter.CreateAsync(taskId, userId, TaskActivityType.TaskEdited, payload, ct);
+            await activityWriter.CreateAsync(
+                taskId,
+                userId,
+                TaskActivityType.TaskEdited,
+                payload,
+                ct);
 
             var updateResult = await uow.SaveAsync(MutationKind.Update, ct);
 
@@ -110,6 +129,9 @@ namespace Application.TaskItems.Services
             return updateResult;
         }
 
+        /// <summary>
+        /// Moves a task, records a move activity, and publishes a move notification.
+        /// </summary>
         public async Task<DomainMutation> MoveAsync(
             Guid projectId,
             Guid taskId,
@@ -138,7 +160,12 @@ namespace Application.TaskItems.Services
                 taskItemChange.FromColumnId,
                 taskItemChange.ToLaneId,
                 taskItemChange.ToColumnId);
-            await activityWriter.CreateAsync(taskId, userId, TaskActivityType.TaskMoved, payload, ct);
+            await activityWriter.CreateAsync(
+                taskId,
+                userId,
+                TaskActivityType.TaskMoved,
+                payload,
+                ct);
 
             var updateResult = await uow.SaveAsync(MutationKind.Update, ct);
 
@@ -159,6 +186,9 @@ namespace Application.TaskItems.Services
             return updateResult;
         }
 
+        /// <summary>
+        /// Deletes a task, records a deletion activity, and publishes a deletion notification.
+        /// </summary>
         public async Task<DomainMutation> DeleteAsync(
             Guid projectId,
             Guid taskId,
@@ -179,4 +209,5 @@ namespace Application.TaskItems.Services
             return deleteResult;
         }
     }
+
 }

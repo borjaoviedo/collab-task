@@ -5,10 +5,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Data.Repositories
 {
+    /// <summary>
+    /// EF Core repository for <see cref="ProjectMember"/>.
+    /// Supports membership queries, role lookup, tracked updates with optimistic concurrency,
+    /// and soft remove/restore semantics respecting <see cref="ProjectMember.RemovedAt"/>.
+    /// </summary>
     public sealed class ProjectMemberRepository(AppDbContext db) : IProjectMemberRepository
     {
         private readonly AppDbContext _db = db;
 
+        /// <summary>
+        /// Lists memberships for a project. Optionally includes removed entries.
+        /// Includes the related <see cref="User"/> for convenience.
+        /// </summary>
         public async Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(
             Guid projectId,
             bool includeRemoved = false,
@@ -24,6 +33,9 @@ namespace Infrastructure.Data.Repositories
             return await q.Include(pm => pm.User).ToListAsync(ct);
         }
 
+        /// <summary>
+        /// Gets a membership by project and user without tracking, including <see cref="User"/>.
+        /// </summary>
         public async Task<ProjectMember?> GetByProjectAndUserIdAsync(
             Guid projectId,
             Guid userId,
@@ -33,12 +45,18 @@ namespace Infrastructure.Data.Repositories
                         .Include(pm => pm.User)
                         .FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
 
+        /// <summary>
+        /// Gets a tracked membership by project and user.
+        /// </summary>
         public async Task<ProjectMember?> GetTrackedByProjectAndUserIdAsync(
             Guid projectId,
             Guid userId,
             CancellationToken ct = default)
             => await _db.ProjectMembers.FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
 
+        /// <summary>
+        /// Gets the role of a user within a project, or <c>null</c> if not a member.
+        /// </summary>
         public async Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
             => await _db.ProjectMembers
                         .AsNoTracking()
@@ -46,9 +64,15 @@ namespace Infrastructure.Data.Repositories
                         .Select(pm => (ProjectRole?)pm.Role)
                         .FirstOrDefaultAsync(ct);
 
+        /// <summary>
+        /// Adds a new project membership to the context.
+        /// </summary>
         public async Task AddAsync(ProjectMember member, CancellationToken ct = default)
             => await _db.ProjectMembers.AddAsync(member, ct);
 
+        /// <summary>
+        /// Updates a member's role with optimistic concurrency. No-ops if the role is unchanged.
+        /// </summary>
         public async Task<PrecheckStatus> UpdateRoleAsync(
             Guid projectId,
             Guid userId,
@@ -72,6 +96,9 @@ namespace Infrastructure.Data.Repositories
             return PrecheckStatus.Ready;
         }
 
+        /// <summary>
+        /// Marks a membership as removed (soft delete) with concurrency protection.
+        /// </summary>
         public async Task<PrecheckStatus> SetRemovedAsync(
             Guid projectId,
             Guid userId,
@@ -92,6 +119,9 @@ namespace Infrastructure.Data.Repositories
             return PrecheckStatus.Ready;
         }
 
+        /// <summary>
+        /// Restores a previously removed membership with concurrency protection.
+        /// </summary>
         public async Task<PrecheckStatus> SetRestoredAsync(
             Guid projectId,
             Guid userId,
@@ -111,11 +141,17 @@ namespace Infrastructure.Data.Repositories
             return PrecheckStatus.Ready;
         }
 
+        /// <summary>
+        /// Checks whether a user has a membership entry in a project.
+        /// </summary>
         public async Task<bool> ExistsAsync(Guid projectId, Guid userId, CancellationToken ct = default)
             => await _db.ProjectMembers
                         .AsNoTracking()
                         .AnyAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
 
+        /// <summary>
+        /// Counts distinct projects where the user has an active membership.
+        /// </summary>
         public async Task<int> CountUserActiveMembershipsAsync(Guid userId, CancellationToken ct = default)
             => await _db.ProjectMembers
                         .AsNoTracking()
@@ -124,4 +160,5 @@ namespace Infrastructure.Data.Repositories
                         .Distinct()
                         .CountAsync(ct);
     }
+
 }

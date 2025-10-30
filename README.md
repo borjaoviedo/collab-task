@@ -1,97 +1,123 @@
-# collab-task
+# CollabTask
 
-Collaborative task management backend built with **ASP.NET Core** under **Clean Architecture** principles.
+> 🇬🇧 This file is in English.  
+> 🇪🇸 [Versión en español disponible aquí](./README.es.md)
 
----
+**CollabTask** is a collaborative task management backend built with **ASP.NET Core 8** following **Clean Architecture** principles.
 
-## Version v0.4.0
-Backend now includes **real-time collaboration** via SignalR.
-
-### Realtime System
-- Integrated **SignalR** hub: `/hubs/board`.
-- Groups: `project:{projectId}` for scoped event delivery.
-- Service: `BoardNotifier` for broadcasting events to connected clients.
-- Events implemented:
-  - **TaskItem** → `task.created`, `task.updated`, `task.moved`, `task.deleted`
-  - **TaskAssignment** → `assignment.created`, `assignment.updated`, `assignment.removed`
-  - **TaskNote** → `note.created`, `note.updated`, `note.deleted`
-- All events follow the schema:
-  ```json
-  { "type": "note.updated", "projectId": "guid", "payload": { ... } }
-  ```
-- Tested serialization, handler logic, and hub broadcasting for all event types.
-
-### Domain
-- Entities: `Lane`, `Column`, `TaskItem`, `TaskNote`, `TaskAssignment`, `TaskActivity`.
-- Value Objects: `LaneName`, `ColumnName`, `TaskTitle`, `TaskDescription`, `NoteContent`, `ActivityPayload`.
-- Enum: `TaskActivityType` (`TaskCreated`, `TaskEdited`, `TaskMoved`, `OwnerChanged`, `CoOwnerChanged`, `NoteAdded`, `NoteEdited`, `NoteRemoved`).
-- Concurrency control via `[Timestamp] RowVersion`.
-- Ordering: `Lane.Order`, `Column.Order`, and `TaskItem.SortKey` for stable board ordering.
-
-### Application
-- Read/Write services for lanes, columns, tasks, notes, assignments, and activities.
-- Business rules: single owner per task, project consistency, validation on moves and deletions.
-- **Realtime publishing** integrated using Mediator notifications.
-- **Automatic TaskActivity logging** preserved from v0.3.0.
-- DTOs, mappers, and validators for create/rename/reorder/move/edit/delete flows.
-
-### Infrastructure
-- EF Core configurations and migrations maintained from v0.3.0.
-- Added SignalR services in DI container.
-- `WebApplicationExtensions.MapApiLayer()` registers `/hubs/board`.
-
-### API (Minimal APIs)
-- Nested endpoints under `/projects/{projectId}/lanes/{laneId}/columns/{columnId}`.
-- CRUD + realtime publishing for tasks, assignments, and notes.
-- Authorization based on project role policies (`ProjectReader`, `ProjectMember`, etc.).
-
-### Testing
-- Unit and integration tests for all event serialization and handler pipelines.
-- `BoardNotifierTests` verifying SignalR broadcasting.
-- Coverage ≥60% enforced.
+It provides a real-time Kanban board API supporting multi-user collaboration, optimistic concurrency, and strong domain modeling.
 
 ---
 
-## Backend Overview
-- **Domain**: Users, Projects, Members, and full Kanban entities.
-- **Application**: Validation, business rules, persistence orchestration, realtime publication.
-- **Infrastructure**: EF Core persistence, repositories, migrations, SignalR integration.
-- **API**: Minimal API routes grouped per feature and `/hubs/board` for realtime.
+## Current Version — v1.0.0
 
-## Frontend
-Frontend removed since v0.3.0. The project is backend-only.
+The backend is ready for public release.
 
-## Project Structure
-```
-/.github    -> CI workflows
-/api        -> ASP.NET Core backend
-/infra      -> Docker Compose and infra configs
-/scripts    -> Unified scripts (dev, prod, test)
-```
+- Full documentation and XML comments across all layers.
+- Optimistic concurrency with `ETag` / `If-Match` support.
+- Domain-driven Unit of Work (`IUnitOfWork`) persistence orchestration.
+- Clean separation of Domain, Application, Infrastructure, and API layers.
+- Comprehensive test suite (unit + integration, ≥75% coverage).
+
+For detailed technical explanations, see [TECHNICAL_OVERVIEW.md](docs/TECHNICAL_OVERVIEW.md).  
+For version history, see [CHANGELOG.md](./CHANGELOG.md).
+
+---
+
+## Architecture Overview
+
+**CollabTask** is structured into four independent layers:
+
+| Layer | Responsibility |
+|-------|----------------|
+| **Domain** | Entities, Value Objects, invariants, and business rules. |
+| **Application** | Use cases, validation, and transactional orchestration via `IUnitOfWork`. |
+| **Infrastructure** | EF Core persistence, repositories, interceptors, migrations, and DI setup. |
+| **API** | Minimal APIs exposing project, board, and task endpoints (REST + Realtime). |
+
+Clean boundaries allow for isolated testing and maintainability.  
+
+---
+
+## Key Features
+
+- **Projects & Members** — Project-based collaboration with role-based access policies.  
+- **Kanban Board** — Lanes, Columns, Tasks, Notes, Assignments, and Activities.  
+- **Realtime Updates** — SignalR hub (`/hubs/board`) for project-scoped event broadcasting.  
+- **Optimistic Concurrency** — Enforced through `RowVersion`, `ETag`, and `If-Match` headers.  
+- **Automatic Activity Logging** — Task activities (create, edit, move, ownership, notes) logged automatically.  
+- **Strong Domain Model** — Value Objects and invariants protecting data consistency.  
+- **Clean Architecture** — Strict layering and dependency direction.  
+- **Extensive Testing** — Unit, integration, and concurrency tests with enforced coverage.  
+
+---
 
 ## Local Development
-**Requirements**: .NET 8 SDK, Node.js 20+, Docker Desktop.
 
-Commands:
-```
-npm run dev [args]    # development environment
-npm run prod [args]   # production profile
-```
-Common args: `rebuild | up | down | health | logs`
+**Requirements:**  
+- .NET 8 SDK  
+- Node.js ≥ 20  
+- Docker Desktop
 
-API: http://localhost:8080
+### Commands
+```bash
+npm run dev [args]     # Run development environment
+npm run prod [args]    # Run production profile
+```
+
+**Common args:**  
+`rebuild | up | down | health | logs`
+
+Default API URL: **http://localhost:8080**
+
+---
 
 ## Testing
-```
+
+Run test suites through unified scripts:
+
+```bash
 npm run test:unit
 npm run test:infra
 npm run test:all
 ```
 
+- Unit tests cover domain and application logic.
+- Integration tests validate persistence, concurrency, and endpoint behavior.
+
+---
+
 ## Continuous Integration
-- Build backend container.
-- Run backend tests with coverage enforcement.
-- Validate OpenAPI schema consistency.
+
+GitHub Actions pipeline ensures:
+- Build and test execution with coverage enforcement (≥75%).
+- Container image build verification.
+
+---
+
+## Project Structure
+
+```
+.github/        → CI workflows
+/api/           → ASP.NET Core backend (Domain, Application, Infrastructure, API)
+/infra/         → Docker Compose and infrastructure configs
+/scripts/       → Unified run/test scripts
+```
+
+---
 
 ## License
-This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
+
+This project is licensed under the **MIT License**.  
+See the [LICENSE](./LICENSE) file for details.
+
+---
+
+## Related Documentation
+
+- [CHANGELOG.md](./CHANGELOG.md) — Full version history.  
+- [TECHNICAL_OVERVIEW.md](docs/TECHNICAL_OVERVIEW.md) — Architecture, patterns, and authorization model.  
+
+---
+
+> **CollabTask** v1.0.0 — backend-ready for public release, documented, and optimized for maintainability.

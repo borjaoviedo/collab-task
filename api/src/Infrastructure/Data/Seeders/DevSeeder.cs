@@ -9,8 +9,19 @@ using System.Text.Json;
 
 namespace Infrastructure.Data.Seeders
 {
+    /// <summary>
+    /// Development-only database seeder that populates demo users, projects, board structure,
+    /// tasks, notes, assignments, and activity log entries. Idempotent: exits if any user exists.
+    /// </summary>
     public static class DevSeeder
     {
+        /// <summary>
+        /// Seeds initial demo data into an empty database using a scoped service provider.
+        /// Creates admin and regular users, two sample projects with lanes and columns, several tasks
+        /// with ownership, notes, and corresponding <see cref="TaskActivity"/> records.
+        /// </summary>
+        /// <param name="services">Root service provider used to resolve scoped dependencies.</param>
+        /// <param name="ct">Cancellation token.</param>
         public static async Task SeedAsync(IServiceProvider services, CancellationToken ct = default)
         {
             using var scope = services.CreateScope();
@@ -21,24 +32,39 @@ namespace Infrastructure.Data.Seeders
             var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
             DateTimeOffset Now() => DateTimeOffset.UtcNow;
 
-            // ==== Users ===========================================================
+            // ==== Users =====
             var (adminHash, adminSalt) = hasher.Hash("Admin123!");
-            var admin = User.Create(Email.Create("admin@demo.com"), UserName.Create("Admin User"), adminHash, adminSalt, UserRole.Admin);
+            var admin = User.Create(
+                Email.Create("admin@demo.com"),
+                UserName.Create("Admin User"),
+                adminHash,
+                adminSalt,
+                UserRole.Admin);
 
             var (userHash, userSalt) = hasher.Hash("User123!");
-            var user = User.Create(Email.Create("user@demo.com"), UserName.Create("Normal User"), userHash, userSalt, UserRole.User);
+            var user = User.Create(
+                Email.Create("user@demo.com"),
+                UserName.Create("Normal User"),
+                userHash,
+                userSalt,
+                UserRole.User);
 
             var (guestHash, guestSalt) = hasher.Hash("Guest123!");
-            var guest = User.Create(Email.Create("guest@demo.com"), UserName.Create("Guest User"), guestHash, guestSalt, UserRole.User);
+            var guest = User.Create(
+                Email.Create("guest@demo.com"),
+                UserName.Create("Guest User"),
+                guestHash,
+                guestSalt,
+                UserRole.User);
 
             db.Users.AddRange(admin, user, guest);
 
-            // ==== Helpers =========================================================
+            // ==== Helpers =====
             decimal sort = 0m;
             decimal NextKey() => sort += 1000m;
             static ActivityPayload Payload(object o) => ActivityPayload.Create(JsonSerializer.Serialize(o));
 
-            // ==== Project A =======================================================
+            // ==== Project A =====
             var prjA = Project.Create(admin.Id, ProjectName.Create("Demo Project A"));
             prjA.AddMember(user.Id, ProjectRole.Admin);
             prjA.AddMember(guest.Id, ProjectRole.Member);
@@ -56,7 +82,7 @@ namespace Infrastructure.Data.Seeders
             db.Lanes.AddRange(lanePlan, laneExec);
             db.Columns.AddRange(colIdeas, colTodo, colDoing, colReview, colDone);
 
-            // -- Task A1: Ideas + note --------------------------------------------
+            // -- Task A1: Ideas + note ---
             var tA1 = TaskItem.Create(
                 columnId: colIdeas.Id,
                 laneId: lanePlan.Id,
@@ -75,7 +101,7 @@ namespace Infrastructure.Data.Seeders
                 createdAt: Now()
             );
 
-            // -- Task A2: To do + owner + coowner + note ---------------------------
+            // -- Task A2: To do + owner + coowner + note --
             var tA2 = TaskItem.Create(
                 columnId: colTodo.Id,
                 laneId: laneExec.Id,
@@ -111,7 +137,7 @@ namespace Infrastructure.Data.Seeders
                 createdAt: Now()
             );
 
-            // -- Task A3: Flow To do -> Doing -> Review -> Done --------------------
+            // -- Task A3: Flow To do -> Doing -> Review -> Done --
             var tA3 = TaskItem.Create(
                 columnId: colTodo.Id,
                 laneId: laneExec.Id,
@@ -161,7 +187,7 @@ namespace Infrastructure.Data.Seeders
                 Payload(new { from = "Review", to = "Done" }),
                 createdAt: Now());
 
-            // -- Task A4: Doing + edit --------------------------------------------
+            // -- Task A4: Doing + edit --
             var tA4 = TaskItem.Create(
                 columnId: colDoing.Id,
                 laneId: laneExec.Id,
@@ -192,7 +218,7 @@ namespace Infrastructure.Data.Seeders
             db.TaskAssignments.AddRange(a2Own, a2Co, a3Own, a4Own);
             db.TaskActivities.AddRange(tA1a1, tA2a1, tA2a2, tA2a3, tA3a1, tA3a2, tA3a3, tA3a4, tA3a5, tA4a1, tA4a2);
 
-            // ==== Project B =======================================================
+            // ==== Project B =====
             var prjB = Project.Create(user.Id, ProjectName.Create("Demo Project B"));
             prjB.AddMember(admin.Id, ProjectRole.Admin);
             prjB.AddMember(guest.Id, ProjectRole.Reader);
@@ -236,7 +262,7 @@ namespace Infrastructure.Data.Seeders
             db.TaskAssignments.Add(b2Own);
             db.TaskActivities.Add(b2Act);
 
-            // ==== Persist =========================================================
+            // ==== Persist =====
             await db.SaveChangesAsync(ct);
         }
     }

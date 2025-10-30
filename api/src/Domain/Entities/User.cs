@@ -5,6 +5,9 @@ using Domain.ValueObjects;
 
 namespace Domain.Entities
 {
+    /// <summary>
+    /// Represents a registered user within the system.
+    /// </summary>
     public sealed class User : IAuditable
     {
         public Guid Id { get; private set; }
@@ -20,6 +23,9 @@ namespace Domain.Entities
 
         private User() { }
 
+        /// <summary>
+        /// Creates a new user with the specified credentials and role.
+        /// </summary>
         public static User Create(
             Email email,
             UserName name,
@@ -40,8 +46,14 @@ namespace Domain.Entities
             };
         }
 
+        /// <summary>
+        /// Renames the user by setting a new name.
+        /// </summary>
         public void Rename(UserName newName) => Name = newName;
 
+        /// <summary>
+        /// Changes the user's role if the new role differs from the current one.
+        /// </summary>
         public void ChangeRole(UserRole newRole)
         {
             Guards.EnumDefined(newRole);
@@ -50,6 +62,9 @@ namespace Domain.Entities
             Role = newRole;
         }
 
+        /// <summary>
+        /// Sets the concurrency token after the entity has been persisted.
+        /// </summary>
         internal void SetRowVersion(byte[] rowVersion)
         {
             Guards.NotNull(rowVersion);

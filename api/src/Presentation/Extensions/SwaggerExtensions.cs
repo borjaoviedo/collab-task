@@ -3,8 +3,18 @@ using Microsoft.OpenApi.Models;
 
 namespace Api.Extensions
 {
+    /// <summary>
+    /// Service collection and application builder extensions for Swagger (OpenAPI) configuration.
+    /// Adds JWT-based security definition, authorization filters, and conditional Swagger UI setup for development.
+    /// </summary>
     public static class SwaggerExtensions
     {
+        /// <summary>
+        /// Registers Swagger/OpenAPI generation with JWT bearer authentication support.
+        /// Adds security definitions, authorization requirements, and operation filters for secured endpoints.
+        /// </summary>
+        /// <param name="services">The service collection to configure.</param>
+        /// <returns>The same service collection for chaining.</returns>
         public static IServiceCollection AddSwaggerWithJwt(this IServiceCollection services)
         {
             services.AddEndpointsApiExplorer();
@@ -42,6 +52,13 @@ namespace Api.Extensions
             return services;
         }
 
+        /// <summary>
+        /// Enables Swagger UI only in development environments.
+        /// Configures the UI endpoint and route prefix for interactive API exploration.
+        /// </summary>
+        /// <param name="app">The application builder.</param>
+        /// <param name="env">The current hosting environment.</param>
+        /// <returns>The same application builder for chaining.</returns>
         public static IApplicationBuilder UseSwaggerUiIfDev(this IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (!env.IsDevelopment()) return app;

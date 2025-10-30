@@ -5,10 +5,18 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Infrastructure.Data.Interceptors
 {
+    /// <summary>
+    /// Intercepts EF Core save operations to automatically apply audit timestamps
+    /// (<see cref="IAuditable.CreatedAt"/> and <see cref="IAuditable.UpdatedAt"/>) 
+    /// using a provided <see cref="IDateTimeProvider"/>.
+    /// </summary>
     public sealed class AuditingSaveChangesInterceptor(IDateTimeProvider clock) : SaveChangesInterceptor
     {
         private readonly IDateTimeProvider _clock = clock;
 
+        /// <summary>
+        /// Synchronously stamps audit fields before changes are persisted.
+        /// </summary>
         public override InterceptionResult<int> SavingChanges(
             DbContextEventData eventData,
             InterceptionResult<int> result)
@@ -17,6 +25,9 @@ namespace Infrastructure.Data.Interceptors
             return base.SavingChanges(eventData, result);
         }
 
+        /// <summary>
+        /// Asynchronously stamps audit fields before changes are persisted.
+        /// </summary>
         public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
             DbContextEventData eventData,
             InterceptionResult<int> result,
@@ -26,6 +37,12 @@ namespace Infrastructure.Data.Interceptors
             return base.SavingChangesAsync(eventData, result, cancellationToken);
         }
 
+        /// <summary>
+        /// Updates <see cref="IAuditable"/> entities with creation and modification timestamps.
+        /// Newly added entities receive both CreatedAt and UpdatedAt values.
+        /// Modified entities update only the UpdatedAt value when real data changes exist.
+        /// </summary>
+        /// <param name="context">The current EF Core DbContext being tracked.</param>
         private void Stamp(DbContext? context)
         {
             if (context is null) return;

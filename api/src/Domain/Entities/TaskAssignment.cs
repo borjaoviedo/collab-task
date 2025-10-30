@@ -3,6 +3,9 @@ using Domain.Enums;
 
 namespace Domain.Entities
 {
+    /// <summary>
+    /// Represents a user assignment within a task.
+    /// </summary>
     public sealed class TaskAssignment
     {
         public Guid TaskId { get; private set; }
@@ -12,6 +15,7 @@ namespace Domain.Entities
 
         private TaskAssignment() { }
 
+        /// <summary>Creates a new task assignment with a specified role.</summary>
         public static TaskAssignment Create(Guid taskId, Guid userId, TaskRole role)
         {
             Guards.NotEmpty(taskId);
@@ -26,6 +30,7 @@ namespace Domain.Entities
             };
         }
 
+        /// <summary>Creates a new assignment designating the user as task owner.</summary>
         public static TaskAssignment AssignOwner(Guid taskId, Guid userId)
         {
             Guards.NotEmpty(taskId);
@@ -34,6 +39,7 @@ namespace Domain.Entities
             return Create(taskId, userId, TaskRole.Owner);
         }
 
+        /// <summary>Creates a new assignment designating the user as task co-owner.</summary>
         public static TaskAssignment AssignCoOwner(Guid taskId, Guid userId)
         {
             Guards.NotEmpty(taskId);
@@ -42,12 +48,14 @@ namespace Domain.Entities
             return Create(taskId, userId, TaskRole.CoOwner);
         }
 
+        /// <summary>Sets the concurrency token after persistence.</summary>
         internal void SetRowVersion(byte[] rowVersion)
         {
             Guards.NotNull(rowVersion);
             RowVersion = rowVersion;
         }
 
+        /// <summary>Changes the task role, validating enum constraints.</summary>
         internal void SetRole(TaskRole role)
         {
             Guards.EnumDefined(role);

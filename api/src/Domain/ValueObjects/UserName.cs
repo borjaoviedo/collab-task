@@ -3,6 +3,9 @@ using System.Text.RegularExpressions;
 
 namespace Domain.ValueObjects
 {
+    /// <summary>
+    /// Represents the validated display name of a user.
+    /// </summary>
     public sealed class UserName : IEquatable<UserName>
     {
         public string Value { get; }

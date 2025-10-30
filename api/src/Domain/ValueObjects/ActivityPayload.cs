@@ -3,6 +3,9 @@ using System.Text.Json;
 
 namespace Domain.ValueObjects
 {
+    /// <summary>
+    /// Represents a JSON-based payload describing the details of a task-related activity.
+    /// </summary>
     public sealed class ActivityPayload : IEquatable<ActivityPayload>
     {
         public string Value { get; }

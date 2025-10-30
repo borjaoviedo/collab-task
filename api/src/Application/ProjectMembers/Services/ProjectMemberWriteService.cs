@@ -6,8 +6,19 @@ using Domain.Enums;
 
 namespace Application.ProjectMembers.Services
 {
+    /// <summary>
+    /// Write-side application service for project members.
+    /// </summary>
     public sealed class ProjectMemberWriteService(IProjectMemberRepository repo, IUnitOfWork uow) : IProjectMemberWriteService
     {
+        /// <summary>
+        /// Creates a new membership for a user within a project.
+        /// </summary>
+        /// <param name="projectId">The project identifier.</param>
+        /// <param name="userId">The user to add.</param>
+        /// <param name="role">The initial role.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>The mutation result and the created membership when successful.</returns>
         public async Task<(DomainMutation, ProjectMember?)> CreateAsync(
             Guid projectId,
             Guid userId,
@@ -23,6 +34,14 @@ namespace Application.ProjectMembers.Services
             return (createResult, projectMember);
         }
 
+        /// <summary>
+        /// Changes the role of an existing project member with concurrency enforcement.
+        /// </summary>
+        /// <param name="projectId">The project identifier.</param>
+        /// <param name="userId">The user identifier.</param>
+        /// <param name="newRole">The new role to assign.</param>
+        /// <param name="rowVersion">Concurrency token.</param>
+        /// <param name="ct">Cancellation token.</param>
         public async Task<DomainMutation> ChangeRoleAsync(
             Guid projectId,
             Guid userId,
@@ -37,6 +56,13 @@ namespace Application.ProjectMembers.Services
             return updateResult;
         }
 
+        /// <summary>
+        /// Soft-removes a project member with concurrency enforcement.
+        /// </summary>
+        /// <param name="projectId">The project identifier.</param>
+        /// <param name="userId">The user identifier.</param>
+        /// <param name="rowVersion">Concurrency token.</param>
+        /// <param name="ct">Cancellation token.</param>
         public async Task<DomainMutation> RemoveAsync(
             Guid projectId,
             Guid userId,
@@ -50,6 +76,13 @@ namespace Application.ProjectMembers.Services
             return updateResult;
         }
 
+        /// <summary>
+        /// Restores a previously removed project member with concurrency enforcement.
+        /// </summary>
+        /// <param name="projectId">The project identifier.</param>
+        /// <param name="userId">The user identifier.</param>
+        /// <param name="rowVersion">Concurrency token.</param>
+        /// <param name="ct">Cancellation token.</param>
         public async Task<DomainMutation> RestoreAsync(
             Guid projectId,
             Guid userId,

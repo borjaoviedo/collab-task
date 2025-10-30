@@ -2,9 +2,28 @@ using Domain.Enums;
 
 namespace Api.Extensions
 {
+    /// <summary>
+    /// Maps <see cref="DomainMutation"/> outcomes from the domain layer to appropriate HTTP responses.
+    /// Converts domain-level operation results into standardized <see cref="IResult"/> objects with
+    /// relevant status codes, ProblemDetails, and optional ETag precondition handling.
+    /// </summary>
     public static class DomainMutationExtensions
     {
-        public static IResult ToHttp(this DomainMutation result, HttpContext? context = null, object? body = null, string? location = null)
+        /// <summary>
+        /// Converts a <see cref="DomainMutation"/> value into an HTTP response.
+        /// Handles Created, Updated, Deleted, Conflict, NotFound, and PreconditionFailed cases
+        /// using <see cref="Results"/> helpers and attaches trace identifiers when context is available.
+        /// </summary>
+        /// <param name="result">The domain mutation outcome.</param>
+        /// <param name="context">Optional HTTP context to extract headers and trace information.</param>
+        /// <param name="body">Optional custom response body.</param>
+        /// <param name="location">Optional Location header value for Created responses.</param>
+        /// <returns>An <see cref="IResult"/> representing the appropriate HTTP response.</returns>
+        public static IResult ToHttp(
+            this DomainMutation result,
+            HttpContext? context = null,
+            object? body = null,
+            string? location = null)
         {
             // Detect If-Match -> PreconditionFailed
             bool hasIfMatch = context?.Request.Headers.IfMatch.Count > 0;

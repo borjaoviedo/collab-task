@@ -4,6 +4,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.Data
 {
+    /// <summary>
+    /// EF Core database context for CollabTask.
+    /// Configures entity sets and provider-specific mappings, including
+    /// constraints, indexes, value converters, and concurrency tokens.
+    /// </summary>
     public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
     {
         public DbSet<User> Users { get; set; }
@@ -16,6 +21,10 @@ namespace Infrastructure.Data
         public DbSet<TaskActivity> TaskActivities { get; set; }
         public DbSet<TaskAssignment> TaskAssignments { get; set; }
 
+        /// <summary>
+        /// Applies entity configurations and delegates provider-specific adjustments.
+        /// </summary>
+        /// <param name="modelBuilder">The model builder used to configure EF Core mappings.</param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -24,6 +33,12 @@ namespace Infrastructure.Data
             ConfigureProviderSpecificMappings(modelBuilder);
         }
 
+        /// <summary>
+        /// Applies database-provider-specific mappings and constraints.
+        /// For SQL Server: table names, CHECK constraints, filtered unique indexes.
+        /// For SQLite: CHECK constraints, rowversion emulation, DateTimeOffset converters.
+        /// </summary>
+        /// <param name="modelBuilder">The model builder used to configure EF Core mappings.</param>
         private void ConfigureProviderSpecificMappings(ModelBuilder modelBuilder)
         {
             // ------------------------ SQLServer ------------------------ 
@@ -140,6 +155,7 @@ namespace Infrastructure.Data
 
             // ------------------------ SQLite (testing) ------------------------
 
+            // Converts DateTimeOffset to milliseconds since epoch due to SQLite limitations
             var dtoToLong = new ValueConverter<DateTimeOffset, long>(
                     v => v.ToUnixTimeMilliseconds(),
                     v => DateTimeOffset.FromUnixTimeMilliseconds(v));

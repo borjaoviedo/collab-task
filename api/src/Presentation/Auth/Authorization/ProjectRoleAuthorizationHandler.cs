@@ -4,6 +4,15 @@ using System.Security.Claims;
 
 namespace Api.Auth.Authorization
 {
+    /// <summary>
+    /// Evaluates <see cref="ProjectRoleRequirement"/> against the current user on the routed project.
+    /// </summary>
+    /// <remarks>
+    /// - Extracts userId from claims.
+    /// - Resolves projectId from {projectId} route value.
+    /// - Calls membership to check role >= required.
+    /// Returns success only if the user belongs to the project and meets the minimum role.
+    /// </remarks>
     public sealed class ProjectRoleAuthorizationHandler(IProjectMemberReadService membership) : AuthorizationHandler<ProjectRoleRequirement>
     {
         private readonly IProjectMemberReadService _membership = membership;
@@ -36,6 +45,7 @@ namespace Api.Auth.Authorization
             else context.Fail();
         }
 
+        // Reads {projectId} from route data; returns false when absent or invalid.
         private static bool TryGetProjectId(HttpContext http, out Guid projectId)
         {
             projectId = Guid.Empty;

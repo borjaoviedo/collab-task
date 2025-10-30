@@ -2,7 +2,10 @@ using Domain.Common;
 
 namespace Domain.ValueObjects
 {
-    public sealed class TaskDescription :IEquatable<TaskDescription>
+    /// <summary>
+    /// Represents the validated description text of a task.
+    /// </summary>
+    public sealed class TaskDescription : IEquatable<TaskDescription>
     {
         public string Value { get; }
 
