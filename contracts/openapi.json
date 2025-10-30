@@ -404,7 +404,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -474,6 +474,16 @@
                 }
               }
             }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -517,7 +527,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -604,6 +614,16 @@
                 }
               }
             }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -647,7 +667,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -727,6 +747,16 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1000,7 +1030,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -1070,6 +1100,16 @@
                 }
               }
             }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1104,7 +1144,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -1191,6 +1231,16 @@
                 }
               }
             }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1225,7 +1275,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -1305,6 +1355,16 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1643,7 +1703,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -1730,6 +1790,16 @@
                 }
               }
             }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1764,7 +1834,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -1834,6 +1904,16 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1875,7 +1955,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -1945,6 +2025,16 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2091,7 +2181,7 @@
             "name": "OrderBy",
             "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/ProjectOrderBy"
             }
           }
         ],
@@ -2264,7 +2354,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -2327,6 +2417,16 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2450,7 +2550,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -2530,6 +2630,16 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3176,7 +3286,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -3219,6 +3329,16 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3287,7 +3407,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -3367,6 +3487,16 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3814,7 +3944,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -3884,6 +4014,16 @@
                 }
               }
             }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -3945,7 +4085,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -4025,6 +4165,16 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4436,7 +4586,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -4506,6 +4656,16 @@
                 }
               }
             }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -4558,7 +4718,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -4645,6 +4805,16 @@
                 }
               }
             }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -4697,7 +4867,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -4777,6 +4947,16 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4915,7 +5095,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -4978,6 +5158,16 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5072,7 +5262,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -5149,6 +5339,16 @@
                 }
               }
             }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -5174,7 +5374,7 @@
           {
             "name": "If-Match",
             "in": "header",
-            "description": "ETag from previous GET (format: W/\"base64\" or \"base64\").",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
             "required": true,
             "schema": {
               "type": "string"
@@ -5254,6 +5454,16 @@
           },
           "412": {
             "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5539,7 +5749,6 @@
       },
       "ProjectMemberCreateDto": {
         "required": [
-          "joinedAt",
           "role",
           "userId"
         ],
@@ -5551,10 +5760,6 @@
           },
           "role": {
             "$ref": "#/components/schemas/ProjectRole"
-          },
-          "joinedAt": {
-            "type": "string",
-            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -5609,6 +5814,17 @@
           }
         },
         "additionalProperties": false
+      },
+      "ProjectOrderBy": {
+        "enum": [
+          "CreatedAtAsc",
+          "CreatedAtDesc",
+          "NameAsc",
+          "NameDesc",
+          "UpdatedAtAsc",
+          "UpdatedAtDesc"
+        ],
+        "type": "string"
       },
       "ProjectReadDto": {
         "type": "object",
@@ -5701,30 +5917,24 @@
       },
       "TaskActivityType": {
         "enum": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8
+          "TaskCreated",
+          "TaskEdited",
+          "TaskMoved",
+          "AssignmentCreated",
+          "AssignmentRoleChanged",
+          "AssignmentRemoved",
+          "NoteAdded",
+          "NoteEdited",
+          "NoteRemoved"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
       },
       "TaskAssignmentChangeRoleDto": {
         "required": [
-          "newRole",
-          "userId"
+          "newRole"
         ],
         "type": "object",
         "properties": {
-          "userId": {
-            "type": "string",
-            "format": "uuid"
-          },
           "newRole": {
             "$ref": "#/components/schemas/TaskRole"
           }
@@ -5819,21 +6029,21 @@
       },
       "TaskItemMoveDto": {
         "required": [
-          "targetColumnId",
-          "targetLaneId",
-          "targetSortKey"
+          "newColumnId",
+          "newLaneId",
+          "newSortKey"
         ],
         "type": "object",
         "properties": {
-          "targetColumnId": {
+          "newColumnId": {
             "type": "string",
             "format": "uuid"
           },
-          "targetLaneId": {
+          "newLaneId": {
             "type": "string",
             "format": "uuid"
           },
-          "targetSortKey": {
+          "newSortKey": {
             "type": "number",
             "format": "double"
           }
@@ -5929,7 +6139,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "authorId": {
+          "userId": {
             "type": "string",
             "format": "uuid"
           },
