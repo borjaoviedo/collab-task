@@ -1,5 +1,8 @@
 # Technical Overview — CollabTask v1.0.0
 
+> 🇬🇧 This file is in English.  
+> 🇪🇸 [Versión en español disponible aquí](./TECHNICAL_OVERVIEW.es.md)
+
 This document provides a detailed overview of the **CollabTask backend architecture**, patterns, and internal design principles.
 
 It complements the [README.md](../README.md) file by focusing on the **technical and architectural aspects** of the system.

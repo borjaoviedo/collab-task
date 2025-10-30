@@ -1,5 +1,8 @@
 # CollabTask
 
+> 🇬🇧 This file is in English.  
+> 🇪🇸 [Versión en español disponible aquí](./README.es.md)
+
 **CollabTask** is a collaborative task management backend built with **ASP.NET Core 8** following **Clean Architecture** principles.
 
 It provides a real-time Kanban board API supporting multi-user collaboration, optimistic concurrency, and strong domain modeling.
