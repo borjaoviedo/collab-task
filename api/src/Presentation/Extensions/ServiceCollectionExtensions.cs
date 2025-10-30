@@ -27,13 +27,13 @@ namespace Api.Extensions
             string connectionString)
         {
             services
+                .AddProblemDetailsAndExceptionMapping()
                 .AddCorsPolicies(config)
                 .AddInfrastructure(connectionString)
-                .AddSwaggerWithJwt()
-                .AddJwtAuthAndPolicies(config)
                 .AddApplication()
                 .AddAppValidation()
-                .AddProblemDetailsAndExceptionMapping()
+                .AddSwaggerWithJwt()
+                .AddJwtAuthAndPolicies(config)
                 .AddSignalR();
 
             services.AddSingleton<IRealtimeNotifier, ProjectsHubNotifier>();
