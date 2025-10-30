@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Domain.ValueObjects
 {
+    /// <summary>
+    /// Represents a URL-friendly and normalized identifier (slug) for a project.
+    /// </summary>
     public sealed class ProjectSlug : IEquatable<ProjectSlug>
     {
         public string Value { get; }

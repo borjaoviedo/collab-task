@@ -2,6 +2,9 @@ using Domain.Common;
 
 namespace Domain.ValueObjects
 {
+    /// <summary>
+    /// Represents the validated name of a lane within a project board.
+    /// </summary>
     public sealed class LaneName : IEquatable<LaneName>
     {
         public string Value { get; }

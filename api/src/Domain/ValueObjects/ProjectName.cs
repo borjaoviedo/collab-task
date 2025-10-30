@@ -2,6 +2,9 @@ using Domain.Common;
 
 namespace Domain.ValueObjects
 {
+    /// <summary>
+    /// Represents the validated display name of a project.
+    /// </summary>
     public sealed class ProjectName : IEquatable<ProjectName>
     {
         public string Value { get; }

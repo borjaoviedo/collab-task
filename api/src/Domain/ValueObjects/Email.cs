@@ -3,6 +3,9 @@ using System.Text.RegularExpressions;
 
 namespace Domain.ValueObjects
 {
+    /// <summary>
+    /// Represents a validated and normalized email address used for user identification.
+    /// </summary>
     public sealed class Email : IEquatable<Email>
     {
         public string Value { get; }

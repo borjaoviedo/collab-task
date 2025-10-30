@@ -2,6 +2,9 @@ using Domain.Common;
 
 namespace Domain.ValueObjects
 {
+    /// <summary>
+    /// Represents the validated textual content of a note attached to a task.
+    /// </summary>
     public sealed class NoteContent : IEquatable<NoteContent>
     {
         public string Value { get; }
