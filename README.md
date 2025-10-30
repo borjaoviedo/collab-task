@@ -16,7 +16,7 @@ The backend is ready for public release.
 - Clean separation of Domain, Application, Infrastructure, and API layers.
 - Comprehensive test suite (unit + integration, ≥75% coverage).
 
-For detailed technical explanations, see [TECHNICAL_OVERVIEW.md](./TECHNICAL_OVERVIEW.md).  
+For detailed technical explanations, see [TECHNICAL_OVERVIEW.md](docs/TECHNICAL_OVERVIEW.md).  
 For version history, see [CHANGELOG.md](./CHANGELOG.md).
 
 ---
@@ -113,7 +113,7 @@ See the [LICENSE](./LICENSE) file for details.
 ## Related Documentation
 
 - [CHANGELOG.md](./CHANGELOG.md) — Full version history.  
-- [TECHNICAL_OVERVIEW.md](./TECHNICAL_OVERVIEW.md) — Architecture, patterns, and authorization model.  
+- [TECHNICAL_OVERVIEW.md](docs/TECHNICAL_OVERVIEW.md) — Architecture, patterns, and authorization model.  
 
 ---
 
