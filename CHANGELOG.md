@@ -4,6 +4,78 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2025-10-30
+
+### Added
+- **Documentation**
+  - Added **comprehensive XML documentation** across the entire backend ensuring **full codebase coverage** and **API clarity**.
+- **Concurrency & Contracts**
+  - Added **strict handling** for `If-Match` and `ETag` headers across all endpoints.
+  - Implemented **`RequireIfMatch()`** and **`RejectIfMatch()`** endpoint filters to enforce **optimistic concurrency**.
+  - Added **`428 Precondition Required`** responses to OpenAPI for clarity on precondition enforcement.
+- **OpenAPI**
+  - Updated **`openapi.json` summaries and descriptions** for all endpoints.
+  - Added **detailed endpoint documentation** indicating member/admin roles and concurrency behavior.
+
+### Changed
+- **Domain**
+  - Added **validation refinements** across value objects (`UserName`, `ProjectName`, etc.) enforcing stricter rules via guard clauses.
+  - Extended **domain invariants** for ownership constraints: **exactly one active project owner** per project, validated through **unique filtered index**.
+  - Improved consistency of **concurrency tokens** and **audit behavior** across domain entities.
+  - Added XML summaries to all **domain types**: entities, value objects, enums, and domain events.
+
+- **Application**
+  - Introduced the **Unit of Work (UoW)** pattern via `IUnitOfWork` abstraction to coordinate **atomic persistence boundaries** and unify **transaction outcomes**.
+  - Application services now delegate persistence commits to **`IUnitOfWork.SaveAsync()`** instead of direct **`DbContext.SaveChangesAsync()`**.
+  - Reorganized namespaces for **`TaskItemChange`** into `Application.TaskItems.Changes`.
+  - Replaced **`DomainMutation`** results with refined **`PrecheckStatus`** outcomes for repository operations.
+  - Rewrote repository and service interfaces to use **domain value objects** (`TaskTitle`, `TaskDescription`, etc.).
+  - Improved **audit interceptor** (`AuditingSaveChangesInterceptor`) integration via **`IDateTimeProvider`**.
+  - Standardized **XML documentation** across all interfaces and service abstractions.
+
+- **Infrastructure**
+  - Added implementation of **`UnitOfWork`** in `Infrastructure.Data.UnitOfWork`, translating EF Core persistence outcomes into `DomainMutation` results.
+  - Extended **dependency injection** to register `IUnitOfWork` and refactored **`DependencyInjection.cs`** with clearer separation between concerns (**DbContext**, interceptors, repositories, services).
+  - Moved **`DbInitHostedService`** from `Infrastructure/Initialization` to `Infrastructure/Data/Initialization` for structural consistency.
+  - Improved **`AppDbContext`** with provider-specific configurations:
+    - **SQL Server:** enforced **CHECK constraints**, **filtered unique indexes** (e.g. active owner rule).
+    - **SQLite:** added converters and **rowversion emulation**.
+  - Updated **EF Core interceptors** and **auditing logic** for accurate timestamping.
+  - Added new migrations **`Rename_TaskNote_AuthorId_To_UserId`** and **`InfraSchemaFinalization`** (final schema cleanup).
+
+- **API**
+  - Normalized **endpoint summaries and descriptions** to follow **REST** and **concurrency conventions**.
+  - Updated all **Create/Edit/Delete endpoints** to clearly indicate authorization level (**Member-only**, **Admin-only**) and **ETag requirements**.
+  - Renamed OpenAPI **`operationId`** fields for consistency:
+    - `Tasks_Get` → **`Tasks_Get_ById`**
+    - `TaskNotes_Get` → **`TaskNotes_Get_ById`**
+    - `TaskNotes_ListMine` → **`TaskNotes_Get_Mine`**
+    - `TaskNotes_ListByUser` → **`TaskNotes_Get_ByUser`**
+  - Unified **response contracts for concurrency** (`409 Conflict`, `412 PreconditionFailed`, `428 PreconditionRequired`).
+
+- **Testing**
+  - Major **refactor of integration and unit tests**:
+    - Introduced **`TestHelpers.Api.*`** modules for reusable test operations (**Auth**, **Projects**, **ProjectMembers**, etc.).
+    - Added **UoW usage in tests** to verify **transactional persistence** across repositories.
+    - Replaced inline setup code with **centralized helpers** improving readability and reusability.
+  - Adjusted **test project references** (`TestHelpers.csproj` now references `Api.csproj` for endpoint helpers).
+  - Extended **test cases** to cover **concurrency validation** (e.g. `Create_With_IfMatch_Header_Returns_400`).
+
+- **Contracts**
+  - Rewritten and normalized the entire **`openapi.json`** file with new summaries, operation IDs, and improved header documentation.
+
+### Fixed
+- Corrected multiple inconsistencies between **ETag/If-Match usage** and repository concurrency behavior.
+- Fixed **row version propagation** on update and delete operations across all board entities.
+
+### Removed
+- Deleted placeholder files `.gitkeep`.
+
+### Notes
+- This version completes all refactors, documentation, and preparation for public release.
+- Backend is fully documented, consistent with Clean Architecture, Unit of Work pattern, and optimistic concurrency standards.
+- **Tag created: `v1.0.0`
+
 ## [0.4.0] - 2025-10-17
 ### Added
 - **Backend / Realtime**
