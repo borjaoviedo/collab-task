@@ -1,7 +1,7 @@
 using Infrastructure.Data.Extensions;
 using Microsoft.Extensions.Hosting;
 
-namespace Infrastructure.Initialization
+namespace Infrastructure.Data.Initialization
 {
     /// <summary>
     /// Hosted service that ensures the database schema is up to date and seeded at application startup.
