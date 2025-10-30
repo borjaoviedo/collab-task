@@ -18,7 +18,8 @@ namespace Api.Extensions
         /// <returns>The same <see cref="WebApplication"/> for chaining.</returns>
         public static WebApplication MapApiLayer(this WebApplication app)
         {
-            app.MapHub<ProjectsHub>("/hubs/projects").RequireAuthorization(Policies.ProjectReader);
+            app.MapHub<ProjectsHub>("/hubs/projects")
+               .RequireAuthorization(Policies.ProjectReader);
             return app;
         }
     }
