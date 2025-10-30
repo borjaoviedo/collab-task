@@ -3,6 +3,9 @@ using Domain.Common;
 
 namespace Domain.Entities
 {
+    /// <summary>
+    /// Represents a column within a lane of a project board.
+    /// </summary>
     public sealed class Column
     {
         public Guid Id { get; private set; }
@@ -14,6 +17,7 @@ namespace Domain.Entities
 
         private Column() { }
 
+        /// <summary>Creates a new column within a lane.</summary>
         public static Column Create(Guid projectId, Guid laneId, ColumnName name, int? order)
         {
             Guards.NotEmpty(projectId);
@@ -29,12 +33,14 @@ namespace Domain.Entities
             };
         }
 
+        /// <summary>Renames the column if the provided name differs from the current one.</summary>
         public void Rename(ColumnName name)
         {
             if (Name.Equals(name)) return;
             Name = name;
         }
 
+        /// <summary>Updates the column order if different from the current one.</summary>
         public void Reorder(int order)
         {
             Guards.NonNegative(order);
@@ -43,6 +49,7 @@ namespace Domain.Entities
             Order = order;
         }
 
+        /// <summary>Sets the concurrency token after persistence.</summary>
         internal void SetRowVersion(byte[] rowVersion)
         {
             Guards.NotNull(rowVersion);

@@ -6,6 +6,9 @@ using Domain.ValueObjects;
 
 namespace Domain.Entities
 {
+    /// <summary>
+    /// Represents a project containing members, lanes, and tasks.
+    /// </summary>
     public sealed class Project : IAuditable
     {
         public Guid Id { get; private set; }
@@ -19,6 +22,9 @@ namespace Domain.Entities
 
         private Project() { }
 
+        /// <summary>
+        /// Creates a new project and assigns the creator as the owner.
+        /// </summary>
         public static Project Create(Guid ownerId, ProjectName name)
         {
             Guards.NotEmpty(ownerId);
@@ -35,14 +41,15 @@ namespace Domain.Entities
             return project;
         }
 
+        /// <summary>Renames the project and regenerates its slug if the name changes.</summary>
         public void Rename(ProjectName newName)
         {
             if (Name.Equals(newName)) return;
-
             Name = newName;
             Slug = ProjectSlug.Create(newName);
         }
 
+        /// <summary>Adds a new member to the project after validating membership and ownership rules.</summary>
         public void AddMember(Guid userId, ProjectRole role)
         {
             Guards.NotEmpty(userId);
@@ -57,6 +64,7 @@ namespace Domain.Entities
             Members.Add(ProjectMember.Create(Id, userId, role));
         }
 
+        /// <summary>Removes a project member, enforcing ownership constraints.</summary>
         public void RemoveMember(Guid userId, DateTimeOffset removedAtUtc)
         {
             Guards.NotEmpty(userId);
@@ -69,6 +77,7 @@ namespace Domain.Entities
             member.Remove(removedAtUtc);
         }
 
+        /// <summary>Changes a member’s role while enforcing ownership transfer and demotion rules.</summary>
         public void ChangeMemberRole(Guid userId, ProjectRole newRole)
         {
             Guards.NotEmpty(userId);
@@ -91,6 +100,7 @@ namespace Domain.Entities
             member.ChangeRole(newRole);
         }
 
+        /// <summary>Transfers ownership from the current owner to another active member.</summary>
         public void TransferOwnership(Guid newOwnerId)
         {
             Guards.NotEmpty(newOwnerId);
@@ -106,12 +116,14 @@ namespace Domain.Entities
             OwnerId = newOwnerId;
         }
 
+        /// <summary>Sets the concurrency token after persistence.</summary>
         internal void SetRowVersion(byte[] rowVersion)
         {
             Guards.NotNull(rowVersion);
             RowVersion = rowVersion;
         }
 
+        /// <summary>Gets an active member or throws if not found.</summary>
         private ProjectMember GetMember(Guid userId)
             => Members.FirstOrDefault(m => m.UserId == userId && m.RemovedAt == null)
                 ?? throw new EntityNotFoundException("Member not found.");

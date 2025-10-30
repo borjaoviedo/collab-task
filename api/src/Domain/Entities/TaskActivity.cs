@@ -4,6 +4,9 @@ using Domain.ValueObjects;
 
 namespace Domain.Entities
 {
+    /// <summary>
+    /// Represents an immutable activity record associated with a task.
+    /// </summary>
     public sealed class TaskActivity
     {
         public Guid Id { get; private set; }
@@ -15,6 +18,9 @@ namespace Domain.Entities
 
         private TaskActivity() { }
 
+        /// <summary>
+        /// Creates a new task activity entry representing a user action.
+        /// </summary>
         public static TaskActivity Create(
             Guid taskId,
             Guid userId,

@@ -4,6 +4,9 @@ using Domain.ValueObjects;
 
 namespace Domain.Entities
 {
+    /// <summary>
+    /// Represents a task item contained within a project board.
+    /// </summary>
     public sealed class TaskItem : IAuditable
     {
         public Guid Id { get; private set; }
@@ -20,6 +23,9 @@ namespace Domain.Entities
 
         private TaskItem() { }
 
+        /// <summary>
+        /// Creates a new task item within the specified column and lane.
+        /// </summary>
         public static TaskItem Create(
             Guid columnId,
             Guid laneId,
@@ -49,6 +55,9 @@ namespace Domain.Entities
             };
         }
 
+        /// <summary>
+        /// Updates editable fields such as title, description, or due date.
+        /// </summary>
         public void Edit(TaskTitle? title, TaskDescription? description, DateTimeOffset? dueDate)
         {
             Guards.NotInPast(dueDate);
@@ -58,7 +67,14 @@ namespace Domain.Entities
             if (DueDate != dueDate) DueDate = dueDate;
         }
 
-        public void Move(Guid targetProject, Guid targetLaneId, Guid targetColumnId, decimal targetSortKey)
+        /// <summary>
+        /// Moves the task to a new lane and column within the same project, updating its sort key.
+        /// </summary>
+        public void Move(
+            Guid targetProject,
+            Guid targetLaneId,
+            Guid targetColumnId,
+            decimal targetSortKey)
         {
             if (targetProject != ProjectId)
                 throw new ArgumentException("Move must stay within the same Project.", nameof(targetProject));
@@ -75,16 +91,11 @@ namespace Domain.Entities
             SortKey = targetSortKey;
         }
 
+        /// <summary>Sets the concurrency token after persistence.</summary>
         internal void SetRowVersion(byte[] rowVersion)
         {
             Guards.NotNull(rowVersion);
             RowVersion = rowVersion;
-        }
-
-        internal void SetSortKey(decimal sortKey)
-        {
-            Guards.NonNegative(sortKey);
-            SortKey = sortKey;
         }
     }
 }
