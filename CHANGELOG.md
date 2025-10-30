@@ -1,7 +1,7 @@
 # Changelog
 
 > 🇬🇧 This file is in English.  
-> 🇪🇸 [Versión en español disponible aquí](./TECHNICAL_OVERVIEW.es.md)
+> 🇪🇸 [Versión en español disponible aquí](./CHANGELOG.es.md)
 
 All notable changes to this project will be documented in this file.
 
