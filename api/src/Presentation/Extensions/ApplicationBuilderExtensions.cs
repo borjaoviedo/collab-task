@@ -21,10 +21,17 @@ namespace Api.Extensions
         {
             var env = app.ApplicationServices.GetRequiredService<IWebHostEnvironment>();
 
+            // Global exception handler / ProblemDetails mapping
             app.UseGlobalExceptionHandling();
+
+            // CORS must precede auth and endpoint execution
             app.UseCors(CorsPolicies.AllowFrontend);
+
+            // Identity & access checks
             app.UseAuthentication();
             app.UseAuthorization();
+
+            // API explorer only for dev
             app.UseSwaggerUiIfDev(env);
 
             return app;
