@@ -9,12 +9,24 @@ using System.Text;
 
 namespace Infrastructure.Security
 {
+    /// <summary>
+    /// Issues and validates JSON Web Tokens using symmetric signing credentials.
+    /// Relies on <see cref="IDateTimeProvider"/> for deterministic time and <see cref="JwtOptions"/> for issuer, audience, key, and expiration.
+    /// </summary>
     public sealed class JwtTokenService(IDateTimeProvider clock, IOptions<JwtOptions> options) : IJwtTokenService
     {
         private readonly IDateTimeProvider _clock = clock;
         private readonly JwtOptions _options = options.Value;
         private readonly JwtSecurityTokenHandler _handler = new();
 
+        /// <summary>
+        /// Creates a signed JWT with standard claims and an absolute expiration.
+        /// </summary>
+        /// <param name="userId">User unique identifier mapped to the <c>sub</c> claim.</param>
+        /// <param name="email">User email mapped to <c>email</c>.</param>
+        /// <param name="name">User display name mapped to <see cref="ClaimTypes.Name"/>.</param>
+        /// <param name="role">User role mapped to <see cref="ClaimTypes.Role"/>.</param>
+        /// <returns>A tuple with the compact token string and its UTC expiration instant.</returns>
         public (string Token, DateTime ExpiresAtUtc) CreateToken(
             Guid userId,
             string email,
@@ -49,6 +61,11 @@ namespace Infrastructure.Security
             return (tokenStr, expiresAtUtc);
         }
 
+        /// <summary>
+        /// Validates a JWT and returns the claims principal if valid, otherwise <c>null</c>.
+        /// </summary>
+        /// <param name="token">Compact serialized JWT.</param>
+        /// <returns><see cref="ClaimsPrincipal"/> when valid; otherwise <c>null</c>.</returns>
         public ClaimsPrincipal? ValidateToken(string token)
         {
             if (string.IsNullOrWhiteSpace(token)) return null;
@@ -66,6 +83,11 @@ namespace Infrastructure.Security
             }
         }
 
+        /// <summary>
+        /// Builds strict validation parameters from configured options.
+        /// </summary>
+        /// <param name="opts">JWT configuration.</param>
+        /// <returns>Validation parameters for issuer, audience, key, and lifetime.</returns>
         private static TokenValidationParameters BuildValidationParameters(JwtOptions opts)
         {
             return new TokenValidationParameters
@@ -84,6 +106,11 @@ namespace Infrastructure.Security
             };
         }
 
+        /// <summary>
+        /// Creates a symmetric signing key from a UTF-8 secret.
+        /// </summary>
+        /// <param name="key">Secret configured in <c>Jwt:Key</c>.</param>
+        /// <returns>A <see cref="SymmetricSecurityKey"/> instance.</returns>
         private static SymmetricSecurityKey GetSigningKey(string? key)
         {
             if (string.IsNullOrWhiteSpace(key))
