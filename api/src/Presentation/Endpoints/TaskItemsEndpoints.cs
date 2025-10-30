@@ -11,14 +11,28 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints
 {
+    /// <summary>
+    /// Task item endpoints: list, read, create, edit, move, and delete.
+    /// Uses per-endpoint auth and optimistic concurrency via ETag/If-Match.
+    /// </summary>
     public static class TaskItemsEndpoints
     {
+        /// <summary>
+        /// Registers task item endpoints under the project/board hierarchy and wires handlers,
+        /// validation, authorization, and OpenAPI metadata.
+        /// </summary>
+        /// <param name="app">Endpoint route builder.</param>
+        /// <returns>The configured route group.</returns>
         public static RouteGroupBuilder MapTaskItems(this IEndpointRouteBuilder app)
         {
+            // Group task endpoints under lane/column scope; requires ProjectReader by default
             var group = app
-                        .MapGroup("/projects/{projectId:guid}/lanes/{laneId:guid}/columns/{columnId:guid}/tasks")
-                        .WithTags("Tasks")
-                        .RequireAuthorization(Policies.ProjectReader);
+                .MapGroup("/projects/{projectId:guid}/lanes/{laneId:guid}/columns/{columnId:guid}/tasks")
+                .WithTags("Tasks")
+                .RequireAuthorization(Policies.ProjectReader);
+
+            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
+            // include consistent success/error shapes, auth requirements, and concurrency responses
 
             // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks
             group.MapGet("/", async (
@@ -31,11 +45,16 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskItems.Get_All");
 
+                // Read-side list for the column; returns lightweight DTOs for client rendering
                 var tasks = await taskItemReadService.ListByColumnAsync(columnId, ct);
                 var responseDto = tasks.Select(t => t.ToReadDto()).ToList();
 
-                log.LogInformation("Tasks listed projectId={ProjectId} laneId={LaneId} columnId={ColumnId} count={Count}",
-                                    projectId, laneId, columnId, responseDto.Count);
+                log.LogInformation(
+                    "Tasks listed projectId={ProjectId} laneId={LaneId} columnId={ColumnId} count={Count}",
+                    projectId,
+                    laneId,
+                    columnId,
+                    responseDto.Count);
                 return Results.Ok(responseDto);
             })
             .Produces<IEnumerable<TaskItemReadDto>>(StatusCodes.Status200OK)
@@ -58,19 +77,30 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskItems.Get_ById");
 
+                // Fetch a single task. Return 404 if not found within the specified scope
                 var task = await taskItemReadService.GetAsync(taskId, ct);
                 if (task is null)
                 {
-                    log.LogInformation("Task not found projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId}",
-                                        projectId, laneId, columnId, taskId);
+                    log.LogInformation(
+                        "Task not found projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId}",
+                        projectId,
+                        laneId,
+                        columnId,
+                        taskId);
                     return Results.NotFound();
                 }
 
+                // Attach weak ETag from RowVersion to enable conditional requests
                 var responseDto = task.ToReadDto();
                 var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
-                log.LogInformation("Task fetched projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} etag={ETag}",
-                                    projectId, laneId, columnId, taskId, etag);
+                log.LogInformation(
+                    "Task fetched projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} etag={ETag}",
+                    projectId,
+                    laneId,
+                    columnId,
+                    taskId,
+                    etag);
                 return Results.Ok(responseDto).WithETag(etag);
             })
             .Produces<TaskItemReadDto>(StatusCodes.Status200OK)
@@ -95,35 +125,54 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskItems.Create");
 
+                // Create a task. Title/Description are domain value objects; actor is the current user.
+                // DomainMutation drives HTTP mapping; on success return canonical representation with ETag
                 var userId = (Guid)currentUserSvc.UserId!;
+                var taskTitle = TaskTitle.Create(dto.Title);
+                var taskDescription = TaskDescription.Create(dto.Description);
+
                 var (result, task) = await taskItemWriteSvc.CreateAsync(
                     projectId,
                     laneId,
                     columnId,
                     userId,
-                    TaskTitle.Create(dto.Title),
-                    TaskDescription.Create(dto.Description),
+                    taskTitle,
+                    taskDescription,
                     dto.DueDate,
                     dto.SortKey,
                     ct);
 
                 if (result != DomainMutation.Created || task is null)
                 {
-                    log.LogInformation("Task create rejected projectId={ProjectId} laneId={LaneId} columnId={ColumnId} userId={UserId} mutation={Mutation}",
-                                        projectId, laneId, columnId, userId, result);
+                    log.LogInformation(
+                        "Task create rejected projectId={ProjectId} laneId={LaneId} columnId={ColumnId} userId={UserId} mutation={Mutation}",
+                        projectId,
+                        laneId,
+                        columnId,
+                        userId,
+                        result);
                     return result.ToHttp(context);
                 }
 
                 var responseDto = task.ToReadDto();
                 var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
-                log.LogInformation("Task created projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} userId={UserId} title={Title} etag={ETag}",
-                                    projectId, laneId, columnId, task.Id, userId, dto.Title, etag);
-                return Results.CreatedAtRoute("Tasks_Get_ById", new { projectId, laneId, columnId, taskId = task.Id }, responseDto).WithETag(etag);
+                log.LogInformation(
+                    "Task created projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId} userId={UserId} title={Title} etag={ETag}",
+                    projectId,
+                    laneId,
+                    columnId,
+                    task.Id,
+                    userId,
+                    dto.Title,
+                    etag);
+
+                var routevalues = new { projectId, laneId, columnId, taskId = task.Id };
+                return Results.CreatedAtRoute("Tasks_Get_ById", routevalues, responseDto).WithETag(etag);
             })
-            .RequireAuthorization(Policies.ProjectMember)
+            .RequireAuthorization(Policies.ProjectMember) // ProjectMember-only
             .RequireValidation<TaskItemCreateDto>()
-            .RejectIfMatch()
+            .RejectIfMatch() // Reject If-Match on create: preconditions do not apply to new resources
             .Produces<TaskItemReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -149,51 +198,76 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskItems.Edit");
 
+                // Resolve current RowVersion from If-Match or storage to guard against lost updates
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, ct => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion, ct);
+                    context,
+                    ct => taskItemReadSvc.GetAsync(taskId, ct),
+                    t => t.RowVersion,
+                    ct);
 
                 if (rowVersion is null)
                 {
-                    log.LogInformation("Task item not found when resolving row version projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId}",
-                                        projectId, laneId, columnId, taskId);
+                    log.LogInformation(
+                        "Task item not found when resolving row version projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId}",
+                        projectId,
+                        laneId,
+                        columnId,
+                        taskId);
                     return Results.NotFound();
                 }
 
+                // Edit under optimistic concurrency. Title/Description VOs normalize inputs
                 var userId = (Guid)currentUserSvc.UserId!;
+                var taskTitle = TaskTitle.Create(dto.NewTitle!);
+                var taskDescription = TaskDescription.Create(dto.NewDescription!);
+
                 var result = await taskItemWriteSvc.EditAsync(
                     projectId,
                     taskId,
                     userId,
-                    TaskTitle.Create(dto.NewTitle!),
-                    TaskDescription.Create(dto.NewDescription!),
+                    taskTitle,
+                    taskDescription,
                     dto.NewDueDate,
                     rowVersion,
                     ct);
                 if (result != DomainMutation.Updated)
                 {
-                    log.LogInformation("Task edit rejected projectId={ProjectId} taskId={TaskId} userId={UserId} mutation={Mutation}",
-                                        projectId, taskId, userId, result);
+                    log.LogInformation(
+                        "Task edit rejected projectId={ProjectId} taskId={TaskId} userId={UserId} mutation={Mutation}",
+                        projectId,
+                        taskId,
+                        userId,
+                        result);
                     return result.ToHttp(context);
                 }
 
+                // Read back to return fresh state and a new ETag
                 var edited = await taskItemReadSvc.GetAsync(taskId, ct);
                 if (edited is null)
                 {
-                    log.LogInformation("Task edit readback missing projectId={ProjectId} taskId={TaskId}",
-                                        projectId, taskId);
+                    log.LogInformation(
+                        "Task edit readback missing projectId={ProjectId} taskId={TaskId}",
+                        projectId,
+                        taskId);
                     return Results.NotFound();
                 }
 
                 var responseDto = edited.ToReadDto();
                 var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
-                log.LogInformation("Task edited projectId={ProjectId} taskId={TaskId} userId={UserId} newTitle={NewTitle} newDueDate={NewDueDate} etag={ETag}",
-                                    projectId, taskId, userId, dto.NewTitle, dto.NewDueDate, etag);
+                log.LogInformation(
+                    "Task edited projectId={ProjectId} taskId={TaskId} userId={UserId} newTitle={NewTitle} newDueDate={NewDueDate} etag={ETag}",
+                    projectId,
+                    taskId,
+                    userId,
+                    dto.NewTitle,
+                    dto.NewDueDate,
+                    etag);
                 return Results.Ok(responseDto).WithETag(etag);
             })
-            .RequireAuthorization(Policies.ProjectMember)
+            .RequireAuthorization(Policies.ProjectMember) // ProjectMember-only
             .RequireValidation<TaskItemEditDto>()
-            .RequireIfMatch()
+            .RequireIfMatch() // Require If-Match to prevent overwriting concurrent edits
             .Produces<TaskItemReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -222,13 +296,21 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskItems.Move");
 
+                // Move task across lane/column with optimistic concurrency; server recomputes sort key if needed
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, ct => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion, ct);
+                    context,
+                    ct => taskItemReadSvc.GetAsync(taskId, ct),
+                    t => t.RowVersion,
+                    ct);
 
                 if (rowVersion is null)
                 {
-                    log.LogInformation("Task item not found when resolving row version projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId}",
-                                        projectId, laneId, columnId, taskId);
+                    log.LogInformation(
+                        "Task item not found when resolving row version projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId}",
+                        projectId,
+                        laneId,
+                        columnId,
+                        taskId);
                     return Results.NotFound();
                 }
 
@@ -244,29 +326,46 @@ namespace Api.Endpoints
                     ct);
                 if (result != DomainMutation.Updated)
                 {
-                    log.LogInformation("Task move rejected projectId={ProjectId} taskId={TaskId} userId={UserId} newLaneId={NewLaneId} newColumnId={NewColumnId} newSortKey={NewSortKey} mutation={Mutation}",
-                                        projectId, taskId, userId, dto.NewLaneId, dto.NewColumnId, dto.NewSortKey, result);
+                    log.LogInformation(
+                        "Task move rejected projectId={ProjectId} taskId={TaskId} userId={UserId} newLaneId={NewLaneId} newColumnId={NewColumnId} newSortKey={NewSortKey} mutation={Mutation}",
+                        projectId,
+                        taskId,
+                        userId,
+                        dto.NewLaneId,
+                        dto.NewColumnId,
+                        dto.NewSortKey,
+                        result);
                     return result.ToHttp(context);
                 }
 
+                // Return updated representation and refreshed ETag
                 var moved = await taskItemReadSvc.GetAsync(taskId, ct);
                 if (moved is null)
                 {
-                    log.LogInformation("Task move readback missing projectId={ProjectId} taskId={TaskId}",
-                                        projectId, taskId);
+                    log.LogInformation(
+                        "Task move readback missing projectId={ProjectId} taskId={TaskId}",
+                        projectId,
+                        taskId);
                     return Results.NotFound();
                 }
 
                 var responseDto = moved.ToReadDto();
                 var etag = ETag.EncodeWeak(responseDto.RowVersion);
 
-                log.LogInformation("Task moved projectId={ProjectId} taskId={TaskId} userId={UserId} newLaneId={NewLaneId} newColumnId={NewColumnId} newSortKey={NewSortKey} etag={ETag}",
-                                    projectId, taskId, userId, dto.NewLaneId, dto.NewColumnId, dto.NewSortKey, etag);
+                log.LogInformation(
+                    "Task moved projectId={ProjectId} taskId={TaskId} userId={UserId} newLaneId={NewLaneId} newColumnId={NewColumnId} newSortKey={NewSortKey} etag={ETag}",
+                    projectId,
+                    taskId,
+                    userId,
+                    dto.NewLaneId,
+                    dto.NewColumnId,
+                    dto.NewSortKey,
+                    etag);
                 return Results.Ok(responseDto).WithETag(etag);
             })
-            .RequireAuthorization(Policies.ProjectMember)
+            .RequireAuthorization(Policies.ProjectMember) // ProjectMember-only
             .RequireValidation<TaskItemMoveDto>()
-            .RequireIfMatch()
+            .RequireIfMatch() // Require If-Match to avoid applying moves on stale state
             .Produces<TaskItemReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -293,24 +392,37 @@ namespace Api.Endpoints
             {
                 var log = logger.CreateLogger("TaskItems.Delete");
 
+                // Conditional delete. Resolve RowVersion and map DomainMutation to HTTP
                 var rowVersion = await ConcurrencyHelpers.ResolveRowVersionAsync(
-                    context, ct => taskItemReadSvc.GetAsync(taskId, ct), t => t.RowVersion, ct);
+                    context,
+                    ct => taskItemReadSvc.GetAsync(taskId, ct),
+                    t => t.RowVersion,
+                    ct);
 
                 if (rowVersion is null)
                 {
-                    log.LogInformation("Task item not found when resolving row version projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId}",
-                                        projectId, laneId, columnId, taskId);
+                    log.LogInformation(
+                        "Task item not found when resolving row version projectId={ProjectId} laneId={LaneId} columnId={ColumnId} taskId={TaskId}",
+                        projectId,
+                        laneId,
+                        columnId,
+                        taskId);
                     return Results.NotFound();
                 }
 
                 var result = await taskItemWriteSvc.DeleteAsync(projectId, taskId, rowVersion, ct);
 
-                log.LogInformation("Task delete result projectId={ProjectId} taskId={TaskId} mutation={Mutation}",
-                                    projectId, taskId, result);
+                log.LogInformation(
+                    "Task delete result projectId={ProjectId} taskId={TaskId} mutation={Mutation}",
+                    projectId,
+                    taskId,
+                    result);
+
+                // Map DomainMutation to HTTP (204, 404, 409, 412)
                 return result.ToHttp(context);
             })
-            .RequireAuthorization(Policies.ProjectMember)
-            .RequireIfMatch()
+            .RequireAuthorization(Policies.ProjectMember) // ProjectMember-only
+            .RequireIfMatch() // Member-only delete and requires If-Match to prevent removing a concurrently edited task
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
