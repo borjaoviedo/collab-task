@@ -11,12 +11,18 @@ using MediatR;
 
 namespace Application.TaskAssignments.Services
 {
+    /// <summary>
+    /// Write-side application service for task assignments.
+    /// </summary>
     public sealed class TaskAssignmentWriteService(
         ITaskAssignmentRepository repo,
         IUnitOfWork uow,
         ITaskActivityWriteService activityWriter,
         IMediator mediator) : ITaskAssignmentWriteService
     {
+        /// <summary>
+        /// Creates a new assignment for a target user and emits a creation activity and notification.
+        /// </summary>
         public async Task<(DomainMutation, TaskAssignment?)> CreateAsync(
             Guid projectId,
             Guid taskId,
@@ -58,6 +64,9 @@ namespace Application.TaskAssignments.Services
             return (saveCreateResult, assignment);
         }
 
+        /// <summary>
+        /// Changes the role of an existing assignment, records an activity, and publishes a notification.
+        /// </summary>
         public async Task<DomainMutation> ChangeRoleAsync(
             Guid projectId,
             Guid taskId,
@@ -68,10 +77,14 @@ namespace Application.TaskAssignments.Services
             CancellationToken ct = default)
         {
             var (changeRoleStatus, change) = await repo.ChangeRoleAsync(taskId, targetUserId, newRole, rowVersion, ct);
-            if (changeRoleStatus != PrecheckStatus.Ready || change is null) return changeRoleStatus.ToErrorDomainMutation();
+            if (changeRoleStatus != PrecheckStatus.Ready || change is null)
+                return changeRoleStatus.ToErrorDomainMutation();
 
             var roleChange = (AssignmentRoleChangedChange)change;
-            var payload = ActivityPayloadFactory.AssignmentRoleChanged(targetUserId, roleChange.OldRole, roleChange.NewRole);
+            var payload = ActivityPayloadFactory.AssignmentRoleChanged(
+                targetUserId,
+                roleChange.OldRole,
+                roleChange.NewRole);
             await activityWriter.CreateAsync(
                 taskId,
                 executedBy,
@@ -92,6 +105,9 @@ namespace Application.TaskAssignments.Services
             return saveUpdateResult;
         }
 
+        /// <summary>
+        /// Deletes an assignment, records a removal activity, and publishes a notification.
+        /// </summary>
         public async Task<DomainMutation> DeleteAsync(
             Guid projectId,
             Guid taskId,
@@ -124,4 +140,5 @@ namespace Application.TaskAssignments.Services
             return saveDeleteResult;
         }
     }
+
 }
