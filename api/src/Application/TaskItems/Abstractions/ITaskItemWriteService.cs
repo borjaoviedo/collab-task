@@ -4,8 +4,12 @@ using Domain.ValueObjects;
 
 namespace Application.TaskItems.Abstractions
 {
+    /// <summary>
+    /// Handles creation and mutation commands for task items at the application level.
+    /// </summary>
     public interface ITaskItemWriteService
     {
+        /// <summary>Creates a new task within a column and lane.</summary>
         Task<(DomainMutation, TaskItem?)> CreateAsync(
             Guid projectId,
             Guid laneId,
@@ -17,6 +21,7 @@ namespace Application.TaskItems.Abstractions
             decimal? sortKey = null,
             CancellationToken ct = default);
 
+        /// <summary>Edits the title, description, or due date of an existing task.</summary>
         Task<DomainMutation> EditAsync(
             Guid projectId,
             Guid taskId,
@@ -27,6 +32,7 @@ namespace Application.TaskItems.Abstractions
             byte[] rowVersion,
             CancellationToken ct = default);
 
+        /// <summary>Moves a task to another column or lane.</summary>
         Task<DomainMutation> MoveAsync(
             Guid projectId,
             Guid taskId,
@@ -37,6 +43,7 @@ namespace Application.TaskItems.Abstractions
             byte[] rowVersion,
             CancellationToken ct = default);
 
+        /// <summary>Deletes an existing task.</summary>
         Task<DomainMutation> DeleteAsync(
             Guid projectId,
             Guid taskId,
