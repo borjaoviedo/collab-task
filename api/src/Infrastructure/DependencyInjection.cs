@@ -21,8 +21,23 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure
 {
+    /// <summary>
+    /// Infrastructure layer dependency registration.
+    /// </summary>
+    /// <remarks>
+    /// Registers database context, repositories, security services, and infrastructure-level utilities.
+    /// This method should be called from the API composition root before building the app.
+    /// It encapsulates all concrete dependencies of the <c>Infrastructure</c> layer and
+    /// isolates them from upper layers.
+    /// </remarks>
     public static class DependencyInjection
     {
+        /// <summary>
+        /// Adds the Infrastructure layer services and EF Core configuration to the DI container.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to configure.</param>
+        /// <param name="connectionString">The database connection string.</param>
+        /// <returns>The same <see cref="IServiceCollection"/> instance for chaining.</returns>
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
         {
             // Common services
