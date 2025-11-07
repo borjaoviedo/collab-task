@@ -8,6 +8,36 @@ Todos los cambios relevantes de este proyecto se documentan en este archivo.
 El formato sigue las directrices de [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-11-07
+
+### Añadido
+- **Documentación**
+  - Incorporados **seis nuevos documentos técnicos bilingües** (`01–06`) en la carpeta `/docs/`, que cubren:
+    - [Modelo de dominio](docs/01_Domain_Model.es.md)
+    - [Políticas de autorización](docs/02_Authorization_Policies.es.md)
+    - [Endpoints de la API](docs/03_API_Endpoints.es.md)
+    - [DTOs](docs/04_DTOs.es.md)
+    - [Servicios de aplicación y repositorios](docs/05_Application_Services_and_Repositories.es.md)
+    - [Configuración de EF Core](docs/06_EFCore_Configuration.es.md)
+  - Cada documento está disponible en **inglés y español**, con formato y estructura consistentes.
+
+### Cambiado
+- **Technical Overview**
+  - Reescritos completamente [`TECHNICAL_OVERVIEW.es.md`](docs/TECHNICAL_OVERVIEW.es.md) y [`TECHNICAL_OVERVIEW.md`](docs/TECHNICAL_OVERVIEW.md).
+  - Ahora actúan como la **referencia técnica principal**, enlazando los seis documentos complementarios.
+  - Incluyen un diagrama vertical completo de la arquitectura, un mapa de documentación y una explicación detallada de la Clean Architecture.
+- **README**
+  - Actualizados [`README.es.md`](README.es.md) y [`README.md`](README.md):
+    - Se reordenaron las secciones para colocar **“Funcionalidades principales”** antes de **“Visión de la Arquitectura”**.
+    - Se añadieron enlaces a los seis archivos de `/docs` y al Technical Overview.
+    - Se simplificó la estructura eliminando la sección redundante “Current Version”.
+
+### Notas
+- Esta versión se centra exclusivamente en la **mejora y coherencia de la documentación**.  
+- La funcionalidad del backend y los contratos de la API permanecen sin cambios respecto a `v1.0.0`.  
+- El directorio `/docs` se consolida como la **referencia técnica completa y bilingüe** de CollabTask.  
+- **Etiqueta creada: `v1.0.1`**
+
 ## [1.0.0] - 2025-10-31
 
 ### Añadido

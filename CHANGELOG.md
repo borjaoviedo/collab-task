@@ -8,6 +8,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-11-07
+
+### Added
+- **Documentation**
+  - **Six new bilingual technical documents** (`01–06`) under `/docs/`, covering:
+    - [Domain model](docs/01_Domain_Model.md)
+    - [Authorization policies](docs/02_Authorization_Policies.md)
+    - [API endpoints](docs/03_API_Endpoints.md)
+    - [DTOs](docs/04_DTOs.md)
+    - [Application services and repositories](docs/05_Application_Services_and_Repositories.md)
+    - [EF Core configuration](docs/06_EFCore_Configuration.md)
+  - Each document is available in **English and Spanish** with consistent format and structure.
+
+### Changed
+- **Technical Overview**
+  - Fully rewritten [`TECHNICAL_OVERVIEW.md`](docs/TECHNICAL_OVERVIEW.md) and [`TECHNICAL_OVERVIEW.es.md`](docs/TECHNICAL_OVERVIEW.es.md).
+  - Now acts as the **root technical reference** linking all six supporting documents.
+  - Includes a complete vertical architecture diagram, documentation map, and detailed Clean Architecture explanation.
+- **README**
+  - Updated both [`README.md`](README.md) and [`README.es.md`](README.es.md):
+    - Reordered sections to place **“Key Features”** above **“Architecture Overview”**.
+    - Linked all six `/docs` files and the Technical Overview.
+    - Simplified layout by removing the redundant “Current Version” section.
+
+### Notes
+- This version focuses exclusively on **documentation improvement and structural consistency**.  
+- Backend functionality and API contracts remain unchanged from `v1.0.0`.  
+- The `/docs` directory now provides a **complete and bilingual technical reference** for CollabTask.  
+- **Tag created: `v1.0.1`**
+
 ## [1.0.0] - 2025-10-31
 
 ### Added
