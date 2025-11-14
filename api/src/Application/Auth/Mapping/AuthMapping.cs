@@ -5,7 +5,7 @@ namespace Application.Auth.Mapping
 {
     public static class AuthMapping
     {
-        public static AuthTokenReadDto ToReadDto(this User user, string token, DateTime expiresAtUtc)
+        public static AuthTokenReadDto ToAuthTokenReadDto(this User user, string token, DateTime expiresAtUtc)
         => new()
         {
             AccessToken = token,
