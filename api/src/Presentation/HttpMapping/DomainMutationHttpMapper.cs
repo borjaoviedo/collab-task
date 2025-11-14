@@ -1,13 +1,13 @@
 using Domain.Enums;
 
-namespace Api.Extensions
+namespace Api.HttpMapping
 {
     /// <summary>
     /// Maps <see cref="DomainMutation"/> outcomes from the domain layer to appropriate HTTP responses.
     /// Converts domain-level operation results into standardized <see cref="IResult"/> objects with
     /// relevant status codes, ProblemDetails, and optional ETag precondition handling.
     /// </summary>
-    public static class DomainMutationExtensions
+    public static class DomainMutationHttpMapper
     {
         /// <summary>
         /// Converts a <see cref="DomainMutation"/> value into an HTTP response.
