@@ -19,14 +19,6 @@ namespace Infrastructure.Security
         private readonly JwtOptions _options = options.Value;
         private readonly JwtSecurityTokenHandler _handler = new();
 
-        /// <summary>
-        /// Creates a signed JWT with standard claims and an absolute expiration.
-        /// </summary>
-        /// <param name="userId">User unique identifier mapped to the <c>sub</c> claim.</param>
-        /// <param name="email">User email mapped to <c>email</c>.</param>
-        /// <param name="name">User display name mapped to <see cref="ClaimTypes.Name"/>.</param>
-        /// <param name="role">User role mapped to <see cref="ClaimTypes.Role"/>.</param>
-        /// <returns>A tuple with the compact token string and its UTC expiration instant.</returns>
         public (string Token, DateTime ExpiresAtUtc) CreateToken(
             Guid userId,
             string email,
@@ -59,51 +51,6 @@ namespace Infrastructure.Security
             var tokenStr = _handler.WriteToken(token);
 
             return (tokenStr, expiresAtUtc);
-        }
-
-        /// <summary>
-        /// Validates a JWT and returns the claims principal if valid, otherwise <c>null</c>.
-        /// </summary>
-        /// <param name="token">Compact serialized JWT.</param>
-        /// <returns><see cref="ClaimsPrincipal"/> when valid; otherwise <c>null</c>.</returns>
-        public ClaimsPrincipal? ValidateToken(string token)
-        {
-            if (string.IsNullOrWhiteSpace(token)) return null;
-
-            var parameters = BuildValidationParameters(_options);
-
-            try
-            {
-                var principal = _handler.ValidateToken(token, parameters, out _);
-                return principal;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Builds strict validation parameters from configured options.
-        /// </summary>
-        /// <param name="opts">JWT configuration.</param>
-        /// <returns>Validation parameters for issuer, audience, key, and lifetime.</returns>
-        private static TokenValidationParameters BuildValidationParameters(JwtOptions opts)
-        {
-            return new TokenValidationParameters
-            {
-                ValidateIssuer = !string.IsNullOrWhiteSpace(opts.Issuer),
-                ValidIssuer = opts.Issuer,
-                ValidateAudience = !string.IsNullOrWhiteSpace(opts.Audience),
-                ValidAudience = opts.Audience,
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = GetSigningKey(opts.Key),
-                RequireExpirationTime = true,
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero,
-                NameClaimType = ClaimTypes.Name,
-                RoleClaimType = ClaimTypes.Role
-            };
         }
 
         /// <summary>
