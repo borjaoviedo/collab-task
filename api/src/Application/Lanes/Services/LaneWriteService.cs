@@ -1,5 +1,5 @@
-using Application.Common.Abstractions.Extensions;
-using Application.Common.Abstractions.Persistence;
+using Application.Abstractions.Extensions;
+using Application.Abstractions.Persistence;
 using Application.Lanes.Abstractions;
 using Domain.Entities;
 using Domain.Enums;

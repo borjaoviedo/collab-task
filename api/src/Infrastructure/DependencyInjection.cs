@@ -1,7 +1,7 @@
+using Application.Abstractions.Persistence;
+using Application.Abstractions.Security;
+using Application.Abstractions.Time;
 using Application.Columns.Abstractions;
-using Application.Common.Abstractions.Persistence;
-using Application.Common.Abstractions.Security;
-using Application.Common.Abstractions.Time;
 using Application.Lanes.Abstractions;
 using Application.ProjectMembers.Abstractions;
 using Application.Projects.Abstractions;

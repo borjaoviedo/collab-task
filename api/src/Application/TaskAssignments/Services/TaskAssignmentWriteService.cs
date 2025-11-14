@@ -1,5 +1,5 @@
-using Application.Common.Abstractions.Extensions;
-using Application.Common.Abstractions.Persistence;
+using Application.Abstractions.Extensions;
+using Application.Abstractions.Persistence;
 using Application.TaskActivities.Abstractions;
 using Application.TaskActivities.Payloads;
 using Application.TaskAssignments.Abstractions;

@@ -1,6 +1,6 @@
 using Api.Auth.Authorization;
 using Api.Auth.Services;
-using Application.Common.Abstractions.Auth;
+using Application.Abstractions.Auth;
 using Domain.Enums;
 using Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

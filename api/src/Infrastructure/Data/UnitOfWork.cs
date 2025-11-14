@@ -1,4 +1,4 @@
-using Application.Common.Abstractions.Persistence;
+using Application.Abstractions.Persistence;
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 

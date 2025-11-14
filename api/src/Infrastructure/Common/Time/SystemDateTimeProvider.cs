@@ -1,4 +1,4 @@
-using Application.Common.Abstractions.Time;
+using Application.Abstractions.Time;
 
 namespace Infrastructure.Common.Time
 {

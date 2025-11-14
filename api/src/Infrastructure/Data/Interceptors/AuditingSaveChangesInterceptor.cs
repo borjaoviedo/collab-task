@@ -1,4 +1,4 @@
-using Application.Common.Abstractions.Time;
+using Application.Abstractions.Time;
 using Domain.Common.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;

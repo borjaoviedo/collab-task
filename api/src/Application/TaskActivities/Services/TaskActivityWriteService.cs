@@ -1,4 +1,4 @@
-using Application.Common.Abstractions.Time;
+using Application.Abstractions.Time;
 using Application.TaskActivities.Abstractions;
 using Domain.Entities;
 using Domain.Enums;
