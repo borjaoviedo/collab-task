@@ -15,7 +15,7 @@ namespace Api.Configuration
         /// </summary>
         /// <param name="services">The service collection to configure.</param>
         /// <returns>The same service collection for chaining.</returns>
-        public static IServiceCollection AddSwaggerWithJwt(this IServiceCollection services)
+        public static IServiceCollection AddSwaggerDocs(this IServiceCollection services)
         {
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen(c =>
