@@ -1,11 +1,10 @@
-
-namespace Api.Extensions
+namespace Api.Configuration
 {
     /// <summary>
     /// Service collection extensions for configuring Cross-Origin Resource Sharing (CORS) policies.
     /// Loads allowed origins from configuration and registers the default frontend policy.
     /// </summary>
-    public static class CorsExtensions
+    public static class CorsConfiguration
     {
         /// <summary>
         /// Adds CORS policies based on configuration or default development origins.
@@ -20,11 +19,11 @@ namespace Api.Extensions
 
             var origins = options.AllowedOrigins.Length > 0
                 ? options.AllowedOrigins
-                : CorsOptions.DefaultDevOrigins;
+                : CorsOptions.DefaultEmptyOrigins;
 
             services.AddCors(o =>
             {
-                o.AddPolicy(CorsPolicies.AllowFrontend, p =>
+                o.AddPolicy(CorsPolicies.Default, p =>
                     p.WithOrigins(origins)
                      .AllowAnyHeader()
                      .AllowAnyMethod()
@@ -40,7 +39,7 @@ namespace Api.Extensions
     /// </summary>
     public static class CorsPolicies
     {
-        public const string AllowFrontend = "AllowFrontend";
+        public const string Default = "DefaultCorsPolicy";
     }
 
     /// <summary>
@@ -49,12 +48,21 @@ namespace Api.Extensions
     /// </summary>
     public sealed class CorsOptions
     {
+        /// <summary>
+        /// Name of the configuration section that stores CORS settings.
+        /// </summary>
         public const string SectionName = "Cors";
+
+        /// <summary>
+        /// List of allowed origins for CORS requests.
+        /// If empty, no external origins are permitted.
+        /// </summary>
         public string[] AllowedOrigins { get; init; } = [];
 
-        public static readonly string[] DefaultDevOrigins =
-        [
-            "http://localhost:8081"
-        ];
+        /// <summary>
+        /// Default value representing an empty set of allowed origins.
+        /// Used when no frontend is configured for EventDesk.
+        /// </summary>
+        public static readonly string[] DefaultEmptyOrigins = [];
     }
 }
