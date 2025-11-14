@@ -1,4 +1,4 @@
-namespace Application.Common.Abstractions.Security
+namespace Application.Abstractions.Security
 {
     /// <summary>
     /// Hashes passwords using a strong, salted, one-way key derivation function and verifies candidates.

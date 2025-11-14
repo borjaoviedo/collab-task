@@ -1,6 +1,6 @@
 using Domain.Enums;
 
-namespace Application.Common.Abstractions.Extensions
+namespace Application.Abstractions.Extensions
 {
     /// <summary>
     /// Provides extension methods for converting <see cref="PrecheckStatus"/>

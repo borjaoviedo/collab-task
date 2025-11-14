@@ -1,7 +1,7 @@
 using Domain.Enums;
 using System.Security.Claims;
 
-namespace Application.Common.Abstractions.Security
+namespace Application.Abstractions.Security
 {
     /// <summary>
     /// Issues and validates JSON Web Tokens for API authentication.

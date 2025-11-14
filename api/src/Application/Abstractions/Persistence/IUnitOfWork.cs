@@ -1,6 +1,6 @@
 using Domain.Enums;
 
-namespace Application.Common.Abstractions.Persistence
+namespace Application.Abstractions.Persistence
 {
     /// <summary>
     /// Coordinates the persistence boundary for a unit of work.

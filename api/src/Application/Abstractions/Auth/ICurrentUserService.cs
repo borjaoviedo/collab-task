@@ -1,5 +1,4 @@
-
-namespace Application.Common.Abstractions.Auth
+namespace Application.Abstractions.Auth
 {
     /// <summary>
     /// Exposes information about the currently authenticated user within the request scope.

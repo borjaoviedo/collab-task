@@ -1,4 +1,4 @@
-namespace Application.Common.Abstractions.Time
+namespace Application.Abstractions.Time
 {
     /// <summary>
     /// Provides the canonical UTC clock for the application.
