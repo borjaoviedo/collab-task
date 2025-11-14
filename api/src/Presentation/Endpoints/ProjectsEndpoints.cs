@@ -1,7 +1,8 @@
 using Api.Auth.Authorization;
 using Api.Concurrency;
-using Api.Extensions;
-using Application.Common.Abstractions.Auth;
+using Api.Filters;
+using Api.HttpMapping;
+using Application.Abstractions.Auth;
 using Application.Projects.Abstractions;
 using Application.Projects.DTOs;
 using Application.Projects.Filters;
