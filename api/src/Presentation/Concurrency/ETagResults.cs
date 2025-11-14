@@ -1,5 +1,4 @@
-
-namespace Api.Helpers
+namespace Api.Concurrency
 {
     /// <summary>
     /// Wraps an existing <see cref="IResult"/> and adds a custom HTTP response header before executing it.

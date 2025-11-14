@@ -1,6 +1,6 @@
 using System.Net.Http.Headers;
 
-namespace Api.Helpers
+namespace Api.Concurrency
 {
     /// <summary>
     /// Utility class for generating weak ETags from database <c>RowVersion</c> values.

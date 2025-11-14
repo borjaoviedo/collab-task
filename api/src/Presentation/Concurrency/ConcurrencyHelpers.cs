@@ -1,4 +1,4 @@
-namespace Api.Helpers
+namespace Api.Concurrency
 {
     /// <summary>
     /// Helper methods for resolving the correct <c>RowVersion</c> (ETag) used in optimistic concurrency.
