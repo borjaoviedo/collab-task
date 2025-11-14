@@ -1,7 +1,7 @@
 using Api.Filters;
 using Microsoft.OpenApi.Models;
 
-namespace Api.Extensions
+namespace Api.Concurrency
 {
     /// <summary>
     /// Extensions to declare and document optimistic-concurrency preconditions on endpoints.
