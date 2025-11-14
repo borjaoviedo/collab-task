@@ -25,7 +25,7 @@ namespace Infrastructure.Persistence.Seeders
         public static async Task SeedAsync(IServiceProvider services, CancellationToken ct = default)
         {
             using var scope = services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var db = scope.ServiceProvider.GetRequiredService<CollabTaskDbContext>();
 
             if (await db.Users.AnyAsync(ct)) return;
 

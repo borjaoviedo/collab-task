@@ -10,9 +10,9 @@ namespace Infrastructure.Persistence.Repositories
     /// Supports membership queries, role lookup, tracked updates with optimistic concurrency,
     /// and soft remove/restore semantics respecting <see cref="ProjectMember.RemovedAt"/>.
     /// </summary>
-    public sealed class ProjectMemberRepository(AppDbContext db) : IProjectMemberRepository
+    public sealed class ProjectMemberRepository(CollabTaskDbContext db) : IProjectMemberRepository
     {
-        private readonly AppDbContext _db = db;
+        private readonly CollabTaskDbContext _db = db;
 
         /// <summary>
         /// Lists memberships for a project. Optionally includes removed entries.

@@ -8,7 +8,7 @@ namespace Infrastructure.Persistence
     /// Coordinates persistence of changes and translates EF Core outcomes
     /// into high-level <see cref="DomainMutation"/> results.
     /// </summary>
-    public sealed class UnitOfWork(AppDbContext db) : IUnitOfWork
+    public sealed class UnitOfWork(CollabTaskDbContext db) : IUnitOfWork
     {
         /// <summary>
         /// Persists pending changes and maps the operation kind to a domain-level mutation result.

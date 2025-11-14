@@ -11,9 +11,9 @@ namespace Infrastructure.Persistence.Repositories
     /// Supports listing, lookup by email/id, tracked fetch, rename and role change with concurrency,
     /// deletion, and uniqueness checks for email and name.
     /// </summary>
-    public sealed class UserRepository(AppDbContext db) : IUserRepository
+    public sealed class UserRepository(CollabTaskDbContext db) : IUserRepository
     {
-        private readonly AppDbContext _db = db;
+        private readonly CollabTaskDbContext _db = db;
 
         /// <summary>
         /// Lists users ordered by name including their project memberships.

@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.Persistence.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
+    [DbContext(typeof(CollabTaskDbContext))]
     [Migration("20251004070139_AddUserNameToUsers")]
     partial class AddUserNameToUsers
     {

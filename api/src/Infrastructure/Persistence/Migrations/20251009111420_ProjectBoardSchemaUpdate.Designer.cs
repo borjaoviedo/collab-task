@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.Persistence.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
+    [DbContext(typeof(CollabTaskDbContext))]
     [Migration("20251009111420_ProjectBoardSchemaUpdate")]
     partial class ProjectBoardSchemaUpdate
     {

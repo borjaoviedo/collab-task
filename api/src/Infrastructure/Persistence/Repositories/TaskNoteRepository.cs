@@ -11,9 +11,9 @@ namespace Infrastructure.Persistence.Repositories
     /// Supports listing by task or by user, tracked fetch, edit with concurrency,
     /// and deletion with concurrency.
     /// </summary>
-    public sealed class TaskNoteRepository(AppDbContext db) : ITaskNoteRepository
+    public sealed class TaskNoteRepository(CollabTaskDbContext db) : ITaskNoteRepository
     {
-        private readonly AppDbContext _db = db;
+        private readonly CollabTaskDbContext _db = db;
 
         /// <summary>
         /// Lists notes for a task ordered by creation time.

@@ -12,9 +12,9 @@ namespace Infrastructure.Persistence.Repositories
     /// Supports listing by column, tracked fetch, creation, edit with field-level change tracking,
     /// move with integrity checks across project/lane/column, and deletion with concurrency.
     /// </summary>
-    public sealed class TaskItemRepository(AppDbContext db) : ITaskItemRepository
+    public sealed class TaskItemRepository(CollabTaskDbContext db) : ITaskItemRepository
     {
-        private readonly AppDbContext _db = db;
+        private readonly CollabTaskDbContext _db = db;
 
         /// <summary>
         /// Lists tasks for a column ordered by <see cref="TaskItem.SortKey"/>.

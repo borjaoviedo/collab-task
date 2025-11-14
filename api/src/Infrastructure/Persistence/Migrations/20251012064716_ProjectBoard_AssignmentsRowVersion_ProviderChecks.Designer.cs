@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.Persistence.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
+    [DbContext(typeof(CollabTaskDbContext))]
     [Migration("20251012064716_ProjectBoard_AssignmentsRowVersion_ProviderChecks")]
     partial class ProjectBoard_AssignmentsRowVersion_ProviderChecks
     {

@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.Persistence.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
+    [DbContext(typeof(CollabTaskDbContext))]
     [Migration("20251005182448_RemoveInvitedAt_AddChangeRole_ProjectMember")]
     partial class RemoveInvitedAt_AddChangeRole_ProjectMember
     {

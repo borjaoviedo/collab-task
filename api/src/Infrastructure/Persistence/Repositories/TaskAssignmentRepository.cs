@@ -11,9 +11,9 @@ namespace Infrastructure.Persistence.Repositories
     /// EF Core repository for <see cref="TaskAssignment"/> aggregates.
     /// Handles membership lookups, owner constraints, and concurrency-safe role changes.
     /// </summary>
-    public sealed class TaskAssignmentRepository(AppDbContext db) : ITaskAssignmentRepository
+    public sealed class TaskAssignmentRepository(CollabTaskDbContext db) : ITaskAssignmentRepository
     {
-        private readonly AppDbContext _db = db;
+        private readonly CollabTaskDbContext _db = db;
 
         /// <summary>
         /// Lists all assignments for a specific task.

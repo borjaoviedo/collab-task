@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.Persistence.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
+    [DbContext(typeof(CollabTaskDbContext))]
     [Migration("20251025060349_Rename_TaskNote_AuthorId_To_UserId")]
     partial class Rename_TaskNote_AuthorId_To_UserId
     {

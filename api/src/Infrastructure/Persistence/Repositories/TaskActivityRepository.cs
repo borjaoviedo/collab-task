@@ -9,9 +9,9 @@ namespace Infrastructure.Persistence.Repositories
     /// EF Core repository for <see cref="TaskActivity"/> entries.
     /// Provides chronological listings and insertion of new activity records.
     /// </summary>
-    public sealed class TaskActivityRepository(AppDbContext db) : ITaskActivityRepository
+    public sealed class TaskActivityRepository(CollabTaskDbContext db) : ITaskActivityRepository
     {
-        private readonly AppDbContext _db = db;
+        private readonly CollabTaskDbContext _db = db;
 
         /// <summary>
         /// Lists all activity entries for a specific task ordered by creation time.

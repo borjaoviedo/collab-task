@@ -11,9 +11,9 @@ namespace Infrastructure.Persistence.Repositories
     /// Provides read queries, tracked fetch, creation, rename with uniqueness guard,
     /// two-phase reorder to preserve unique (LaneId, Order), and deletion with concurrency.
     /// </summary>
-    public sealed class ColumnRepository(AppDbContext db) : IColumnRepository
+    public sealed class ColumnRepository(CollabTaskDbContext db) : IColumnRepository
     {
-        private readonly AppDbContext _db = db;
+        private readonly CollabTaskDbContext _db = db;
 
         /// <summary>
         /// Lists columns within the specified lane ordered by <see cref="Column.Order"/>.

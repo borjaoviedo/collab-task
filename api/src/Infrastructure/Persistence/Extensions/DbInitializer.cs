@@ -23,7 +23,7 @@ namespace Infrastructure.Persistence.Extensions
         {
             using var scope = services.CreateScope();
             var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var db = scope.ServiceProvider.GetRequiredService<CollabTaskDbContext>();
 
             await db.Database.MigrateAsync(ct);
 

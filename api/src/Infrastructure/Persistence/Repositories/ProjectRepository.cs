@@ -13,9 +13,9 @@ namespace Infrastructure.Persistence.Repositories
     /// Supports filtered listing by user with paging, tracked fetch,
     /// rename and delete with optimistic concurrency, and name uniqueness checks.
     /// </summary>
-    public sealed class ProjectRepository(AppDbContext db) : IProjectRepository
+    public sealed class ProjectRepository(CollabTaskDbContext db) : IProjectRepository
     {
-        private readonly AppDbContext _db = db;
+        private readonly CollabTaskDbContext _db = db;
 
         /// <summary>
         /// Lists projects visible to a specific user, optionally filtered by name, role, or removal status.

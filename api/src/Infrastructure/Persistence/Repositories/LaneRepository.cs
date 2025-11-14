@@ -11,9 +11,9 @@ namespace Infrastructure.Persistence.Repositories
     /// Supports listing by project, tracked fetch, creation, rename with uniqueness guard,
     /// two-phase reorder to preserve unique (ProjectId, Order), and deletion with concurrency.
     /// </summary>
-    public sealed class LaneRepository(AppDbContext db) : ILaneRepository
+    public sealed class LaneRepository(CollabTaskDbContext db) : ILaneRepository
     {
-        private readonly AppDbContext _db = db;
+        private readonly CollabTaskDbContext _db = db;
 
         /// <summary>
         /// Lists lanes within the specified project ordered by <see cref="Lane.Order"/>.
