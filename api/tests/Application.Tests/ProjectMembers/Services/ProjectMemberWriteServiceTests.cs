@@ -1,8 +1,8 @@
 using Application.ProjectMembers.Services;
 using Domain.Enums;
 using FluentAssertions;
-using Infrastructure.Data;
-using Infrastructure.Data.Repositories;
+using Infrastructure.Persistence;
+using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers.Common;
 using TestHelpers.Persistence;

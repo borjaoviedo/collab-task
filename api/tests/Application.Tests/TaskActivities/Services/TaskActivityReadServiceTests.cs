@@ -1,7 +1,7 @@
 using Application.TaskActivities.Services;
 using Domain.Enums;
 using FluentAssertions;
-using Infrastructure.Data.Repositories;
+using Infrastructure.Persistence.Repositories;
 using TestHelpers.Common;
 using TestHelpers.Persistence;
 

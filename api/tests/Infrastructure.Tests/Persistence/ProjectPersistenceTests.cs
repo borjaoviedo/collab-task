@@ -2,7 +2,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
-using Infrastructure.Data;
+using Infrastructure.Persistence;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -111,7 +111,7 @@ namespace Infrastructure.Tests.Persistence
             await db.SaveChangesAsync();
 
             using var scope2 = sp.CreateScope();
-            var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
+            var db2 = scope2.ServiceProvider.GetRequiredService<CollabTaskDbContext>();
             var same = await db2.Projects.SingleAsync(x => x.Id == project.Id);
 
             db2.Entry(same).Property(x => x.RowVersion).OriginalValue = stale;

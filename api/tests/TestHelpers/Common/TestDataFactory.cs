@@ -1,7 +1,7 @@
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
-using Infrastructure.Data;
+using Infrastructure.Persistence;
 using TestHelpers.Common.Time;
 
 namespace TestHelpers.Common
@@ -27,7 +27,7 @@ namespace TestHelpers.Common
         // --- Seed: Core Entities ---
 
         public static User SeedUser(
-            AppDbContext db,
+            CollabTaskDbContext db,
             string? email = null,
             string? name = null,
             UserRole role = UserRole.User)
@@ -49,7 +49,7 @@ namespace TestHelpers.Common
         }
 
         public static Project SeedProject(
-            AppDbContext db,
+            CollabTaskDbContext db,
             Guid ownerId,
             string? name = null)
         {
@@ -66,7 +66,7 @@ namespace TestHelpers.Common
         }
 
         public static ProjectMember SeedProjectMember(
-            AppDbContext db,
+            CollabTaskDbContext db,
             Guid projectId,
             Guid userId,
             ProjectRole role = ProjectRole.Member)
@@ -85,7 +85,7 @@ namespace TestHelpers.Common
         // --- Seed: Board Structure ---
 
         public static Lane SeedLane(
-            AppDbContext db,
+            CollabTaskDbContext db,
             Guid projectId,
             string? name = null,
             int order = 0)
@@ -103,7 +103,7 @@ namespace TestHelpers.Common
         }
 
         public static Column SeedColumn(
-            AppDbContext db,
+            CollabTaskDbContext db,
             Guid projectId,
             Guid laneId,
             string? name = null,
@@ -123,7 +123,7 @@ namespace TestHelpers.Common
         }
 
         public static TaskItem SeedTaskItem(
-            AppDbContext db,
+            CollabTaskDbContext db,
             Guid projectId,
             Guid laneId,
             Guid columnId,
@@ -152,7 +152,7 @@ namespace TestHelpers.Common
         // --- Seed: Task Details ---
 
         public static TaskNote SeedTaskNote(
-            AppDbContext db,
+            CollabTaskDbContext db,
             Guid taskId,
             Guid authorId,
             string? content = null)
@@ -170,7 +170,7 @@ namespace TestHelpers.Common
         }
 
         public static TaskAssignment SeedTaskAssignment(
-            AppDbContext db,
+            CollabTaskDbContext db,
             Guid taskId,
             Guid userId,
             TaskRole role = TaskRole.Owner)
@@ -183,7 +183,7 @@ namespace TestHelpers.Common
         }
 
         public static TaskActivity SeedTaskActivity(
-            AppDbContext db,
+            CollabTaskDbContext db,
             Guid taskId,
             Guid userId,
             TaskActivityType type = TaskActivityType.TaskCreated,
@@ -209,7 +209,7 @@ namespace TestHelpers.Common
         // --- Compositions ---
 
         public static (Guid ProjectId, Guid UserId) SeedUserWithProject(
-            AppDbContext db,
+            CollabTaskDbContext db,
             string? userEmail = null,
             string? userName = null,
             string? projectName = null)
@@ -224,7 +224,7 @@ namespace TestHelpers.Common
             Guid LaneId,
             Guid UserId)
             SeedProjectWithLane(
-            AppDbContext db,
+            CollabTaskDbContext db,
             string? userName = null,
             string? userEmail = null,
             string? projectName = null,
@@ -251,7 +251,7 @@ namespace TestHelpers.Common
             Guid ColumnId,
             Guid UserId)
             SeedLaneWithColumn(
-            AppDbContext db,
+            CollabTaskDbContext db,
             string? userName = null,
             string? userEmail = null,
             string? projectName = null,
@@ -284,7 +284,7 @@ namespace TestHelpers.Common
             Guid TaskId,
             Guid UserId)
             SeedColumnWithTask(
-            AppDbContext db,
+            CollabTaskDbContext db,
             string? userName = null,
             string? userEmail = null,
             string? projectName = null,
@@ -327,7 +327,7 @@ namespace TestHelpers.Common
             Guid TaskNoteId,
             Guid UserId)
             SeedFullBoard(
-            AppDbContext db,
+            CollabTaskDbContext db,
             string? userName = null,
             string? userEmail = null,
             string? projectName = null,

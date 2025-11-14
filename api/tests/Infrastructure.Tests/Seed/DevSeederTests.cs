@@ -1,7 +1,7 @@
 using Application.Abstractions.Security;
 using Domain.ValueObjects;
 using FluentAssertions;
-using Infrastructure.Data.Seeders;
+using Infrastructure.Persistence.Seeders;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

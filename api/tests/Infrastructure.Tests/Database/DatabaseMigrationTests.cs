@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Infrastructure.Data;
+using Infrastructure.Persistence;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,11 +13,11 @@ namespace Infrastructure.Tests.Database
         [Fact]
         public async Task Migrations_Applied_And_Tables_Exist()
         {
-            var opts = new DbContextOptionsBuilder<AppDbContext>()
+            var opts = new DbContextOptionsBuilder<CollabTaskDbContext>()
                 .UseSqlServer(_cs)
                 .Options;
 
-            await using var db = new AppDbContext(opts);
+            await using var db = new CollabTaskDbContext(opts);
             var databaseCanConnect = await db.Database.CanConnectAsync();
 
             databaseCanConnect.Should().BeTrue();

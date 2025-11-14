@@ -1,8 +1,8 @@
-using Infrastructure.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.MsSql;
 using Respawn;
+using Infrastructure.Persistence;
 
 namespace Infrastructure.Tests.Containers
 {
@@ -31,11 +31,11 @@ namespace Infrastructure.Tests.Containers
 
             ConnectionString = $"{serverCs};Database={_dbName}";
 
-            var opts = new DbContextOptionsBuilder<AppDbContext>()
+            var opts = new DbContextOptionsBuilder<CollabTaskDbContext>()
                 .UseSqlServer(ConnectionString, o => o.EnableRetryOnFailure())
                 .Options;
 
-            await using (var db = new AppDbContext(opts))
+            await using (var db = new CollabTaskDbContext(opts))
                 await db.Database.MigrateAsync();
 
             // Configure Respawn v6 for SQL Server
