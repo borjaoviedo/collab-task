@@ -1,10 +1,10 @@
-using Application.Common.Abstractions.Time;
+using Application.Abstractions.Time;
 using Application.TaskActivities.Services;
 using Application.TaskAssignments.Services;
 using Domain.Enums;
 using FluentAssertions;
-using Infrastructure.Data;
-using Infrastructure.Data.Repositories;
+using Infrastructure.Persistence;
+using Infrastructure.Persistence.Repositories;
 using MediatR;
 using Moq;
 using TestHelpers.Common;

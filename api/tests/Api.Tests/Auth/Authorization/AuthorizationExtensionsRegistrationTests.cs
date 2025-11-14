@@ -1,5 +1,5 @@
 using Api.Auth.Authorization;
-using Api.Extensions;
+using Api.Configuration;
 using Application.ProjectMembers.Abstractions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
@@ -29,7 +29,7 @@ namespace Api.Tests.Auth.Authorization
             // Fake membership reader so DI is satisfied
             services.AddScoped<IProjectMemberReadService, FakeProjectMemberReadService>();
 
-            services.AddJwtAuthAndPolicies(cfg);
+            services.AddSecurity(cfg);
 
             // Assert handler lifetime is scoped
             services.Any(sd =>

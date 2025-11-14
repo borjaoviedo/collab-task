@@ -1,4 +1,4 @@
-using Application.Common.Abstractions.Security;
+using Application.Abstractions.Security;
 using FluentAssertions;
 using Infrastructure.Security;
 

@@ -1,5 +1,5 @@
 using Api.Auth.Authorization;
-using Application.Common.Abstractions.Auth;
+using Application.Abstractions.Auth;
 using Application.TaskActivities.Abstractions;
 using Application.TaskActivities.DTOs;
 using Application.TaskActivities.Mapping;

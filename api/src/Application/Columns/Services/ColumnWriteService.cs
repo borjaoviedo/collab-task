@@ -1,6 +1,6 @@
+using Application.Abstractions.Extensions;
+using Application.Abstractions.Persistence;
 using Application.Columns.Abstractions;
-using Application.Common.Abstractions.Extensions;
-using Application.Common.Abstractions.Persistence;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;

@@ -1,5 +1,5 @@
-using Application.Common.Abstractions.Security;
-using Application.Common.Abstractions.Time;
+using Application.Abstractions.Security;
+using Application.Abstractions.Time;
 using Domain.Enums;
 using FluentAssertions;
 using Infrastructure.Security;

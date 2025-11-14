@@ -1,7 +1,8 @@
 using Api.Auth.Authorization;
-using Api.Extensions;
-using Api.Helpers;
-using Application.Common.Abstractions.Auth;
+using Api.Concurrency;
+using Api.Filters;
+using Api.HttpMapping;
+using Application.Abstractions.Auth;
 using Application.TaskItems.Abstractions;
 using Application.TaskItems.DTOs;
 using Application.TaskItems.Mapping;

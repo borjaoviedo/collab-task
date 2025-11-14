@@ -1,4 +1,4 @@
-using Application.Common.Abstractions.Auth;
+using Application.Abstractions.Auth;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 

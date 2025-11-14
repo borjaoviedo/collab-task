@@ -1,7 +1,7 @@
 using Domain.Entities;
 using Domain.ValueObjects;
 using FluentAssertions;
-using Infrastructure.Data;
+using Infrastructure.Persistence;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -67,7 +67,7 @@ namespace Infrastructure.Tests.Persistence
 
             // Second context with stale token tries to edit
             using var scope2 = sp.CreateScope();
-            var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
+            var db2 = scope2.ServiceProvider.GetRequiredService<CollabTaskDbContext>();
             var same = await db2.TaskItems.SingleAsync(t => t.Id == task.Id);
 
             db2.Entry(same).Property(x => x.RowVersion).OriginalValue = stale;
@@ -96,7 +96,7 @@ namespace Infrastructure.Tests.Persistence
             await db.SaveChangesAsync();
 
             using var scope2 = sp.CreateScope();
-            var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
+            var db2 = scope2.ServiceProvider.GetRequiredService<CollabTaskDbContext>();
             var same = await db2.TaskItems.SingleAsync(t => t.Id == task.Id);
             db2.Entry(same).Property(x => x.RowVersion).OriginalValue = stale;
             db2.TaskItems.Remove(same);

@@ -1,7 +1,8 @@
-using Api.Auth.DTOs;
-using Api.Auth.Mapping;
-using Api.Extensions;
-using Application.Common.Abstractions.Security;
+using Api.Filters;
+using Api.HttpMapping;
+using Application.Abstractions.Security;
+using Application.Auth.DTOs;
+using Application.Auth.Mapping;
 using Application.Common.Exceptions;
 using Application.Users.Abstractions;
 using Application.Users.DTOs;

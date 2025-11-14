@@ -1,12 +1,12 @@
 using Domain.Entities;
 using Domain.ValueObjects;
 using FluentAssertions;
-using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Infrastructure.Tests.Containers;
 using TestHelpers.Persistence;
 using TestHelpers.Common;
+using Infrastructure.Persistence;
 
 namespace Infrastructure.Tests.Persistence
 {
@@ -72,7 +72,7 @@ namespace Infrastructure.Tests.Persistence
             await db.SaveChangesAsync();
 
             using var scope2 = sp.CreateScope();
-            var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
+            var db2 = scope2.ServiceProvider.GetRequiredService<CollabTaskDbContext>();
             var same = await db2.Lanes.SingleAsync(x => x.Id == lane.Id);
 
             db2.Entry(same).Property(x => x.RowVersion).OriginalValue = stale;

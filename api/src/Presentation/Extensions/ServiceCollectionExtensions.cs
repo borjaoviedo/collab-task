@@ -1,8 +1,9 @@
-using Api.Errors;
 using Infrastructure;
 using Application;
 using Application.Realtime;
 using Api.Realtime;
+using Api.Configuration;
+using Api.ErrorHandling;
 
 namespace Api.Extensions
 {
@@ -21,21 +22,21 @@ namespace Api.Extensions
         /// <param name="config">Application configuration.</param>
         /// <param name="connectionString">Database connection string.</param>
         /// <returns>The same service collection for chaining.</returns>
-        public static IServiceCollection AddApiLayer(
+        public static IServiceCollection AddServices(
             this IServiceCollection services,
             IConfiguration config,
             string connectionString)
         {
             services
-                .AddProblemDetailsAndExceptionMapping()
-                .AddCorsPolicies(config)
-                .AddInfrastructure(connectionString)
-                .AddApplication()
-                .AddAppValidation()
-                .AddSwaggerWithJwt()
-                .AddJwtAuthAndPolicies(config)
-                .AddSignalR();
+                .AddProblemDetailsAndExceptionMapping() // Configures centralized ProblemDetails responses and global exception mapping
+                .AddCorsPolicies(config)                // Configures default CORS policy (no origins unless defined in config)
+                .AddInfrastructure(connectionString)    // Registers EF Core, repositories, and infrastructure-level services
+                .AddApplication()                       // Registers application services, mappings, and validators
+                .AddSwaggerDocs()                       // Registers Swagger/OpenAPI for API documentation
+                .AddSecurity(config)                    // Registers authentication, authorization, and current user services
+                .AddSignalR();                          // Registers SignalR services required for real-time communication
 
+            // Provides a singleton notifier for broadcasting real-time updates via SignalR hubs
             services.AddSingleton<IRealtimeNotifier, ProjectsHubNotifier>();
 
             return services;

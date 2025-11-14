@@ -1,6 +1,6 @@
-using Api.Auth.DTOs;
 using Api.Tests.Testing;
-using Application.Common.Abstractions.Security;
+using Application.Abstractions.Security;
+using Application.Auth.DTOs;
 using Application.Users.DTOs;
 using Domain.Enums;
 using FluentAssertions;

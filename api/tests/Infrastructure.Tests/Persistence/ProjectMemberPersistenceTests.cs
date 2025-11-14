@@ -2,7 +2,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
-using Infrastructure.Data;
+using Infrastructure.Persistence;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -98,7 +98,7 @@ namespace Infrastructure.Tests.Persistence
 
             // Second context with stale token
             using var scope2 = sp.CreateScope();
-            var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
+            var db2 = scope2.ServiceProvider.GetRequiredService<CollabTaskDbContext>();
             var same = await db2.ProjectMembers.SingleAsync(m => m.ProjectId == project.Id && m.UserId == _user.Id);
 
             var entry = db2.Entry(same);

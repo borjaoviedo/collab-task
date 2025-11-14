@@ -1,7 +1,7 @@
 using Domain.Entities;
 using Domain.ValueObjects;
 using FluentAssertions;
-using Infrastructure.Data;
+using Infrastructure.Persistence;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -54,7 +54,7 @@ namespace Infrastructure.Tests.Persistence
             await db.SaveChangesAsync();
 
             using var scope2 = sp.CreateScope();
-            var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
+            var db2 = scope2.ServiceProvider.GetRequiredService<CollabTaskDbContext>();
             var same = await db2.TaskNotes.SingleAsync(n => n.Id == note.Id);
 
             // stale update
@@ -65,7 +65,7 @@ namespace Infrastructure.Tests.Persistence
 
             // stale delete
             using var scope3 = sp.CreateScope();
-            var db3 = scope3.ServiceProvider.GetRequiredService<AppDbContext>();
+            var db3 = scope3.ServiceProvider.GetRequiredService<CollabTaskDbContext>();
             var same2 = await db3.TaskNotes.SingleAsync(n => n.Id == note.Id);
             db3.Entry(same2).Property(x => x.RowVersion).OriginalValue = stale;
             db3.TaskNotes.Remove(same2);

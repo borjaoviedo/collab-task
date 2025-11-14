@@ -1,10 +1,10 @@
-using Application.Common.Abstractions.Time;
+using Application.Abstractions.Time;
 using Application.TaskActivities.Services;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
-using Infrastructure.Data;
-using Infrastructure.Data.Repositories;
+using Infrastructure.Persistence;
+using Infrastructure.Persistence.Repositories;
 using TestHelpers.Common;
 using TestHelpers.Common.Time;
 using TestHelpers.Persistence;
