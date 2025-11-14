@@ -5,7 +5,7 @@ using System.Text.Json;
 using FluentValidation;
 using Domain.Common.Exceptions;
 
-namespace Api.Errors
+namespace Api.ErrorHandling
 {
     /// <summary>
     /// Error handling and ProblemDetails configuration for the API layer.

@@ -1,4 +1,4 @@
-namespace Api.Errors
+namespace Api.ErrorHandling
 {
     /// <summary>
     /// Centralized URIs for <c>ProblemDetails.type</c> fields used across the API.
