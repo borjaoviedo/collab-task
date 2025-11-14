@@ -2,22 +2,17 @@ using Api.Extensions; // Centralized DI + middleware registration for the API la
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1) Configuration
-// (Fail fast if required settings are missing)
+// Get the connection string (fail fast if required settings are missing)
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Connection string 'Default' not found.");
 
-// 2) Services
-builder.Services.AddApiLayer(builder.Configuration, connectionString);
+// Add Services
+builder.Services.AddServices(builder.Configuration, connectionString);
 
 var app = builder.Build();
 
-// 3) Middleware pipeline
-app.UseApiLayer();
-
-// 4) Endpoints
-app.MapApiEndpoints();
-app.MapApiLayer(); // SignalR hub
+// Add Application builders
+app.AddApplicationBuilders();
 
 await app.RunAsync();
 
