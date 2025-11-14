@@ -1,4 +1,4 @@
-using Api.Auth.DTOs;
+using Application.Auth.DTOs;
 using Application.Users.DTOs;
 using System.Net.Http.Json;
 using TestHelpers.Api.Defaults;

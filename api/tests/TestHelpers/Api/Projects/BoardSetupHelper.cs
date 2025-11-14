@@ -1,4 +1,4 @@
-using Api.Auth.DTOs;
+using Application.Auth.DTOs;
 using Application.Columns.DTOs;
 using Application.Lanes.DTOs;
 using Application.Projects.DTOs;

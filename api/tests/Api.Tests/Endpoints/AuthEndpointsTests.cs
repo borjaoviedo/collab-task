@@ -1,5 +1,5 @@
-using Api.Auth.DTOs;
 using Api.Tests.Testing;
+using Application.Auth.DTOs;
 using Application.Common.Abstractions.Security;
 using Application.Users.DTOs;
 using Domain.Enums;
