@@ -1,7 +1,7 @@
-using Api.Auth.DTOs;
+using Application.Auth.DTOs;
 using Domain.Entities;
 
-namespace Api.Auth.Mapping
+namespace Application.Auth.Mapping
 {
     public static class MeMapping
     {

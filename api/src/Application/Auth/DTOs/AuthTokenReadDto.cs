@@ -1,6 +1,6 @@
 using Domain.Enums;
 
-namespace Api.Auth.DTOs
+namespace Application.Auth.DTOs
 {
     public sealed class AuthTokenReadDto
     {
