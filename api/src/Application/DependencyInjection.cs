@@ -1,5 +1,6 @@
 using Application.Columns.Abstractions;
 using Application.Columns.Services;
+using Application.Common.Validation;
 using Application.Lanes.Abstractions;
 using Application.Lanes.Services;
 using Application.ProjectMembers.Abstractions;
@@ -16,6 +17,7 @@ using Application.TaskNotes.Abstractions;
 using Application.TaskNotes.Services;
 using Application.Users.Abstractions;
 using Application.Users.Services;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection.Metadata;
 
@@ -63,6 +65,9 @@ namespace Application
             // Register all MediatR handlers/behaviors from the Application assembly
             services.AddMediatR(cfg =>
                 cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly));
+
+            // Registers all FluentValidation validators from the Application layer
+            services.AddValidatorsFromAssembly(typeof(ApplicationValidationMarker).Assembly);
 
             return services;
         }
