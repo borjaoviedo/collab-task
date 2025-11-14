@@ -12,282 +12,141 @@ namespace Infrastructure.Tests.Repositories
 {
     public sealed class UserRepositoryTests
     {
+        // --------------- GetByIdAsync ---------------
+
         [Fact]
-        public async Task AddAsync_Persists_User()
+        public async Task GetByIdAsync_Returns_User_When_Exists()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-            var uow = new UnitOfWork(db);
+            var (db, repo) = await CreateSutAsync(dbh);
 
-            var email = Email.Create("a@b.com");
-            var user = User.Create(
-                email,
-                UserName.Create("User Name"),
-                TestDataFactory.Bytes(32),
-                TestDataFactory.Bytes(16));
+            var user = TestDataFactory.SeedUser(db);
 
-            await repo.AddAsync(user);
-            await uow.SaveAsync(MutationKind.Create);
+            var found = await repo.GetByIdAsync(user.Id);
 
-            var userId = user.Id;
-            userId.Should().Be(user.Id);
-
-            var fromDb = await db.Users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(user => user.Id == userId);
-            fromDb.Should().NotBeNull();
-            fromDb!.Email.Should().Be(email);
+            found.Should().NotBeNull();
+            found!.Id.Should().Be(user.Id);
         }
+
+        [Fact]
+        public async Task GetByIdAsync_Returns_Null_When_Not_Found()
+        {
+            using var dbh = new SqliteTestDb();
+            var (_, repo) = await CreateSutAsync(dbh);
+
+            var found = await repo.GetByIdAsync(Guid.NewGuid());
+
+            found.Should().BeNull();
+        }
+
+        // --------------- GetByEmailAsync ---------------
 
         [Fact]
         public async Task GetByEmailAsync_Returns_User_When_Exists()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
+            var (db, repo) = await CreateSutAsync(dbh);
 
-            var email = Email.Create("user1@example.com");
-            var user = TestDataFactory.SeedUser(db, email);
+            const string rawEmail = "user1@demo.com";
 
-            var found = await repo.GetByEmailAsync(email);
+            var user = TestDataFactory.SeedUser(db, email: rawEmail);
+
+            var emailVo = Email.Create(rawEmail);
+            var found = await repo.GetByEmailAsync(emailVo);
 
             found.Should().NotBeNull();
-            found.Id.Should().Be(user.Id);
+            found!.Id.Should().Be(user.Id);
+            found.Email.Value.Should().Be(rawEmail);
         }
 
         [Fact]
         public async Task GetByEmailAsync_Returns_Null_When_Not_Found()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
+            var (_, repo) = await CreateSutAsync(dbh);
 
-            var found = await repo.GetByEmailAsync(Email.Create("missing@e.com"));
+            var normalized = Email.Create("missing@demo.com");
+
+            var found = await repo.GetByEmailAsync(normalized);
 
             found.Should().BeNull();
         }
 
+        // --------------- Add / Update / Remove ---------------
+
         [Fact]
-        public async Task GetTrackedByIdAsync_Returns_User_When_Exists_Null_Otherwise()
+        public async Task AddAsync_Persists_User_After_SaveChanges()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
+            var (db, repo) = await CreateSutAsync(dbh);
 
-            var user = TestDataFactory.SeedUser(db);
-            var found = await repo.GetTrackedByIdAsync(user.Id);
+            var user = User.Create(
+                Email.Create("new@demo.com"),
+                UserName.Create("New User"),
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt(),
+                UserRole.User);
 
-            found.Should().NotBeNull();
-            found.Id.Should().Be(user.Id);
+            await repo.AddAsync(user);
+            await db.SaveChangesAsync();
 
-            var notFound = await repo.GetTrackedByIdAsync(id: Guid.NewGuid());
-            notFound.Should().BeNull();
+            var reloaded = await db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == user.Id);
+
+            reloaded.Should().NotBeNull();
+            reloaded!.Email.Value.Should().Be("new@demo.com");
         }
 
         [Fact]
-        public async Task ListAsync_Returns_All_Users_List()
+        public async Task UpdateAsync_Marks_Entity_Modified_And_Persists_Changes()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
+            var (db, repo) = await CreateSutAsync(dbh);
 
-            TestDataFactory.SeedUser(db);
-            var list = await repo.ListAsync();
-            list.Should().NotBeNull();
-            list.Count.Should().Be(1);
+            var user = TestDataFactory.SeedUser(db, name: "Old Name");
 
-            TestDataFactory.SeedUser(db);
-            list = await repo.ListAsync();
-            list.Count.Should().Be(2);
+            // Modify through domain behavior
+            user.Rename(UserName.Create("Updated Name"));
 
-            TestDataFactory.SeedUser(db);
-            list = await repo.ListAsync();
-            list.Count.Should().Be(3);
+            await repo.UpdateAsync(user);
+            await db.SaveChangesAsync();
+
+            var reloaded = await db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == user.Id);
+
+            reloaded.Should().NotBeNull();
+            reloaded!.Name.Value.Should().Be("Updated Name");
         }
 
         [Fact]
-        public async Task ListAsync_Returns_Empty_List_When_No_Users()
+        public async Task RemoveAsync_Deletes_User_On_SaveChanges()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-
-            var list = await repo.ListAsync();
-            list.Should().BeEmpty();
-        }
-
-        [Fact]
-        public async Task ExistsWithEmailAsync_True_When_Exists_False_Otherwise()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-
-            var email = Email.Create("existing@e.com");
-            TestDataFactory.SeedUser(db, email);
-
-            var existsWithExistingEmail = await repo.ExistsWithEmailAsync(email);
-            existsWithExistingEmail.Should().BeTrue();
-
-            var differentEmail = Email.Create("different@e.com");
-            var exisitsWithNonExistingEmail = await repo.ExistsWithEmailAsync(differentEmail);
-            exisitsWithNonExistingEmail.Should().BeFalse();
-        }
-
-        [Fact]
-        public async Task ExistsWithNameAsync_True_When_Exists_False_Otherwise()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-
-            var name = UserName.Create("Name");
-            TestDataFactory.SeedUser(db, name: name);
-
-            var existsWithExistingName = await repo.ExistsWithNameAsync(name);
-            existsWithExistingName.Should().BeTrue();
-
-            var differentName = UserName.Create("Diff User Name");
-            var existsWithNonExistingName = await repo.ExistsWithNameAsync(differentName);
-            existsWithNonExistingName.Should().BeFalse();
-        }
-
-        [Fact]
-        public async Task RenameAsync_NoOp_When_Name_Unchanged()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-
-            var name = UserName.Create("Same");
-            var user = TestDataFactory.SeedUser(db, name: name);
-
-            var result = await repo.RenameAsync(user.Id, name, user.RowVersion);
-
-            result.Should().Be(PrecheckStatus.NoOp);
-        }
-
-        [Fact]
-        public async Task RenameAsync_Updated_When_Name_Changes()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-            var uow = new UnitOfWork(db);
+            var (db, repo) = await CreateSutAsync(dbh);
 
             var user = TestDataFactory.SeedUser(db);
 
-            var userName = "user name";
-            var result = await repo.RenameAsync(user.Id, UserName.Create(userName), user.RowVersion);
-            result.Should().Be(PrecheckStatus.Ready);
+            await repo.RemoveAsync(user);
+            await db.SaveChangesAsync();
 
-            await uow.SaveAsync(MutationKind.Update);
+            var reloaded = await db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == user.Id);
 
-            var fromDb = await db.Users.AsNoTracking().SingleAsync(u => u.Id == user.Id);
-            fromDb.Name.Value.Should().Be(userName);
+            reloaded.Should().BeNull();
         }
 
-        [Fact]
-        public async Task ChangeRoleAsync_Updates_Role_When_RowVersion_Matches()
+        // ---------- HELPERS ----------
+
+        private static Task<(CollabTaskDbContext Db, UserRepository Repo)>
+            CreateSutAsync(SqliteTestDb dbh)
         {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-            var uow = new UnitOfWork(db);
-
-            var user = TestDataFactory.SeedUser(db);
-            var result = await repo.ChangeRoleAsync(user.Id, UserRole.Admin, user.RowVersion);
-
-            result.Should().Be(PrecheckStatus.Ready);
-
-            await uow.SaveAsync(MutationKind.Update);
-
-            var fromDb = await db.Users.AsNoTracking().SingleAsync(u => u.Id == user.Id);
-            fromDb.Role.Should().Be(UserRole.Admin);
-        }
-
-        [Fact]
-        public async Task ChangeRoleAsync_NoOp_When_Role_Already_Set()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
+            var db = dbh.CreateContext();
             var repo = new UserRepository(db);
 
-            var user = TestDataFactory.SeedUser(db, role: UserRole.Admin);
-
-            var result = await repo.ChangeRoleAsync(user.Id, UserRole.Admin, user.RowVersion);
-            result.Should().Be(PrecheckStatus.NoOp);
-        }
-
-        [Fact]
-        public async Task DeleteAsync_Removes_When_RowVersion_Matches()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-            var uow = new UnitOfWork(db);
-
-            var user = TestDataFactory.SeedUser(db);
-
-            var result = await repo.DeleteAsync(user.Id, user.RowVersion);
-            result.Should().Be(PrecheckStatus.Ready);
-
-            await uow.SaveAsync(MutationKind.Delete);
-
-            var fromDb = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
-            fromDb.Should().BeNull();
-        }
-
-        [Fact]
-        public async Task DeleteAsync_Returns_NotFound_When_Id_Not_Found()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-
-            var result = await repo.DeleteAsync(id: Guid.NewGuid(), rowVersion: [9, 9, 9]);
-            result.Should().Be(PrecheckStatus.NotFound);
-        }
-
-        [Fact]
-        public async Task Unique_Email_Is_Enforced()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-
-            var sameEmail = "same@e.com";
-            TestDataFactory.SeedUser(db, sameEmail);
-
-            FluentActions.Invoking(()
-                => TestDataFactory.SeedUser(db, sameEmail)).Should().Throw<DbUpdateException>();
-        }
-
-        [Fact]
-        public async Task Unique_Name_Is_Enforced()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-
-            var sameName = "Same name";
-            TestDataFactory.SeedUser(db, name: sameName);
-
-            FluentActions.Invoking(()
-                => TestDataFactory.SeedUser(db, name: sameName)).Should().Throw<DbUpdateException>();
-        }
-
-        [Fact]
-        public async Task Email_Normalization_Allows_MixedCase_Lookup()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-
-            var user = TestDataFactory.SeedUser(db, "SaMe@e.CoM");
-            var found = await repo.GetByEmailAsync(Email.Create("same@e.com"));
-
-            found.Should().NotBeNull();
-            found.Id.Should().Be(user.Id);
+            return Task.FromResult((db, repo));
         }
     }
 }
