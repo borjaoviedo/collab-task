@@ -1,5 +1,5 @@
 using Api.Auth.Authorization;
-using Api.Extensions;
+using Api.Configuration;
 using Application.ProjectMembers.Abstractions;
 using Domain.Entities;
 using Domain.Enums;
@@ -50,7 +50,7 @@ namespace Api.Tests.Auth.Authorization
 
             services.AddLogging();
             services.AddScoped<IProjectMemberReadService>(_ => new StubProjectMemberReadService(userRole));
-            services.AddJwtAuthAndPolicies(cfg);
+            services.AddSecurity(cfg);
 
             return services.BuildServiceProvider();
         }
