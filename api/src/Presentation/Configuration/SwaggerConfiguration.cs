@@ -1,13 +1,13 @@
 using Api.Filters;
 using Microsoft.OpenApi.Models;
 
-namespace Api.Extensions
+namespace Api.Configuration
 {
     /// <summary>
     /// Service collection and application builder extensions for Swagger (OpenAPI) configuration.
     /// Adds JWT-based security definition, authorization filters, and conditional Swagger UI setup for development.
     /// </summary>
-    public static class SwaggerExtensions
+    public static class SwaggerConfiguration
     {
         /// <summary>
         /// Registers Swagger/OpenAPI generation with JWT bearer authentication support.
