@@ -34,14 +34,14 @@ namespace Api.Auth.Authorization
             if (!TryGetProjectId(http, out var projectId)) return;
 
             // membership
-            var role = await _membership.GetRoleAsync(projectId, userId, http.RequestAborted);
+            var role = await _membership.GetUserRoleAsync(projectId, userId, http.RequestAborted);
             if (role is null)
             {
                 context.Fail(); // 403
                 return;
             }
 
-            if (role.Value >= requirement.MinimumRole) context.Succeed(requirement);
+            if (role.Role >= requirement.MinimumRole) context.Succeed(requirement);
             else context.Fail();
         }
 
