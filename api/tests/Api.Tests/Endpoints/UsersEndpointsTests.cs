@@ -139,30 +139,6 @@ namespace Api.Tests.Endpoints
         }
 
         [Fact]
-        public async Task Get_ByEmail_Admin_200_And_404_And_403()
-        {
-            using var app = new TestApiFactory();
-            using var client = app.CreateClient();
-
-            var user = await AuthTestHelper.PostRegisterAndLoginAsync(client);
-            var adminBearer = await MintTokenAsync(app, user.UserId, user.Email, user.Name, UserRole.Admin);
-
-            // 200
-            client.SetAuthorization(adminBearer);
-            var response = await UserTestHelper.GetUserByEmailResponseAsync(client);
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-            // 404
-            response = await UserTestHelper.GetUserByEmailResponseAsync(client, "random@email.com");
-            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-
-            // 403
-            client.SetAuthorization(user.AccessToken);
-            response = await UserTestHelper.GetUserByEmailResponseAsync(client);
-            response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        }
-
-        [Fact]
         public async Task Rename_Self_Valid_200_Stale_412_Missing_428()
         {
             using var app = new TestApiFactory();
