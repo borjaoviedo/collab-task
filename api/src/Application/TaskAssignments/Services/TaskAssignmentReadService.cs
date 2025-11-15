@@ -1,3 +1,4 @@
+using Application.Abstractions.Auth;
 using Application.Common.Exceptions;
 using Application.TaskAssignments.Abstractions;
 using Application.TaskAssignments.DTOs;
@@ -17,10 +18,15 @@ namespace Application.TaskAssignments.Services
     /// Repository used for querying <see cref="Domain.Entities.TaskAssignment"/> entities,
     /// including lookups by task/user, listings by task, and listings by user.
     /// </param>
+    /// <param name="currentUserService">
+    /// Provides information about the currently authenticated user, such as <c>UserId</c>.
+    /// </param>
     public sealed class TaskAssignmentReadService(
-        ITaskAssignmentRepository taskAssignmentRepository) : ITaskAssignmentReadService
+        ITaskAssignmentRepository taskAssignmentRepository,
+        ICurrentUserService currentUserService) : ITaskAssignmentReadService
     {
         private readonly ITaskAssignmentRepository _taskAssignmentRepository = taskAssignmentRepository;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
 
         /// <inheritdoc/>
         public async Task<TaskAssignmentReadDto> GetByTaskAndUserIdAsync(
@@ -53,6 +59,18 @@ namespace Application.TaskAssignments.Services
             CancellationToken ct = default)
         {
             var assignments = await _taskAssignmentRepository.ListByUserIdAsync(userId, ct);
+
+            return assignments
+                .Select(ta => ta.ToReadDto())
+                .ToList();
+        }
+
+        /// <inheritdoc/>
+        public async Task<IReadOnlyList<TaskAssignmentReadDto>> ListSelfAsync(
+            CancellationToken ct = default)
+        {
+            var currentUserId = (Guid)_currentUserService.UserId!;
+            var assignments = await _taskAssignmentRepository.ListByUserIdAsync(currentUserId, ct);
 
             return assignments
                 .Select(ta => ta.ToReadDto())

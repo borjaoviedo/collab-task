@@ -52,5 +52,15 @@ namespace Application.TaskAssignments.Abstractions
         Task<IReadOnlyList<TaskAssignmentReadDto>> ListByUserIdAsync(
             Guid userId,
             CancellationToken ct = default);
+
+        /// <summary>
+        /// Lists all assignment records associated with the authenticated user across all tasks.
+        /// Supports user-centric views such as task responsibility dashboards.
+        /// </summary>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>
+        /// A read-only list of <see cref="TaskAssignmentReadDto"/> entries linked to the authenticated user.
+        /// </returns>
+        Task<IReadOnlyList<TaskAssignmentReadDto>> ListSelfAsync(CancellationToken ct = default);
     }
 }
