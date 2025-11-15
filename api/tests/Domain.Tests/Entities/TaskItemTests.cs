@@ -273,7 +273,7 @@ namespace Domain.Tests.Entities
             var newColumnId = Guid.NewGuid();
             var newSortKey = 5m;
 
-            task.Move(_defaultProjectId, newLaneId, newColumnId, newSortKey);
+            task.Move(newLaneId, newColumnId, newSortKey);
 
             task.ProjectId.Should().Be(_defaultProjectId);
             task.LaneId.Should().Be(newLaneId);
@@ -290,7 +290,6 @@ namespace Domain.Tests.Entities
             var newSortKey = 5m;
 
             var act = () => task.Move(
-                _defaultProjectId,
                 newLaneId,
                 newColumnId,
                 newSortKey);
@@ -307,25 +306,6 @@ namespace Domain.Tests.Entities
             var newSortKey = 5m;
 
             var act = () => task.Move(
-                _defaultProjectId,
-                newLaneId,
-                newColumnId,
-                newSortKey);
-
-            act.Should().Throw<ArgumentException>();
-        }
-
-        [Fact]
-        public void Move_With_Different_Project_Id_Throws()
-        {
-            var task = _defaultTaskItem;
-            var newProjectId = Guid.NewGuid();
-            var newLaneId = Guid.NewGuid();
-            var newColumnId = Guid.NewGuid();
-            var newSortKey = 5m;
-
-            var act = () => task.Move(
-                newProjectId,
                 newLaneId,
                 newColumnId,
                 newSortKey);
@@ -338,7 +318,7 @@ namespace Domain.Tests.Entities
         {
             var task = _defaultTaskItem;
 
-            task.Move(_defaultProjectId, _defaultLaneId, _defaultColumnId, _defaultSortKey);
+            task.Move(_defaultLaneId, _defaultColumnId, _defaultSortKey);
 
             task.ProjectId.Should().Be(_defaultProjectId);
             task.LaneId.Should().Be(_defaultLaneId);
