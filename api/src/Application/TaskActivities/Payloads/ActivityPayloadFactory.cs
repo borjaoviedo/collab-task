@@ -1,3 +1,4 @@
+using Application.TaskAssignments.DTOs;
 using Domain.Enums;
 using Domain.ValueObjects;
 
@@ -59,11 +60,11 @@ namespace Application.TaskActivities.Payloads
             """);
 
         /// <summary>Creates a payload describing the creation of a task assignment.</summary>
-        public static ActivityPayload AssignmentCreated(Guid userId, TaskRole role) =>
+        public static ActivityPayload AssignmentCreated(TaskAssignmentCreateDto dto) =>
             ActivityPayload.Create($$"""
             {
-                "userId":"{{userId}}",
-                "role":"{{role}}"
+                "userId":"{{dto.UserId}}",
+                "role":"{{dto.Role}}"
             }
             """);
 
