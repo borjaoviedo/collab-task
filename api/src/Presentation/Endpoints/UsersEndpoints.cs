@@ -80,6 +80,7 @@ namespace Api.Endpoints
             })
             .RequireValidation<UserRenameDto>()
             .RequireIfMatch() // Require If-Match to prevent overwriting concurrent edits
+            .EnsureIfMatch<IUserReadService, UserReadDto>(routeValueKey: "userId")
             .Produces<UserReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -105,7 +106,8 @@ namespace Api.Endpoints
             })
             .RequireAuthorization(Policies.SystemAdmin) // SystemAdmin-only
             .RequireValidation<UserChangeRoleDto>()
-            .RequireIfMatch() // Requires If-Match to avoid lost updates 
+            .RequireIfMatch() // Requires If-Match to avoid lost updates
+            .EnsureIfMatch<IUserReadService, UserReadDto>(routeValueKey: "userId")
             .Produces<UserReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
