@@ -1,8 +1,10 @@
-using Application.Abstractions.Extensions;
 using Application.Abstractions.Persistence;
+using Application.Common.Exceptions;
 using Application.TaskActivities.Abstractions;
 using Application.TaskActivities.Payloads;
 using Application.TaskItems.Abstractions;
+using Application.TaskItems.DTOs;
+using Application.TaskItems.Mapping;
 using Application.TaskItems.Realtime;
 using Domain.Entities;
 using Domain.Enums;
@@ -12,55 +14,76 @@ using MediatR;
 namespace Application.TaskItems.Services
 {
     /// <summary>
-    /// Write-side application service for task items.
+    /// Application write-side service for <see cref="TaskItem"/> aggregates.
+    /// Handles creation, editing, movement, and deletion of task items within a project board,
+    /// enforcing lane/column constraints, title uniqueness, and optimistic concurrency rules.
+    /// Each successful write operation persists changes through <see cref="IUnitOfWork"/>,
+    /// records a corresponding <see cref="TaskActivity"/> entry,
+    /// and publishes MediatR notifications so that other components (such as real-time hubs)
+    /// can react to task lifecycle events.
     /// </summary>
+    /// <param name="taskItemRepository">
+    /// Repository used to query, track, and persist <see cref="TaskItem"/> entities,
+    /// including existence checks and retrieval for updates.
+    /// </param>
+    /// <param name="unitOfWork">
+    /// Coordinates transactional persistence, ensuring that domain mutations are atomically applied
+    /// and validated against concurrency tokens through <see cref="DomainMutation"/>.
+    /// </param>
+    /// <param name="taskActivityWriteService">
+    /// Service responsible for emitting <see cref="TaskActivity"/> records that describe
+    /// task-related events such as creation, edits, moves, and deletions.
+    /// </param>
+    /// <param name="mediator">
+    /// MediatR abstraction used to publish domain notifications following successful write operations,
+    /// enabling decoupled reactions across the application.
+    /// </param>
     public sealed class TaskItemWriteService(
-        ITaskItemRepository repo,
-        IUnitOfWork uow,
-        ITaskActivityWriteService activityWriter,
+        ITaskItemRepository taskItemRepository,
+        IUnitOfWork unitOfWork,
+        ITaskActivityWriteService taskActivityWriteService,
         IMediator mediator) : ITaskItemWriteService
     {
-        /// <summary>
-        /// Creates a new task, writes a creation activity, and publishes a creation notification.
-        /// </summary>
-        public async Task<(DomainMutation, TaskItem?)> CreateAsync(
+        private readonly ITaskItemRepository _taskItemRepository = taskItemRepository;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly ITaskActivityWriteService _taskActivityWriteService = taskActivityWriteService;
+        private readonly IMediator _mediator = mediator;
+
+        /// <inheritdoc/>
+        public async Task<TaskItemReadDto> CreateAsync(
             Guid projectId,
             Guid laneId,
             Guid columnId,
             Guid userId,
-            TaskTitle title,
-            TaskDescription description,
-            DateTimeOffset? dueDate = null,
-            decimal? sortKey = null,
+            TaskItemCreateDto dto,
             CancellationToken ct = default)
         {
-            if (await repo.ExistsWithTitleAsync(columnId, title, excludeTaskId: null, ct))
-                return (DomainMutation.Conflict, null);
+            if (await _taskItemRepository.ExistsWithTitleAsync(columnId, dto.Title, ct: ct))
+                throw new ConflictException("A task item with the specified title already exists.");
 
-            var key = sortKey ?? await repo.GetNextSortKeyAsync(columnId, ct);
             var task = TaskItem.Create(
                 columnId,
                 laneId,
                 projectId,
-                title,
-                description,
-                dueDate,
-                key);
-            await repo.AddAsync(task, ct);
+                TaskTitle.Create(dto.Title),
+                TaskDescription.Create(dto.Description),
+                dto.DueDate,
+                dto.SortKey);
+            await _taskItemRepository.AddAsync(task, ct);
 
-            var payload = ActivityPayloadFactory.TaskCreated(title);
-            await activityWriter.CreateAsync(
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Create, ct);
+            if (mutation != DomainMutation.Created)
+                throw new ConflictException("Task item could not be created due to a conflicting state.");
+
+            var payload = ActivityPayloadFactory.TaskCreated(dto.Title);
+            await _taskActivityWriteService.CreateAsync(
                 task.Id,
                 userId,
                 TaskActivityType.TaskCreated,
                 payload,
                 ct);
 
-            var createResult = await uow.SaveAsync(MutationKind.Create, ct);
-
-            if (createResult == DomainMutation.Created)
-            {
-                var notification = new TaskItemCreated(
+            var notification = new TaskItemCreated(
                 projectId,
                 new TaskItemCreatedPayload(
                     task.Id,
@@ -69,145 +92,121 @@ namespace Application.TaskItems.Services
                     task.Title.Value,
                     task.Description.Value,
                     task.SortKey));
-                await mediator.Publish(notification, ct);
-            }
 
-            return (createResult, task);
+            await _mediator.Publish(notification, ct);
+
+            return task.ToReadDto();
         }
 
-        /// <summary>
-        /// Edits an existing task, records an edit activity, and publishes an update notification.
-        /// </summary>
-        public async Task<DomainMutation> EditAsync(
+        /// <inheritdoc/>
+        public async Task<TaskItemReadDto> EditAsync(
             Guid projectId,
             Guid taskId,
             Guid userId,
-            TaskTitle? newTitle,
-            TaskDescription? newDescription,
-            DateTimeOffset? newDueDate,
-            byte[] rowVersion,
+            TaskItemEditDto dto,
             CancellationToken ct = default)
         {
-            var edit = await repo.EditAsync(
-                taskId,
-                newTitle,
-                newDescription,
-                newDueDate,
-                rowVersion,
-                ct);
+            var task = await _taskItemRepository.GetByIdForUpdateAsync(taskId, ct)
+                ?? throw new NotFoundException("Task item not found.");
 
-            if (edit.Status != PrecheckStatus.Ready || edit.Change is null)
-                return edit.Status.ToErrorDomainMutation();
+            var oldTaskTitle = task.Title.Value;
+            var oldTaskDescription = task.Description.Value;
+            var taskTitleVo = TaskTitle.Create(dto.NewTitle!);
+            var taskDescriptionVo = TaskDescription.Create(dto.NewDescription!);
 
-            var taskItemChange = edit.Change;
+            task.Edit(taskTitleVo, taskDescriptionVo, dto.NewDueDate);
+
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Update, ct);
+            if (mutation != DomainMutation.Updated)
+                throw new ConflictException("The task item could not be edited due to a conflicting state.");
+
             var payload = ActivityPayloadFactory.TaskEdited(
-                taskItemChange.OldTitle,
-                taskItemChange.NewTitle,
-                taskItemChange.OldDescription,
-                taskItemChange.NewDescription);
-            await activityWriter.CreateAsync(
+                oldTaskTitle,
+                dto.NewTitle,
+                oldTaskDescription,
+                dto.NewDescription);
+            await _taskActivityWriteService.CreateAsync(
                 taskId,
                 userId,
                 TaskActivityType.TaskEdited,
                 payload,
                 ct);
 
-            var updateResult = await uow.SaveAsync(MutationKind.Update, ct);
+            var notification = new TaskItemUpdated(
+                projectId,
+                new TaskItemUpdatedPayload(
+                    taskId,
+                    dto.NewTitle,
+                    dto.NewDescription,
+                    dto.NewDueDate));
+            await _mediator.Publish(notification, ct);
 
-            if (updateResult == DomainMutation.Updated)
-            {
-                var notification = new TaskItemUpdated(
-                    projectId,
-                    new TaskItemUpdatedPayload(
-                        taskId,
-                        taskItemChange.NewTitle,
-                        taskItemChange.NewDescription,
-                        newDueDate));
-                await mediator.Publish(notification, ct);
-            }
-
-            return updateResult;
+            return task.ToReadDto();
         }
 
-        /// <summary>
-        /// Moves a task, records a move activity, and publishes a move notification.
-        /// </summary>
-        public async Task<DomainMutation> MoveAsync(
+        /// <inheritdoc/>
+        public async Task<TaskItemReadDto> MoveAsync(
             Guid projectId,
             Guid taskId,
-            Guid targetColumnId,
-            Guid targetLaneId,
             Guid userId,
-            decimal targetSortKey,
-            byte[] rowVersion,
+            TaskItemMoveDto dto,
             CancellationToken ct = default)
         {
-            var move = await repo.MoveAsync(
-                taskId,
-                targetColumnId,
-                targetLaneId,
-                projectId,
-                targetSortKey,
-                rowVersion,
-                ct);
+            var task = await _taskItemRepository.GetByIdForUpdateAsync(taskId, ct)
+                ?? throw new NotFoundException("Task item not found.");
 
-            if (move.Status != PrecheckStatus.Ready || move.Change is null)
-                return move.Status.ToErrorDomainMutation();
+            var oldColumn = task.ColumnId;
+            var oldLane = task.LaneId;
 
-            var taskItemChange = move.Change;
+            task.Move(dto.NewLaneId, dto.NewColumnId, dto.NewSortKey);
+
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Update, ct);
+            if (mutation != DomainMutation.Updated)
+                throw new ConflictException("The task item could not be moved due to a conflicting state.");
+
             var payload = ActivityPayloadFactory.TaskMoved(
-                taskItemChange.FromLaneId,
-                taskItemChange.FromColumnId,
-                taskItemChange.ToLaneId,
-                taskItemChange.ToColumnId);
-            await activityWriter.CreateAsync(
+                oldLane,
+                oldColumn,
+                dto.NewLaneId,
+                dto.NewColumnId);
+            await _taskActivityWriteService.CreateAsync(
                 taskId,
                 userId,
                 TaskActivityType.TaskMoved,
                 payload,
                 ct);
 
-            var updateResult = await uow.SaveAsync(MutationKind.Update, ct);
+            var notification = new TaskItemMoved(
+                projectId,
+                new TaskItemMovedPayload(
+                    taskId,
+                    oldLane,
+                    oldColumn,
+                    dto.NewLaneId,
+                    dto.NewColumnId,
+                    dto.NewSortKey));
+            await _mediator.Publish(notification, ct);
 
-            if (updateResult == DomainMutation.Updated)
-            {
-                var notification = new TaskItemMoved(
-                    projectId,
-                    new TaskItemMovedPayload(
-                        taskId,
-                        taskItemChange.FromLaneId,
-                        taskItemChange.FromColumnId,
-                        taskItemChange.ToLaneId,
-                        taskItemChange.ToColumnId,
-                        targetSortKey));
-                await mediator.Publish(notification, ct);
-            }
-
-            return updateResult;
+            return task.ToReadDto();
         }
 
-        /// <summary>
-        /// Deletes a task, records a deletion activity, and publishes a deletion notification.
-        /// </summary>
-        public async Task<DomainMutation> DeleteAsync(
+        /// <inheritdoc/>
+        public async Task DeleteByIdAsync(
             Guid projectId,
             Guid taskId,
-            byte[] rowVersion,
             CancellationToken ct = default)
         {
-            var status = await repo.DeleteAsync(taskId, rowVersion, ct);
-            if (status != PrecheckStatus.Ready) return status.ToErrorDomainMutation();
+            var task = await _taskItemRepository.GetByIdForUpdateAsync(taskId, ct)
+                ?? throw new NotFoundException("Task item not found.");
 
-            var deleteResult = await uow.SaveAsync(MutationKind.Delete, ct);
+            await _taskItemRepository.RemoveAsync(task, ct);
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Delete, ct);
 
-            if (deleteResult == DomainMutation.Deleted)
-            {
-                var notification = new TaskItemDeleted(projectId, new TaskItemDeletedPayload(taskId));
-                await mediator.Publish(notification, ct);
-            }
+            if (mutation != DomainMutation.Deleted && mutation != DomainMutation.NoOp)
+                throw new ConflictException("The task item could not be deleted due to a conflicting state.");
 
-            return deleteResult;
+            var notification = new TaskItemDeleted(projectId, new TaskItemDeletedPayload(taskId));
+            await _mediator.Publish(notification, ct);
         }
     }
-
 }

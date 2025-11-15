@@ -1,9 +1,10 @@
-using Application.Abstractions.Extensions;
 using Application.Abstractions.Persistence;
+using Application.Common.Exceptions;
 using Application.TaskActivities.Abstractions;
 using Application.TaskActivities.Payloads;
 using Application.TaskAssignments.Abstractions;
-using Application.TaskAssignments.Changes;
+using Application.TaskAssignments.DTOs;
+using Application.TaskAssignments.Mapping;
 using Application.TaskAssignments.Realtime;
 using Domain.Entities;
 using Domain.Enums;
@@ -12,133 +13,148 @@ using MediatR;
 namespace Application.TaskAssignments.Services
 {
     /// <summary>
-    /// Write-side application service for task assignments.
+    /// Application write-side service for <see cref="TaskAssignment"/> aggregates.
+    /// Handles creation, role changes, and deletion of task-to-user assignments,
+    /// enforcing assignment invariants such as uniqueness, single-owner constraints,
+    /// and optimistic concurrency validation. Each successful write operation is
+    /// persisted atomically through <see cref="IUnitOfWork"/>, emits a corresponding
+    /// <see cref="TaskActivity"/> audit record, and publishes MediatR
+    /// notifications to allow other system components (such as real-time hubs) to react
+    /// to assignment lifecycle events.
     /// </summary>
+    /// <param name="taskAssignmentRepository">
+    /// Repository responsible for querying, tracking, and persisting
+    /// <see cref="TaskAssignment"/> entities, including uniqueness checks
+    /// and tracked retrieval for updates.
+    /// </param>
+    /// <param name="unitOfWork">
+    /// Coordinates transactional persistence and maps <see cref="DomainMutation"/> results
+    /// to optimistic concurrency handling for assignment operations.
+    /// </param>
+    /// <param name="taskActivityWriteService">
+    /// Service used to record <see cref="TaskActivity"/> entries describing
+    /// assignment-related events such as creation, role changes, or removal.
+    /// </param>
+    /// <param name="mediator">
+    /// MediatR abstraction for publishing domain notifications after successful write operations,
+    /// enabling decoupled reactions across the application.
+    /// </param>
     public sealed class TaskAssignmentWriteService(
-        ITaskAssignmentRepository repo,
-        IUnitOfWork uow,
-        ITaskActivityWriteService activityWriter,
+        ITaskAssignmentRepository taskAssignmentRepository,
+        IUnitOfWork unitOfWork,
+        ITaskActivityWriteService taskActivityWriteService,
         IMediator mediator) : ITaskAssignmentWriteService
     {
-        /// <summary>
-        /// Creates a new assignment for a target user and emits a creation activity and notification.
-        /// </summary>
-        public async Task<(DomainMutation, TaskAssignment?)> CreateAsync(
+        private readonly ITaskAssignmentRepository _taskAssignmentRepository = taskAssignmentRepository;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly ITaskActivityWriteService _taskActivityWriteService = taskActivityWriteService;
+        private readonly IMediator _mediator = mediator;
+
+        /// <inheritdoc/>
+        public async Task<TaskAssignmentReadDto> CreateAsync(
             Guid projectId,
             Guid taskId,
-            Guid targetUserId,
-            TaskRole role,
             Guid executedBy,
+            TaskAssignmentCreateDto dto,
             CancellationToken ct = default)
         {
-            var existing = await repo.GetTrackedByTaskAndUserIdAsync(taskId, targetUserId, ct);
-            if (existing is not null)
-            {
-                if (existing.Role == role)
-                    return (DomainMutation.NoOp, existing);
+            if (await _taskAssignmentRepository.GetByTaskAndUserIdAsync(taskId, dto.UserId, ct) is not null)
+                throw new ConflictException("A task assignment with the specified user already exists.");
 
-                return (DomainMutation.Conflict, existing);
-            }
+            var assignment = TaskAssignment.Create(taskId, dto.UserId, dto.Role);
+            await _taskAssignmentRepository.AddAsync(assignment, ct);
 
-            var assignment = TaskAssignment.Create(taskId, targetUserId, role);
-            await repo.AddAsync(assignment, ct);
-
-            var createPayload = ActivityPayloadFactory.AssignmentCreated(targetUserId, role);
-            await activityWriter.CreateAsync(
+            var createPayload = ActivityPayloadFactory.AssignmentCreated(dto);
+            await _taskActivityWriteService.CreateAsync(
                 taskId,
                 executedBy,
                 TaskActivityType.AssignmentCreated,
                 createPayload,
                 ct);
 
-            var saveCreateResult = await uow.SaveAsync(MutationKind.Create, ct);
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Create, ct);
+            if (mutation != DomainMutation.Created)
+                throw new ConflictException("Task assignment could not be created due to a conflicting state.");
 
-            if (saveCreateResult == DomainMutation.Created)
-            {
-                var createdNotification = new TaskAssignmentCreated(
-                    projectId,
-                    new TaskAssignmentCreatedPayload(taskId, targetUserId, role));
-                await mediator.Publish(createdNotification, ct);
-            }
+            var createdNotification = new TaskAssignmentCreated(
+                projectId,
+                new TaskAssignmentCreatedPayload(taskId, dto.UserId, dto.Role));
+            await _mediator.Publish(createdNotification, ct);
 
-            return (saveCreateResult, assignment);
+            return assignment.ToReadDto();
         }
 
-        /// <summary>
-        /// Changes the role of an existing assignment, records an activity, and publishes a notification.
-        /// </summary>
-        public async Task<DomainMutation> ChangeRoleAsync(
+        /// <inheritdoc/>
+        public async Task<TaskAssignmentReadDto> ChangeRoleAsync(
             Guid projectId,
             Guid taskId,
             Guid targetUserId,
-            TaskRole newRole,
             Guid executedBy,
-            byte[] rowVersion,
+            TaskAssignmentChangeRoleDto dto,
             CancellationToken ct = default)
         {
-            var (changeRoleStatus, change) = await repo.ChangeRoleAsync(taskId, targetUserId, newRole, rowVersion, ct);
-            if (changeRoleStatus != PrecheckStatus.Ready || change is null)
-                return changeRoleStatus.ToErrorDomainMutation();
+            var taskAssignment = await _taskAssignmentRepository.GetByTaskAndUserIdForUpdateAsync(taskId, targetUserId, ct)
+                ?? throw new NotFoundException("Task assignment not found.");
 
-            var roleChange = (AssignmentRoleChangedChange)change;
+            var oldRole = taskAssignment.Role;
+
+            taskAssignment.ChangeRole(dto.NewRole);
+
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Update, ct);
+            if (mutation != DomainMutation.Updated)
+                throw new ConflictException("The task assignment could not be updated due to a conflicting state.");
+
             var payload = ActivityPayloadFactory.AssignmentRoleChanged(
                 targetUserId,
-                roleChange.OldRole,
-                roleChange.NewRole);
-            await activityWriter.CreateAsync(
+                oldRole,
+                dto.NewRole);
+            await _taskActivityWriteService.CreateAsync(
                 taskId,
                 executedBy,
                 TaskActivityType.AssignmentRoleChanged,
                 payload,
                 ct);
 
-            var saveUpdateResult = await uow.SaveAsync(MutationKind.Update, ct);
+            var notification = new TaskAssignmentUpdated(
+                projectId,
+                new TaskAssignmentUpdatedPayload(taskId, targetUserId, dto.NewRole));
+            await _mediator.Publish(notification, ct);
 
-            if (saveUpdateResult == DomainMutation.Updated)
-            {
-                var notification = new TaskAssignmentUpdated(
-                    projectId,
-                    new TaskAssignmentUpdatedPayload(taskId, targetUserId, newRole));
-                await mediator.Publish(notification, ct);
-            }
-
-            return saveUpdateResult;
+            return taskAssignment.ToReadDto();
         }
 
-        /// <summary>
-        /// Deletes an assignment, records a removal activity, and publishes a notification.
-        /// </summary>
-        public async Task<DomainMutation> DeleteAsync(
+        /// <inheritdoc/>
+        public async Task DeleteAsync(
             Guid projectId,
             Guid taskId,
             Guid targetUserId,
             Guid executedBy,
-            byte[] rowVersion,
             CancellationToken ct = default)
         {
-            var deleteStatus = await repo.DeleteAsync(taskId, targetUserId, rowVersion, ct);
-            if (deleteStatus != PrecheckStatus.Ready) return deleteStatus.ToErrorDomainMutation();
+            var taskAssignment = await _taskAssignmentRepository.GetByTaskAndUserIdForUpdateAsync(taskId, targetUserId, ct)
+                ?? throw new NotFoundException("Task assignment not found.");
 
-            var payload = ActivityPayloadFactory.AssignmentRemoved(targetUserId);
-            await activityWriter.CreateAsync(
-                taskId,
-                executedBy,
-                TaskActivityType.AssignmentRemoved,
-                payload,
-                ct);
+            await _taskAssignmentRepository.RemoveAsync(taskAssignment, ct);
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Delete, ct);
 
-            var saveDeleteResult = await uow.SaveAsync(MutationKind.Delete, ct);
+            if (mutation != DomainMutation.Deleted && mutation != DomainMutation.NoOp)
+                throw new ConflictException("The task assignment could not be deleted due to a conflicting state.");
 
-            if (saveDeleteResult == DomainMutation.Deleted)
+            if (mutation == DomainMutation.Deleted)
             {
+                var payload = ActivityPayloadFactory.AssignmentRemoved(targetUserId);
+                await _taskActivityWriteService.CreateAsync(
+                    taskId,
+                    executedBy,
+                    TaskActivityType.AssignmentRemoved,
+                    payload,
+                    ct);
+
                 var notification = new TaskAssignmentRemoved(
                     projectId,
                     new TaskAssignmentRemovedPayload(taskId, targetUserId));
-                await mediator.Publish(notification, ct);
+                await _mediator.Publish(notification, ct);
             }
-
-            return saveDeleteResult;
         }
     }
-
 }
