@@ -3,7 +3,7 @@ using Application.TaskItems.DTOs;
 namespace Application.TaskItems.Abstractions
 {
     /// <summary>
-    /// Provides write operations for managing <see cref="TaskItem"/> aggregates,
+    /// Provides write operations for managing <see cref="Domain.Entities.TaskItem"/> aggregates,
     /// including creation, editing, movement across lanes/columns, and deletion.
     /// All operations enforce task-level invariants, column/lane constraints,
     /// and project membership/authorization rules. Returned results are mapped to
@@ -19,7 +19,6 @@ namespace Application.TaskItems.Abstractions
         /// <param name="projectId">The identifier of the project where the new task is created.</param>
         /// <param name="laneId">The identifier of the lane that contains the target column.</param>
         /// <param name="columnId">The identifier of the column to which the task will be added.</param>
-        /// <param name="userId">The user performing the operation (author of the task).</param>
         /// <param name="dto">The task creation data (title, description, due date, etc.).</param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>
@@ -29,7 +28,6 @@ namespace Application.TaskItems.Abstractions
             Guid projectId,
             Guid laneId,
             Guid columnId,
-            Guid userId,
             TaskItemCreateDto dto,
             CancellationToken ct = default);
 
@@ -39,7 +37,6 @@ namespace Application.TaskItems.Abstractions
         /// </summary>
         /// <param name="projectId">The identifier of the project containing the task.</param>
         /// <param name="taskId">The identifier of the task to edit.</param>
-        /// <param name="userId">The user performing the edit.</param>
         /// <param name="dto">The edit data for the task.</param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>
@@ -48,7 +45,6 @@ namespace Application.TaskItems.Abstractions
         Task<TaskItemReadDto> EditAsync(
             Guid projectId,
             Guid taskId,
-            Guid userId,
             TaskItemEditDto dto,
             CancellationToken ct = default);
 
@@ -60,7 +56,6 @@ namespace Application.TaskItems.Abstractions
         /// </summary>
         /// <param name="projectId">The identifier of the project containing the task.</param>
         /// <param name="taskId">The identifier of the task to move.</param>
-        /// <param name="userId">The user performing the move.</param>
         /// <param name="dto">Move parameters including target lane/column.</param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>
@@ -69,7 +64,6 @@ namespace Application.TaskItems.Abstractions
         Task<TaskItemReadDto> MoveAsync(
             Guid projectId,
             Guid taskId,
-            Guid userId,
             TaskItemMoveDto dto,
             CancellationToken ct = default);
 

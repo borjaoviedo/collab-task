@@ -1,3 +1,4 @@
+using Application.Abstractions.Auth;
 using Application.Abstractions.Persistence;
 using Application.Common.Exceptions;
 using Application.TaskActivities.Abstractions;
@@ -34,6 +35,9 @@ namespace Application.TaskItems.Services
     /// Service responsible for emitting <see cref="TaskActivity"/> records that describe
     /// task-related events such as creation, edits, moves, and deletions.
     /// </param>
+    /// <param name="currentUserService">
+    /// Provides information about the currently authenticated user, such as <c>UserId</c>.
+    /// </param>
     /// <param name="mediator">
     /// MediatR abstraction used to publish domain notifications following successful write operations,
     /// enabling decoupled reactions across the application.
@@ -42,11 +46,13 @@ namespace Application.TaskItems.Services
         ITaskItemRepository taskItemRepository,
         IUnitOfWork unitOfWork,
         ITaskActivityWriteService taskActivityWriteService,
+        ICurrentUserService currentUserService,
         IMediator mediator) : ITaskItemWriteService
     {
         private readonly ITaskItemRepository _taskItemRepository = taskItemRepository;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly ITaskActivityWriteService _taskActivityWriteService = taskActivityWriteService;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
         private readonly IMediator _mediator = mediator;
 
         /// <inheritdoc/>
@@ -54,7 +60,6 @@ namespace Application.TaskItems.Services
             Guid projectId,
             Guid laneId,
             Guid columnId,
-            Guid userId,
             TaskItemCreateDto dto,
             CancellationToken ct = default)
         {
@@ -75,10 +80,12 @@ namespace Application.TaskItems.Services
             if (mutation != DomainMutation.Created)
                 throw new ConflictException("Task item could not be created due to a conflicting state.");
 
+            var currentUserId = (Guid)_currentUserService.UserId!;
             var payload = ActivityPayloadFactory.TaskCreated(dto.Title);
+
             await _taskActivityWriteService.CreateAsync(
                 task.Id,
-                userId,
+                currentUserId,
                 TaskActivityType.TaskCreated,
                 payload,
                 ct);
@@ -102,7 +109,6 @@ namespace Application.TaskItems.Services
         public async Task<TaskItemReadDto> EditAsync(
             Guid projectId,
             Guid taskId,
-            Guid userId,
             TaskItemEditDto dto,
             CancellationToken ct = default)
         {
@@ -120,14 +126,16 @@ namespace Application.TaskItems.Services
             if (mutation != DomainMutation.Updated)
                 throw new ConflictException("The task item could not be edited due to a conflicting state.");
 
+            var currentUserId = (Guid)_currentUserService.UserId!;
             var payload = ActivityPayloadFactory.TaskEdited(
                 oldTaskTitle,
                 dto.NewTitle,
                 oldTaskDescription,
                 dto.NewDescription);
+
             await _taskActivityWriteService.CreateAsync(
                 taskId,
-                userId,
+                currentUserId,
                 TaskActivityType.TaskEdited,
                 payload,
                 ct);
@@ -148,7 +156,6 @@ namespace Application.TaskItems.Services
         public async Task<TaskItemReadDto> MoveAsync(
             Guid projectId,
             Guid taskId,
-            Guid userId,
             TaskItemMoveDto dto,
             CancellationToken ct = default)
         {
@@ -164,14 +171,16 @@ namespace Application.TaskItems.Services
             if (mutation != DomainMutation.Updated)
                 throw new ConflictException("The task item could not be moved due to a conflicting state.");
 
+            var currentUserId = (Guid)_currentUserService.UserId!;
             var payload = ActivityPayloadFactory.TaskMoved(
                 oldLane,
                 oldColumn,
                 dto.NewLaneId,
                 dto.NewColumnId);
+
             await _taskActivityWriteService.CreateAsync(
                 taskId,
-                userId,
+                currentUserId,
                 TaskActivityType.TaskMoved,
                 payload,
                 ct);
