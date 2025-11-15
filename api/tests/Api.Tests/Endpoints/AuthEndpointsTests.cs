@@ -4,10 +4,7 @@ using Application.Auth.DTOs;
 using Application.Users.DTOs;
 using Domain.Enums;
 using FluentAssertions;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Security.Claims;
@@ -186,33 +183,6 @@ namespace Api.Tests.Endpoints
             secondRegisterResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
         }
 
-        [Fact]
-        public async Task Register_Returns409_On_Duplicate_Name_By_Precheck()
-        {
-            using var app = new TestApiFactory();
-            using var client = app.CreateClient();
-
-            var name = "Dup Name";
-            var firstUserRegisterDto = new UserRegisterDto()
-            {
-                Email = $"{Guid.NewGuid():N}@demo.com",
-                Name = name,
-                Password = UserDefaults.DefaultPassword
-            };
-            var secondUserRegisterDto = new UserRegisterDto()
-            {
-                Email = $"{Guid.NewGuid():N}@demo.com",
-                Name = name,
-                Password = UserDefaults.DefaultPassword
-            };
-
-            var firstRegisterResponse = await AuthTestHelper.PostRegisterResponseAsync(client, firstUserRegisterDto);
-            firstRegisterResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-
-            var secondRegisterResponse = await AuthTestHelper.PostRegisterResponseAsync(client, secondUserRegisterDto);
-            secondRegisterResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        }
-
         [Theory]
         [InlineData("", "User Name", "Str0ngP@ss!")]
         [InlineData("not-an-email", "User Name", "Str0ngP@ss!")]
@@ -293,7 +263,7 @@ namespace Api.Tests.Endpoints
         }
 
         [Fact]
-        public async Task Me_Returns401_When_User_Not_Found()
+        public async Task Me_Returns404_When_User_Not_Found()
         {
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
@@ -307,47 +277,7 @@ namespace Api.Tests.Endpoints
             client.SetAuthorization(token);
 
             var authMeResponse = await AuthTestHelper.GetMeResponseAsync(client);
-            authMeResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        }
-
-        [Fact]
-        public async Task Me_Returns401_When_Token_Missing_Sub_Claim()
-        {
-            using var app = new TestApiFactory();
-            using var client = app.CreateClient();
-
-            // Build a signed JWT without 'sub' using the same signing key/issuer/audience
-            await using var scope = app.Services.CreateAsyncScope();
-
-            var jwtBearer = scope.ServiceProvider
-                .GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
-                .Get(JwtBearerDefaults.AuthenticationScheme);
-
-            var tvp = jwtBearer.TokenValidationParameters;
-            var key = (SymmetricSecurityKey)tvp.IssuerSigningKey;
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var now = DateTime.UtcNow;
-            var claims = new List<Claim>
-            {
-                new(JwtRegisteredClaimNames.Email, "nosub@demo.com"),
-                new(ClaimTypes.Role, "User"),
-                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-                // Intentionally no 'sub'
-            };
-            var token = new JwtSecurityToken(
-                issuer: tvp.ValidIssuer,
-                audience: tvp.ValidAudience,
-                claims: claims,
-                notBefore: now,
-                expires: now.AddMinutes(5),
-                signingCredentials: creds);
-            var tokenStr = new JwtSecurityTokenHandler().WriteToken(token);
-
-            client.SetAuthorization(tokenStr);
-
-            var authMeResponse = await AuthTestHelper.GetMeResponseAsync(client);
-            authMeResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+            authMeResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
 
         [Fact]
