@@ -1,50 +1,71 @@
+using Application.Common.Exceptions;
 using Application.ProjectMembers.Abstractions;
-using Domain.Entities;
+using Application.ProjectMembers.DTOs;
+using Application.ProjectMembers.Mapping;
 using Domain.Enums;
 
 namespace Application.ProjectMembers.Services
 {
     /// <summary>
-    /// Read-only application service for project members.
+    /// Application read-side service for <see cref="Domain.Entities.ProjectMember"/> aggregates.
+    /// Provides query operations for retrieving individual membership records, listing all
+    /// members of a project, resolving a user’s role within a project, and counting active
+    /// memberships. All returned results are mapped to <see cref="ProjectMemberReadDto"/>
+    /// representations. Missing memberships are surfaced as
+    /// <see cref="NotFoundException"/> to ensure consistent error semantics
+    /// at the application boundary.
     /// </summary>
-    public sealed class ProjectMemberReadService(IProjectMemberRepository repo) : IProjectMemberReadService
+    /// <param name="projectMemberRepository">
+    /// Repository used for querying <see cref="Domain.Entities.ProjectMember"/> entities,
+    /// including lookups by project/user pair, listing by project, role resolution,
+    /// and membership analytics.
+    /// </param>
+    public sealed class ProjectMemberReadService(
+        IProjectMemberRepository projectMemberRepository) : IProjectMemberReadService
     {
-        /// <summary>
-        /// Retrieves a project member by project and user identifiers.
-        /// </summary>
-        /// <param name="projectId">The project identifier.</param>
-        /// <param name="userId">The user identifier.</param>
-        /// <param name="ct">Cancellation token.</param>
-        public async Task<ProjectMember?> GetAsync(Guid projectId, Guid userId, CancellationToken ct = default)
-            => await repo.GetByProjectAndUserIdAsync(projectId, userId, ct);
+        private readonly IProjectMemberRepository _projectMemberRepository = projectMemberRepository;
 
-        /// <summary>
-        /// Lists members of a project, optionally including removed ones.
-        /// </summary>
-        /// <param name="projectId">The project identifier.</param>
-        /// <param name="includeRemoved">Whether to include soft-removed members.</param>
-        /// <param name="ct">Cancellation token.</param>
-        public async Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(
+        /// <inheritdoc/>
+        public async Task<ProjectMemberReadDto> GetByProjectAndUserIdAsync(
+            Guid projectId,
+            Guid userId,
+            CancellationToken ct = default)
+        {
+            var projectMember = await _projectMemberRepository.GetByProjectAndUserIdAsync(projectId, userId, ct)
+                // 404 if the member does not exist
+                ?? throw new NotFoundException("Member not found.");
+
+            return projectMember.ToReadDto();
+        }
+
+        /// <inheritdoc/>
+        public async Task<IReadOnlyList<ProjectMemberReadDto>> ListByProjectIdAsync(
             Guid projectId,
             bool includeRemoved = false,
             CancellationToken ct = default)
-            => await repo.ListByProjectAsync(projectId, includeRemoved, ct);
+        {
+            var projectMembers = await _projectMemberRepository.ListByProjectIdAsync(projectId, includeRemoved, ct);
 
-        /// <summary>
-        /// Retrieves the role of a user within a project.
-        /// </summary>
-        /// <param name="projectId">The project identifier.</param>
-        /// <param name="userId">The user identifier.</param>
-        /// <param name="ct">Cancellation token.</param>
-        public async Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
-            => await repo.GetRoleAsync(projectId, userId, ct);
+            return projectMembers
+                .Select(pm => pm.ToReadDto())
+                .ToList();
+        }
 
-        /// <summary>
-        /// Counts the number of active memberships a user currently holds.
-        /// </summary>
-        /// <param name="userId">The user identifier.</param>
-        /// <param name="ct">Cancellation token.</param>
-        public async Task<int> CountActiveAsync(Guid userId, CancellationToken ct = default)
-            => await repo.CountUserActiveMembershipsAsync(userId, ct);
+        /// <inheritdoc/>
+        public async Task<ProjectRole?> GetUserRoleAsync(
+            Guid projectId,
+            Guid userId,
+            CancellationToken ct = default)
+        {
+            var projectRole = await _projectMemberRepository.GetUserRoleAsync(projectId, userId, ct)
+                // 404 if the member does not exist
+                ?? throw new NotFoundException("Member not found.");
+
+            return projectRole;
+        }
+
+        /// <inheritdoc/>
+        public async Task<int> CountActiveUsersAsync(Guid userId, CancellationToken ct = default)
+            => await _projectMemberRepository.CountUserActiveMembershipsAsync(userId, ct);
     }
 }
