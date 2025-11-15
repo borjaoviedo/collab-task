@@ -1,8 +1,6 @@
 using Application.Projects.Abstractions;
 using Application.Projects.Filters;
 using Domain.Entities;
-using Domain.Enums;
-using Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 
@@ -17,14 +15,8 @@ namespace Infrastructure.Persistence.Repositories
     {
         private readonly CollabTaskDbContext _db = db;
 
-        /// <summary>
-        /// Lists projects visible to a specific user, optionally filtered by name, role, or removal status.
-        /// Supports sorting, paging, and includes non-removed members by default.
-        /// </summary>
-        /// <param name="userId">User identifier.</param>
-        /// <param name="filter">Optional filter defining role, name, paging, and sorting criteria.</param>
-        /// <param name="ct">Cancellation token.</param>
-        public async Task<IReadOnlyList<Project>> ListByUserAsync(
+        /// <inheritdoc/>
+        public async Task<IReadOnlyList<Project>> ListByUserIdAsync(
             Guid userId,
             ProjectFilter? filter = null,
             CancellationToken ct = default)
@@ -68,71 +60,45 @@ namespace Infrastructure.Persistence.Repositories
             return await q.ToListAsync(ct);
         }
 
-        /// <summary>
-        /// Gets a project by id without tracking, including non-removed members.
-        /// </summary>
-        public async Task<Project?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        /// <inheritdoc/>
+        public async Task<Project?> GetByIdAsync(Guid projectId, CancellationToken ct = default)
             => await _db.Projects
                         .AsNoTracking()
                         .Include(p => p.Members.Where(m => m.RemovedAt == null))
-                        .FirstOrDefaultAsync(p => p.Id == id, ct);
+                        .FirstOrDefaultAsync(p => p.Id == projectId, ct);
 
-        /// <summary>
-        /// Gets a tracked project including non-removed members.
-        /// </summary>
-        public async Task<Project?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default)
+        /// <inheritdoc/>
+        public async Task<Project?> GetByIdForUpdateAsync(Guid projectId, CancellationToken ct = default)
             => await _db.Projects
                         .Include(p => p.Members.Where(m => m.RemovedAt == null))
-                        .FirstOrDefaultAsync(p => p.Id == id, ct);
+                        .FirstOrDefaultAsync(p => p.Id == projectId, ct);
 
-        /// <summary>
-        /// Adds a new project to the context.
-        /// </summary>
+        /// <inheritdoc/>
+        public async Task<bool> ExistsByNameAsync(string name, CancellationToken ct = default)
+            => await _db.Projects
+                        .AsNoTracking()
+                        .AnyAsync(p => p.Name == name, ct);
+
+        /// <inheritdoc/>
         public async Task AddAsync(Project project, CancellationToken ct = default)
             => await _db.Projects.AddAsync(project, ct);
 
-        /// <summary>
-        /// Renames a project with concurrency protection, updating both name and slug.
-        /// </summary>
-        public async Task<PrecheckStatus> RenameAsync(
-            Guid id,
-            ProjectName newName,
-            byte[] rowVersion,
-            CancellationToken ct = default)
+        /// <inheritdoc/>
+        public async Task UpdateAsync(Project project, CancellationToken ct = default)
         {
-            var project = await GetTrackedByIdAsync(id, ct);
-            if (project is null) return PrecheckStatus.NotFound;
-            if (project.Name == newName) return PrecheckStatus.NoOp;
+            // If entity is already tracked, do nothing so EF change tracking produces minimal UPDATEs
+            if (_db.Entry(project).State == EntityState.Detached)
+                _db.Projects.Update(project);
 
-            _db.Entry(project).Property(p => p.RowVersion).OriginalValue = rowVersion;
-
-            project.Rename(newName);
-            _db.Entry(project).Property(p => p.Name).IsModified = true;
-            _db.Entry(project).Property(p => p.Slug).IsModified = true;
-
-            return PrecheckStatus.Ready;
+            await Task.CompletedTask;
         }
 
-        /// <summary>
-        /// Deletes a project with optimistic concurrency.
-        /// </summary>
-        public async Task<PrecheckStatus> DeleteAsync(Guid id, byte[] rowVersion, CancellationToken ct = default)
+        /// <inheritdoc/>
+        public async  Task RemoveAsync(Project project, CancellationToken ct = default)
         {
-            var project = await GetTrackedByIdAsync(id, ct);
-            if (project is null) return PrecheckStatus.NotFound;
-
-            _db.Entry(project).Property(p => p.RowVersion).OriginalValue = rowVersion;
+            // Mark entity as deleted; actual deletion occurs in UnitOfWork.SaveAsync()
             _db.Projects.Remove(project);
-
-            return PrecheckStatus.Ready;
+            await Task.CompletedTask;
         }
-
-        /// <summary>
-        /// Checks whether a project name already exists for a specific owner.
-        /// </summary>
-        public async Task<bool> ExistsByNameAsync(Guid ownerId, ProjectName name, CancellationToken ct = default)
-            => await _db.Projects
-                        .AsNoTracking()
-                        .AnyAsync(p => p.OwnerId == ownerId && p.Name == name, ct);
     }
 }
