@@ -1,8 +1,8 @@
+using Application.Abstractions.Auth;
 using Application.Common.Exceptions;
 using Application.ProjectMembers.Abstractions;
 using Application.ProjectMembers.DTOs;
 using Application.ProjectMembers.Mapping;
-using Domain.Enums;
 
 namespace Application.ProjectMembers.Services
 {
@@ -20,10 +20,15 @@ namespace Application.ProjectMembers.Services
     /// including lookups by project/user pair, listing by project, role resolution,
     /// and membership analytics.
     /// </param>
+    /// <param name="currentUserService">
+    /// Provides information about the currently authenticated user, such as <c>UserId</c>.
+    /// </param>
     public sealed class ProjectMemberReadService(
-        IProjectMemberRepository projectMemberRepository) : IProjectMemberReadService
+        IProjectMemberRepository projectMemberRepository,
+        ICurrentUserService currentUserService) : IProjectMemberReadService
     {
         private readonly IProjectMemberRepository _projectMemberRepository = projectMemberRepository;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
 
         /// <inheritdoc/>
         public async Task<ProjectMemberReadDto> GetByProjectAndUserIdAsync(
@@ -52,7 +57,7 @@ namespace Application.ProjectMembers.Services
         }
 
         /// <inheritdoc/>
-        public async Task<ProjectRole?> GetUserRoleAsync(
+        public async Task<ProjectMemberRoleReadDto> GetUserRoleAsync(
             Guid projectId,
             Guid userId,
             CancellationToken ct = default)
@@ -61,11 +66,23 @@ namespace Application.ProjectMembers.Services
                 // 404 if the member does not exist
                 ?? throw new NotFoundException("Member not found.");
 
-            return projectRole;
+            return projectRole.ToRoleReadDto();
         }
 
         /// <inheritdoc/>
-        public async Task<int> CountActiveUsersAsync(Guid userId, CancellationToken ct = default)
-            => await _projectMemberRepository.CountUserActiveMembershipsAsync(userId, ct);
+        public async Task<ProjectMemberCountReadDto> CountActiveUsersAsync(Guid userId, CancellationToken ct = default)
+        {
+            var count = await _projectMemberRepository.CountUserActiveMembershipsAsync(userId, ct);
+            return count.ToCountReadDto();
+        }
+
+        /// <inheritdoc/>
+        public async Task<ProjectMemberCountReadDto> CountActiveSelfAsync(CancellationToken ct = default)
+        {
+            var currentUserId = (Guid)_currentUserService.UserId!;
+            var count = await _projectMemberRepository.CountUserActiveMembershipsAsync(currentUserId, ct);
+
+            return count.ToCountReadDto();
+        }
     }
 }

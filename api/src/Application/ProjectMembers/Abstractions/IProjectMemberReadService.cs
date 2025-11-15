@@ -1,6 +1,5 @@
 using Application.ProjectMembers.DTOs;
 using Domain.Entities;
-using Domain.Enums;
 
 namespace Application.ProjectMembers.Abstractions
 {
@@ -53,9 +52,9 @@ namespace Application.ProjectMembers.Abstractions
         /// <param name="userId">The user whose project role will be retrieved.</param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>
-        /// A <see cref="ProjectRole"/> value if the user belongs to the project; otherwise <c>null</c>.
+        /// A <see cref="ProjectMemberRoleReadDto"/> value if the user belongs to the project; otherwise <c>null</c>.
         /// </returns>
-        Task<ProjectRole?> GetUserRoleAsync(
+        Task<ProjectMemberRoleReadDto> GetUserRoleAsync(
             Guid projectId,
             Guid userId,
             CancellationToken ct = default);
@@ -63,13 +62,32 @@ namespace Application.ProjectMembers.Abstractions
         /// <summary>
         /// Counts the number of active (non-removed) project memberships
         /// associated with the specified user.
-        /// Useful for analytics, rate-limiting, or usage-based features.
+        /// Useful for analytics, quota enforcement, dashboards, or usage-based features.
         /// </summary>
-        /// <param name="userId">The identifier of the user whose active memberships will be counted.</param>
+        /// <param name="userId">
+        /// The unique identifier of the user whose active memberships will be counted.
+        /// </param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>
-        /// The number of active project memberships held by the user.
+        /// A <see cref="ProjectMemberCountReadDto"/> containing the number of
+        /// active project memberships associated with the specified user.
         /// </returns>
-        Task<int> CountActiveUsersAsync(Guid userId, CancellationToken ct = default);
+        Task<ProjectMemberCountReadDto> CountActiveUsersAsync(
+            Guid userId,
+            CancellationToken ct = default);
+
+        /// <summary>
+        /// Counts the number of active (non-removed) project memberships
+        /// associated with the currently authenticated user.
+        /// Useful for analytics, quota enforcement, dashboards, or usage-based features.
+        /// Throws <see cref="UnauthorizedAccessException"/> when no user is authenticated.
+        /// </summary>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>
+        /// A <see cref="ProjectMemberCountReadDto"/> containing the number of
+        /// active project memberships associated with the authenticated user.
+        /// </returns>
+        Task<ProjectMemberCountReadDto> CountActiveSelfAsync(
+            CancellationToken ct = default);
     }
 }
