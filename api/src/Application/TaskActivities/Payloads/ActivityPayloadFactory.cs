@@ -60,11 +60,11 @@ namespace Application.TaskActivities.Payloads
             """);
 
         /// <summary>Creates a payload describing the creation of a task assignment.</summary>
-        public static ActivityPayload AssignmentCreated(TaskAssignmentCreateDto dto) =>
+        public static ActivityPayload AssignmentCreated(Guid userId, TaskRole role) =>
             ActivityPayload.Create($$"""
             {
-                "userId":"{{dto.UserId}}",
-                "role":"{{dto.Role}}"
+                "userId":"{{userId}}",
+                "role":"{{role}}"
             }
             """);
 

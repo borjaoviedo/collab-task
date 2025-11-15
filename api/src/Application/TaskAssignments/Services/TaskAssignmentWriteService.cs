@@ -70,7 +70,7 @@ namespace Application.TaskAssignments.Services
             await _taskAssignmentRepository.AddAsync(assignment, ct);
 
             var currentUserId = (Guid)_currentUserService.UserId!;
-            var createPayload = ActivityPayloadFactory.AssignmentCreated(dto);
+            var createPayload = ActivityPayloadFactory.AssignmentCreated(dto.UserId, dto.Role);
 
             await _taskActivityWriteService.CreateAsync(
                 taskId,
