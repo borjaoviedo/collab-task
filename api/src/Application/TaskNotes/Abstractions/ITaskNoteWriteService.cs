@@ -16,7 +16,6 @@ namespace Application.TaskNotes.Abstractions
         /// </summary>
         /// <param name="projectId">The identifier of the project containing the task.</param>
         /// <param name="taskId">The identifier of the task to which the note will be added.</param>
-        /// <param name="userId">The identifier of the user creating the note.</param>
         /// <param name="dto">The data required to create the note.</param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>
@@ -25,7 +24,6 @@ namespace Application.TaskNotes.Abstractions
         Task<TaskNoteReadDto> CreateAsync(
             Guid projectId,
             Guid taskId,
-            Guid userId,
             TaskNoteCreateDto dto,
             CancellationToken ct = default);
 
@@ -37,7 +35,6 @@ namespace Application.TaskNotes.Abstractions
         /// <param name="projectId">The identifier of the project containing the task.</param>
         /// <param name="taskId">The identifier of the task associated with the note.</param>
         /// <param name="noteId">The unique identifier of the note to edit.</param>
-        /// <param name="userId">The identifier of the user performing the edit.</param>
         /// <param name="dto">The updated note content.</param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>
@@ -47,7 +44,6 @@ namespace Application.TaskNotes.Abstractions
             Guid projectId,
             Guid taskId,
             Guid noteId,
-            Guid userId,
             TaskNoteEditDto dto,
             CancellationToken ct = default);
 
@@ -59,13 +55,11 @@ namespace Application.TaskNotes.Abstractions
         /// <param name="projectId">The identifier of the project containing the task.</param>
         /// <param name="taskId">The identifier of the task containing the note.</param>
         /// <param name="noteId">The unique identifier of the note to delete.</param>
-        /// <param name="userId">The identifier of the user initiating the deletion.</param>
         /// <param name="ct">Cancellation token.</param>
         Task DeleteAsync(
             Guid projectId,
             Guid taskId,
             Guid noteId,
-            Guid userId,
             CancellationToken ct = default);
     }
 }

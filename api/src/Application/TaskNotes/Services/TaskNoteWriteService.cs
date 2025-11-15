@@ -1,3 +1,4 @@
+using Application.Abstractions.Auth;
 using Application.Abstractions.Persistence;
 using Application.Common.Exceptions;
 using Application.TaskActivities.Abstractions;
@@ -32,6 +33,9 @@ namespace Application.TaskNotes.Services
     /// Service responsible for creating <see cref="TaskActivity"/> records that
     /// capture note-related events such as creation, edits, and deletions.
     /// </param>
+    /// <param name="currentUserService">
+    /// Provides information about the currently authenticated user, such as <c>UserId</c>.
+    /// </param>
     /// <param name="mediator">
     /// MediatR abstraction used to publish note domain notifications so other components
     /// (for example, real-time hubs or background workers) can subscribe to note changes.
@@ -40,23 +44,26 @@ namespace Application.TaskNotes.Services
         ITaskNoteRepository taskNoteRepository,
         IUnitOfWork unitOfWork,
         ITaskActivityWriteService taskActivityWriteService,
+        ICurrentUserService currentUserService,
         IMediator mediator) : ITaskNoteWriteService
     {
         private readonly ITaskNoteRepository _taskNoteRepository = taskNoteRepository;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly ITaskActivityWriteService _taskActivityWriteService = taskActivityWriteService;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
         private readonly IMediator _mediator = mediator;
 
         /// <inheritdoc/>
         public async Task<TaskNoteReadDto> CreateAsync(
             Guid projectId,
             Guid taskId,
-            Guid userId,
             TaskNoteCreateDto dto,
             CancellationToken ct = default)
         {
             var noteContentVo = NoteContent.Create(dto.Content);
-            var note = TaskNote.Create(taskId, userId, noteContentVo);
+            var currentUserId = (Guid)_currentUserService.UserId!;
+            var note = TaskNote.Create(taskId, currentUserId, noteContentVo);
+
             await _taskNoteRepository.AddAsync(note, ct);
 
             var mutation = await _unitOfWork.SaveAsync(MutationKind.Create, ct);
@@ -66,7 +73,7 @@ namespace Application.TaskNotes.Services
             var payload = ActivityPayloadFactory.NoteAdded(note.Id);
             await _taskActivityWriteService.CreateAsync(
                 taskId,
-                userId,
+                currentUserId,
                 TaskActivityType.NoteAdded,
                 payload,
                 ct);
@@ -84,7 +91,6 @@ namespace Application.TaskNotes.Services
             Guid projectId,
             Guid taskId,
             Guid noteId,
-            Guid userId,
             TaskNoteEditDto dto,
             CancellationToken ct = default)
         {
@@ -98,10 +104,12 @@ namespace Application.TaskNotes.Services
             if (mutation != DomainMutation.Updated)
                 throw new ConflictException("The task note could not be edited due to a conflicting state.");
 
+            var currentUserId = (Guid)_currentUserService.UserId!;
+
             var payload = ActivityPayloadFactory.NoteEdited(noteId);
             await _taskActivityWriteService.CreateAsync(
                 taskId,
-                userId,
+                currentUserId,
                 TaskActivityType.NoteEdited,
                 payload,
                 ct);
@@ -119,7 +127,6 @@ namespace Application.TaskNotes.Services
             Guid projectId,
             Guid taskId,
             Guid noteId,
-            Guid userId,
             CancellationToken ct = default)
         {
             var note = await _taskNoteRepository.GetByIdForUpdateAsync(noteId, ct)
