@@ -1,31 +1,46 @@
-using Domain.Entities;
-using Domain.Enums;
-using Domain.ValueObjects;
+using Application.Projects.DTOs;
 
 namespace Application.Projects.Abstractions
 {
     /// <summary>
-    /// Handles project creation and mutation commands at the application level.
+    /// Provides write operations for managing project entities,
+    /// including creation, modification, and deletion.
     /// </summary>
     public interface IProjectWriteService
     {
-        /// <summary>Creates a new project for a given user.</summary>
-        Task<(DomainMutation, Project?)> CreateAsync(
-            Guid userId,
-            ProjectName name,
+        /// <summary>
+        /// Creates a new project.
+        /// </summary>
+        /// <param name="dto">The data required to create the project.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>
+        /// A <see cref="ProjectReadDto"/> representing the newly created project.
+        /// </returns>
+        Task<ProjectReadDto> CreateAsync(
+            ProjectCreateDto dto,
             CancellationToken ct = default);
 
-        /// <summary>Renames an existing project.</summary>
-        Task<DomainMutation> RenameAsync(
+        /// <summary>
+        /// Renames an existing project.
+        /// </summary>
+        /// <param name="projectId">The unique identifier of the project to rename.</param>
+        /// <param name="dto">The new name and related data.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>
+        /// A <see cref="ProjectReadDto"/> representing the updated project.
+        /// </returns>
+        Task<ProjectReadDto> RenameAsync(
             Guid projectId,
-            ProjectName newName,
-            byte[] rowVersion,
+            ProjectRenameDto dto,
             CancellationToken ct = default);
 
-        /// <summary>Deletes an existing project.</summary>
-        Task<DomainMutation> DeleteAsync(
+        /// <summary>
+        /// Deletes an existing project.
+        /// </summary>
+        /// <param name="projectId">The unique identifier of the project to delete.</param>
+        /// <param name="ct">Cancellation token.</param>
+        Task DeleteByIdAsync(
             Guid projectId,
-            byte[] rowVersion,
             CancellationToken ct = default);
     }
 }
