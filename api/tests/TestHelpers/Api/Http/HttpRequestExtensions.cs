@@ -4,8 +4,15 @@ namespace TestHelpers.Api.Http
 {
     public static class HttpRequestExtensions
     {
+        public static async Task<T> ReadContentAsDtoAsync<T>(this HttpResponseMessage response)
+        {
+            var result = await response.Content.ReadFromJsonAsync<T>();
+            return result
+                ?? throw new InvalidOperationException($"Response content could not be deserialized to {typeof(T).Name}.");
+        }
+
         public static async Task<HttpResponseMessage> PostWithoutIfMatchAsync<T>(
-            HttpClient client,
+            this HttpClient client,
             string url,
             T payload)
         {
@@ -14,7 +21,7 @@ namespace TestHelpers.Api.Http
         }
 
         public static async Task<HttpResponseMessage> PutWithIfMatchAsync<T>(
-            HttpClient client,
+            this HttpClient client,
             byte[] rowVersion,
             string url,
             T payload)
@@ -24,7 +31,7 @@ namespace TestHelpers.Api.Http
         }
 
         public static async Task<HttpResponseMessage> PatchWithIfMatchAsync<T>(
-            HttpClient client,
+            this HttpClient client,
             byte[] rowVersion,
             string url,
             T payload)
@@ -34,7 +41,7 @@ namespace TestHelpers.Api.Http
         }
 
         public static async Task<HttpResponseMessage> DeleteWithIfMatchAsync(
-            HttpClient client,
+            this HttpClient client,
             byte[] rowVersion,
             string url)
         {
