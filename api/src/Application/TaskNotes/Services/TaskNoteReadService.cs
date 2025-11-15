@@ -1,3 +1,4 @@
+using Application.Abstractions.Auth;
 using Application.Common.Exceptions;
 using Application.TaskNotes.Abstractions;
 using Application.TaskNotes.DTOs;
@@ -17,10 +18,15 @@ namespace Application.TaskNotes.Services
     /// Repository used for querying <see cref="Domain.Entities.TaskNote"/> entities,
     /// including lookups by identifier, lists by task, and lists by user.
     /// </param>
+    /// <param name="currentUserService">
+    /// Provides information about the currently authenticated user, such as <c>UserId</c>.
+    /// </param>
     public sealed class TaskNoteReadService(
-        ITaskNoteRepository taskNoteRepository) : ITaskNoteReadService
+        ITaskNoteRepository taskNoteRepository,
+        ICurrentUserService currentUserService) : ITaskNoteReadService
     {
         private readonly ITaskNoteRepository _taskNoteRepository = taskNoteRepository;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
 
         /// <inheritdoc/>
         public async Task<TaskNoteReadDto> GetByIdAsync(
@@ -52,6 +58,18 @@ namespace Application.TaskNotes.Services
             CancellationToken ct = default)
         {
             var taskNotes = await _taskNoteRepository.ListByUserIdAsync(userId, ct);
+
+            return taskNotes
+                .Select(tn => tn.ToReadDto())
+                .ToList();
+        }
+
+        /// <inheritdoc/>
+        public async Task<IReadOnlyList<TaskNoteReadDto>> ListSelfAsync(
+            CancellationToken ct = default)
+        {
+            var currentUserId = (Guid)_currentUserService.UserId!;
+            var taskNotes = await _taskNoteRepository.ListByUserIdAsync(currentUserId, ct);
 
             return taskNotes
                 .Select(tn => tn.ToReadDto())

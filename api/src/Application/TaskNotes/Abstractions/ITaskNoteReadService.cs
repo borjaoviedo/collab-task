@@ -43,5 +43,15 @@ namespace Application.TaskNotes.Abstractions
         /// A read-only list of <see cref="TaskNoteReadDto"/> entries written by the user.
         /// </returns>
         Task<IReadOnlyList<TaskNoteReadDto>> ListByUserIdAsync(Guid userId, CancellationToken ct = default);
+
+        /// <summary>
+        /// Lists all notes authored by the specified user across all tasks.
+        /// Useful for personal activity feeds, user dashboards, or auditing features.
+        /// </summary>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>
+        /// A read-only list of <see cref="TaskNoteReadDto"/> entries written by the authenticated user.
+        /// </returns>
+        Task<IReadOnlyList<TaskNoteReadDto>> ListSelfAsync(CancellationToken ct = default);
     }
 }
