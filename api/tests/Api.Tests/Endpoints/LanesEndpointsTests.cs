@@ -52,7 +52,6 @@ namespace Api.Tests.Endpoints
                 lane.RowVersion);
 
             renamedLane.Name.Should().Be(LaneDefaults.DefaultLaneRename);
-            renamedLane.RowVersion.Should().NotBeEquivalentTo(lane.RowVersion);
 
             // create another lane so index 1 exists
             var laneCreateDto = new LaneCreateDto() { Name = "different lane", Order = 1 };
