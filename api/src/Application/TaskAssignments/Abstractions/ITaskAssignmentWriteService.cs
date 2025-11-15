@@ -19,7 +19,6 @@ namespace Application.TaskAssignments.Abstractions
         /// </summary>
         /// <param name="projectId">The unique identifier of the project containing the task.</param>
         /// <param name="taskId">The unique identifier of the task to which the assignment belongs.</param>
-        /// <param name="executedBy">The user performing the assignment operation.</param>
         /// <param name="dto">The data required to create the task assignment.</param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>
@@ -28,7 +27,6 @@ namespace Application.TaskAssignments.Abstractions
         Task<TaskAssignmentReadDto> CreateAsync(
             Guid projectId,
             Guid taskId,
-            Guid executedBy,
             TaskAssignmentCreateDto dto,
             CancellationToken ct = default);
 
@@ -40,7 +38,6 @@ namespace Application.TaskAssignments.Abstractions
         /// <param name="projectId">The identifier of the project containing the task.</param>
         /// <param name="taskId">The identifier of the task to which the assignment belongs.</param>
         /// <param name="targetUserId">The user whose assignment role will be changed.</param>
-        /// <param name="executedBy">The identifier of the user performing the change.</param>
         /// <param name="dto">The new role to apply to the assignment.</param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>
@@ -50,7 +47,6 @@ namespace Application.TaskAssignments.Abstractions
             Guid projectId,
             Guid taskId,
             Guid targetUserId,
-            Guid executedBy,
             TaskAssignmentChangeRoleDto dto,
             CancellationToken ct = default);
 
@@ -63,13 +59,11 @@ namespace Application.TaskAssignments.Abstractions
         /// <param name="projectId">The identifier of the project containing the task.</param>
         /// <param name="taskId">The identifier of the task whose assignment will be removed.</param>
         /// <param name="targetUserId">The user whose assignment will be deleted.</param>
-        /// <param name="executedBy">The identifier of the user initiating the deletion.</param>
         /// <param name="ct">Cancellation token.</param>
         Task DeleteAsync(
             Guid projectId,
             Guid taskId,
             Guid targetUserId,
-            Guid executedBy,
             CancellationToken ct = default);
     }
 }

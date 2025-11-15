@@ -1,3 +1,4 @@
+using Application.Abstractions.Auth;
 using Application.Abstractions.Persistence;
 using Application.Common.Exceptions;
 using Application.TaskActivities.Abstractions;
@@ -35,6 +36,9 @@ namespace Application.TaskAssignments.Services
     /// Service used to record <see cref="TaskActivity"/> entries describing
     /// assignment-related events such as creation, role changes, or removal.
     /// </param>
+    /// <param name="currentUserService">
+    /// Provides information about the currently authenticated user, such as <c>UserId</c>.
+    /// </param>
     /// <param name="mediator">
     /// MediatR abstraction for publishing domain notifications after successful write operations,
     /// enabling decoupled reactions across the application.
@@ -43,18 +47,19 @@ namespace Application.TaskAssignments.Services
         ITaskAssignmentRepository taskAssignmentRepository,
         IUnitOfWork unitOfWork,
         ITaskActivityWriteService taskActivityWriteService,
+        ICurrentUserService currentUserService,
         IMediator mediator) : ITaskAssignmentWriteService
     {
         private readonly ITaskAssignmentRepository _taskAssignmentRepository = taskAssignmentRepository;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly ITaskActivityWriteService _taskActivityWriteService = taskActivityWriteService;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
         private readonly IMediator _mediator = mediator;
 
         /// <inheritdoc/>
         public async Task<TaskAssignmentReadDto> CreateAsync(
             Guid projectId,
             Guid taskId,
-            Guid executedBy,
             TaskAssignmentCreateDto dto,
             CancellationToken ct = default)
         {
@@ -64,10 +69,12 @@ namespace Application.TaskAssignments.Services
             var assignment = TaskAssignment.Create(taskId, dto.UserId, dto.Role);
             await _taskAssignmentRepository.AddAsync(assignment, ct);
 
+            var currentUserId = (Guid)_currentUserService.UserId!;
             var createPayload = ActivityPayloadFactory.AssignmentCreated(dto);
+
             await _taskActivityWriteService.CreateAsync(
                 taskId,
-                executedBy,
+                currentUserId,
                 TaskActivityType.AssignmentCreated,
                 createPayload,
                 ct);
@@ -89,7 +96,6 @@ namespace Application.TaskAssignments.Services
             Guid projectId,
             Guid taskId,
             Guid targetUserId,
-            Guid executedBy,
             TaskAssignmentChangeRoleDto dto,
             CancellationToken ct = default)
         {
@@ -104,13 +110,15 @@ namespace Application.TaskAssignments.Services
             if (mutation != DomainMutation.Updated)
                 throw new ConflictException("The task assignment could not be updated due to a conflicting state.");
 
+            var currentUserId = (Guid)_currentUserService.UserId!;
             var payload = ActivityPayloadFactory.AssignmentRoleChanged(
                 targetUserId,
                 oldRole,
                 dto.NewRole);
+
             await _taskActivityWriteService.CreateAsync(
                 taskId,
-                executedBy,
+                currentUserId,
                 TaskActivityType.AssignmentRoleChanged,
                 payload,
                 ct);
@@ -128,7 +136,6 @@ namespace Application.TaskAssignments.Services
             Guid projectId,
             Guid taskId,
             Guid targetUserId,
-            Guid executedBy,
             CancellationToken ct = default)
         {
             var taskAssignment = await _taskAssignmentRepository.GetByTaskAndUserIdForUpdateAsync(taskId, targetUserId, ct)
@@ -142,10 +149,12 @@ namespace Application.TaskAssignments.Services
 
             if (mutation == DomainMutation.Deleted)
             {
+                var currentUserId = (Guid)_currentUserService.UserId!;
                 var payload = ActivityPayloadFactory.AssignmentRemoved(targetUserId);
+
                 await _taskActivityWriteService.CreateAsync(
                     taskId,
-                    executedBy,
+                    currentUserId,
                     TaskActivityType.AssignmentRemoved,
                     payload,
                     ct);
