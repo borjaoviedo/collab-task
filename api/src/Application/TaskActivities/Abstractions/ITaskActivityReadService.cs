@@ -55,6 +55,16 @@ namespace Application.TaskActivities.Abstractions
             CancellationToken ct = default);
 
         /// <summary>
+        /// Lists all activities performed by the authenticated user across all tasks.
+        /// Useful for personal activity feeds, audit reports, or user-centric dashboards.
+        /// </summary>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>
+        /// A read-only list of <see cref="TaskActivityReadDto"/> entries authored by the authenticated user.
+        /// </returns>
+        Task<IReadOnlyList<TaskActivityReadDto>> ListSelfAsync(CancellationToken ct = default);
+
+        /// <summary>
         /// Lists all activities of a given <see cref="TaskActivityType"/> for a specific task.
         /// Useful for filtering task history into subsets (for example: notes, assignments, movements).
         /// </summary>

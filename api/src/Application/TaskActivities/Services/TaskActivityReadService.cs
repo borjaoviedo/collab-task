@@ -1,3 +1,4 @@
+using Application.Abstractions.Auth;
 using Application.Common.Exceptions;
 using Application.TaskActivities.Abstractions;
 using Application.TaskActivities.DTOs;
@@ -18,10 +19,15 @@ namespace Application.TaskActivities.Services
     /// Repository used for querying <see cref="Domain.Entities.TaskActivity"/> entities,
     /// including lookups by identifier, task, user, and activity type.
     /// </param>
+    /// <param name="currentUserService">
+    /// Provides information about the currently authenticated user, such as <c>UserId</c>.
+    /// </param>
     public sealed class TaskActivityReadService(
-        ITaskActivityRepository taskActivityRepository) : ITaskActivityReadService
+        ITaskActivityRepository taskActivityRepository,
+        ICurrentUserService currentUserService) : ITaskActivityReadService
     {
         private readonly ITaskActivityRepository _taskActivityRepository = taskActivityRepository;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
 
         /// <inheritdoc/>
         public async Task<TaskActivityReadDto> GetByIdAsync(Guid activityId, CancellationToken ct = default)
@@ -47,6 +53,17 @@ namespace Application.TaskActivities.Services
         public async Task<IReadOnlyList<TaskActivityReadDto>> ListByUserIdAsync(Guid userId, CancellationToken ct = default)
         {
             var activities = await _taskActivityRepository.ListByUserIdAsync(userId, ct);
+
+            return activities
+                .Select(ta => ta.ToReadDto())
+                .ToList();
+        }
+
+        /// <inheritdoc/>
+        public async Task<IReadOnlyList<TaskActivityReadDto>> ListSelfAsync(CancellationToken ct = default)
+        {
+            var currentUserId = (Guid)_currentUserService.UserId!;
+            var activities = await _taskActivityRepository.ListByUserIdAsync(currentUserId, ct);
 
             return activities
                 .Select(ta => ta.ToReadDto())
