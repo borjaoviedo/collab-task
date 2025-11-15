@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Domain.Enums;
 
 namespace Application.Columns.Abstractions
 {
@@ -43,6 +44,33 @@ namespace Application.Columns.Abstractions
         /// The tracked <see cref="Column"/> entity, or <c>null</c> if no matching column is found.
         /// </returns>
         Task<Column?> GetByIdForUpdateAsync(Guid columnId, CancellationToken ct = default);
+
+        /// <summary>
+        /// Phase 1 of column reordering within a lane. Rebuilds the ordering
+        /// in memory using a temporary offset range to avoid unique constraint
+        /// violations. Marks affected entities as modified but does not save.
+        /// </summary>
+        /// <param name="columnId">The identifier of the column being moved.</param>
+        /// <param name="newOrder">The target zero-based order within the lane.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>
+        /// <see cref="PrecheckStatus.NotFound"/> if the column or lane does not exist,
+        /// <see cref="PrecheckStatus.NoOp"/> if no reordering is needed,
+        /// or <see cref="PrecheckStatus.Ready"/> when changes are prepared.
+        /// </returns>
+        Task<PrecheckStatus> PrepareReorderAsync(
+            Guid columnId,
+            int newOrder,
+            CancellationToken ct = default);
+
+        /// <summary>
+        /// Phase 2 of column reordering within a lane. Assumes temporary offset
+        /// orders have already been persisted and normalizes the sequence back
+        /// to [0..n]. Marks affected entities as modified but does not save.
+        /// </summary>
+        /// <param name="columnId">Any column identifier within the target lane.</param>
+        /// <param name="ct">Cancellation token.</param>
+        Task FinalizeReorderAsync(Guid columnId, CancellationToken ct = default);
 
         /// <summary>
         /// Determines whether a column with the given name already exists within a lane.

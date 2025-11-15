@@ -1,5 +1,6 @@
 using Application.Columns.Abstractions;
 using Domain.Entities;
+using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories
@@ -38,6 +39,66 @@ namespace Infrastructure.Persistence.Repositories
         /// <inheritdoc/>
         public async Task<Column?> GetByIdForUpdateAsync(Guid columnId, CancellationToken ct = default)
             => await _db.Columns.FirstOrDefaultAsync(c => c.Id == columnId, ct);
+
+        /// <inheritdoc/>
+        public async Task<PrecheckStatus> PrepareReorderAsync(
+            Guid columnId,
+            int newOrder,
+            CancellationToken ct = default)
+        {
+            var column = await GetByIdForUpdateAsync(columnId, ct);
+            if (column is null) return PrecheckStatus.NotFound;
+
+            var columns = await _db.Columns
+                .Where(c => c.LaneId == column.LaneId)
+                .OrderBy(c => c.Order)
+                .ToListAsync(ct);
+
+            var currentIndex = columns.FindIndex(c => c.Id == columnId);
+            if (currentIndex < 0) return PrecheckStatus.NotFound;
+
+            var targetIndex = Math.Clamp(newOrder, 0, columns.Count - 1);
+            if (currentIndex == targetIndex) return PrecheckStatus.NoOp;
+
+            const int OFFSET = 1000;
+
+            var moving = columns[currentIndex];
+            columns.RemoveAt(currentIndex);
+            columns.Insert(targetIndex, moving);
+
+            for (var i = 0; i < columns.Count; i++)
+            {
+                var tmp = i + OFFSET;
+                if (columns[i].Order != tmp)
+                {
+                    columns[i].Reorder(tmp);
+                    _db.Entry(columns[i]).Property(c => c.Order).IsModified = true;
+                }
+            }
+
+            return PrecheckStatus.Ready;
+        }
+
+        /// <inheritdoc/>
+        public async Task FinalizeReorderAsync(Guid columnId, CancellationToken ct = default)
+        {
+            var column = await GetByIdForUpdateAsync(columnId, ct);
+            if (column is null) return;
+
+            var columns = await _db.Columns
+                .Where(c => c.LaneId == column.LaneId)
+                .OrderBy(c => c.Order)
+                .ToListAsync(ct);
+
+            for (var i = 0; i < columns.Count; i++)
+            {
+                if (columns[i].Order != i)
+                {
+                    columns[i].Reorder(i);
+                    _db.Entry(columns[i]).Property(c => c.Order).IsModified = true;
+                }
+            }
+        }
 
         /// <inheritdoc/>
         public async Task<bool> ExistsWithNameAsync(

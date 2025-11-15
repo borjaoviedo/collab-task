@@ -1,5 +1,6 @@
 using Application.Lanes.Abstractions;
 using Domain.Entities;
+using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories
@@ -39,6 +40,66 @@ namespace Infrastructure.Persistence.Repositories
         /// <inheritdoc/>
         public async Task<Lane?> GetByIdForUpdateAsync(Guid laneId, CancellationToken ct = default)
             => await _db.Lanes.FirstOrDefaultAsync(l => l.Id == laneId, ct);
+
+        /// <inheritdoc/>
+        public async Task<PrecheckStatus> PrepareReorderAsync(
+            Guid laneId,
+            int newOrder,
+            CancellationToken ct = default)
+        {
+            var lane = await GetByIdForUpdateAsync(laneId, ct);
+            if (lane is null) return PrecheckStatus.NotFound;
+
+            var lanes = await _db.Lanes
+                .Where(l => l.ProjectId == lane.ProjectId)
+                .OrderBy(l => l.Order)
+                .ToListAsync(ct);
+
+            var currentIndex = lanes.FindIndex(l => l.Id == laneId);
+            if (currentIndex < 0) return PrecheckStatus.NotFound;
+
+            var targetIndex = Math.Clamp(newOrder, 0, lanes.Count - 1);
+            if (currentIndex == targetIndex) return PrecheckStatus.NoOp;
+
+            const int OFFSET = 1000;
+
+            var moving = lanes[currentIndex];
+            lanes.RemoveAt(currentIndex);
+            lanes.Insert(targetIndex, moving);
+
+            for (var i = 0; i < lanes.Count; i++)
+            {
+                var tmp = i + OFFSET;
+                if (lanes[i].Order != tmp)
+                {
+                    lanes[i].Reorder(tmp);
+                    _db.Entry(lanes[i]).Property(l => l.Order).IsModified = true;
+                }
+            }
+
+            return PrecheckStatus.Ready;
+        }
+
+        /// <inheritdoc/>
+        public async Task FinalizeReorderAsync(Guid laneId, CancellationToken ct = default)
+        {
+            var lane = await GetByIdForUpdateAsync(laneId, ct);
+            if (lane is null) return;
+
+            var lanes = await _db.Lanes
+                .Where(l => l.ProjectId == lane.ProjectId)
+                .OrderBy(l => l.Order)
+                .ToListAsync(ct);
+
+            for (var i = 0; i < lanes.Count; i++)
+            {
+                if (lanes[i].Order != i)
+                {
+                    lanes[i].Reorder(i);
+                    _db.Entry(lanes[i]).Property(l => l.Order).IsModified = true;
+                }
+            }
+        }
 
         /// <inheritdoc/>
         public async Task<bool> ExistsWithNameAsync(

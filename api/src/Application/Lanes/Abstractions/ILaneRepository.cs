@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Domain.Enums;
 
 namespace Application.Lanes.Abstractions
 {
@@ -43,6 +44,33 @@ namespace Application.Lanes.Abstractions
         /// The tracked <see cref="Lane"/> entity, or <c>null</c> if no matching lane is found.
         /// </returns>
         Task<Lane?> GetByIdForUpdateAsync(Guid laneId, CancellationToken ct = default);
+
+        /// <summary>
+        /// Phase 1 of lane reordering within a project. Rebuilds the ordering
+        /// in memory using a temporary offset range to avoid unique constraint
+        /// violations. Marks affected entities as modified but does not save.
+        /// </summary>
+        /// <param name="laneId">The identifier of the lane being moved.</param>
+        /// <param name="newOrder">The target zero-based order within the project.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>
+        /// <see cref="PrecheckStatus.NotFound"/> if the lane or project does not exist,
+        /// <see cref="PrecheckStatus.NoOp"/> if no reordering is needed,
+        /// or <see cref="PrecheckStatus.Ready"/> when changes are prepared.
+        /// </returns>
+        Task<PrecheckStatus> PrepareReorderAsync(
+            Guid laneId,
+            int newOrder,
+            CancellationToken ct = default);
+
+        /// <summary>
+        /// Phase 2 of lane reordering within a project. Assumes temporary offset
+        /// orders have already been persisted and normalizes the sequence back
+        /// to [0..n]. Marks affected entities as modified but does not save.
+        /// </summary>
+        /// <param name="laneId">Any lane identifier within the target project.</param>
+        /// <param name="ct">Cancellation token.</param>
+        Task FinalizeReorderAsync(Guid laneId, CancellationToken ct = default);
 
         /// <summary>
         /// Determines whether a lane with the given name already exists within a project.
