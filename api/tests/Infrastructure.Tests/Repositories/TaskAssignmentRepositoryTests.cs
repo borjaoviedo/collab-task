@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
@@ -11,26 +12,6 @@ namespace Infrastructure.Tests.Repositories
 {
     public sealed class TaskAssignmentRepositoryTests
     {
-        [Fact]
-        public async Task AddAsync_Persists_Assignment()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var uow = new UnitOfWork(db);
-            var repo = new TaskAssignmentRepository(db);
-
-            var (_, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
-
-            var assignment = TaskAssignment.Create(taskId, userId, TaskRole.Owner);
-            await repo.AddAsync(assignment);
-
-            await uow.SaveAsync(MutationKind.Create);
-
-            var fromDb = await db.TaskAssignments.AsNoTracking()
-                .SingleAsync(a => a.TaskId == taskId && a.UserId == userId);
-            fromDb.Role.Should().Be(TaskRole.Owner);
-        }
-
         [Fact]
         public async Task GetByTaskAndUserIdAsync_Returns_Assignment_Or_Null()
         {
@@ -49,7 +30,7 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task ListByTaskAsync_And_ListByUserAsync_Return_Collections()
+        public async Task ListByTaskIdAsync_And_ListByUserAsync_Return_Collections()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -58,10 +39,10 @@ namespace Infrastructure.Tests.Repositories
             var (_, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
             TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.Owner);
 
-            var byTask = await repo.ListByTaskAsync(taskId);
+            var byTask = await repo.ListByTaskIdAsync(taskId);
             byTask.Should().ContainSingle();
 
-            var byUser = await repo.ListByUserAsync(userId);
+            var byUser = await repo.ListByUserIdAsync(userId);
             byUser.Should().NotBeEmpty();
         }
 
@@ -89,87 +70,10 @@ namespace Infrastructure.Tests.Repositories
             taskHasOwner.Should().BeTrue();
         }
 
-        [Fact]
-        public async Task ChangeRoleAsync_Updates_Or_Returns_NotFound_NoOp_Conflict()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var uow = new UnitOfWork(db);
-            var repo = new TaskAssignmentRepository(db);
-
-            var (_, userA) = TestDataFactory.SeedUserWithProject(db);
-            var (_, _, _, taskId, userBId) = TestDataFactory.SeedColumnWithTask(db);
-
-            // NotFound
-            var (notFound, _) = await repo.ChangeRoleAsync(
-                taskId,
-                userA,
-                TaskRole.CoOwner,
-                rowVersion: [1, 2]);
-            notFound.Should().Be(PrecheckStatus.NotFound);
-
-            // Create A Owner
-            var assignmentA = TaskAssignment.Create(taskId, userA, TaskRole.Owner);
-            await repo.AddAsync(assignmentA);
-            await uow.SaveAsync(MutationKind.Create);
-
-            // NoOp
-            var (noOp, _) = await repo.ChangeRoleAsync(
-                taskId,
-                userA,
-                TaskRole.Owner,
-                rowVersion: [1, 2]);
-            noOp.Should().Be(PrecheckStatus.NoOp);
-
-            // Create B CoOwner
-            var assignmentB = TaskAssignment.Create(taskId, userBId, TaskRole.CoOwner);
-            await repo.AddAsync(assignmentB);
-            await uow.SaveAsync(MutationKind.Create);
-
-            // Conflict promoting B to Owner while A is Owner
-            var (conflict1, _) = await repo.ChangeRoleAsync(
-                taskId,
-                userBId,
-                TaskRole.Owner,
-                rowVersion: [1, 2]);
-            conflict1.Should().Be(PrecheckStatus.Conflict);
-
-            var (updStageWrongRv, _) = await repo.ChangeRoleAsync(
-                taskId,
-                userA,
-                TaskRole.CoOwner,
-                rowVersion: [1, 2]);
-            updStageWrongRv.Should().Be(PrecheckStatus.Ready);
-            var conflict2 = await uow.SaveAsync(MutationKind.Update);
-            conflict2.Should().Be(DomainMutation.Conflict);
-
-            db.ChangeTracker.Clear();
-            var rvUserA = await db.TaskAssignments
-                                .AsNoTracking()
-                                .Where(a => a.TaskId == taskId && a.UserId == userA)
-                                .Select(a => a.RowVersion)
-                                .SingleAsync();
-
-            var (updAStage, _) = await repo.ChangeRoleAsync(taskId, userA, TaskRole.CoOwner, rvUserA);
-            updAStage.Should().Be(PrecheckStatus.Ready);
-            var update = await uow.SaveAsync(MutationKind.Update);
-            update.Should().Be(DomainMutation.Updated);
-
-            db.ChangeTracker.Clear();
-            var rvUserB = await db.TaskAssignments
-                                .AsNoTracking()
-                                .Where(a => a.TaskId == taskId && a.UserId == userBId)
-                                .Select(a => a.RowVersion)
-                                .SingleAsync();
-
-            var (updBStage, _) = await repo.ChangeRoleAsync(taskId, userBId, TaskRole.Owner, rvUserB);
-            updBStage.Should().Be(PrecheckStatus.Ready);
-            var update2 = await uow.SaveAsync(MutationKind.Update);
-            update2.Should().Be(DomainMutation.Updated);
-        }
+        // --------------- Add / Update / Remove ---------------
 
         [Fact]
-        public async Task DeleteAsync_Deletes_NotFound_Or_Conflict()
+        public async Task AddAsync_Persists_Assignment()
         {
             using var dbh = new SqliteTestDb();
             await using var db = dbh.CreateContext();
@@ -178,21 +82,60 @@ namespace Infrastructure.Tests.Repositories
 
             var (_, _, _, taskId, userId) = TestDataFactory.SeedColumnWithTask(db);
 
-            // NotFound
-            var notFound = await repo.DeleteAsync(taskId, userId, rowVersion: [1, 2]);
-            notFound.Should().Be(PrecheckStatus.NotFound);
+            var assignment = TaskAssignment.Create(taskId, userId, TaskRole.Owner);
+            await repo.AddAsync(assignment);
 
-            var assignment = TestDataFactory.SeedTaskAssignment(db, taskId, userId, TaskRole.Owner);
+            await uow.SaveAsync(MutationKind.Create);
 
-            await repo.DeleteAsync(taskId, userId, rowVersion: [1, 2]);
-            var conflict = await uow.SaveAsync(MutationKind.Delete);
-            conflict.Should().Be(DomainMutation.Conflict);
+            var fromDb = await db.TaskAssignments.AsNoTracking()
+                .SingleAsync(a => a.TaskId == taskId && a.UserId == userId);
+            fromDb.Role.Should().Be(TaskRole.Owner);
+        }
 
-            await repo.DeleteAsync(taskId, userId, assignment.RowVersion);
-            var delete = await uow.SaveAsync(MutationKind.Delete);
-            delete.Should().Be(DomainMutation.Deleted);
+        [Fact]
+        public async Task UpdateAsync_Marks_Entity_Modified_And_Persists_Changes()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new TaskAssignmentRepository(db);
 
-            (await repo.ExistsAsync(taskId, userId)).Should().BeFalse();
+            var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
+            var assignment = await repo.GetByTaskAndUserIdForUpdateAsync(taskId, userId);
+
+            assignment!.Role.Should().Be(TaskRole.Owner); // owner by default
+
+            // Modify through domain behavior
+            assignment!.ChangeRole(TaskRole.CoOwner);
+
+            await repo.UpdateAsync(assignment);
+            await db.SaveChangesAsync();
+
+            var reloaded = await db.TaskAssignments
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.UserId == userId && a.TaskId == taskId);
+
+            reloaded.Should().NotBeNull();
+            reloaded!.Role.Should().Be(TaskRole.CoOwner); // coowner after role change
+        }
+
+        [Fact]
+        public async Task RemoveAsync_Deletes_User_On_SaveChanges()
+        {
+            using var dbh = new SqliteTestDb();
+            await using var db = dbh.CreateContext();
+            var repo = new TaskAssignmentRepository(db);
+
+            var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
+            var assignment = await repo.GetByTaskAndUserIdForUpdateAsync(taskId, userId);
+
+            await repo.RemoveAsync(assignment!);
+            await db.SaveChangesAsync();
+
+            var reloaded = await db.TaskAssignments
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.UserId == userId && a.TaskId == taskId);
+
+            reloaded.Should().BeNull();
         }
     }
 }
