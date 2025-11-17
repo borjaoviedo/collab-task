@@ -1,8 +1,9 @@
 using Application.Abstractions.Time;
+using Application.Common.Exceptions;
 using Application.TaskActivities.Services;
+using Application.TaskItems.DTOs;
 using Application.TaskItems.Realtime;
 using Application.TaskItems.Services;
-using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Persistence;
@@ -10,6 +11,7 @@ using Infrastructure.Persistence.Repositories;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using TestHelpers.Api.Fakes;
 using TestHelpers.Common;
 using TestHelpers.Common.Time;
 using TestHelpers.Persistence;
@@ -18,45 +20,42 @@ namespace Application.Tests.TaskItems.Services
 {
     public sealed class TaskItemWriteServiceTests
     {
-        private readonly IDateTimeProvider _clock = TestTime.FixedClock();
+        private static readonly IDateTimeProvider _clock = TestTime.FixedClock();
 
         [Fact]
-        public async Task CreateAsync_Returns_Created_And_Task_And_Publishes_Event()
+        public async Task CreateAsync_Returns_Task_And_Publishes_Event()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
+            var (db, writeSvc, mediator, currentUser) = await CreateSutAsync(dbh);
 
-            var taskRepo = new TaskItemRepository(db);
-            var uow = new UnitOfWork(db);
-            var activityRepo = new TaskActivityRepository(db);
-            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
-            var mediator = new Mock<IMediator>();
-
-            var taskWriteSvc = new TaskItemWriteService(
-                taskRepo,
-                uow,
-                activityWriteSvc,
-                mediator.Object);
-
-            var taskTitle = TaskTitle.Create("Task Title");
-            var taskDescription = TaskDescription.Create("Description");
             var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
+            currentUser.UserId = user.Id;
 
-            var (result, task) = await taskWriteSvc.CreateAsync(
+            var createDto = new TaskItemCreateDto
+            {
+                Title = "Task Title",
+                Description = "Description",
+                DueDate = null,
+                SortKey = 0m
+            };
+
+            var created = await writeSvc.CreateAsync(
                 projectId,
                 laneId,
                 columnId,
-                user.Id,
-                taskTitle,
-                taskDescription);
+                createDto);
 
-            result.Should().Be(DomainMutation.Created);
-            task.Should().NotBeNull();
+            created.Should().NotBeNull();
+            created.Title.Should().Be(createDto.Title);
+            created.Description.Should().Be(createDto.Description);
+            created.ProjectId.Should().Be(projectId);
 
             mediator.Verify(m => m.Publish(
-                It.Is<TaskItemCreated>(n => n.ProjectId == projectId && n.Payload.TaskId == task!.Id),
-                It.IsAny<CancellationToken>()),
+                    It.Is<TaskItemCreated>(n =>
+                        n.ProjectId == projectId &&
+                        n.Payload.TaskId == created.Id),
+                    It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
@@ -64,101 +63,85 @@ namespace Application.Tests.TaskItems.Services
         public async Task EditAsync_Returns_Updated_When_A_Property_Changes_And_Publishes_Event()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-
-            var taskRepo = new TaskItemRepository(db);
-            var uow = new UnitOfWork(db);
-            var activityRepo = new TaskActivityRepository(db);
-            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
-            var mediator = new Mock<IMediator>();
-
-            var taskWriteSvc = new TaskItemWriteService(
-                taskRepo,
-                uow,
-                activityWriteSvc,
-                mediator.Object);
+            var (db, writeSvc, mediator, currentUser) = await CreateSutAsync(dbh);
 
             var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
+            currentUser.UserId = user.Id;
+
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
-            var newTitle = TaskTitle.Create("New Title");
-            var result = await taskWriteSvc.EditAsync(
+            var newTitle = "New Title";
+            var newDescription = "New Description";
+
+            var editDto = new TaskItemEditDto
+            {
+                NewTitle = newTitle,
+                NewDescription = newDescription,
+                NewDueDate = null
+            };
+
+            var updated = await writeSvc.EditAsync(
                 projectId,
                 task.Id,
-                user.Id,
-                newTitle,
-                newDescription: null,
-                newDueDate: null,
-                task.RowVersion);
-            result.Should().Be(DomainMutation.Updated);
+                editDto);
+
+            updated.Title.Should().Be(newTitle);
+            updated.Description.Should().Be(newDescription);
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
             fromDb.Title.Value.Should().Be(newTitle);
+            fromDb.Description!.Value.Should().Be(newDescription);
 
             mediator.Verify(m => m.Publish(
-                It.Is<TaskItemUpdated>(n => n.ProjectId == projectId && n.Payload.TaskId == task.Id && n.Payload.NewTitle == newTitle),
-                It.IsAny<CancellationToken>()),
+                    It.Is<TaskItemUpdated>(n =>
+                        n.ProjectId == projectId &&
+                        n.Payload.TaskId == task.Id &&
+                        n.Payload.NewTitle == newTitle &&
+                        n.Payload.NewDescription == newDescription),
+                    It.IsAny<CancellationToken>()),
                 Times.Once);
-
-            var newDescription = TaskDescription.Create("New Description");
-            result = await taskWriteSvc.EditAsync(
-                projectId,
-                task.Id,
-                user.Id,
-                newTitle: null,
-                newDescription,
-                newDueDate: null,
-                fromDb.RowVersion);
-            result.Should().Be(DomainMutation.Updated);
-
-            fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
-            fromDb.Description!.Value.Should().Be(newDescription);
         }
 
         [Fact]
-        public async Task EditAsync_Returns_NoOp_When_No_Property_Changes()
+        public async Task EditAsync_Allows_ReSaving_Same_Values()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-
-            var taskRepo = new TaskItemRepository(db);
-            var uow = new UnitOfWork(db);
-            var activityRepo = new TaskActivityRepository(db);
-            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
-            var mediator = new Mock<IMediator>();
-
-            var taskWriteSvc = new TaskItemWriteService(
-                taskRepo,
-                uow,
-                activityWriteSvc,
-                mediator.Object);
+            var (db, writeSvc, mediator, currentUser) = await CreateSutAsync(dbh);
 
             var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
+            currentUser.UserId = user.Id;
 
-            var sameTitle = TaskTitle.Create("Title");
-            var sameDescription = TaskDescription.Create("Description");
+            var sameTitle = "Title";
+            var sameDescription = "Description";
             var sameDueDate = DateTimeOffset.UtcNow.AddDays(10);
             sameDueDate = DateTimeOffset.FromUnixTimeMilliseconds(sameDueDate.ToUnixTimeMilliseconds());
+
             var task = TestDataFactory.SeedTaskItem(
                 db,
                 projectId,
                 laneId,
                 columnId,
-                sameTitle,
-                sameDescription,
+                TaskTitle.Create(sameTitle),
+                TaskDescription.Create(sameDescription),
                 sameDueDate);
 
-            var result = await taskWriteSvc.EditAsync(
+            var dto = new TaskItemEditDto
+            {
+                NewTitle = sameTitle,
+                NewDescription = sameDescription,
+                NewDueDate = sameDueDate
+            };
+
+            var updated = await writeSvc.EditAsync(
                 projectId,
                 task.Id,
-                user.Id,
-                sameTitle,
-                sameDescription,
-                sameDueDate,
-                task.RowVersion);
-            result.Should().Be(DomainMutation.NoOp);
+                dto);
+
+            updated.Title.Should().Be(sameTitle);
+            updated.Description.Should().Be(sameDescription);
+            updated.DueDate.Should().Be(sameDueDate);
 
             var fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
             fromDb.Title.Value.Should().Be(sameTitle);
@@ -166,52 +149,42 @@ namespace Application.Tests.TaskItems.Services
             fromDb.DueDate.Should().Be(sameDueDate);
 
             mediator.Verify(m => m.Publish(
-                It.IsAny<TaskItemUpdated>(),
-                It.IsAny<CancellationToken>()),
-                Times.Never);
+                    It.Is<TaskItemUpdated>(n =>
+                        n.ProjectId == projectId &&
+                        n.Payload.TaskId == task.Id),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
         }
 
         [Fact]
-        public async Task EditAsync_Returns_Conflict_On_RowVersion_Mismatch()
+        public async Task EditAsync_Throws_NotFound_When_Task_Does_Not_Exist()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
+            var (_, writeSvc, mediator, currentUser) = await CreateSutAsync(dbh);
 
-            var taskRepo = new TaskItemRepository(db);
-            var uow = new UnitOfWork(db);
-            var activityRepo = new TaskActivityRepository(db);
+            var user = TestDataFactory.SeedUser(dbh.CreateContext());
+            currentUser.UserId = user.Id;
 
-            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
-            var mediator = new Mock<IMediator>();
-            var taskWriteSvc = new TaskItemWriteService(
-                taskRepo,
-                uow,
-                activityWriteSvc,
-                mediator.Object);
+            var randomProjectId = Guid.NewGuid();
+            var randomTaskId = Guid.NewGuid();
 
-            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
-            var user = TestDataFactory.SeedUser(db);
+            var dto = new TaskItemEditDto
+            {
+                NewTitle = "Title",
+                NewDescription = "Description",
+                NewDueDate = null
+            };
 
-            var oldTitle = TaskTitle.Create("Old");
-            var newTitle = TaskTitle.Create("New");
-            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId, oldTitle);
+            Func<Task> act = () => writeSvc.EditAsync(
+                randomProjectId,
+                randomTaskId,
+                dto);
 
-            var result = await taskWriteSvc.EditAsync(
-                projectId,
-                task.Id,
-                user.Id,
-                newTitle,
-                newDescription: null,
-                newDueDate: null,
-                rowVersion: [1, 2]);
-            result.Should().Be(DomainMutation.Conflict);
-
-            var fromDb = await db.TaskItems.AsNoTracking().SingleAsync();
-            fromDb.Title.Value.Should().Be(oldTitle);
+            await act.Should().ThrowAsync<NotFoundException>();
 
             mediator.Verify(m => m.Publish(
-                It.IsAny<TaskItemUpdated>(),
-                It.IsAny<CancellationToken>()),
+                    It.IsAny<TaskItemUpdated>(),
+                    It.IsAny<CancellationToken>()),
                 Times.Never);
         }
 
@@ -219,45 +192,42 @@ namespace Application.Tests.TaskItems.Services
         public async Task MoveAsync_Returns_Updated_And_Publishes_Event_When_Moving_To_Different_Lane_And_Column()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-
-            var taskRepo = new TaskItemRepository(db);
-            var uow = new UnitOfWork(db);
-            var activityRepo = new TaskActivityRepository(db);
-            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
-            var mediator = new Mock<IMediator>();
-
-            var taskWriteSvc = new TaskItemWriteService(
-                taskRepo,
-                uow,
-                activityWriteSvc,
-                mediator.Object);
+            var (db, writeSvc, mediator, currentUser) = await CreateSutAsync(dbh);
 
             var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
+            currentUser.UserId = user.Id;
+
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
             var differentLane = TestDataFactory.SeedLane(db, projectId, order: 1);
             var differentColumn = TestDataFactory.SeedColumn(db, projectId, differentLane.Id);
             await db.SaveChangesAsync();
 
-            var result = await taskWriteSvc.MoveAsync(
+            var dto = new TaskItemMoveDto
+            {
+                NewLaneId = differentLane.Id,
+                NewColumnId = differentColumn.Id,
+                NewSortKey = 1
+            };
+
+            var moved = await writeSvc.MoveAsync(
                 projectId,
                 task.Id,
-                differentColumn.Id,
-                differentLane.Id,
-                user.Id,
-                targetSortKey: 1,
-                task.RowVersion);
-            result.Should().Be(DomainMutation.Updated);
+                dto);
+
+            moved.LaneId.Should().Be(differentLane.Id);
+            moved.ColumnId.Should().Be(differentColumn.Id);
+            moved.SortKey.Should().Be(1m);
 
             mediator.Verify(m => m.Publish(
-                It.Is<TaskItemMoved>(n => n.ProjectId == projectId &&
-                                          n.Payload.TaskId == task.Id &&
-                                          n.Payload.ToLaneId == differentLane.Id &&
-                                          n.Payload.ToColumnId == differentColumn.Id &&
-                                          n.Payload.SortKey == 1m),
-                It.IsAny<CancellationToken>()),
+                    It.Is<TaskItemMoved>(n =>
+                        n.ProjectId == projectId &&
+                        n.Payload.TaskId == task.Id &&
+                        n.Payload.ToLaneId == differentLane.Id &&
+                        n.Payload.ToColumnId == differentColumn.Id &&
+                        n.Payload.SortKey == 1m),
+                    It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
@@ -265,339 +235,247 @@ namespace Application.Tests.TaskItems.Services
         public async Task MoveAsync_Returns_Updated_When_Moving_To_Same_Lane_And_Different_Column()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-
-            var taskRepo = new TaskItemRepository(db);
-            var uow = new UnitOfWork(db);
-            var activityRepo = new TaskActivityRepository(db);
-            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
-            var mediator = new Mock<IMediator>();
-
-            var taskWriteSvc = new TaskItemWriteService(
-                taskRepo,
-                uow,
-                activityWriteSvc,
-                mediator.Object);
+            var (db, writeSvc, _, currentUser) = await CreateSutAsync(dbh);
 
             var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
+            currentUser.UserId = user.Id;
+
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
             var differentColumn = TestDataFactory.SeedColumn(db, projectId, laneId, order: 1);
             await db.SaveChangesAsync();
 
-            var result = await taskWriteSvc.MoveAsync(
+            var dto = new TaskItemMoveDto
+            {
+                NewLaneId = laneId,
+                NewColumnId = differentColumn.Id,
+                NewSortKey = 1
+            };
+
+            var moved = await writeSvc.MoveAsync(
                 projectId,
                 task.Id,
-                differentColumn.Id,
-                laneId,
-                user.Id,
-                targetSortKey: 1,
-                task.RowVersion);
-            result.Should().Be(DomainMutation.Updated);
+                dto);
+
+            moved.LaneId.Should().Be(laneId);
+            moved.ColumnId.Should().Be(differentColumn.Id);
         }
 
         [Fact]
         public async Task MoveAsync_Returns_Updated_When_Moving_To_Same_Lane_And_Column_But_Different_SortKey()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-
-            var taskRepo = new TaskItemRepository(db);
-            var uow = new UnitOfWork(db);
-            var activityRepo = new TaskActivityRepository(db);
-            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
-            var mediator = new Mock<IMediator>();
-
-            var taskWriteSvc = new TaskItemWriteService(
-                taskRepo,
-                uow,
-                activityWriteSvc,
-                mediator.Object);
+            var (db, writeSvc, _, currentUser) = await CreateSutAsync(dbh);
 
             var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
+            currentUser.UserId = user.Id;
+
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
-            var result = await taskWriteSvc.MoveAsync(
+            var dto = new TaskItemMoveDto
+            {
+                NewLaneId = laneId,
+                NewColumnId = columnId,
+                NewSortKey = 1
+            };
+
+            var moved = await writeSvc.MoveAsync(
                 projectId,
                 task.Id,
-                columnId,
-                laneId,
-                user.Id,
-                targetSortKey: 1,
-                task.RowVersion);
-            result.Should().Be(DomainMutation.Updated);
+                dto);
+
+            moved.SortKey.Should().Be(1m);
         }
 
         [Fact]
-        public async Task MoveAsync_Returns_NoOp_When_Moving_To_Same_Lane_Column_And_SortKey()
+        public async Task MoveAsync_Allows_Moving_Within_Same_Position()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-
-            var taskRepo = new TaskItemRepository(db);
-            var uow = new UnitOfWork(db);
-            var activityRepo = new TaskActivityRepository(db);
-            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
-            var mediator = new Mock<IMediator>();
-
-            var taskWriteSvc = new TaskItemWriteService(
-                taskRepo,
-                uow,
-                activityWriteSvc,
-                mediator.Object);
+            var (db, writeSvc, mediator, currentUser) = await CreateSutAsync(dbh);
 
             var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
+            currentUser.UserId = user.Id;
+
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
-            var result = await taskWriteSvc.MoveAsync(
+            var dto = new TaskItemMoveDto
+            {
+                NewLaneId = laneId,
+                NewColumnId = columnId,
+                NewSortKey = 0
+            };
+
+            var moved = await writeSvc.MoveAsync(
                 projectId,
                 task.Id,
-                columnId,
-                laneId,
-                user.Id,
-                targetSortKey: 0,
-                task.RowVersion);
-            result.Should().Be(DomainMutation.NoOp);
+                dto);
+
+            moved.LaneId.Should().Be(laneId);
+            moved.ColumnId.Should().Be(columnId);
+            moved.SortKey.Should().Be(0m);
 
             mediator.Verify(m => m.Publish(
-                It.IsAny<TaskItemMoved>(),
-                It.IsAny<CancellationToken>()),
+                    It.Is<TaskItemMoved>(n =>
+                        n.ProjectId == projectId &&
+                        n.Payload.TaskId == task.Id),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task MoveAsync_Throws_NotFound_When_Task_Does_Not_Exist()
+        {
+            using var dbh = new SqliteTestDb();
+            var (_, writeSvc, mediator, currentUser) = await CreateSutAsync(dbh);
+
+            var user = TestDataFactory.SeedUser(dbh.CreateContext());
+            currentUser.UserId = user.Id;
+
+            var randomProjectId = Guid.NewGuid();
+            var randomTaskId = Guid.NewGuid();
+
+            var dto = new TaskItemMoveDto
+            {
+                NewLaneId = Guid.NewGuid(),
+                NewColumnId = Guid.NewGuid(),
+                NewSortKey = 0
+            };
+
+            Func<Task> act = () => writeSvc.MoveAsync(randomProjectId, randomTaskId, dto);
+
+            await act.Should().ThrowAsync<NotFoundException>();
+
+            mediator.Verify(m => m.Publish(
+                    It.IsAny<TaskItemMoved>(),
+                    It.IsAny<CancellationToken>()),
                 Times.Never);
         }
 
         [Fact]
-        public async Task MoveAsync_Returns_NotFound_When_Moving_To_Non_Existing_Lane_Or_Column()
+        public async Task MoveAsync_Throws_NotFound_When_Task_Does_Not_Exist_In_Other_Project()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
+            var (db, writeSvc, mediator, currentUser) = await CreateSutAsync(dbh);
 
-            var taskRepo = new TaskItemRepository(db);
-            var uow = new UnitOfWork(db);
-            var activityRepo = new TaskActivityRepository(db);
-            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
-            var mediator = new Mock<IMediator>();
-
-            var taskWriteSvc = new TaskItemWriteService(
-                taskRepo,
-                uow,
-                activityWriteSvc,
-                mediator.Object);
-
-            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
+            var (firstProjectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
-            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
+            currentUser.UserId = user.Id;
 
-            var result = await taskWriteSvc.MoveAsync(
-                projectId,
-                task.Id,
-                targetColumnId: Guid.NewGuid(),
-                laneId,
-                user.Id,
-                targetSortKey: 0,
-                task.RowVersion);
-            result.Should().Be(DomainMutation.NotFound);
+            var task = TestDataFactory.SeedTaskItem(db, firstProjectId, laneId, columnId);
 
-            result = await taskWriteSvc.MoveAsync(
-                projectId,
-                task.Id,
-                columnId,
-                targetLaneId: Guid.NewGuid(),
-                user.Id,
-                targetSortKey: 0,
-                task.RowVersion);
-            result.Should().Be(DomainMutation.NotFound);
+            // Use a different project id and a random task id to ensure not found
+            var otherProjectId = Guid.NewGuid();
+            var randomTaskId = Guid.NewGuid();
+
+            var dto = new TaskItemMoveDto
+            {
+                NewLaneId = laneId,
+                NewColumnId = columnId,
+                NewSortKey = 1
+            };
+
+            Func<Task> act = () => writeSvc.MoveAsync(
+                otherProjectId,
+                randomTaskId,
+                dto);
+
+            await act.Should().ThrowAsync<NotFoundException>();
 
             mediator.Verify(m => m.Publish(
-                It.IsAny<TaskItemMoved>(),
-                It.IsAny<CancellationToken>()),
+                    It.IsAny<TaskItemMoved>(),
+                    It.IsAny<CancellationToken>()),
                 Times.Never);
         }
 
         [Fact]
-        public async Task MoveAsync_Returns_Conflict_When_RowVersion_Mismatch()
+        public async Task DeleteByIdAsync_Removes_Task_And_Publishes_TaskDeleted()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-
-            var taskRepo = new TaskItemRepository(db);
-            var uow = new UnitOfWork(db);
-            var activityRepo = new TaskActivityRepository(db);
-            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
-            var mediator = new Mock<IMediator>();
-
-            var taskWriteSvc = new TaskItemWriteService(
-                taskRepo,
-                uow,
-                activityWriteSvc,
-                mediator.Object);
+            var (db, writeSvc, mediator, currentUser) = await CreateSutAsync(dbh);
 
             var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
             var user = TestDataFactory.SeedUser(db);
-            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
+            currentUser.UserId = user.Id;
 
-            var result = await taskWriteSvc.MoveAsync(
-                projectId,
-                task.Id,
-                columnId,
-                laneId,
-                user.Id,
-                targetSortKey: 1,
-                rowVersion: [1, 2]);
-            result.Should().Be(DomainMutation.Conflict);
-
-            mediator.Verify(m => m.Publish(
-                It.IsAny<TaskItemMoved>(),
-                It.IsAny<CancellationToken>()),
-                Times.Never);
-        }
-
-        [Fact]
-        public async Task MoveAsync_Returns_Conflict_When_Moving_To_Other_Project()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-
-            var taskRepo = new TaskItemRepository(db);
-            var uow = new UnitOfWork(db);
-            var activityRepo = new TaskActivityRepository(db);
-            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
-            var mediator = new Mock<IMediator>();
-
-            var taskWriteSvc = new TaskItemWriteService(taskRepo, uow, activityWriteSvc, mediator.Object);
-
-            var (firstProjectId, firstProjectLaneId, firstProjectColumnId, _) = TestDataFactory.SeedLaneWithColumn(db);
-            var user = TestDataFactory.SeedUser(db);
-            var task = TestDataFactory.SeedTaskItem(db, firstProjectId, firstProjectLaneId, firstProjectColumnId);
-
-            var (projectId, secondProjectLaneId, secondProjectColumnId, _) = TestDataFactory.SeedLaneWithColumn(db);
-            await db.SaveChangesAsync();
-
-            var result = await taskWriteSvc.MoveAsync(
-                projectId,
-                task.Id,
-                secondProjectColumnId,
-                secondProjectLaneId,
-                user.Id,
-                targetSortKey: 1,
-                task.RowVersion);
-            result.Should().Be(DomainMutation.Conflict);
-
-            mediator.Verify(m => m.Publish(
-                It.IsAny<TaskItemMoved>(),
-                It.IsAny<CancellationToken>()),
-                Times.Never);
-        }
-
-        [Fact]
-        public async Task DeleteAsync_Returns_Deleted_And_Publishes_TaskDeleted()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-
-            var taskRepo = new TaskItemRepository(db);
-            var uow = new UnitOfWork(db);
-            var activityRepo = new TaskActivityRepository(db);
-            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
-            var mediator = new Mock<IMediator>(MockBehavior.Strict);
-
-            var taskWriteSvc = new TaskItemWriteService(
-                taskRepo,
-                uow,
-                activityWriteSvc,
-                mediator.Object);
-
-            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
-            TestDataFactory.SeedUser(db);
             var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
 
             mediator
                 .Setup(m => m.Publish(
-                    It.Is<TaskItemDeleted>(n =>
-                                           n.ProjectId == projectId &&
-                                           n.Payload.TaskId == task.Id),
-                    It.IsAny<CancellationToken>()))
+                        It.Is<TaskItemDeleted>(n =>
+                            n.ProjectId == projectId &&
+                            n.Payload.TaskId == task.Id),
+                        It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask)
                 .Verifiable();
 
-            var result = await taskWriteSvc.DeleteAsync(projectId, task.Id, task.RowVersion);
+            await writeSvc.DeleteByIdAsync(projectId, task.Id);
 
-            result.Should().Be(DomainMutation.Deleted);
+            var any = await db.TaskItems.AnyAsync();
+            any.Should().BeFalse();
 
             mediator.Verify(m => m.Publish(
-                It.Is<TaskItemDeleted>(n =>
-                                       n.ProjectId == projectId &&
-                                       n.Payload.TaskId == task.Id),
-                It.IsAny<CancellationToken>()), Times.Once);
+                    It.Is<TaskItemDeleted>(n =>
+                        n.ProjectId == projectId &&
+                        n.Payload.TaskId == task.Id),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
 
             mediator.VerifyNoOtherCalls();
         }
 
         [Fact]
-        public async Task DeleteAsync_Returns_Conflict_When_RowVersion_Mismatch()
+        public async Task DeleteByIdAsync_Throws_NotFound_When_Random_Id()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
+            var (_, writeSvc, mediator, currentUser) = await CreateSutAsync(dbh);
 
-            var taskRepo = new TaskItemRepository(db);
-            var uow = new UnitOfWork(db);
-            var activityRepo = new TaskActivityRepository(db);
-            var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
-            var mediator = new Mock<IMediator>();
+            var user = TestDataFactory.SeedUser(dbh.CreateContext());
+            currentUser.UserId = user.Id;
 
-            var taskWriteSvc = new TaskItemWriteService(
-                taskRepo,
-                uow,
-                activityWriteSvc,
-                mediator.Object);
+            var randomProjectId = Guid.NewGuid();
+            var randomTaskId = Guid.NewGuid();
 
-            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
-            TestDataFactory.SeedUser(db);
-            var task = TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
+            Func<Task> act = () => writeSvc.DeleteByIdAsync(
+                randomProjectId,
+                randomTaskId);
 
-            var result = await taskWriteSvc.DeleteAsync(projectId, task.Id, [9, 9, 9, 9]);
+            await act.Should().ThrowAsync<NotFoundException>();
 
-            result.Should().Be(DomainMutation.Conflict);
             mediator.Verify(m => m.Publish(
-                It.IsAny<INotification>(),
-                It.IsAny<CancellationToken>()),
+                    It.IsAny<INotification>(),
+                    It.IsAny<CancellationToken>()),
                 Times.Never);
         }
 
-        [Fact]
-        public async Task DeleteAsync_Returns_NotFound_When_Random_Id()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
+        // ---------- HELPERS ----------
 
-            var taskRepo = new TaskItemRepository(db);
+        private static Task<(CollabTaskDbContext Db, TaskItemWriteService Service, Mock<IMediator> Mediator, FakeCurrentUserService CurrentUser)>
+            CreateSutAsync(
+                SqliteTestDb dbh,
+                Guid? userId = null)
+        {
+            var db = dbh.CreateContext();
+            var repo = new TaskItemRepository(db);
             var uow = new UnitOfWork(db);
             var activityRepo = new TaskActivityRepository(db);
             var activityWriteSvc = new TaskActivityWriteService(activityRepo, _clock);
+            var currentUser = new FakeCurrentUserService
+            {
+                UserId = userId
+            };
             var mediator = new Mock<IMediator>();
 
-            var taskWriteSvc = new TaskItemWriteService(
-                taskRepo,
+            var svc = new TaskItemWriteService(
+                repo,
                 uow,
                 activityWriteSvc,
+                currentUser,
                 mediator.Object);
 
-            var (projectId, laneId, columnId, _) = TestDataFactory.SeedLaneWithColumn(db);
-            TestDataFactory.SeedUser(db);
-            TestDataFactory.SeedTaskItem(db, projectId, laneId, columnId);
-
-            var result = await taskWriteSvc.DeleteAsync(
-                projectId,
-                taskId: Guid.NewGuid(),
-                rowVersion: [1, 2, 3, 4]);
-
-            result.Should().Be(DomainMutation.NotFound);
-            mediator.Verify(m => m.Publish(
-                It.IsAny<INotification>(),
-                It.IsAny<CancellationToken>()),
-                Times.Never);
+            return Task.FromResult((db, svc, mediator, currentUser));
         }
     }
 }
