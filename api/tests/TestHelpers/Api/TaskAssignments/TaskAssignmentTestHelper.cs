@@ -15,8 +15,7 @@ namespace TestHelpers.Api.TaskAssignments
             Guid taskId,
             TaskAssignmentCreateDto dto)
         {
-            var response = await HttpRequestExtensions.PostWithoutIfMatchAsync(
-                client,
+            var response = await client.PostWithoutIfMatchAsync(
                 $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments",
                 dto);
 
@@ -59,8 +58,7 @@ namespace TestHelpers.Api.TaskAssignments
             Guid userId,
             byte[] rowVersion)
         {
-            var deleteResponse = await HttpRequestExtensions.DeleteWithIfMatchAsync(
-                client,
+            var deleteResponse = await client.DeleteWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}");
 

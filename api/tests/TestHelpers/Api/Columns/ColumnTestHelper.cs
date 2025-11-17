@@ -30,8 +30,7 @@ namespace TestHelpers.Api.Columns
             }
 
             var createDto = new ColumnCreateDto() { Name = name, Order = order };
-            var response = await HttpRequestExtensions.PostWithoutIfMatchAsync(
-                client,
+            var response = await client.PostWithoutIfMatchAsync(
                 $"/projects/{projectId}/lanes/{laneId}/columns",
                 createDto);
 
@@ -120,8 +119,7 @@ namespace TestHelpers.Api.Columns
             var newOrder = dto is null ? ColumnDefaults.DefaultColumnReorder : dto.NewOrder;
             var reorderDto = new ColumnReorderDto() { NewOrder = newOrder };
 
-            var reorderResponse = await HttpRequestExtensions.PutWithIfMatchAsync(
-                client,
+            var reorderResponse = await client.PutWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/reorder",
                 reorderDto);
@@ -138,8 +136,7 @@ namespace TestHelpers.Api.Columns
             Guid columnId,
             byte[] rowVersion)
         {
-            var deleteResponse = await HttpRequestExtensions.DeleteWithIfMatchAsync(
-                client,
+            var deleteResponse = await client.DeleteWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}");
 

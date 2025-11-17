@@ -42,8 +42,7 @@ namespace TestHelpers.Api.TaskItems
                 DueDate = dueDate,
                 SortKey = sortKey
             };
-            var response = await HttpRequestExtensions.PostWithoutIfMatchAsync(
-                client,
+            var response = await client.PostWithoutIfMatchAsync(
                 $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks",
                 createDto);
 

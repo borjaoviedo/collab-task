@@ -30,8 +30,7 @@ namespace TestHelpers.Api.ProjectMembers
             }
 
             var createDto = new ProjectMemberCreateDto() { UserId = userId, Role = role };
-            var response = await HttpRequestExtensions.PostWithoutIfMatchAsync(
-                client,
+            var response = await client.PostWithoutIfMatchAsync(
                 $"/projects/{projectId}/members",
                 createDto);
 
@@ -93,8 +92,7 @@ namespace TestHelpers.Api.ProjectMembers
                 : dto.NewRole;
             var changeRoleDto = new ProjectMemberChangeRoleDto() { NewRole = newRole };
 
-            var changeRoleResponse = await HttpRequestExtensions.PatchWithIfMatchAsync(
-                client,
+            var changeRoleResponse = await client.PatchWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/members/{userId}/role",
                 changeRoleDto);
@@ -123,8 +121,7 @@ namespace TestHelpers.Api.ProjectMembers
             Guid userId,
             byte[] rowVersion)
         {
-            var removeResponse = await HttpRequestExtensions.PatchWithIfMatchAsync(
-                client,
+            var removeResponse = await client.PatchWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/members/{userId}/remove", new object());
 
@@ -152,8 +149,7 @@ namespace TestHelpers.Api.ProjectMembers
             Guid userId,
             byte[] rowVersion)
         {
-            var restoreResponse = await HttpRequestExtensions.PatchWithIfMatchAsync(
-                client,
+            var restoreResponse = await client.PatchWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/members/{userId}/restore", new object());
 

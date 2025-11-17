@@ -13,7 +13,7 @@ namespace TestHelpers.Api.Projects
         {
             var name = dto is null ? ProjectDefaults.DefaultProjectName : dto.Name;
             var createDto = new ProjectCreateDto() { Name = name };
-            var response = await HttpRequestExtensions.PostWithoutIfMatchAsync(client, $"/projects", createDto);
+            var response = await client.PostWithoutIfMatchAsync("/projects", createDto);
 
             return response;
         }
@@ -77,8 +77,7 @@ namespace TestHelpers.Api.Projects
             var newName = dto is null ? ProjectDefaults.DefaultProjectRename : dto.NewName;
             var renameDto = new ProjectRenameDto() { NewName = newName };
 
-            var renameResponse = await HttpRequestExtensions.PatchWithIfMatchAsync(
-                client,
+            var renameResponse = await client.PatchWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/rename",
                 renameDto);
@@ -93,8 +92,7 @@ namespace TestHelpers.Api.Projects
             Guid projectId,
             byte[] rowVersion)
         {
-            var deleteResponse = await HttpRequestExtensions.DeleteWithIfMatchAsync(
-                client,
+            var deleteResponse = await client.DeleteWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}");
 

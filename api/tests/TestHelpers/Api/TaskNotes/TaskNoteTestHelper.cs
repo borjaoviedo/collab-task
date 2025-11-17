@@ -40,9 +40,10 @@ namespace TestHelpers.Api.TaskNotes
 
         public static async Task<HttpResponseMessage> GetTaskNotesByUserResponseAsync(
             HttpClient client,
+            Guid projectId,
             Guid userId)
         {
-            var response = await client.GetAsync($"/notes/users/{userId}");
+            var response = await client.GetAsync($"/projects/{projectId}/notes/users/{userId}");
             return response;
         }
 
@@ -59,8 +60,7 @@ namespace TestHelpers.Api.TaskNotes
             var content = dto is null ? TaskNoteDefaults.DefaultNoteContent : dto.Content;
             var createDto = new TaskNoteCreateDto() { Content = content };
 
-            var response = await HttpRequestExtensions.PostWithoutIfMatchAsync(
-                client,
+            var response = await client.PostWithoutIfMatchAsync(
                 $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes",
                 createDto);
 
@@ -102,8 +102,7 @@ namespace TestHelpers.Api.TaskNotes
             var newContent = dto is null ? TaskNoteDefaults.DefaultNoteNewContent : dto.NewContent;
             var editDto = new TaskNoteEditDto() { NewContent = newContent };
 
-            var editResponse = await HttpRequestExtensions.PatchWithIfMatchAsync(
-                client,
+            var editResponse = await client.PatchWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{noteId}/edit",
                 editDto);
@@ -122,8 +121,7 @@ namespace TestHelpers.Api.TaskNotes
             Guid noteId,
             byte[] rowVersion)
         {
-            var deleteResponse = await HttpRequestExtensions.DeleteWithIfMatchAsync(
-                client,
+            var deleteResponse = await client.DeleteWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{noteId}");
 

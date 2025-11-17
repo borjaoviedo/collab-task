@@ -64,8 +64,7 @@ namespace TestHelpers.Api.Users
             var newName = dto is null ? UserDefaults.DefaultUserRename : dto.NewName;
             var renameDto = new UserRenameDto() { NewName = newName };
 
-            var renameResponse = await HttpRequestExtensions.PatchWithIfMatchAsync(
-                client,
+            var renameResponse = await client.PatchWithIfMatchAsync(
                 rowVersion,
                 $"/users/{userId}/rename",
                 renameDto);
@@ -96,8 +95,7 @@ namespace TestHelpers.Api.Users
             var newRole = dto is null ? UserDefaults.DefaultUserChangeRole : dto.NewRole;
             var changeRoleDto = new UserChangeRoleDto() { NewRole = newRole };
 
-            var renameResponse = await HttpRequestExtensions.PatchWithIfMatchAsync(
-                client,
+            var renameResponse = await client.PatchWithIfMatchAsync(
                 rowVersion,
                 $"/users/{userId}/role",
                 changeRoleDto);
@@ -124,8 +122,7 @@ namespace TestHelpers.Api.Users
             Guid userId,
             byte[] rowVersion)
         {
-            var deleteResponse = await HttpRequestExtensions.DeleteWithIfMatchAsync(
-                client,
+            var deleteResponse = await client.DeleteWithIfMatchAsync(
                 rowVersion,
                 $"/users/{userId}");
 

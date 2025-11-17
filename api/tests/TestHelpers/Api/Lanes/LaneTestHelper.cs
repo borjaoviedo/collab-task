@@ -29,8 +29,7 @@ namespace TestHelpers.Api.Lanes
             }
 
             var createDto = new LaneCreateDto() { Name = name, Order = order };
-            var response = await HttpRequestExtensions.PostWithoutIfMatchAsync(
-                client,
+            var response = await client.PostWithoutIfMatchAsync(
                 $"/projects/{projectId}/lanes",
                 createDto);
 
@@ -82,8 +81,7 @@ namespace TestHelpers.Api.Lanes
             var newName = dto is null ? LaneDefaults.DefaultLaneRename : dto.NewName;
             var renameDto = new LaneRenameDto() { NewName = newName };
 
-            var renameResponse = await HttpRequestExtensions.PutWithIfMatchAsync(
-                client,
+            var renameResponse = await client.PutWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/lanes/{laneId}/rename",
                 renameDto);
@@ -116,8 +114,7 @@ namespace TestHelpers.Api.Lanes
             var newOrder = dto is null ? LaneDefaults.DefaultLaneReorder : dto.NewOrder;
             var reorderDto = new LaneReorderDto() { NewOrder = newOrder };
 
-            var reorderResponse = await HttpRequestExtensions.PutWithIfMatchAsync(
-                client,
+            var reorderResponse = await client.PutWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/lanes/{laneId}/reorder",
                 reorderDto);
@@ -146,8 +143,7 @@ namespace TestHelpers.Api.Lanes
             Guid laneId,
             byte[] rowVersion)
         {
-            var deleteResponse = await HttpRequestExtensions.DeleteWithIfMatchAsync(
-                client,
+            var deleteResponse = await client.DeleteWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/lanes/{laneId}");
 
