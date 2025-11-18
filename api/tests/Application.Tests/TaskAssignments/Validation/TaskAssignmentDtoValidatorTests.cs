@@ -2,9 +2,11 @@ using Application.TaskAssignments.DTOs;
 using Application.TaskAssignments.Validation;
 using Domain.Enums;
 using FluentValidation.TestHelper;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.TaskAssignments.Validation
 {
+    [UnitTest]
     public sealed class TaskAssignmentDtoValidatorTests
     {
         [Fact]

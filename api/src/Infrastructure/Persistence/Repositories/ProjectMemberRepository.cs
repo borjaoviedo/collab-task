@@ -6,19 +6,23 @@ using Microsoft.EntityFrameworkCore;
 namespace Infrastructure.Persistence.Repositories
 {
     /// <summary>
-    /// EF Core repository for <see cref="ProjectMember"/>.
-    /// Supports membership queries, role lookup, tracked updates with optimistic concurrency,
-    /// and soft remove/restore semantics respecting <see cref="ProjectMember.RemovedAt"/>.
+    /// EF Core repository for <see cref="ProjectMember"/> aggregates.
+    /// Provides optimized read and write operations for project memberships,
+    /// including lookups by project/user, role resolution, existence checks,
+    /// and membership analytics. Read operations use <c>AsNoTracking()</c>
+    /// where appropriate to maximize query performance, while update operations
+    /// rely on EF Core change tracking to generate minimal UPDATE statements.
     /// </summary>
+    /// <param name="db">
+    /// The <see cref="CollabTaskDbContext"/> used to query and persist
+    /// <see cref="ProjectMember"/> entities.
+    /// </param>
     public sealed class ProjectMemberRepository(CollabTaskDbContext db) : IProjectMemberRepository
     {
         private readonly CollabTaskDbContext _db = db;
 
-        /// <summary>
-        /// Lists memberships for a project. Optionally includes removed entries.
-        /// Includes the related <see cref="User"/> for convenience.
-        /// </summary>
-        public async Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(
+        /// <inheritdoc/>
+        public async Task<IReadOnlyList<ProjectMember>> ListByProjectIdAsync(
             Guid projectId,
             bool includeRemoved = false,
             CancellationToken ct = default)
@@ -33,9 +37,7 @@ namespace Infrastructure.Persistence.Repositories
             return await q.Include(pm => pm.User).ToListAsync(ct);
         }
 
-        /// <summary>
-        /// Gets a membership by project and user without tracking, including <see cref="User"/>.
-        /// </summary>
+        /// <inheritdoc/>
         public async Task<ProjectMember?> GetByProjectAndUserIdAsync(
             Guid projectId,
             Guid userId,
@@ -45,113 +47,28 @@ namespace Infrastructure.Persistence.Repositories
                         .Include(pm => pm.User)
                         .FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
 
-        /// <summary>
-        /// Gets a tracked membership by project and user.
-        /// </summary>
-        public async Task<ProjectMember?> GetTrackedByProjectAndUserIdAsync(
+        /// <inheritdoc/>
+        public async Task<ProjectMember?> GetByProjectAndUserIdForUpdateAsync(
             Guid projectId,
             Guid userId,
             CancellationToken ct = default)
             => await _db.ProjectMembers.FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
 
-        /// <summary>
-        /// Gets the role of a user within a project, or <c>null</c> if not a member.
-        /// </summary>
-        public async Task<ProjectRole?> GetRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
+        /// <inheritdoc/>
+        public async Task<ProjectRole?> GetUserRoleAsync(Guid projectId, Guid userId, CancellationToken ct = default)
             => await _db.ProjectMembers
                         .AsNoTracking()
                         .Where(pm => pm.ProjectId == projectId && pm.UserId == userId)
                         .Select(pm => (ProjectRole?)pm.Role)
                         .FirstOrDefaultAsync(ct);
 
-        /// <summary>
-        /// Adds a new project membership to the context.
-        /// </summary>
-        public async Task AddAsync(ProjectMember member, CancellationToken ct = default)
-            => await _db.ProjectMembers.AddAsync(member, ct);
-
-        /// <summary>
-        /// Updates a member's role with optimistic concurrency. No-ops if the role is unchanged.
-        /// </summary>
-        public async Task<PrecheckStatus> UpdateRoleAsync(
-            Guid projectId,
-            Guid userId,
-            ProjectRole newRole,
-            byte[] rowVersion,
-            CancellationToken ct = default)
-        {
-            var projectMember = await GetTrackedByProjectAndUserIdAsync(projectId, userId, ct);
-
-            if (projectMember is null || projectMember.RemovedAt is not null)
-                return PrecheckStatus.NotFound;
-
-            if (projectMember.Role == newRole)
-                return PrecheckStatus.NoOp;
-
-            _db.Entry(projectMember).Property(pm => pm.RowVersion).OriginalValue = rowVersion;
-
-            projectMember.ChangeRole(newRole);
-            _db.Entry(projectMember).Property(pm => pm.Role).IsModified = true;
-
-            return PrecheckStatus.Ready;
-        }
-
-        /// <summary>
-        /// Marks a membership as removed (soft delete) with concurrency protection.
-        /// </summary>
-        public async Task<PrecheckStatus> SetRemovedAsync(
-            Guid projectId,
-            Guid userId,
-            byte[] rowVersion,
-            CancellationToken ct = default)
-        {
-            var projectMember = await GetTrackedByProjectAndUserIdAsync(projectId, userId, ct);
-            if (projectMember is null) return PrecheckStatus.NotFound;
-
-            var now = DateTimeOffset.UtcNow;
-            if (projectMember.RemovedAt == now) return PrecheckStatus.NoOp;
-
-            _db.Entry(projectMember).Property(pm => pm.RowVersion).OriginalValue = rowVersion;
-
-            projectMember.Remove(now);
-            _db.Entry(projectMember).Property(pm => pm.RemovedAt).IsModified = true;
-
-            return PrecheckStatus.Ready;
-        }
-
-        /// <summary>
-        /// Restores a previously removed membership with concurrency protection.
-        /// </summary>
-        public async Task<PrecheckStatus> SetRestoredAsync(
-            Guid projectId,
-            Guid userId,
-            byte[] rowVersion,
-            CancellationToken ct = default)
-        {
-            var projectMember = await GetTrackedByProjectAndUserIdAsync(projectId, userId, ct);
-            if (projectMember is null) return PrecheckStatus.NotFound;
-
-            if (projectMember.RemovedAt == null) return PrecheckStatus.NoOp;
-
-            _db.Entry(projectMember).Property(pm => pm.RowVersion).OriginalValue = rowVersion;
-
-            projectMember.Restore();
-            _db.Entry(projectMember).Property(pm => pm.RemovedAt).IsModified = true;
-
-            return PrecheckStatus.Ready;
-        }
-
-        /// <summary>
-        /// Checks whether a user has a membership entry in a project.
-        /// </summary>
+        /// <inheritdoc/>
         public async Task<bool> ExistsAsync(Guid projectId, Guid userId, CancellationToken ct = default)
             => await _db.ProjectMembers
                         .AsNoTracking()
                         .AnyAsync(pm => pm.UserId == userId && pm.ProjectId == projectId, ct);
 
-        /// <summary>
-        /// Counts distinct projects where the user has an active membership.
-        /// </summary>
+        /// <inheritdoc/>
         public async Task<int> CountUserActiveMembershipsAsync(Guid userId, CancellationToken ct = default)
             => await _db.ProjectMembers
                         .AsNoTracking()
@@ -159,6 +76,19 @@ namespace Infrastructure.Persistence.Repositories
                         .Select(pm => pm.ProjectId)
                         .Distinct()
                         .CountAsync(ct);
-    }
 
+        /// <inheritdoc/>
+        public async Task AddAsync(ProjectMember member, CancellationToken ct = default)
+            => await _db.ProjectMembers.AddAsync(member, ct);
+
+        /// <inheritdoc/>
+        public async Task UpdateAsync(ProjectMember member, CancellationToken ct = default)
+        {
+            // If entity is already tracked, do nothing so EF change tracking produces minimal UPDATEs
+            if (_db.Entry(member).State == EntityState.Detached)
+                _db.ProjectMembers.Update(member);
+
+            await Task.CompletedTask;
+        }
+    }
 }

@@ -6,12 +6,14 @@ using FluentAssertions;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
-using TestHelpers.Api.Fakes;
 using TestHelpers.Common;
+using TestHelpers.Common.Fakes;
+using TestHelpers.Common.Testing;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.Users.Services
 {
+    [IntegrationTest]
     public sealed class UserWriteServiceTests
     {
 

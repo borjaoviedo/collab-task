@@ -1,9 +1,11 @@
 using Application.Abstractions.Security;
 using FluentAssertions;
 using Infrastructure.Security;
+using TestHelpers.Common.Testing;
 
 namespace Infrastructure.Tests.Security
 {
+    [UnitTest]
     public class Pbkdf2PasswordHasherTests
     {
         private readonly IPasswordHasher _sut = new Pbkdf2PasswordHasher();

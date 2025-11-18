@@ -1,33 +1,72 @@
+using Application.Abstractions.Auth;
+using Application.Common.Exceptions;
 using Application.Projects.Abstractions;
+using Application.Projects.DTOs;
 using Application.Projects.Filters;
-using Domain.Entities;
+using Application.Projects.Mapping;
 
 namespace Application.Projects.Services
 {
     /// <summary>
-    /// Read-only application service for projects.
+    /// Application read-side service for <see cref="Domain.Entities.Project"/> aggregates.
+    /// Provides query operations for retrieving projects by identifier or by user,
+    /// applying visibility filters when requested. All returned results are mapped
+    /// to <see cref="ProjectReadDto"/> and enriched with information relevant to
+    /// the currently authenticated user.
     /// </summary>
-    public sealed class ProjectReadService(IProjectRepository repo) : IProjectReadService
+    /// <param name="projectRepository">
+    /// Repository used for querying <see cref="Domain.Entities.Project"/> entities, including
+    /// lookups by identifier and user associations.
+    /// </param>
+    /// <param name="currentUserService">
+    /// Provides information about the currently authenticated user, such as
+    /// <c>UserId</c>, enabling user-contextual mapping of read models.
+    /// </param>
+    public sealed class ProjectReadService(
+        IProjectRepository projectRepository,
+        ICurrentUserService currentUserService) : IProjectReadService
     {
-        /// <summary>
-        /// Retrieves a project by identifier.
-        /// </summary>
-        /// <param name="projectId">The project identifier.</param>
-        /// <param name="ct">Cancellation token.</param>
-        public async Task<Project?> GetAsync(Guid projectId, CancellationToken ct = default)
-            => await repo.GetByIdAsync(projectId, ct);
+        private readonly IProjectRepository _projectRepository = projectRepository;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
 
-        /// <summary>
-        /// Lists projects associated with a user, using an optional filter.
-        /// </summary>
-        /// <param name="userId">The user identifier.</param>
-        /// <param name="filter">Optional filtering criteria.</param>
-        /// <param name="ct">Cancellation token.</param>
-        public async Task<IReadOnlyList<Project>> ListByUserAsync(
+        /// <inheritdoc/>
+        public async Task<ProjectReadDto> GetByIdAsync(Guid projectId, CancellationToken ct = default)
+        {
+            var project = await _projectRepository.GetByIdAsync(projectId, ct)
+                // 404 if the project does not exist
+                ?? throw new NotFoundException("Project not found.");
+
+            var currentUserId = (Guid)_currentUserService.UserId!;
+
+            return project.ToReadDto(currentUserId);
+        }
+
+        /// <inheritdoc/>
+        public async Task<IReadOnlyList<ProjectReadDto>> ListByUserIdAsync(
             Guid userId,
             ProjectFilter? filter = null,
             CancellationToken ct = default)
-            => await repo.ListByUserAsync(userId, filter, ct);
-    }
+        {
+            var projects = await _projectRepository.ListByUserIdAsync(userId, filter, ct);
 
+            var currentUserId = (Guid)_currentUserService.UserId!;
+
+            return projects
+                .Select(p => p.ToReadDto(currentUserId))
+                .ToList();
+        }
+
+        /// <inheritdoc/>
+        public async Task<IReadOnlyList<ProjectReadDto>> ListSelfAsync(
+            ProjectFilter? filter = null,
+            CancellationToken ct = default)
+        {
+            var currentUserId = (Guid)_currentUserService.UserId!;
+            var projects = await _projectRepository.ListByUserIdAsync(currentUserId, filter, ct);
+
+            return projects
+                .Select(p => p.ToReadDto(currentUserId))
+                .ToList();
+        }
+    }
 }

@@ -3,9 +3,11 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Moq;
 using System.Security.Claims;
+using TestHelpers.Common.Testing;
 
 namespace Api.Tests.Auth.Services
 {
+    [UnitTest]
     public class CurrentUserServiceTests
     {
         // ---------- TESTS ----------

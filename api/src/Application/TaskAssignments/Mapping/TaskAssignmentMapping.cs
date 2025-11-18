@@ -11,7 +11,9 @@ namespace Application.TaskAssignments.Mapping
                 TaskId = entity.TaskId,
                 UserId = entity.UserId,
                 Role = entity.Role,
-                RowVersion = entity.RowVersion
+                RowVersion = entity.RowVersion is { Length: > 0 }
+                    ? Convert.ToBase64String(entity.RowVersion)
+                    : string.Empty
             };
     }
 }

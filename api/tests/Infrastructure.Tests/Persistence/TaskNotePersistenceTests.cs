@@ -6,10 +6,13 @@ using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Persistence
 {
+    [IntegrationTest]
+    [SqlServerContainerTest]
     [Collection("SqlServerContainer")]
     public sealed class TaskNotePersistenceTests(MsSqlContainerFixture fx)
     {

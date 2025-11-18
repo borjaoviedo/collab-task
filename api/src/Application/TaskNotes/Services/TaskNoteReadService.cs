@@ -1,31 +1,79 @@
+using Application.Abstractions.Auth;
+using Application.Common.Exceptions;
 using Application.TaskNotes.Abstractions;
-using Domain.Entities;
+using Application.TaskNotes.DTOs;
+using Application.TaskNotes.Mapping;
 
 namespace Application.TaskNotes.Services
 {
     /// <summary>
-    /// Read-only application service for task notes.
+    /// Application read-side service for <see cref="Domain.Entities.TaskNote"/> aggregates.
+    /// Provides high-level query operations for retrieving a single note, listing all notes
+    /// associated with a given task, and listing all notes authored by a particular user.
+    /// Returned entities are mapped to <see cref="TaskNoteReadDto"/> to expose a stable,
+    /// API-oriented representation. Missing notes are surfaced as
+    /// <see cref="NotFoundException"/> to ensure consistent error handling.
     /// </summary>
-    public sealed class TaskNoteReadService(ITaskNoteRepository repo) : ITaskNoteReadService
+    /// <param name="taskNoteRepository">
+    /// Repository used for querying <see cref="Domain.Entities.TaskNote"/> entities,
+    /// including lookups by identifier, lists by task, and lists by user.
+    /// </param>
+    /// <param name="currentUserService">
+    /// Provides information about the currently authenticated user, such as <c>UserId</c>.
+    /// </param>
+    public sealed class TaskNoteReadService(
+        ITaskNoteRepository taskNoteRepository,
+        ICurrentUserService currentUserService) : ITaskNoteReadService
     {
-        /// <summary>Retrieves a note by its identifier.</summary>
-        /// <param name="noteId">The note identifier.</param>
-        /// <param name="ct">Cancellation token.</param>
-        /// <returns>The note if found; otherwise <c>null</c>.</returns>
-        public async Task<TaskNote?> GetAsync(Guid noteId, CancellationToken ct = default)
-            => await repo.GetByIdAsync(noteId, ct);
+        private readonly ITaskNoteRepository _taskNoteRepository = taskNoteRepository;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
 
-        /// <summary>Lists all notes belonging to a specific task.</summary>
-        /// <param name="taskId">The task identifier.</param>
-        /// <param name="ct">Cancellation token.</param>
-        public async Task<IReadOnlyList<TaskNote>> ListByTaskAsync(Guid taskId, CancellationToken ct = default)
-            => await repo.ListByTaskAsync(taskId, ct);
+        /// <inheritdoc/>
+        public async Task<TaskNoteReadDto> GetByIdAsync(
+            Guid noteId,
+            CancellationToken ct = default)
+        {
+            var taskNote = await _taskNoteRepository.GetByIdAsync(noteId, ct)
+                // 404 if the note does not exist
+                ?? throw new NotFoundException("Task note not found.");
 
-        /// <summary>Lists all notes created by a specific user.</summary>
-        /// <param name="userId">The user identifier.</param>
-        /// <param name="ct">Cancellation token.</param>
-        public async Task<IReadOnlyList<TaskNote>> ListByUserAsync(Guid userId, CancellationToken ct = default)
-            => await repo.ListByUserAsync(userId, ct);
+            return taskNote.ToReadDto();
+        }
+
+        /// <inheritdoc/>
+        public async Task<IReadOnlyList<TaskNoteReadDto>> ListByTaskIdAsync(
+            Guid taskId,
+            CancellationToken ct = default)
+        {
+            var taskNotes = await _taskNoteRepository.ListByTaskIdAsync(taskId, ct);
+
+            return taskNotes
+                .Select(tn => tn.ToReadDto())
+                .ToList();
+        }
+
+        /// <inheritdoc/>
+        public async Task<IReadOnlyList<TaskNoteReadDto>> ListByUserIdAsync(
+            Guid userId,
+            CancellationToken ct = default)
+        {
+            var taskNotes = await _taskNoteRepository.ListByUserIdAsync(userId, ct);
+
+            return taskNotes
+                .Select(tn => tn.ToReadDto())
+                .ToList();
+        }
+
+        /// <inheritdoc/>
+        public async Task<IReadOnlyList<TaskNoteReadDto>> ListSelfAsync(
+            CancellationToken ct = default)
+        {
+            var currentUserId = (Guid)_currentUserService.UserId!;
+            var taskNotes = await _taskNoteRepository.ListByUserIdAsync(currentUserId, ct);
+
+            return taskNotes
+                .Select(tn => tn.ToReadDto())
+                .ToList();
+        }
     }
-
 }

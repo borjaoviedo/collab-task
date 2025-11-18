@@ -1,9 +1,11 @@
 using Application.Lanes.DTOs;
 using Application.Lanes.Validation;
 using FluentValidation.TestHelper;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.Lanes.Validation
 {
+    [UnitTest]
     public sealed class LaneDtoValidatorTests
     {
         [Fact]

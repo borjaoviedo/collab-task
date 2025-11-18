@@ -6,11 +6,13 @@ using FluentAssertions;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 using TestHelpers.Common.Time;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.TaskActivities.Services
 {
+    [IntegrationTest]
     public sealed class TaskActivityWriteServiceTests
     {
         private readonly IDateTimeProvider _clock = TestTime.FixedClock();
@@ -27,19 +29,18 @@ namespace Application.Tests.TaskActivities.Services
 
             var (_, _, _, taskId, _, actor) = TestDataFactory.SeedFullBoard(db);
 
-            var (result, activity) = await writeSvc.CreateAsync(
+            var activity = await writeSvc.CreateAsync(
                 taskId,
                 actor,
                 TaskActivityType.TaskCreated,
                 ActivityPayload.Create("{\"event\":\"create\"}")
             );
 
-            result.Should().Be(DomainMutation.Created);
             activity.Should().NotBeNull();
 
             await uow.SaveAsync(MutationKind.Create);
 
-            var list = await repo.ListByTaskAsync(taskId);
+            var list = await repo.ListByTaskIdAsync(taskId);
             list.Should().ContainSingle();
         }
     }

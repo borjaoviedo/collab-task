@@ -2,9 +2,11 @@ using Application.TaskNotes.Mapping;
 using Domain.Entities;
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.TaskNotes.Mapping
 {
+    [UnitTest]
     public sealed class TaskNoteMappingTests
     {
         [Fact]
@@ -24,7 +26,6 @@ namespace Application.Tests.TaskNotes.Mapping
             read.Content.Should().Be("cotent");
             read.CreatedAt.Should().Be(entity.CreatedAt);
             read.UpdatedAt.Should().Be(entity.UpdatedAt); // null initially
-            read.RowVersion.Should().Equal(entity.RowVersion);
         }
     }
 }

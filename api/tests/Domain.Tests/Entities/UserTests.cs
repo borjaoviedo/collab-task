@@ -3,21 +3,24 @@ using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 
 namespace Domain.Tests.Entities
 {
+    [UnitTest]
     public class UserTests
     {
         private static readonly Email _defaultEmail = Email.Create("email@test.com");
         private static readonly UserName _defaultUserName = UserName.Create("username");
-        private static readonly byte[] _validHash = TestDataFactory.Bytes(32);
-        private static readonly byte[] _validSalt = TestDataFactory.Bytes(16);
+
+        private static readonly byte[] _defaultPasswordHash = TestDataFactory.CreateHash();
+        private static readonly byte[] _defaultPasswordSalt = TestDataFactory.CreateSalt();
 
         private readonly User _defaultUser = User.Create(
             _defaultEmail,
             _defaultUserName,
-            _validHash,
-            _validSalt);
+            _defaultPasswordHash,
+            _defaultPasswordSalt);
 
         [Fact]
         public void Defaults_RoleIsUser_And_ProjectMemberships_AreInitialized()
@@ -36,8 +39,8 @@ namespace Domain.Tests.Entities
 
             user.Email.Should().Be(_defaultEmail);
             user.Name.Should().Be(_defaultUserName);
-            user.PasswordHash.Should().BeSameAs(_validHash);
-            user.PasswordSalt.Should().BeSameAs(_validSalt);
+            user.PasswordHash.Should().BeSameAs(_defaultPasswordHash);
+            user.PasswordSalt.Should().BeSameAs(_defaultPasswordSalt);
         }
 
         [Fact]

@@ -1,9 +1,11 @@
 using Domain.Entities;
 using Domain.Enums;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Domain.Tests.Entities
 {
+    [UnitTest]
     public sealed class TaskAssignmentTests
     {
         [Fact]

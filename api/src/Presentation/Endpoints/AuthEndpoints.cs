@@ -74,7 +74,7 @@ namespace Api.Endpoints
                 return Results.Ok(userReadDto);
             })
             .RequireAuthorization()
-            .Produces<MeReadDto>(StatusCodes.Status200OK)
+            .Produces<UserReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .WithSummary("Get authenticated profile")
             .WithDescription("Returns the current user profile derived from JWT claims.")

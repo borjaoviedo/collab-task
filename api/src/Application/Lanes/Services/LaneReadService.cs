@@ -1,30 +1,48 @@
+using Application.Common.Exceptions;
 using Application.Lanes.Abstractions;
-using Domain.Entities;
+using Application.Lanes.DTOs;
+using Application.Lanes.Mapping;
 
 namespace Application.Lanes.Services
 {
     /// <summary>
-    /// Read-only application service for lanes.
+    /// Application read-side service for <see cref="Domain.Entities.Lane"/> aggregates.
+    /// Provides operations for retrieving individual lanes or listing all lanes
+    /// belonging to a given project. All returned results are mapped to
+    /// <see cref="LaneReadDto"/> representations. This service delegates storage
+    /// concerns to <see cref="ILaneRepository"/> and ensures that missing resources
+    /// are surfaced as <see cref="NotFoundException"/>.
     /// </summary>
-    public sealed class LaneReadService(ILaneRepository repo) : ILaneReadService
+    /// <param name="laneRepository">
+    /// Repository used for querying <see cref="Domain.Entities.Lane"/> entities,
+    /// including lookups by identifier and project association.
+    /// </param>
+    public sealed class LaneReadService(
+        ILaneRepository laneRepository) : ILaneReadService
     {
-        /// <summary>
-        /// Retrieves a lane by identifier.
-        /// </summary>
-        /// <param name="laneId">The lane identifier.</param>
-        /// <param name="ct">Cancellation token.</param>
-        /// <returns>The lane if found; otherwise <c>null</c>.</returns>
-        public async Task<Lane?> GetAsync(Guid laneId, CancellationToken ct = default)
-            => await repo.GetByIdAsync(laneId, ct);
+        private readonly ILaneRepository _laneRepository = laneRepository;
 
-        /// <summary>
-        /// Lists all lanes for a project ordered by display order.
-        /// </summary>
-        /// <param name="projectId">The project identifier.</param>
-        /// <param name="ct">Cancellation token.</param>
-        /// <returns>A read-only list of lanes.</returns>
-        public async Task<IReadOnlyList<Lane>> ListByProjectAsync(Guid projectId, CancellationToken ct = default)
-            => await repo.ListByProjectAsync(projectId, ct);
+        /// <inheritdoc/>
+        public async Task<LaneReadDto> GetByIdAsync(Guid laneId, CancellationToken ct = default)
+        {
+            var lane = await _laneRepository.GetByIdAsync(laneId, ct)
+                // 404 if the lane does not exist
+                ?? throw new NotFoundException("Lane not found.");
+
+            return lane.ToReadDto();
+        }
+
+        /// <inheritdoc/>
+        public async Task<IReadOnlyList<LaneReadDto>> ListByProjectIdAsync(
+            Guid projectId,
+            CancellationToken ct = default)
+        {
+            var lanes = await _laneRepository.ListByProjectIdAsync(projectId, ct);
+
+            return lanes
+                .Select(l => l.ToReadDto())
+                .ToList();
+        }
     }
 
 }

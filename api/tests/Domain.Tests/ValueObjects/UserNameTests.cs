@@ -1,8 +1,10 @@
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Domain.Tests.ValueObjects
 {
+    [UnitTest]
     public class UserNameTests
     {
         private readonly string _defaultUserName = "user name";
@@ -81,8 +83,8 @@ namespace Domain.Tests.ValueObjects
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void Create_NullEmptyOrWhitespace_Throws(string input)
-            => Assert.Throws<ArgumentException>(() => UserName.Create(input));
+        public void Create_NullEmptyOrWhitespace_Throws(string? input)
+            => Assert.Throws<ArgumentException>(() => UserName.Create(input!));
 
 
         [Fact]

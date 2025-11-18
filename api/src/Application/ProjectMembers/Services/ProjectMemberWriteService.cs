@@ -1,99 +1,119 @@
-using Application.Abstractions.Extensions;
 using Application.Abstractions.Persistence;
+using Application.Abstractions.Time;
+using Application.Common.Exceptions;
+using Application.Lanes.Mapping;
 using Application.ProjectMembers.Abstractions;
+using Application.ProjectMembers.DTOs;
+using Application.ProjectMembers.Mapping;
 using Domain.Entities;
 using Domain.Enums;
 
 namespace Application.ProjectMembers.Services
 {
     /// <summary>
-    /// Write-side application service for project members.
+    /// Application write-side service for <see cref="ProjectMember"/> aggregates.
+    /// Handles creation, role changes, soft-removal, and restoration of project membership
+    /// while enforcing membership invariants and optimistic concurrency rules.
+    /// Successful write operations are persisted through <see cref="IUnitOfWork"/>,
+    /// ensuring atomic updates and consistent conflict detection. Timestamped operations
+    /// such as removals rely on <see cref="IDateTimeProvider"/> to guarantee deterministic
+    /// and testable time behavior.
     /// </summary>
-    public sealed class ProjectMemberWriteService(IProjectMemberRepository repo, IUnitOfWork uow) : IProjectMemberWriteService
+    /// <param name="projectMemberRepository">
+    /// Repository responsible for querying, tracking, and persisting
+    /// <see cref="ProjectMember"/> entities, including existence checks
+    /// and member retrieval for update operations.
+    /// </param>
+    /// <param name="unitOfWork">
+    /// Coordinates transactional persistence and validates <see cref="DomainMutation"/>
+    /// outcomes to ensure that membership operations are applied consistently
+    /// under optimistic concurrency.
+    /// </param>
+    /// <param name="dateTimeProvider">
+    /// Abstraction for providing UTC timestamps used when removing project members,
+    /// guaranteeing consistent and reproducible time-sensitive operations.
+    /// </param>
+    public sealed class ProjectMemberWriteService(
+        IProjectMemberRepository projectMemberRepository,
+        IUnitOfWork unitOfWork,
+        IDateTimeProvider dateTimeProvider) : IProjectMemberWriteService
     {
-        /// <summary>
-        /// Creates a new membership for a user within a project.
-        /// </summary>
-        /// <param name="projectId">The project identifier.</param>
-        /// <param name="userId">The user to add.</param>
-        /// <param name="role">The initial role.</param>
-        /// <param name="ct">Cancellation token.</param>
-        /// <returns>The mutation result and the created membership when successful.</returns>
-        public async Task<(DomainMutation, ProjectMember?)> CreateAsync(
+        private readonly IProjectMemberRepository _projectMemberRepository = projectMemberRepository;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly IDateTimeProvider _dateTimeProvider = dateTimeProvider;
+
+        /// <inheritdoc/>
+        public async Task<ProjectMemberReadDto> CreateAsync(
             Guid projectId,
-            Guid userId,
-            ProjectRole role,
+            ProjectMemberCreateDto dto,
             CancellationToken ct = default)
         {
-            if (await repo.ExistsAsync(projectId, userId, ct)) return (DomainMutation.NotFound, null);
+            if (await _projectMemberRepository.ExistsAsync(projectId, dto.UserId, ct))
+                throw new ConflictException("A project member with the specified UserId already exists.");
 
-            var projectMember = ProjectMember.Create(projectId, userId, role);
-            await repo.AddAsync(projectMember, ct);
+            var projectMember = ProjectMember.Create(projectId, dto.UserId, dto.Role);
+            await _projectMemberRepository.AddAsync(projectMember, ct);
 
-            var createResult = await uow.SaveAsync(MutationKind.Create, ct);
-            return (createResult, projectMember);
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Create, ct);
+            if (mutation != DomainMutation.Created)
+                throw new ConflictException("Project member could not be created due to a conflicting state.");
+
+            return projectMember.ToReadDto();
         }
 
-        /// <summary>
-        /// Changes the role of an existing project member with concurrency enforcement.
-        /// </summary>
-        /// <param name="projectId">The project identifier.</param>
-        /// <param name="userId">The user identifier.</param>
-        /// <param name="newRole">The new role to assign.</param>
-        /// <param name="rowVersion">Concurrency token.</param>
-        /// <param name="ct">Cancellation token.</param>
-        public async Task<DomainMutation> ChangeRoleAsync(
+        /// <inheritdoc/>
+        public async Task<ProjectMemberReadDto> ChangeRoleAsync(
             Guid projectId,
             Guid userId,
-            ProjectRole newRole,
-            byte[] rowVersion,
+            ProjectMemberChangeRoleDto dto,
             CancellationToken ct = default)
         {
-            var changeRole = await repo.UpdateRoleAsync(projectId, userId, newRole, rowVersion, ct);
-            if (changeRole != PrecheckStatus.Ready) return changeRole.ToErrorDomainMutation();
+            var projectMember = await _projectMemberRepository.GetByProjectAndUserIdAsync(projectId, userId, ct)
+                ?? throw new NotFoundException("Project member not found.");
 
-            var updateResult = await uow.SaveAsync(MutationKind.Update, ct);
-            return updateResult;
+            projectMember.ChangeRole(dto.NewRole);
+
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Update, ct);
+            if (mutation != DomainMutation.Updated)
+                throw new ConflictException("The project member role could not be changed due to a conflicting state.");
+
+            return projectMember.ToReadDto();
         }
 
-        /// <summary>
-        /// Soft-removes a project member with concurrency enforcement.
-        /// </summary>
-        /// <param name="projectId">The project identifier.</param>
-        /// <param name="userId">The user identifier.</param>
-        /// <param name="rowVersion">Concurrency token.</param>
-        /// <param name="ct">Cancellation token.</param>
-        public async Task<DomainMutation> RemoveAsync(
+        /// <inheritdoc/>
+        public async Task<ProjectMemberReadDto> RemoveAsync(
             Guid projectId,
             Guid userId,
-            byte[] rowVersion,
             CancellationToken ct = default)
         {
-            var remove = await repo.SetRemovedAsync(projectId, userId, rowVersion, ct);
-            if (remove != PrecheckStatus.Ready) return remove.ToErrorDomainMutation();
+            var projectMember = await _projectMemberRepository.GetByProjectAndUserIdAsync(projectId, userId, ct)
+                ?? throw new NotFoundException("Project member not found.");
 
-            var updateResult = await uow.SaveAsync(MutationKind.Update, ct);
-            return updateResult;
+            projectMember.Remove(_dateTimeProvider.UtcNow);
+
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Update, ct);
+            if (mutation != DomainMutation.Updated)
+                throw new ConflictException("The project member could not be removed due to a conflicting state.");
+
+            return projectMember.ToReadDto();
         }
 
-        /// <summary>
-        /// Restores a previously removed project member with concurrency enforcement.
-        /// </summary>
-        /// <param name="projectId">The project identifier.</param>
-        /// <param name="userId">The user identifier.</param>
-        /// <param name="rowVersion">Concurrency token.</param>
-        /// <param name="ct">Cancellation token.</param>
-        public async Task<DomainMutation> RestoreAsync(
+        /// <inheritdoc/>
+        public async Task<ProjectMemberReadDto> RestoreAsync(
             Guid projectId,
             Guid userId,
-            byte[] rowVersion,
             CancellationToken ct = default)
         {
-            var restore = await repo.SetRestoredAsync(projectId, userId, rowVersion, ct);
-            if (restore != PrecheckStatus.Ready) return restore.ToErrorDomainMutation();
+            var projectMember = await _projectMemberRepository.GetByProjectAndUserIdAsync(projectId, userId, ct)
+                ?? throw new NotFoundException("Project member not found.");
 
-            var updateResult = await uow.SaveAsync(MutationKind.Update, ct);
-            return updateResult;
+            projectMember.Restore();
+
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Update, ct);
+            if (mutation != DomainMutation.Updated)
+                throw new ConflictException("The project member could not be restored due to a conflicting state.");
+
+            return projectMember.ToReadDto();
         }
     }
 }

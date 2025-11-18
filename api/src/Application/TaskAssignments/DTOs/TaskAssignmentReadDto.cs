@@ -7,6 +7,6 @@ namespace Application.TaskAssignments.DTOs
         public Guid TaskId { get; init; }
         public Guid UserId { get; init; }
         public TaskRole Role { get; init; }
-        public byte[] RowVersion { get; init; } = default!;
+        public string RowVersion { get; init; } = default!;
     }
 }

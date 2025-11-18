@@ -71,15 +71,10 @@ namespace Domain.Entities
         /// Moves the task to a new lane and column within the same project, updating its sort key.
         /// </summary>
         public void Move(
-            Guid targetProject,
             Guid targetLaneId,
             Guid targetColumnId,
             decimal targetSortKey)
         {
-            if (targetProject != ProjectId)
-                throw new ArgumentException("Move must stay within the same Project.", nameof(targetProject));
-
-            Guards.NotEmpty(targetProject);
             Guards.NotEmpty(targetLaneId);
             Guards.NotEmpty(targetColumnId);
             Guards.NonNegative(targetSortKey);
@@ -89,13 +84,6 @@ namespace Domain.Entities
             LaneId = targetLaneId;
             ColumnId = targetColumnId;
             SortKey = targetSortKey;
-        }
-
-        /// <summary>Sets the concurrency token after persistence.</summary>
-        internal void SetRowVersion(byte[] rowVersion)
-        {
-            Guards.NotNull(rowVersion);
-            RowVersion = rowVersion;
         }
     }
 }

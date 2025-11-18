@@ -4,13 +4,16 @@ using Application.Users.DTOs;
 using FluentAssertions;
 using System.Net;
 using System.Net.Http.Json;
-using TestHelpers.Api.Auth;
-using TestHelpers.Api.Defaults;
-using TestHelpers.Api.Http;
-using TestHelpers.Api.Projects;
+using TestHelpers.Api.Common;
+using TestHelpers.Api.Common.Http;
+using TestHelpers.Api.Endpoints.Auth;
+using TestHelpers.Api.Endpoints.Defaults;
+using TestHelpers.Api.Endpoints.Projects;
+using TestHelpers.Common.Testing;
 
 namespace Api.Tests.Endpoints
 {
+    [IntegrationTest]
     public sealed class ProjectsEndpointsTests
     {
         [Fact]
@@ -112,17 +115,18 @@ namespace Api.Tests.Endpoints
         }
 
         [Fact]
-        public async Task Get_ById_403_For_Foreign_User()
+        public async Task Get_ById_NotFound_For_Foreign_User()
         {
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
             await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
 
-            // Create default project
+            // Create default project as first user
             var project = await ProjectTestHelper.PostProjectDtoAsync(client);
 
-            var userRegisterDto = new UserRegisterDto()
+            // Authenticate as a different user who is not a member of that project
+            var userRegisterDto = new UserRegisterDto
             {
                 Email = "random@e.com",
                 Name = "random",
@@ -130,9 +134,9 @@ namespace Api.Tests.Endpoints
             };
             await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client, userRegisterDto);
 
-            // 403 when not project member user tries to get the project
+            // Service hides foreign projects as 404 instead of 403
             var response = await ProjectTestHelper.GetProjectResponseAsync(client, project.Id);
-            response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
 
         [Fact]
@@ -154,12 +158,13 @@ namespace Api.Tests.Endpoints
             okRenameResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             var renamed = await okRenameResponse.ReadContentAsDtoAsync<ProjectReadDto>();
 
-            // Stale 412 (use old rowversion)
+            // Stale 412
+            var staleRowVersion = CommonApiTestHelpers.GenerateStaleRowVersion(renamed.RowVersion);
             var differentRenameDto = new ProjectRenameDto { NewName = "different rename" };
             var staleRenameResponse = await ProjectTestHelper.RenameProjectResponseAsync(
                 client,
                 project.Id,
-                project.RowVersion,
+                staleRowVersion,
                 differentRenameDto);
             staleRenameResponse.StatusCode.Should().Be((HttpStatusCode)412);
 
@@ -210,14 +215,19 @@ namespace Api.Tests.Endpoints
             var differentCreateDto = new ProjectCreateDto { Name = "PB" };
             await ProjectTestHelper.PostProjectDtoAsync(client, differentCreateDto);
 
-            // /projects/me OK
-            var meResponse = await ProjectTestHelper.GetProjectsMeResponseAsync(client);
+            // /projects returns projects where the caller has at least reader rights
+            var meResponse = await ProjectTestHelper.GetProjectsResponseAsync(client);
             meResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            // /users/{id} requires SystemAdmin
+            var myProjects = await meResponse.ReadContentAsDtoAsync<List<ProjectReadDto>>();
+            myProjects.Should().NotBeNull();
+            myProjects.Should().NotBeEmpty();
+
+            // /projects/users/{id} requires SystemAdmin
             var byUserForbidden = await ProjectTestHelper.GetProjectsByUserResponseAsync(
                 client,
                 user.UserId);
+
             byUserForbidden.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         }
     }

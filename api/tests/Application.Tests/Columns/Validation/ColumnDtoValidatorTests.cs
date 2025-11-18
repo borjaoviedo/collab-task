@@ -1,9 +1,11 @@
 using Application.Columns.DTOs;
 using Application.Columns.Validation;
 using FluentValidation.TestHelper;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.Columns.Validation
 {
+    [UnitTest]
     public sealed class ColumnDtoValidatorTests
     {
 

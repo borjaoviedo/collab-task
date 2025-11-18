@@ -1,123 +1,124 @@
+using Application.Columns.DTOs;
 using Application.Columns.Services;
-using Domain.Enums;
-using Domain.ValueObjects;
+using Application.Common.Exceptions;
 using FluentAssertions;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.Columns.Services
 {
+    [IntegrationTest]
     public sealed class ColumnWriteServiceTests
     {
         [Fact]
         public async Task CreateAsync_Persists_Column()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ColumnRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new ColumnWriteService(repo, uow);
+            var (db, writeSvc) = await CreateSutAsync(dbh);
 
             var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
             var laneId = TestDataFactory.SeedLane(db, projectId).Id;
             var columnName = "Column name";
 
-            await writeSvc.CreateAsync(projectId, laneId, ColumnName.Create(columnName));
-            await uow.SaveAsync(MutationKind.Create);
+            var dto = new ColumnCreateDto { Name = columnName, Order = 0 };
 
+            var result = await writeSvc.CreateAsync(projectId, laneId, dto);
+
+            // Assert DTO
+            result.Should().NotBeNull();
+            result.Name.Should().Be(columnName);
+            result.Order.Should().Be(0);
+
+            // Assert DB
             var fromDb = await db.Columns
                 .AsNoTracking()
-                .SingleAsync(c => c.Name == columnName);
+                .SingleAsync(c => c.Id == result.Id);
+
             fromDb.Name.Value.Should().Be(columnName);
             fromDb.Order.Should().Be(0);
+        }
+
+        [Fact]
+        public async Task CreateAsync_Throws_Conflict_When_Name_Already_Exists_In_Lane()
+        {
+            using var dbh = new SqliteTestDb();
+            var (_, writeSvc) = await CreateSutAsync(dbh);
+
+            var db = dbh.CreateContext();
+            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
+            var laneId = TestDataFactory.SeedLane(db, projectId).Id;
+
+            var name = "Duplicate Column";
+
+            // Existing column with same name
+            TestDataFactory.SeedColumn(db, projectId, laneId, name);
+
+            var dto = new ColumnCreateDto { Name = name, Order = 1 };
+
+            var act = async () => await writeSvc.CreateAsync(projectId, laneId, dto);
+
+            await act.Should().ThrowAsync<ConflictException>();
         }
 
         [Fact]
         public async Task RenameAsync_Updates_Name()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ColumnRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new ColumnWriteService(repo, uow);
+            var (db, writeSvc) = await CreateSutAsync(dbh);
 
             var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             var column = TestDataFactory.SeedColumn(db, projectId, laneId);
 
             var newName = "new name";
+            var dto = new ColumnRenameDto { NewName = newName };
 
-            var rowVersion = column.RowVersion ?? [];
-            var result = await writeSvc.RenameAsync(column.Id, ColumnName.Create(newName), rowVersion);
-            result.Should().Be(DomainMutation.Updated);
+            var result = await writeSvc.RenameAsync(column.Id, dto);
+
+            result.Should().NotBeNull();
+            result.Id.Should().Be(column.Id);
+            result.Name.Should().Be(newName);
 
             var fromDb = await db.Columns
                 .AsNoTracking()
                 .SingleAsync(c => c.Id == column.Id);
+
             fromDb.Name.Value.Should().Be(newName);
         }
 
         [Fact]
-        public async Task RenameAsync_NoOp_When_Same_Name()
+        public async Task RenameAsync_Throws_NotFound_When_Column_Does_Not_Exist()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ColumnRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new ColumnWriteService(repo, uow);
+            var (_, writeSvc) = await CreateSutAsync(dbh);
 
-            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
-            var sameName = "Same Column Name";
-            var column = TestDataFactory.SeedColumn(db, projectId, laneId, sameName);
+            var dto = new ColumnRenameDto { NewName = "whatever" };
+            var act = async () => await writeSvc.RenameAsync(Guid.NewGuid(), dto);
 
-            var result = await writeSvc.RenameAsync(column.Id, ColumnName.Create(sameName), column.RowVersion);
-            result.Should().Be(DomainMutation.NoOp);
+            await act.Should().ThrowAsync<NotFoundException>();
         }
 
-        [Fact]
-        public async Task RenameAsync_Conflict_When_Duplicate_Name_In_Lane()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ColumnRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new ColumnWriteService(repo, uow);
-
-            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
-
-            var sameName = "Same Column Name";
-            TestDataFactory.SeedColumn(db, projectId, laneId, sameName);
-
-            var defaultNameColumn = TestDataFactory.SeedColumn(db, projectId, laneId, order: 1);
-
-            var result = await writeSvc.RenameAsync(
-                defaultNameColumn.Id,
-                ColumnName.Create(sameName),
-                defaultNameColumn.RowVersion);
-            result.Should().Be(DomainMutation.Conflict);
-        }
 
         [Fact]
         public async Task ReorderAsync_Reindexes_Without_Gaps()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ColumnRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new ColumnWriteService(repo, uow);
+            var (db, writeSvc) = await CreateSutAsync(dbh);
 
             var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             TestDataFactory.SeedColumn(db, projectId, laneId, "Column A", order: 0);
             TestDataFactory.SeedColumn(db, projectId, laneId, "Column B", order: 1);
             var columnC = TestDataFactory.SeedColumn(db, projectId, laneId, "Column C", order: 2);
 
-            // Reload tracked 'c' to get current RowVersion
-            var trackedC = await db.Columns.SingleAsync(c => c.Id == columnC.Id);
+            var dto = new ColumnReorderDto { NewOrder = 0 };
 
-            var result = await writeSvc.ReorderAsync(trackedC.Id, newOrder: 0, trackedC.RowVersion);
-            result.Should().Be(DomainMutation.Updated);
+            var result = await writeSvc.ReorderAsync(columnC.Id, dto);
+            result.Should().NotBeNull();
+            result.Id.Should().Be(columnC.Id);
+            result.Order.Should().Be(0);
 
             var columns = await db.Columns.AsNoTracking()
                 .Where(c => c.ProjectId == projectId && c.LaneId == laneId)
@@ -129,56 +130,67 @@ namespace Application.Tests.Columns.Services
         }
 
         [Fact]
-        public async Task DeleteAsync_Removes_Column()
+        public async Task ReorderAsync_Returns_Current_State_When_NoOp()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ColumnRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new ColumnWriteService(repo, uow);
+            var (db, writeSvc) = await CreateSutAsync(dbh);
+
+            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var column = TestDataFactory.SeedColumn(db, projectId, laneId, "Column A", order: 0);
+
+            var dto = new ColumnReorderDto { NewOrder = 0 };
+
+            var result = await writeSvc.ReorderAsync(column.Id, dto);
+
+            result.Should().NotBeNull();
+            result.Id.Should().Be(column.Id);
+            result.Order.Should().Be(0);
+
+            var fromDb = await db.Columns
+                .AsNoTracking()
+                .SingleAsync(c => c.Id == column.Id);
+
+            fromDb.Order.Should().Be(0);
+        }
+
+        [Fact]
+        public async Task DeleteByIdAsync_Removes_Column()
+        {
+            using var dbh = new SqliteTestDb();
+            var (db, writeSvc) = await CreateSutAsync(dbh);
 
             var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
             var column = TestDataFactory.SeedColumn(db, projectId, laneId);
 
-            var tracked = await db.Columns.SingleAsync(c => c.Id == column.Id);
-
-            var result = await writeSvc.DeleteAsync(tracked.Id, tracked.RowVersion!);
-            result.Should().Be(DomainMutation.Deleted);
+            await writeSvc.DeleteByIdAsync(column.Id);
 
             var exists = await db.Columns.AnyAsync(c => c.Id == column.Id);
             exists.Should().BeFalse();
         }
 
         [Fact]
-        public async Task DeleteAsync_NotFound_When_Unknown_Id()
+        public async Task DeleteByIdAsync_Throws_NotFound_When_Column_Does_Not_Exist()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ColumnRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new ColumnWriteService(repo, uow);
+            var (_, writeSvc) = await CreateSutAsync(dbh);
 
-            var result = await writeSvc.DeleteAsync(columnId: Guid.NewGuid(), rowVersion: []);
-            result.Should().Be(DomainMutation.NotFound);
+            var act = async () => await writeSvc.DeleteByIdAsync(Guid.NewGuid());
+
+            await act.Should().ThrowAsync<NotFoundException>();
         }
 
-        [Fact]
-        public async Task DeleteAsync_Concurrency_Failure()
+        // ---------- HELPERS ----------
+
+        private static Task<(CollabTaskDbContext Db, ColumnWriteService Service)>
+            CreateSutAsync(SqliteTestDb dbh)
         {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
+            var db = dbh.CreateContext();
             var repo = new ColumnRepository(db);
             var uow = new UnitOfWork(db);
-            var writeSvc = new ColumnWriteService(repo, uow);
 
-            var (projectId, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
-            var column = TestDataFactory.SeedColumn(db, projectId, laneId);
+            var svc = new ColumnWriteService(repo, uow);
 
-            var result = await writeSvc.DeleteAsync(column.Id, rowVersion: []);
-            result.Should().Be(DomainMutation.Conflict);
-
-            var stillExists = await db.Columns.AnyAsync(c => c.Id == column.Id);
-            stillExists.Should().BeTrue();
+            return Task.FromResult((db, svc));
         }
     }
 }

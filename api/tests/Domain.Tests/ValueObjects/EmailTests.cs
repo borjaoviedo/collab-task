@@ -1,8 +1,10 @@
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Domain.Tests.ValueObjects
 {
+    [UnitTest]
     public class EmailTests
     {
         private readonly string _defaultEmail = "test@email.com";
@@ -73,8 +75,8 @@ namespace Domain.Tests.ValueObjects
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void Create_NullEmptyOrWhitespace_Throws(string input)
-            => Assert.Throws<ArgumentException>(() => Email.Create(input));
+        public void Create_NullEmptyOrWhitespace_Throws(string? input)
+            => Assert.Throws<ArgumentException>(() => Email.Create(input!));
 
         [Theory]
         [InlineData("t est@demo.com")]

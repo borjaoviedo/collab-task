@@ -12,7 +12,9 @@ namespace Application.Lanes.Mapping
                 ProjectId = entity.ProjectId,
                 Name = entity.Name.Value,
                 Order = entity.Order,
-                RowVersion = entity.RowVersion
+                RowVersion = entity.RowVersion is { Length: > 0 }
+                    ? Convert.ToBase64String(entity.RowVersion)
+                    : string.Empty
             };
     }
 }

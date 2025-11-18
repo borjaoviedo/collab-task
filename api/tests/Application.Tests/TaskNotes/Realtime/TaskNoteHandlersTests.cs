@@ -1,9 +1,11 @@
 using Application.Realtime;
 using Application.TaskNotes.Realtime;
 using Moq;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.TaskNotes.Realtime
 {
+    [IntegrationTest]
     public class TaskNoteHandlersTests
     {
         [Fact]

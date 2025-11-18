@@ -368,6 +368,8 @@ namespace TestHelpers.Common
                 columnOrder);
             var taskNote = SeedTaskNote(db, taskId, userId, noteContent);
 
+            SeedTaskAssignment(db, taskId, userId);
+
             return (projectId, laneId, columnId, taskId, taskNote.Id, userId);
         }
     }
