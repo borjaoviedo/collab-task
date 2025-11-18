@@ -9,6 +9,6 @@ namespace Application.TaskNotes.DTOs
         public string Content { get; init; } = default!;
         public DateTimeOffset CreatedAt { get; init; }
         public DateTimeOffset UpdatedAt { get; init; }
-        public byte[] RowVersion { get; init; } = default!;
+        public string RowVersion { get; init; } = default!;
     }
 }

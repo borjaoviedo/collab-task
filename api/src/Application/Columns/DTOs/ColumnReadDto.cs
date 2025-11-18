@@ -8,6 +8,6 @@ namespace Application.Columns.DTOs
         public Guid ProjectId { get; init; }
         public string Name { get; init; } = default!;
         public int Order { get; init; }
-        public byte[] RowVersion { get; init; } = default!;
+        public string RowVersion { get; init; } = default!;
     }
 }

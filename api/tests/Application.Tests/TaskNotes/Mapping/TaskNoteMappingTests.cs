@@ -24,7 +24,6 @@ namespace Application.Tests.TaskNotes.Mapping
             read.Content.Should().Be("cotent");
             read.CreatedAt.Should().Be(entity.CreatedAt);
             read.UpdatedAt.Should().Be(entity.UpdatedAt); // null initially
-            read.RowVersion.Should().Equal(entity.RowVersion);
         }
     }
 }

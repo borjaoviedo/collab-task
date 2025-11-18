@@ -18,7 +18,9 @@ namespace Application.TaskItems.Mapping
                 UpdatedAt = entity.UpdatedAt,
                 DueDate = entity.DueDate,
                 SortKey = entity.SortKey,
-                RowVersion = entity.RowVersion
+                RowVersion = entity.RowVersion is { Length: > 0 }
+                    ? Convert.ToBase64String(entity.RowVersion)
+                    : string.Empty
             };
     }
 }

@@ -11,6 +11,6 @@ namespace Application.ProjectMembers.DTOs
         public ProjectRole Role { get; init; }
         public DateTimeOffset JoinedAt { get; init; }
         public DateTimeOffset? RemovedAt { get; init; }
-        public byte[] RowVersion { get; init; } = default!;
+        public string RowVersion { get; init; } = default!;
     }
 }

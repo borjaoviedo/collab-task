@@ -15,7 +15,9 @@ namespace Application.Users.Mapping
                 CreatedAt = item.CreatedAt,
                 UpdatedAt = item.UpdatedAt,
                 ProjectMembershipsCount = item.ProjectMemberships?.Count ?? 0,
-                RowVersion = item.RowVersion
+                RowVersion = item.RowVersion is { Length: > 0 }
+                    ? Convert.ToBase64String(item.RowVersion)
+                    : string.Empty
             };
     }
 }

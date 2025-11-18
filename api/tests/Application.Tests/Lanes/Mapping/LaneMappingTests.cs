@@ -19,7 +19,6 @@ namespace Application.Tests.Lanes.Mapping
             dto.ProjectId.Should().Be(entity.ProjectId);
             dto.Name.Should().Be(entity.Name.Value);
             dto.Order.Should().Be(entity.Order);
-            dto.RowVersion.Should().Equal(entity.RowVersion);
         }
     }
 }

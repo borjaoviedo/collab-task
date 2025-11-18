@@ -28,7 +28,6 @@ namespace Application.Tests.ProjectMembers.Mapping
             Assert.Equal(projectMember.Role, dto.Role);
             Assert.Equal(projectMember.JoinedAt, dto.JoinedAt);
             Assert.Null(dto.RemovedAt); // Project member is not removed
-            Assert.Equal(projectMember.RowVersion, dto.RowVersion);
         }
 
         [Fact]

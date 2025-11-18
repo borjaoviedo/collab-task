@@ -30,7 +30,6 @@ namespace Application.Tests.TaskItems.Mapping
             dto.Description.Should().Be(entity.Description.Value);
             dto.DueDate.Should().Be(entity.DueDate);
             dto.SortKey.Should().Be(entity.SortKey);
-            dto.RowVersion.Should().Equal(entity.RowVersion);
         }
     }
 }

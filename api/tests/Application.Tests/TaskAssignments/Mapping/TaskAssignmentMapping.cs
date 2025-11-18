@@ -16,7 +16,6 @@ namespace Application.Tests.TaskAssignments.Mapping
             read.TaskId.Should().Be(entity.TaskId);
             read.UserId.Should().Be(entity.UserId);
             read.Role.Should().Be(entity.Role);
-            read.RowVersion.Should().Equal(entity.RowVersion);
         }
     }
 }

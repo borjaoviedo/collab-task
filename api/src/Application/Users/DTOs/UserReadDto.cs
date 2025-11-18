@@ -11,6 +11,6 @@ namespace Application.Users.DTOs
         public DateTimeOffset CreatedAt { get; init; }
         public DateTimeOffset UpdatedAt { get; init; }
         public int ProjectMembershipsCount { get; init; }
-        public byte[] RowVersion { get; init; } = default!;
+        public string RowVersion { get; init; } = default!;
     }
 }

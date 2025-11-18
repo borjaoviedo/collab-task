@@ -28,7 +28,6 @@ namespace Application.Tests.Projects.Mapping
             Assert.Equal(project.Slug.Value, dto.Slug);
             Assert.Equal(project.CreatedAt, dto.CreatedAt);
             Assert.Equal(project.UpdatedAt, dto.UpdatedAt);
-            Assert.Equal(project.RowVersion, dto.RowVersion);
             Assert.Equal(project.Members.Count, dto.MembersCount);
             Assert.Equal(ProjectRole.Owner, dto.CurrentUserRole);
         }

@@ -13,6 +13,6 @@ namespace Application.TaskItems.DTOs
         public DateTimeOffset UpdatedAt { get; init; }
         public DateTimeOffset? DueDate { get; init; }
         public decimal SortKey { get; init; }
-        public byte[] RowVersion { get; init; } = default!;
+        public string RowVersion { get; init; } = default!;
     }
 }
