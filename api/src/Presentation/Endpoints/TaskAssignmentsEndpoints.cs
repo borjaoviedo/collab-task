@@ -44,6 +44,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskAssignmentReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("List task assignments")
             .WithDescription("Returns all assignments for the task.")
             .WithName("TaskAssignments_Get_All");
@@ -96,6 +97,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Create or update assignment")
             .WithDescription("Admin-only. Creates or updates a task assignment. Returns the resource with ETag (201 if created, 200 if updated).")
@@ -153,6 +155,7 @@ namespace Api.Endpoints
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status412PreconditionFailed)
             .ProducesProblem(StatusCodes.Status428PreconditionRequired)
@@ -193,6 +196,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskAssignmentReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("List assignments by user")
             .WithDescription("Admin-only. Returns task assignments of the specified user across accessible projects.")
             .WithName("TaskAssignments_Get_ByUser");

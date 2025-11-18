@@ -79,6 +79,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<ProjectReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("List projects by user")
             .WithDescription("Admin-only. Returns projects accessible to the specified user.")
             .WithName("Projects_Get_ByUser");

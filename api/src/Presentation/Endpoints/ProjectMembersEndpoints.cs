@@ -48,6 +48,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<ProjectMemberReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("List project members")
             .WithDescription("Returns project members. Can include removed members.")
             .WithName("ProjectMembers_Get_All");
@@ -241,6 +242,7 @@ namespace Api.Endpoints
             .Produces<ProjectMemberCountReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Count active memberships by user")
             .WithDescription("Admin-only. Returns the number of active projects for the specified user.")
             .WithName("ProjectMembers_CountActive_ByUser");

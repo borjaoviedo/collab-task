@@ -49,6 +49,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskActivityReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("List task activities")
             .WithDescription("Returns activities for the task. Optional filter by activity type.")
             .WithName("TaskActivities_Get_All");
@@ -108,6 +109,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskActivityReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("List activities by user")
             .WithDescription("Admin-only. Returns activities performed by the specified user.")
             .WithName("TaskActivities_Get_ByUser");

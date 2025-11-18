@@ -55,6 +55,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Create column")
             .WithDescription("Admin-only. Creates a column in the lane. Returns the resource with ETag.")
@@ -72,6 +73,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<ColumnReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("List columns")
             .WithDescription("Returns columns for the lane.")
             .WithName("Columns_Get_All");
@@ -95,8 +97,8 @@ namespace Api.Endpoints
             .WithDescription("Returns a column in the lane. Sets ETag.")
             .WithName("Columns_Get_ById");
 
-            // PUT /projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename
-            projectColumnsGroup.MapPut("/{columnId:guid}/rename", async (
+            // PATCH /projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename
+            projectColumnsGroup.MapPatch("/{columnId:guid}/rename", async (
                 [FromRoute] Guid columnId,
                 [FromBody] ColumnRenameDto dto,
                 [FromServices] IColumnWriteService columnWriteSvc,
@@ -123,8 +125,8 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Renames a column using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Columns_Rename");
 
-            // PUT /projects/{projectId}/lanes/{laneId}/columns/{columnId}/reorder
-            projectColumnsGroup.MapPut("/{columnId:guid}/reorder", async (
+            // PATCH /projects/{projectId}/lanes/{laneId}/columns/{columnId}/reorder
+            projectColumnsGroup.MapPatch("/{columnId:guid}/reorder", async (
                 [FromRoute] Guid columnId,
                 [FromBody] ColumnReorderDto dto,
                 [FromServices] IColumnWriteService columnWriteSvc,

@@ -47,6 +47,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskNoteReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("List task notes")
             .WithDescription("Returns notes for the task.")
             .WithName("Notes_Get_All");
@@ -78,6 +79,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Create task note")
             .WithDescription("Member-only. Creates a note on the task. Returns the resource with ETag.")
@@ -203,6 +205,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskNoteReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("List notes by user")
             .WithDescription("Admin-only. Returns notes authored by the specified user.")
             .WithName("TaskNotes_Get_ByUser");

@@ -59,6 +59,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Create task")
             .WithDescription("Member-only. Creates a task in the column. Returns the resource with ETag.")
@@ -85,6 +86,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskItemReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("List tasks")
             .WithDescription("Returns tasks for the column.")
             .WithName("Tasks_Get_All");
@@ -149,7 +151,7 @@ namespace Api.Endpoints
             .WithDescription("Member-only. Updates task fields using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Tasks_Edit");
 
-            // PUT /projects/{projectId}/tasks/{taskId}/move
+            // PATCH /projects/{projectId}/tasks/{taskId}/move
             projectTasksGroup.MapPut("/{taskId:guid}/move", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid taskId,
