@@ -244,7 +244,7 @@ namespace Api.Tests.Endpoints
             var authMeResponse = await AuthTestHelper.GetMeResponseAsync(client);
             authMeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var dto = await authMeResponse.ReadContentAsDtoAsync<MeReadDto>();
+            var dto = await authMeResponse.ReadContentAsDtoAsync<UserReadDto>();
 
             dto.Should().NotBeNull();
             dto.Email.Should().Be(UserDefaults.DefaultEmail.ToLowerInvariant());
