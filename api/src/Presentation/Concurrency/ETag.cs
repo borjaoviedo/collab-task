@@ -9,18 +9,17 @@ namespace Api.Concurrency
     public static class ETag
     {
         /// <summary>
-        /// Encodes a <c>RowVersion</c> byte array into a weak ETag string (e.g., <c>W/"base64"</c>).
-        /// Returns an empty string if the input is null or empty.
+        /// Wraps a Base64-encoded <c>RowVersion</c> string into a weak ETag (e.g., <c>W/"base64"</c>).
         /// </summary>
-        /// <param name="rowVersion">The concurrency token to encode.</param>
+        /// <param name="rowVersionBase64">The Base64 string representing the concurrency token.</param>
         /// <returns>A weak ETag string suitable for HTTP headers.</returns>
-        public static string EncodeWeak(byte[] rowVersion)
+        public static string EncodeWeak(string rowVersionBase64)
         {
-            if (rowVersion is null || rowVersion.Length == 0) return string.Empty;
+            if (string.IsNullOrWhiteSpace(rowVersionBase64))
+                return string.Empty;
 
-            var quoted = $"\"{Convert.ToBase64String(rowVersion)}\"";
+            var quoted = $"\"{rowVersionBase64}\"";
             var etag = new EntityTagHeaderValue(quoted, isWeak: true);
-
             return etag.ToString();
         }
     }
