@@ -46,7 +46,7 @@ function Wait-Health {
   # Fallback to HTTP if the API port is exposed (demo mode)
   try {
     $res = Invoke-RestMethod -Uri ("http://localhost:{0}/health" -f $ApiPort) -TimeoutSec 2
-    if ($res.status -eq 'ok') { return $true }
+    if ($res.status -eq 'Healthy') { return $true }
   } catch { }
   throw "API did not become healthy"
 }
@@ -73,6 +73,6 @@ switch ($cmd) {
   'health' {
     # Report current health via Docker or HTTP fallback
     Wait-Health | Out-Null
-    '{ "status": "ok" }'
+    '{ "status": "Healthy" }'
   }
 }
