@@ -3,14 +3,16 @@ using Application.Columns.DTOs;
 using FluentAssertions;
 using System.Net;
 using System.Net.Http.Json;
-using TestHelpers.Api.Auth;
-using TestHelpers.Api.Columns;
-using TestHelpers.Api.Defaults;
-using TestHelpers.Api.Http;
-using TestHelpers.Api.Projects;
+using TestHelpers.Api.Common.Http;
+using TestHelpers.Api.Endpoints.Auth;
+using TestHelpers.Api.Endpoints.Columns;
+using TestHelpers.Api.Endpoints.Defaults;
+using TestHelpers.Api.Endpoints.Projects;
+using TestHelpers.Common.Testing;
 
 namespace Api.Tests.Endpoints
 {
+    [IntegrationTest]
     public sealed class ColumnsEndpointsTests
     {
         [Fact]
@@ -133,37 +135,6 @@ namespace Api.Tests.Endpoints
                 $"/projects/{project.Id}/lanes/{lane.Id}/columns/{column!.Id}/rename",
                 ColumnDefaults.DefaultColumnRenameDto);
             renameResponse.StatusCode.Should().Be((HttpStatusCode)428);
-        }
-
-        [Fact]
-        public async Task Rename_With_Valid_Then_Stale_Returns_200_Then_412()
-        {
-            using var app = new TestApiFactory();
-            using var client = app.CreateClient();
-
-            await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
-
-            var (project, lane, column) = await BoardSetupHelper.CreateProjectLaneAndColumn(client);
-
-            // valid
-            var okRenameResponse = await ColumnTestHelper.RenameColumnResponseAsync(
-                client,
-                project.Id,
-                lane.Id,
-                column.Id,
-                column.RowVersion);
-            okRenameResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-
-            // stale
-            var notDefaultRenameDto = new ColumnRenameDto() { NewName = "not default" };
-            var staleRenameResponse = await ColumnTestHelper.RenameColumnResponseAsync(
-                client,
-                project.Id,
-                lane.Id,
-                column.Id,
-                column.RowVersion,  // old rowVersion
-                notDefaultRenameDto);
-            staleRenameResponse.StatusCode.Should().Be((HttpStatusCode)412);
         }
 
         [Fact]

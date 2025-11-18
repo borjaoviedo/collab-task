@@ -2,10 +2,12 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 using TestHelpers.Common.Time;
 
 namespace Domain.Tests.Entities
 {
+    [UnitTest]
     public sealed class TaskActivityTests
     {
         [Fact]
@@ -60,13 +62,13 @@ namespace Domain.Tests.Entities
         [InlineData("")]
         [InlineData("   ")]
         [InlineData("{ a: 1 ")]
-        public void Create_Invalid_Payload_Throws(string input)
+        public void Create_Invalid_Payload_Throws(string? input)
         {
             var act = () => TaskActivity.Create(
                 taskId: Guid.NewGuid(),
                 userId: Guid.NewGuid(),
                 type: TaskActivityType.TaskMoved,
-                payload: ActivityPayload.Create(input),
+                payload: ActivityPayload.Create(input!),
                 createdAt: TestTime.FixedNow);
 
             act.Should().Throw<ArgumentException>();

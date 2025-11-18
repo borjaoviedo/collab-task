@@ -1,9 +1,11 @@
 using Domain.Entities;
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Domain.Tests.Entities
 {
+    [UnitTest]
     public sealed class ColumnTests
     {
         private static readonly Guid _defaultProjectId = Guid.NewGuid();

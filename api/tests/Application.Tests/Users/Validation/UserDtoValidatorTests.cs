@@ -2,9 +2,11 @@ using Application.Users.DTOs;
 using Application.Users.Validation;
 using Domain.Enums;
 using FluentValidation.TestHelper;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.Users.Validation
 {
+    [UnitTest]
     public sealed class UserDtoValidatorTests
     {
         [Fact]

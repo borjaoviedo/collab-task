@@ -3,10 +3,12 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 using TestHelpers.Common.Time;
 
 namespace Domain.Tests.Entities
 {
+    [UnitTest]
     public class ProjectTests
     {
         private static readonly ProjectName _defaultProjectName = ProjectName.Create("project");

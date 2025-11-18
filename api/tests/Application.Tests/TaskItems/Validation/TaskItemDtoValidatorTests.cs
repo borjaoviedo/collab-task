@@ -1,9 +1,11 @@
 using Application.TaskItems.DTOs;
 using Application.TaskItems.Validation;
 using FluentValidation.TestHelper;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.TaskItems.Validation
 {
+    [UnitTest]
     public sealed class TaskItemDtoValidatorTests
     {
         [Fact]

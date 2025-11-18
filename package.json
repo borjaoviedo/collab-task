@@ -1,13 +1,14 @@
 {
   "name": "collab-task",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Collaborative task management backend built with ASP.NET Core under Clean Architecture principles.",
   "main": "index.js",
   "scripts": {
     "dev": "node scripts/run.js dev",
     "prod": "node scripts/run.js prod",
     "test:unit": "node scripts/run.js test:unit",
-    "test:infra": "node scripts/run.js test:infra",
+    "test:integration": "node scripts/run.js test:integration",
+    "test:sqlserver": "node scripts/run.js test:sqlserver",
     "test:all": "node scripts/run.js test:all",
     "gen:openapi": "node scripts/run.js gen:openapi"
   },
@@ -15,28 +16,12 @@
     "type": "git",
     "url": "git+https://github.com/borjaoviedo/collab-task.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["dotnet", "csharp", "backend", "api", "clean-architecture", "task-management"],
+  "author": "Borja Oviedo Larrubia",
+  "license": "MIT",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/borjaoviedo/collab-task/issues"
   },
-  "homepage": "https://github.com/borjaoviedo/collab-task#readme",
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.13",
-    "@types/node": "^24.6.0",
-    "autoprefixer": "^10.4.21",
-    "openapi-typescript": "^7.9.1",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.13"
-  },
-  "dependencies": {
-    "@tanstack/react-query": "^5.90.2",
-    "clsx": "^2.1.1",
-    "react-router-dom": "^7.9.3",
-    "tailwind-merge": "^3.3.1",
-    "zod": "^4.1.11",
-    "zustand": "^5.0.8"
-  }
+  "homepage": "https://github.com/borjaoviedo/collab-task#readme"
 }

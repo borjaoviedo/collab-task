@@ -24,59 +24,6 @@ namespace Api.Endpoints
         /// <returns>The configured route group for project-scoped task item operations.</returns>
         public static RouteGroupBuilder MapTaskItems(this IEndpointRouteBuilder app)
         {
-            // /columns/{columnId}/tasks
-            var columnsTasksGroup = app
-                .MapGroup("/columns/{columnId:guid}/tasks")
-                .WithTags("Tasks")
-                .RequireAuthorization(Policies.ProjectReader);
-
-            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
-            // include consistent success/error shapes, auth requirements, and concurrency responses
-
-
-            // GET /columns/{columnId}/tasks
-            columnsTasksGroup.MapGet("/", async (
-                [FromRoute] Guid columnId,
-                [FromServices] ITaskItemReadService taskItemReadService,
-                CancellationToken ct = default) =>
-            {
-                var taskItemReadDtoList = await taskItemReadService.ListByColumnIdAsync(columnId, ct);
-                return Results.Ok(taskItemReadDtoList);
-            })
-            .Produces<IEnumerable<TaskItemReadDto>>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .ProducesProblem(StatusCodes.Status403Forbidden)
-            .WithSummary("List tasks")
-            .WithDescription("Returns tasks for the column.")
-            .WithName("Tasks_Get_All");
-
-
-            // /projects/{projectId}/tasks
-            var projectTasksGroup = app
-                .MapGroup("/projects/{projectId:guid}/tasks")
-                .WithTags("Tasks")
-                .RequireAuthorization(Policies.ProjectReader);
-
-            // GET /projects/{projectId}/tasks/{taskId}
-            projectTasksGroup.MapGet("/{taskId:guid}", async (
-                [FromRoute] Guid taskId,
-                [FromServices] ITaskItemReadService taskItemReadService,
-                CancellationToken ct = default) =>
-            {
-                var taskItemReadDto = await taskItemReadService.GetByIdAsync(taskId, ct);
-                var etag = ETag.EncodeWeak(taskItemReadDto.RowVersion);
-
-                return Results.Ok(taskItemReadDto).WithETag(etag);
-            })
-            .Produces<TaskItemReadDto>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .ProducesProblem(StatusCodes.Status403Forbidden)
-            .ProducesProblem(StatusCodes.Status404NotFound)
-            .WithSummary("Get task")
-            .WithDescription("Returns a task in the project. Sets ETag.")
-            .WithName("Tasks_Get_ById");
-
-
             // /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks
             var projectColumnTasksGroup = app
                 .MapGroup("/projects/{projectId:guid}/lanes/{laneId:guid}/columns/{columnId:guid}/tasks")
@@ -116,6 +63,58 @@ namespace Api.Endpoints
             .WithSummary("Create task")
             .WithDescription("Member-only. Creates a task in the column. Returns the resource with ETag.")
             .WithName("Tasks_Create");
+
+
+            // /projects/{projectId}columns/{columnId}/tasks
+            var columnsTasksGroup = app
+                .MapGroup("/projects/{projectId:guid}/columns/{columnId:guid}/tasks")
+                .WithTags("Tasks")
+                .RequireAuthorization(Policies.ProjectReader);
+
+
+            // GET /projects/{projectId}/columns/{columnId}/tasks
+            columnsTasksGroup.MapGet("/", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid columnId,
+                [FromServices] ITaskItemReadService taskItemReadService,
+                CancellationToken ct = default) =>
+            {
+                var taskItemReadDtoList = await taskItemReadService.ListByColumnIdAsync(columnId, ct);
+                return Results.Ok(taskItemReadDtoList);
+            })
+            .Produces<IEnumerable<TaskItemReadDto>>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .WithSummary("List tasks")
+            .WithDescription("Returns tasks for the column.")
+            .WithName("Tasks_Get_All");
+
+
+            // /projects/{projectId}/tasks
+            var projectTasksGroup = app
+                .MapGroup("/projects/{projectId:guid}/tasks")
+                .WithTags("Tasks")
+                .RequireAuthorization(Policies.ProjectReader);
+
+            // GET /projects/{projectId}/tasks/{taskId}
+            projectTasksGroup.MapGet("/{taskId:guid}", async (
+                [FromRoute] Guid projectId,
+                [FromRoute] Guid taskId,
+                [FromServices] ITaskItemReadService taskItemReadService,
+                CancellationToken ct = default) =>
+            {
+                var taskItemReadDto = await taskItemReadService.GetByIdAsync(taskId, ct);
+                var etag = ETag.EncodeWeak(taskItemReadDto.RowVersion);
+
+                return Results.Ok(taskItemReadDto).WithETag(etag);
+            })
+            .Produces<TaskItemReadDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get task")
+            .WithDescription("Returns a task in the project. Sets ETag.")
+            .WithName("Tasks_Get_ById");
 
             // PATCH /projects/{projectId}/tasks/{taskId}/edit
             projectTasksGroup.MapPatch("/{taskId:guid}/edit", async (

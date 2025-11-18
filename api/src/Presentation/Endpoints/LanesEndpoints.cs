@@ -43,6 +43,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<LaneReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("List lanes")
             .WithDescription("Returns lanes for the project.")
             .WithName("Lanes_Get_All");
@@ -69,19 +70,14 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Create lane")
             .WithDescription("Admin-only. Creates a lane in the project. Returns the resource with ETag.")
             .WithName("Lanes_Create");
 
-            // /lanes/{laneId}
-            var lanesGroup = app
-                .MapGroup("/lanes/{laneId:guid}")
-                .WithTags("Lanes")
-                .RequireAuthorization(Policies.ProjectReader);
-
-            // GET /lanes/{laneId}
-            lanesGroup.MapGet("/", async (
+            // GET /projects/{projectId}/lanes/{laneId}
+            projectLanesGroup.MapGet("/{laneId:guid}", async (
                 [FromRoute] Guid laneId,
                 [FromServices] ILaneReadService laneReadSvc,
                 CancellationToken ct = default) =>
@@ -99,8 +95,8 @@ namespace Api.Endpoints
             .WithDescription("Returns a lane in the project. Sets ETag.")
             .WithName("Lanes_Get_ById");
 
-            // PUT /lanes/{laneId}/rename
-            lanesGroup.MapPut("/rename", async (
+            // PATCH /projects/{projectId}/lanes/{laneId}/rename
+            projectLanesGroup.MapPatch("/{laneId:guid}/rename", async (
                 [FromRoute] Guid laneId,
                 [FromBody] LaneRenameDto dto,
                 [FromServices] ILaneWriteService laneWriteSvc,
@@ -127,8 +123,8 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Renames a lane using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Lanes_Rename");
 
-            // PUT /lanes/{laneId}/reorder
-            lanesGroup.MapPut("/reorder", async (
+            // PATCH /projects/{projectId}/lanes/{laneId}/reorder
+            projectLanesGroup.MapPatch("/{laneId:guid}/reorder", async (
                 [FromRoute] Guid laneId,
                 [FromBody] LaneReorderDto dto,
                 [FromServices] ILaneWriteService laneWriteSvc,
@@ -155,8 +151,8 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Changes lane order using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Lanes_Reorder");
 
-            // DELETE /lanes/{laneId}
-            lanesGroup.MapDelete("/", async (
+            // DELETE /projects/{projectId}/lanes/{laneId}
+            projectLanesGroup.MapDelete("/{laneId:guid}", async (
                 [FromRoute] Guid laneId,
                 [FromServices] ILaneWriteService laneWriteSvc,
                 CancellationToken ct = default) =>
@@ -179,7 +175,7 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Deletes a lane using optimistic concurrency (If-Match).")
             .WithName("Lanes_Delete");
 
-            return lanesGroup;
+            return projectLanesGroup;
         }
     }
 }

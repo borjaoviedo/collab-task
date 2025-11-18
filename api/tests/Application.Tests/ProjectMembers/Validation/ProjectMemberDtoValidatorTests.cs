@@ -2,9 +2,11 @@ using Application.ProjectMembers.DTOs;
 using Application.ProjectMembers.Validation;
 using Domain.Enums;
 using FluentValidation.TestHelper;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.ProjectMembers.Validation
 {
+    [UnitTest]
     public sealed class ProjectMemberDtoValidatorTests
     {
         [Fact]

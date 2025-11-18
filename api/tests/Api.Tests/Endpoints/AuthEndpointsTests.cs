@@ -8,12 +8,14 @@ using Microsoft.Extensions.DependencyInjection;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Security.Claims;
-using TestHelpers.Api.Auth;
-using TestHelpers.Api.Defaults;
-using TestHelpers.Api.Http;
+using TestHelpers.Api.Common.Http;
+using TestHelpers.Api.Endpoints.Auth;
+using TestHelpers.Api.Endpoints.Defaults;
+using TestHelpers.Common.Testing;
 
 namespace Api.Tests.Endpoints
 {
+    [IntegrationTest]
     public sealed class AuthEndpointsTests
     {
         [Fact]
@@ -244,7 +246,7 @@ namespace Api.Tests.Endpoints
             var authMeResponse = await AuthTestHelper.GetMeResponseAsync(client);
             authMeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var dto = await authMeResponse.ReadContentAsDtoAsync<MeReadDto>();
+            var dto = await authMeResponse.ReadContentAsDtoAsync<UserReadDto>();
 
             dto.Should().NotBeNull();
             dto.Email.Should().Be(UserDefaults.DefaultEmail.ToLowerInvariant());

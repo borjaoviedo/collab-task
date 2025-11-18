@@ -4,10 +4,13 @@ using FluentAssertions;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Persistence
 {
+    [IntegrationTest]
+    [SqlServerContainerTest]
     [Collection("SqlServerContainer")]
     public sealed class TaskAssignmentPersistenceTests(MsSqlContainerFixture fx)
     {

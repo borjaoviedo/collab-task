@@ -1,9 +1,11 @@
 using Application.TaskNotes.DTOs;
 using Application.TaskNotes.Validation;
 using FluentValidation.TestHelper;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.TaskNotes.Validation
 {
+    [UnitTest]
     public sealed class TaskNoteDtoValidatorTests
     {
         [Fact]

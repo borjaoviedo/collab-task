@@ -131,6 +131,7 @@ namespace Api.Endpoints
             })
             .RequireAuthorization(Policies.SystemAdmin) // SystemAdmin-only
             .RequireIfMatch() // Requires If-Match to prevent deleting over stale state
+            .EnsureIfMatch<IUserReadService, UserReadDto>(routeValueKey: "userId")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)

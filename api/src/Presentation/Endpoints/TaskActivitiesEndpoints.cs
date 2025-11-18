@@ -24,16 +24,16 @@ namespace Api.Endpoints
         /// <returns>The configured route group for global activity endpoints.</returns>
         public static RouteGroupBuilder MapTaskActivities(this IEndpointRouteBuilder app)
         {
-            // /tasks/{taskId}/activities
+            // projects/{projectId}/tasks/{taskId}/activities
             var taskActivitiesGroup = app
-                .MapGroup("/tasks/{taskId:guid}/activities")
+                .MapGroup("projects/{projectId:guid}/tasks/{taskId:guid}/activities")
                 .WithTags("Task Activities")
                 .RequireAuthorization(Policies.ProjectReader);
 
             // OpenAPI metadata across all endpoints: ensures generated clients and API docs
             // include consistent success/error shapes, auth requirements, and read-only behavior
 
-            // GET /tasks/{taskId}/activities
+            // GET projects/{projectId:guid}/tasks/{taskId}/activities
             taskActivitiesGroup.MapGet("/", async (
                 [FromRoute] Guid taskId,
                 [FromQuery] TaskActivityType? activityType,
@@ -53,13 +53,13 @@ namespace Api.Endpoints
             .WithDescription("Returns activities for the task. Optional filter by activity type.")
             .WithName("TaskActivities_Get_All");
 
-            // /activities/{activityId}
+            // projects/{projectId}/activities/{activityId}
             var activityGroup = app
-                .MapGroup("/activities/{activityId:guid}")
+                .MapGroup("projects/{projectId:guid}/activities/{activityId:guid}")
                 .WithTags("Task Activities")
                 .RequireAuthorization(Policies.ProjectReader);
 
-            // GET /activities/{activityId}
+            // GET projects/{projectId:guid}/activities/{activityId}
             activityGroup.MapGet("/", async (
                 [FromRoute] Guid activityId,
                 [FromServices] ITaskActivityReadService taskActivityReadSvc,

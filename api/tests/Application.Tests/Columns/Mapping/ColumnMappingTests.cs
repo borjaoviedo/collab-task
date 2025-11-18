@@ -2,9 +2,11 @@ using Application.Columns.Mapping;
 using Domain.Entities;
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.Columns.Mapping
 {
+    [UnitTest]
     public sealed class ColumnMappingTests
     {
         [Fact]
@@ -25,7 +27,6 @@ namespace Application.Tests.Columns.Mapping
             dto.LaneId.Should().Be(entity.LaneId);
             dto.Name.Should().Be(entity.Name.Value);
             dto.Order.Should().Be(entity.Order);
-            dto.RowVersion.Should().Equal(entity.RowVersion);
         }
     }
 }

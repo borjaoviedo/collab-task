@@ -144,7 +144,6 @@ namespace Api.Endpoints
             .RequireAuthorization(Policies.ProjectAdmin) // ProjectAdmin-only
             .RequireValidation<ProjectMemberChangeRoleDto>()
             .RequireIfMatch() // Require If-Match to prevent overwriting concurrent role changes
-            .EnsureIfMatch<IProjectMemberReadService, ProjectMemberReadDto>(routeValueKey: "userId")
             .Produces<ProjectMemberReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -171,7 +170,6 @@ namespace Api.Endpoints
             })
             .RequireAuthorization(Policies.ProjectAdmin) // ProjectAdmin-only
             .RequireIfMatch() // Require If-Match to avoid removing a membership updated by someone else
-            .EnsureIfMatch<IProjectMemberReadService, ProjectMemberReadDto>(routeValueKey: "userId")
             .Produces<ProjectMemberReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -198,7 +196,6 @@ namespace Api.Endpoints
             })
             .RequireAuthorization(Policies.ProjectAdmin)
             .RequireIfMatch() // Require If-Match to ensure restore does not clobber concurrent edits
-            .EnsureIfMatch<IProjectMemberReadService, ProjectMemberReadDto>(routeValueKey: "userId")
             .Produces<ProjectMemberReadDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
