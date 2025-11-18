@@ -61,14 +61,14 @@ namespace TestHelpers.Api.Endpoints.TaskItems
             return task;
         }
 
-        // ----- GET TASKS -----
+        // ----- GET TASKS BY COLUMN -----
 
-        public static async Task<HttpResponseMessage> GetTaskItemsResponseAsync(
+        public static async Task<HttpResponseMessage> GetTaskItemsByColumnResponseAsync(
             HttpClient client,
-            Guid projectId)
+            Guid projectId,
+            Guid columnId)
         {
-            var response = await client.GetAsync($"/projects/{projectId}/tasks");
-
+            var response = await client.GetAsync($"/projects/{projectId}/columns/{columnId}/tasks");
             return response;
         }
     }
