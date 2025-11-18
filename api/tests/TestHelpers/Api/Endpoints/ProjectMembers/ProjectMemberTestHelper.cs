@@ -7,7 +7,6 @@ namespace TestHelpers.Api.Endpoints.ProjectMembers
 {
     public static class ProjectMemberTestHelper
     {
-
         // ----- POST -----
 
         public static async Task<HttpResponseMessage> PostProjectMemberResponseAsync(
@@ -100,17 +99,23 @@ namespace TestHelpers.Api.Endpoints.ProjectMembers
             return changeRoleResponse;
         }
 
-        public static async Task<ProjectMemberRoleReadDto> ChangeProjectMemberRoleDtoAsync(
+        public static async Task<ProjectMemberReadDto> ChangeProjectMemberRoleDtoAsync(
             HttpClient client,
             Guid projectId,
             Guid userId,
             string rowVersion,
             ProjectMemberChangeRoleDto? dto = null)
         {
-            var response = await ChangeProjectMemberRoleResponseAsync(client, projectId, userId, rowVersion, dto);
-            var role = await response.ReadContentAsDtoAsync<ProjectMemberRoleReadDto>();
+            var response = await ChangeProjectMemberRoleResponseAsync(
+                client,
+                projectId,
+                userId,
+                rowVersion,
+                dto);
 
-            return role;
+            var member = await response.ReadContentAsDtoAsync<ProjectMemberReadDto>();
+
+            return member;
         }
 
         // ----- PATCH REMOVE -----
