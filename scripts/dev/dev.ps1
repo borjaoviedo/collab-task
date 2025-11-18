@@ -16,6 +16,11 @@ $files = @(
 $profiles = @('--profile','dev')
 $project  = @('--project-name', $ProjectName)
 
+# Load env file from repo root
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+$EnvFile = (Join-Path $RepoRoot '.env.dev')
+$envargs = @('--env-file', $EnvFile)
+
 function Cleanup-ComposeLeftovers {
   param([string]$Name)
   # Remove containers, networks, and volumes left by a given compose project
@@ -27,11 +32,11 @@ function Cleanup-ComposeLeftovers {
 
 function Wait-HealthHttp {
   param([int]$Port = 8080, [int]$Retries = 60, [int]$DelaySec = 2)
-  # Poll the app health endpoint until it reports status ok or timeout
+  # Poll the app health endpoint until it reports status 'Healthy' or timeout
   for ($i = 1; $i -le $Retries; $i++) {
     try {
       $res = Invoke-RestMethod -Uri ("http://localhost:{0}/health" -f $Port) -TimeoutSec 2
-      if ($res.status -eq 'ok') { return $true }
+      if ($res.status -eq 'Healthy') { return $true }
     } catch { }
     Start-Sleep -Seconds $DelaySec
   }
@@ -41,21 +46,21 @@ function Wait-HealthHttp {
 switch ($cmd) {
   'up' {
     # Start stack in background and wait for API readiness
-    docker compose $files $profiles $project up -d
+    docker compose $files $profiles $project $envargs up -d
     Wait-HealthHttp -Port $ApiPort | Out-Null
   }
   'down' {
     # Stop and remove all resources from the project
-    docker compose $files $project down -v --remove-orphans
+    docker compose $files $project $envargs down -v --remove-orphans
     Cleanup-ComposeLeftovers -Name $ProjectName
   }
   'rebuild' {
     # Force a clean rebuild of the API image
-    docker compose $files $project build --no-cache api
+    docker compose $files $project $envargs build --no-cache api
   }
   'logs' {
     # Stream API logs
-    docker compose $files $project logs -f api
+    docker compose $files $project $envargs logs -f api
   }
   'health' {
     # Print current health status from the API endpoint

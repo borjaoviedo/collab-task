@@ -19,6 +19,8 @@ done
 # Resolve Compose files (base + dev overlay)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INFRA="$(cd "${SCRIPT_DIR}/../../infra" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+ENV_FILE="${REPO_ROOT}/.env.dev"
 
 FILES=(-f "${INFRA}/compose.yaml" -f "${INFRA}/compose.dev.yaml")
 PROFILES=(--profile dev)
@@ -39,12 +41,12 @@ cleanup_compose_leftovers() {
 }
 
 wait_health_http() {
-  # Poll the app health endpoint until it reports status ok or timeout
+  # Poll the app health endpoint until it reports status 'Healthy' or timeout
   local port="${1:-8080}"
   local retries=60 delay=2
   for ((i=1; i<=retries; i++)); do
     if out="$(curl -fsS "http://localhost:${port}/health" 2>/dev/null || true)"; then
-      if [[ "$out" == *'"status"'*":"*"ok"* ]]; then
+      if [[ "$out" == *'"status"'*":"*"Healthy"* ]]; then
         return 0
       fi
     fi
@@ -56,18 +58,18 @@ wait_health_http() {
 
 case "${CMD}" in
   up)
-    docker compose --project-directory "${INFRA}" "${FILES[@]}" "${PROFILES[@]}" "${PROJECT[@]}" up -d
+    docker compose --project-directory "${INFRA}" --env-file "${ENV_FILE}" "${FILES[@]}" "${PROFILES[@]}" "${PROJECT[@]}" up -d
     wait_health_http "${API_PORT}"
     ;;
   down)
-    docker compose --project-directory "${INFRA}" "${FILES[@]}" "${PROJECT[@]}" down -v --remove-orphans
+    docker compose --project-directory "${INFRA}" --env-file "${ENV_FILE}" "${FILES[@]}" "${PROJECT[@]}" down -v --remove-orphans
     cleanup_compose_leftovers
     ;;
   rebuild)
-    docker compose --project-directory "${INFRA}" "${FILES[@]}" "${PROJECT[@]}" build --no-cache api
+    docker compose --project-directory "${INFRA}" --env-file "${ENV_FILE}" "${FILES[@]}" "${PROJECT[@]}" build --no-cache api
     ;;
   logs)
-    docker compose --project-directory "${INFRA}" "${FILES[@]}" "${PROJECT[@]}" logs -f api
+    docker compose --project-directory "${INFRA}" --env-file "${ENV_FILE}" "${FILES[@]}" "${PROJECT[@]}" logs -f api
     ;;
   health)
     curl -fsS "http://localhost:${API_PORT}/health" | jq -c '.' 2>/dev/null || curl -fsS "http://localhost:${API_PORT}/health"
