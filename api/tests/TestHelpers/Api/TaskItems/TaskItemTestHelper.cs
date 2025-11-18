@@ -6,7 +6,6 @@ namespace TestHelpers.Api.TaskItems
 {
     public static class TaskItemTestHelper
     {
-
         // ----- POST -----
 
         public static async Task<HttpResponseMessage> PostTaskItemResponseAsync(
@@ -66,11 +65,9 @@ namespace TestHelpers.Api.TaskItems
 
         public static async Task<HttpResponseMessage> GetTaskItemsResponseAsync(
             HttpClient client,
-            Guid projectId,
-            Guid laneId,
-            Guid columnId)
+            Guid projectId)
         {
-            var response = await client.GetAsync($"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks");
+            var response = await client.GetAsync($"/projects/{projectId}/tasks");
 
             return response;
         }

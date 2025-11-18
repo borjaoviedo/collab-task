@@ -10,13 +10,11 @@ namespace TestHelpers.Api.TaskAssignments
         public static async Task<HttpResponseMessage> PostAssignmentResponseAsync(
             HttpClient client,
             Guid projectId,
-            Guid laneId,
-            Guid columnId,
             Guid taskId,
             TaskAssignmentCreateDto dto)
         {
             var response = await client.PostWithoutIfMatchAsync(
-                $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments",
+                $"/projects/{projectId}/tasks/{taskId}/assignments",
                 dto);
 
             return response;
@@ -27,13 +25,11 @@ namespace TestHelpers.Api.TaskAssignments
         public static async Task<HttpResponseMessage> GetAssignmentByIdResponseAsync(
             HttpClient client,
             Guid projectId,
-            Guid laneId,
-            Guid columnId,
             Guid taskId,
             Guid userId)
         {
             var response = await client.GetAsync(
-                $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}");
+                $"/projects/{projectId}/tasks/{taskId}/assignments/{userId}");
             return response;
         }
 
@@ -52,15 +48,13 @@ namespace TestHelpers.Api.TaskAssignments
         public static async Task<HttpResponseMessage> DeleteAssignmentResponseAsync(
             HttpClient client,
             Guid projectId,
-            Guid laneId,
-            Guid columnId,
             Guid taskId,
             Guid userId,
-            byte[] rowVersion)
+            string rowVersion)
         {
             var deleteResponse = await client.DeleteWithIfMatchAsync(
                 rowVersion,
-                $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}");
+                $"/projects/{projectId}/tasks/{taskId}/assignments/{userId}");
 
             return deleteResponse;
         }

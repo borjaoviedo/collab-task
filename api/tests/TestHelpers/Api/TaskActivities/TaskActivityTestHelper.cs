@@ -9,12 +9,10 @@ namespace TestHelpers.Api.TaskActivities
         public static async Task<HttpResponseMessage> GetTaskActivitiesResponseAsync(
             HttpClient client,
             Guid projectId,
-            Guid laneId,
-            Guid columnId,
             Guid taskId)
         {
             var response = await client.GetAsync(
-                $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities");
+                $"/projects/{projectId}/tasks/{taskId}/activities");
             return response;
         }
 
