@@ -75,13 +75,13 @@ namespace TestHelpers.Api.Lanes
             HttpClient client,
             Guid projectId,
             Guid laneId,
-            byte[] rowVersion,
+            string rowVersion,
             LaneRenameDto? dto = null)
         {
             var newName = dto is null ? LaneDefaults.DefaultLaneRename : dto.NewName;
             var renameDto = new LaneRenameDto() { NewName = newName };
 
-            var renameResponse = await client.PutWithIfMatchAsync(
+            var renameResponse = await client.PatchWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/lanes/{laneId}/rename",
                 renameDto);
@@ -93,7 +93,7 @@ namespace TestHelpers.Api.Lanes
             HttpClient client,
             Guid projectId,
             Guid laneId,
-            byte[] rowVersion,
+            string rowVersion,
             LaneRenameDto? dto = null)
         {
             var response = await RenameLaneResponseAsync(client, projectId, laneId, rowVersion, dto);
@@ -108,13 +108,13 @@ namespace TestHelpers.Api.Lanes
             HttpClient client,
             Guid projectId,
             Guid laneId,
-            byte[] rowVersion,
+            string rowVersion,
             LaneReorderDto? dto = null)
         {
             var newOrder = dto is null ? LaneDefaults.DefaultLaneReorder : dto.NewOrder;
             var reorderDto = new LaneReorderDto() { NewOrder = newOrder };
 
-            var reorderResponse = await client.PutWithIfMatchAsync(
+            var reorderResponse = await client.PatchWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/lanes/{laneId}/reorder",
                 reorderDto);
@@ -126,7 +126,7 @@ namespace TestHelpers.Api.Lanes
             HttpClient client,
             Guid projectId,
             Guid laneId,
-            byte[] rowVersion,
+            string rowVersion,
             LaneReorderDto? dto = null)
         {
             var response = await ReorderLaneResponseAsync(client, projectId, laneId, rowVersion, dto);
@@ -141,7 +141,7 @@ namespace TestHelpers.Api.Lanes
             HttpClient client,
             Guid projectId,
             Guid laneId,
-            byte[] rowVersion)
+            string rowVersion)
         {
             var deleteResponse = await client.DeleteWithIfMatchAsync(
                 rowVersion,

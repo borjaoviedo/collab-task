@@ -84,7 +84,7 @@ namespace TestHelpers.Api.ProjectMembers
             HttpClient client,
             Guid projectId,
             Guid userId,
-            byte[] rowVersion,
+            string rowVersion,
             ProjectMemberChangeRoleDto? dto = null)
         {
             var newRole = dto is null
@@ -104,7 +104,7 @@ namespace TestHelpers.Api.ProjectMembers
             HttpClient client,
             Guid projectId,
             Guid userId,
-            byte[] rowVersion,
+            string rowVersion,
             ProjectMemberChangeRoleDto? dto = null)
         {
             var response = await ChangeProjectMemberRoleResponseAsync(client, projectId, userId, rowVersion, dto);
@@ -119,7 +119,7 @@ namespace TestHelpers.Api.ProjectMembers
             HttpClient client,
             Guid projectId,
             Guid userId,
-            byte[] rowVersion)
+            string rowVersion)
         {
             var removeResponse = await client.PatchWithIfMatchAsync(
                 rowVersion,
@@ -132,7 +132,7 @@ namespace TestHelpers.Api.ProjectMembers
             HttpClient client,
             Guid projectId,
             Guid userId,
-            byte[] rowVersion)
+            string rowVersion)
         {
             var response = await RemoveProjectMemberResponseAsync(client, projectId, userId, rowVersion);
             var member = await response.ReadContentAsDtoAsync<ProjectMemberReadDto>();
@@ -147,7 +147,7 @@ namespace TestHelpers.Api.ProjectMembers
             HttpClient client,
             Guid projectId,
             Guid userId,
-            byte[] rowVersion)
+            string rowVersion)
         {
             var restoreResponse = await client.PatchWithIfMatchAsync(
                 rowVersion,
@@ -160,7 +160,7 @@ namespace TestHelpers.Api.ProjectMembers
             HttpClient client,
             Guid projectId,
             Guid userId,
-            byte[] rowVersion)
+            string rowVersion)
         {
             var response = await RestoreProjectMemberResponseAsync(client, projectId, userId, rowVersion);
             var member = await response.ReadContentAsDtoAsync<ProjectMemberReadDto>();

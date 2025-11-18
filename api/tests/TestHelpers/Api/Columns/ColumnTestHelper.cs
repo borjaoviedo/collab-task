@@ -91,7 +91,7 @@ namespace TestHelpers.Api.Columns
             Guid projectId,
             Guid laneId,
             Guid columnId,
-            byte[] rowVersion,
+            string rowVersion,
             ColumnRenameDto? dto = null)
         {
             var newName = dto is null ? ColumnDefaults.DefaultColumnRename : dto.NewName;
@@ -113,7 +113,7 @@ namespace TestHelpers.Api.Columns
             Guid projectId,
             Guid laneId,
             Guid columnId,
-            byte[] rowVersion,
+            string rowVersion,
             ColumnReorderDto? dto = null)
         {
             var newOrder = dto is null ? ColumnDefaults.DefaultColumnReorder : dto.NewOrder;
@@ -134,7 +134,7 @@ namespace TestHelpers.Api.Columns
             Guid projectId,
             Guid laneId,
             Guid columnId,
-            byte[] rowVersion)
+            string rowVersion)
         {
             var deleteResponse = await client.DeleteWithIfMatchAsync(
                 rowVersion,

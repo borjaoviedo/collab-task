@@ -71,7 +71,7 @@ namespace TestHelpers.Api.Projects
         public static async Task<HttpResponseMessage> RenameProjectResponseAsync(
             HttpClient client,
             Guid projectId,
-            byte[] rowVersion,
+            string rowVersion,
             ProjectRenameDto? dto = null)
         {
             var newName = dto is null ? ProjectDefaults.DefaultProjectRename : dto.NewName;
@@ -90,7 +90,7 @@ namespace TestHelpers.Api.Projects
         public static async Task<HttpResponseMessage> DeleteProjectResponseAsync(
             HttpClient client,
             Guid projectId,
-            byte[] rowVersion)
+            string rowVersion)
         {
             var deleteResponse = await client.DeleteWithIfMatchAsync(
                 rowVersion,
