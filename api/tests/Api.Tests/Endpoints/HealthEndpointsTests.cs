@@ -1,6 +1,5 @@
+using Api.Tests.Testing;
 using FluentAssertions;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -15,10 +14,8 @@ namespace Api.Tests.Endpoints
         [Fact]
         public async Task Get_Health_Returns_200_And_Valid_Payload()
         {
-            using var factory = new WebApplicationFactory<Program>()
-                .WithWebHostBuilder(b => b.UseEnvironment("Testing"));
-
-            using var client = factory.CreateClient();
+            using var app = new TestApiFactory();
+            using var client = app.CreateClient();
 
             var resp = await client.GetAsync("/health");
             resp.StatusCode.Should().Be(HttpStatusCode.OK);
