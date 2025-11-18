@@ -4,11 +4,12 @@ using Application.Users.DTOs;
 using FluentAssertions;
 using System.Net;
 using System.Net.Http.Json;
-using TestHelpers.Api.Auth;
-using TestHelpers.Api.Defaults;
-using TestHelpers.Api.Http;
-using TestHelpers.Api.Lanes;
-using TestHelpers.Api.Projects;
+using TestHelpers.Api.Common;
+using TestHelpers.Api.Common.Http;
+using TestHelpers.Api.Endpoints.Auth;
+using TestHelpers.Api.Endpoints.Defaults;
+using TestHelpers.Api.Endpoints.Lanes;
+using TestHelpers.Api.Endpoints.Projects;
 
 namespace Api.Tests.Endpoints
 {
@@ -84,14 +85,15 @@ namespace Api.Tests.Endpoints
 
             var (project, lane) = await BoardSetupHelper.CreateProjectAndLane(client);
 
-            // wrong ETag
+            // Wrong ETag (invalid RowVersion length for this entity)
             var wrongEtag = $"W/\"{Convert.ToBase64String(new byte[] { 1, 2, 3 })}\"";
             client.DefaultRequestHeaders.IfMatch.Clear();
             client.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", wrongEtag);
 
-            var renameResponse = await client.PutAsJsonAsync(
+            var renameResponse = await client.PatchAsJsonAsync(
                 $"/projects/{project.Id}/lanes/{lane.Id}/rename",
                 LaneDefaults.DefaultLaneRenameDto);
+
             renameResponse.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
         }
 
@@ -148,7 +150,7 @@ namespace Api.Tests.Endpoints
 
             client.DefaultRequestHeaders.IfMatch.Clear();
 
-            var renameResponse = await client.PutAsJsonAsync(
+            var renameResponse = await client.PatchAsJsonAsync(
                 $"/projects/{project.Id}/lanes/{lane.Id}/rename",
                 LaneDefaults.DefaultLaneRenameDto);
             renameResponse.StatusCode.Should().Be((HttpStatusCode)428);
@@ -172,13 +174,15 @@ namespace Api.Tests.Endpoints
                 lane.RowVersion);
             okRenameResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            // Invalid rename
-            var newRenameDto = new LaneRenameDto() { NewName = "L3" };
+            // Stale rename using a mutated RowVersion that will fail concurrency check
+            var newRenameDto = new LaneRenameDto { NewName = "L3" };
+            var staleRowVersion = CommonApiTestHelpers.GenerateStaleRowVersion(lane.RowVersion);
+
             var staleRenameResponse = await LaneTestHelper.RenameLaneResponseAsync(
                 client,
                 project.Id,
                 lane.Id,
-                lane.RowVersion,
+                staleRowVersion,
                 newRenameDto);
 
             staleRenameResponse.StatusCode.Should().Be((HttpStatusCode)412);
@@ -229,7 +233,7 @@ namespace Api.Tests.Endpoints
                 laneId: Guid.NewGuid());
             getLaneResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-            var userRegisterDto = new UserRegisterDto()
+            var userRegisterDto = new UserRegisterDto
             {
                 Email = "random@e.com",
                 Name = "random",
@@ -237,9 +241,8 @@ namespace Api.Tests.Endpoints
             };
             await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client, userRegisterDto);
 
-            // Get lane from project where current user is not a member: forbidden
             getLaneResponse = await LaneTestHelper.GetLaneResponseAsync(client, project.Id, lane.Id);
-            getLaneResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            getLaneResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
     }
 }

@@ -31,24 +31,12 @@ namespace Api.Endpoints
                 .WithTags("Task Notes")
                 .RequireAuthorization(Policies.ProjectReader);
 
-            // /tasks/{taskId}/notes
-            var taskNotesGroup = app
-                .MapGroup("/tasks/{taskId:guid}/notes")
-                .WithTags("Task Notes")
-                .RequireAuthorization(Policies.ProjectReader);
-
-            // /notes/{noteId}
-            var noteGroup = app
-                .MapGroup("/notes/{noteId:guid}")
-                .WithTags("Task Notes")
-                .RequireAuthorization(Policies.ProjectReader);
-
             // OpenAPI metadata across all endpoints: ensures generated clients and API docs
             // include consistent success/error shapes, auth requirements, and concurrency responses
 
 
-            // GET /tasks/{taskId}/notes
-            taskNotesGroup.MapGet("/", async (
+            // GET /projects/{projectId}/tasks/{taskId}/notes
+            projectTaskNotesGroup.MapGet("/", async (
                 [FromRoute] Guid taskId,
                 [FromServices] ITaskNoteReadService taskNoteReadSvc,
                 CancellationToken ct = default) =>
@@ -62,25 +50,6 @@ namespace Api.Endpoints
             .WithSummary("List task notes")
             .WithDescription("Returns notes for the task.")
             .WithName("Notes_Get_All");
-
-            // GET /notes/{noteId}
-            noteGroup.MapGet("/", async (
-                [FromRoute] Guid noteId,
-                [FromServices] ITaskNoteReadService taskNoteReadSvc,
-                CancellationToken ct = default) =>
-            {
-                var taskNoteReadDto = await taskNoteReadSvc.GetByIdAsync(noteId, ct);
-                var etag = ETag.EncodeWeak(taskNoteReadDto.RowVersion);
-
-                return Results.Ok(taskNoteReadDto).WithETag(etag);
-            })
-            .Produces<TaskNoteReadDto>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .ProducesProblem(StatusCodes.Status403Forbidden)
-            .ProducesProblem(StatusCodes.Status404NotFound)
-            .WithSummary("Get task note")
-            .WithDescription("Returns a task note. Sets ETag.")
-            .WithName("TaskNotes_Get_ById");
 
             // POST /projects/{projectId}/tasks/{taskId}/notes
             projectTaskNotesGroup.MapPost("/", async (
@@ -105,7 +74,6 @@ namespace Api.Endpoints
             .RequireAuthorization(Policies.ProjectMember) // ProjectMember-only
             .RequireValidation<TaskNoteCreateDto>()
             .RejectIfMatch() // Reject If-Match on create: preconditions do not apply to new resources
-            .EnsureIfMatch<ITaskNoteReadService, TaskNoteReadDto>(routeValueKey: "noteId")
             .Produces<TaskNoteReadDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -175,6 +143,32 @@ namespace Api.Endpoints
             .WithSummary("Delete task note")
             .WithDescription("Member-only. Deletes a note using optimistic concurrency (If-Match).")
             .WithName("Notes_Delete");
+
+
+            // /projects/{projectId}/notes/{noteId}
+            var noteGroup = app
+                .MapGroup("/projects/{projectId:guid}/notes/{noteId:guid}")
+                .WithTags("Task Notes")
+                .RequireAuthorization(Policies.ProjectReader);
+
+            // GET /projects/{projectId}/notes/{noteId}
+            noteGroup.MapGet("/", async (
+                [FromRoute] Guid noteId,
+                [FromServices] ITaskNoteReadService taskNoteReadSvc,
+                CancellationToken ct = default) =>
+            {
+                var taskNoteReadDto = await taskNoteReadSvc.GetByIdAsync(noteId, ct);
+                var etag = ETag.EncodeWeak(taskNoteReadDto.RowVersion);
+
+                return Results.Ok(taskNoteReadDto).WithETag(etag);
+            })
+            .Produces<TaskNoteReadDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get task note")
+            .WithDescription("Returns a task note. Sets ETag.")
+            .WithName("TaskNotes_Get_ById");
 
 
             // Global author-centric queries for task notes (current user and admin)

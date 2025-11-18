@@ -3,10 +3,11 @@ using Application.TaskNotes.DTOs;
 using Domain.Enums;
 using FluentAssertions;
 using System.Net;
-using TestHelpers.Api.Auth;
-using TestHelpers.Api.Http;
-using TestHelpers.Api.Projects;
-using TestHelpers.Api.TaskNotes;
+using TestHelpers.Api.Common;
+using TestHelpers.Api.Common.Http;
+using TestHelpers.Api.Endpoints.Auth;
+using TestHelpers.Api.Endpoints.Projects;
+using TestHelpers.Api.Endpoints.TaskNotes;
 
 namespace Api.Tests.Endpoints
 {
@@ -18,15 +19,13 @@ namespace Api.Tests.Endpoints
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
 
-            // Create full board (without note): project, lane, column and task
-            var (project, lane, column, task, _) = await BoardSetupHelper.SetupBoard(client);
+            // Create full board
+            var (project, _, _, task, _) = await BoardSetupHelper.SetupBoard(client);
 
             // Get list (empty)
             var noteListResponse = await TaskNoteTestHelper.GetTaskNotesResponseAsync(
                 client,
                 project.Id,
-                lane.Id,
-                column.Id,
                 task.Id);
             noteListResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -37,17 +36,12 @@ namespace Api.Tests.Endpoints
             var note = await TaskNoteTestHelper.PostNoteDtoAsync(
                 client,
                 project.Id,
-                lane.Id,
-                column.Id,
                 task.Id);
 
             // Get note by id
             var getByIdResponse = await TaskNoteTestHelper.GetTaskNoteByIdResponseAsync(
                 client,
                 project.Id,
-                lane.Id,
-                column.Id,
-                task.Id,
                 note.Id);
             getByIdResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             getByIdResponse.Headers.ETag.Should().NotBeNull();
@@ -56,8 +50,6 @@ namespace Api.Tests.Endpoints
             var editResponse = await TaskNoteTestHelper.EditNoteResponseAsync(
                 client,
                 project.Id,
-                lane.Id,
-                column.Id,
                 task.Id,
                 note.Id,
                 note.RowVersion);
@@ -66,31 +58,30 @@ namespace Api.Tests.Endpoints
             // Get edited note
             var editedNote = await editResponse.ReadContentAsDtoAsync<TaskNoteReadDto>();
 
-            // Edit with old row version: 412
-            var differentEditDto = new TaskNoteEditDto() { NewContent = "different edition" };
+            // Edit with stale rv: 412
+            var differentEditDto = new TaskNoteEditDto { NewContent = "different edition" };
+
+            var staleRowVersion = CommonApiTestHelpers.GenerateStaleRowVersion(note.RowVersion);
+
             var staleResponse = await TaskNoteTestHelper.EditNoteResponseAsync(
                 client,
                 project.Id,
-                lane.Id,
-                column.Id,
                 task.Id,
                 note.Id,
-                note.RowVersion,
+                staleRowVersion,
                 differentEditDto);
             staleResponse.StatusCode.Should().Be((HttpStatusCode)412);
 
-            // Delete with missing ifmatch: 428
+            // Delete con missing If-Match: 428
             client.DefaultRequestHeaders.IfMatch.Clear();
             var del428 = await client.DeleteAsync(
-                $"/projects/{project.Id}/lanes/{lane.Id}/columns/{column.Id}/tasks/{task.Id}/notes/{note.Id}");
+                $"/projects/{project.Id}/tasks/{task.Id}/notes/{note.Id}");
             del428.StatusCode.Should().Be((HttpStatusCode)428);
 
             // Correct delete: 204
             var deleteResponse = await TaskNoteTestHelper.DeleteNoteResponseAsync(
                 client,
                 project.Id,
-                lane.Id,
-                column.Id,
                 task.Id,
                 note.Id,
                 editedNote.RowVersion);

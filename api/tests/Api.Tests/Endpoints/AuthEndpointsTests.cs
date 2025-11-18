@@ -8,9 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Security.Claims;
-using TestHelpers.Api.Auth;
-using TestHelpers.Api.Defaults;
-using TestHelpers.Api.Http;
+using TestHelpers.Api.Common.Http;
+using TestHelpers.Api.Endpoints.Auth;
+using TestHelpers.Api.Endpoints.Defaults;
 
 namespace Api.Tests.Endpoints
 {

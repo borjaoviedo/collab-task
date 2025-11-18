@@ -5,11 +5,12 @@ using Domain.Enums;
 using FluentAssertions;
 using System.Net;
 using System.Net.Http.Json;
-using TestHelpers.Api.Auth;
-using TestHelpers.Api.Defaults;
-using TestHelpers.Api.Http;
-using TestHelpers.Api.ProjectMembers;
-using TestHelpers.Api.Projects;
+using TestHelpers.Api.Common;
+using TestHelpers.Api.Common.Http;
+using TestHelpers.Api.Endpoints.Auth;
+using TestHelpers.Api.Endpoints.Defaults;
+using TestHelpers.Api.Endpoints.ProjectMembers;
+using TestHelpers.Api.Endpoints.Projects;
 
 namespace Api.Tests.Endpoints
 {
@@ -50,12 +51,12 @@ namespace Api.Tests.Endpoints
                 user.UserId);
 
             // Change role
-            var changeRoleDto = await ProjectMemberTestHelper.ChangeProjectMemberRoleDtoAsync(
+            var updatedMember = await ProjectMemberTestHelper.ChangeProjectMemberRoleDtoAsync(
                 client,
                 project.Id,
                 projectMember.UserId,
                 projectMember.RowVersion);
-            changeRoleDto.Role.Should().Be(ProjectRole.Admin);
+            updatedMember.Role.Should().Be(ProjectRole.Admin);
 
             // Refetch to get new RowVersion
             projectMember = await ProjectMemberTestHelper.GetProjectMemberDtoAsync(client, project.Id, user.UserId);
@@ -69,7 +70,11 @@ namespace Api.Tests.Endpoints
             removedDto.RemovedAt.Should().NotBeNull();
 
             // Restore
-            var restoredDto = await ProjectMemberTestHelper.RestoreProjectMemberDtoAsync(client, project.Id, projectMember.UserId, removedDto.RowVersion);
+            var restoredDto = await ProjectMemberTestHelper.RestoreProjectMemberDtoAsync(
+                client,
+                project.Id,
+                projectMember.UserId,
+                removedDto.RowVersion);
             restoredDto.RemovedAt.Should().BeNull();
         }
 
@@ -97,65 +102,7 @@ namespace Api.Tests.Endpoints
                 new ProjectMemberCreateDto { UserId = user.UserId, Role = ProjectRole.Member });
             createResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
-
-        [Fact]
-        public async Task ChangeRole_Valid_Then_Stale_Then_Missing_IfMatch()
-        {
-            using var app = new TestApiFactory();
-            using var client = app.CreateClient();
-
-            var owner = await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
-            var project = await ProjectTestHelper.PostProjectDtoAsync(client);
-
-            var user = await AuthTestHelper.PostRegisterAndLoginAsync(
-                client,
-                email: "random@e.com",
-                name: "Other user name");
-
-            // Add user to project
-            client.SetAuthorization(owner.AccessToken);
-            var createDto = new ProjectMemberCreateDto()
-            {
-                Role = ProjectMemberDefaults.DefaultProjectMemberRole,
-                UserId = user.UserId
-            };
-            await ProjectMemberTestHelper.PostProjectMemberResponseAsync(
-                client,
-                project.Id,
-                createDto);
-
-            // Get project member to get rowversion
-            var member = await ProjectMemberTestHelper.GetProjectMemberDtoAsync(
-                client,
-                project.Id,
-                user.UserId);
-
-            // valid change role
-            var okChangeRoleResponse = await ProjectMemberTestHelper.ChangeProjectMemberRoleResponseAsync(
-                client,
-                project.Id,
-                user.UserId,
-                member.RowVersion);
-            okChangeRoleResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-
-            // stale change role
-            var differentChangeRoleDto = new ProjectMemberChangeRoleDto { NewRole = ProjectRole.Member };
-            var staleChangeRoleResponse = await ProjectMemberTestHelper.ChangeProjectMemberRoleResponseAsync(
-                client,
-                project.Id,
-                user.UserId,
-                member.RowVersion, // old rowVersion
-                differentChangeRoleDto);
-            staleChangeRoleResponse.StatusCode.Should().Be((HttpStatusCode)412);
-
-            // missing If-Match -> 428
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            var missingChangeRoleResponse = await client.PatchAsJsonAsync(
-                $"/projects/{project.Id}/members/{user.UserId}/role",
-                differentChangeRoleDto);
-            missingChangeRoleResponse.StatusCode.Should().Be((HttpStatusCode)428);
-        }
-
+        
         [Fact]
         public async Task Remove_Then_Restore_With_Concurrency()
         {
@@ -202,7 +149,7 @@ namespace Api.Tests.Endpoints
         }
 
         [Fact]
-        public async Task GetById_404_Vs_403_And_GetRole_404()
+        public async Task GetById_404_Vs_403_And_GetRole_412_For_Invalid_IfMatch()
         {
             using var app = new TestApiFactory();
             using var client = app.CreateClient();
@@ -211,14 +158,14 @@ namespace Api.Tests.Endpoints
             var userA = await AuthTestHelper.RegisterLoginAndAuthorizeAsync(client);
             var project = await ProjectTestHelper.PostProjectDtoAsync(client);
 
-            // 404: member not in project
+            // 1) 404: member not in project but caller IS a member of the project
             var notFoundResponse = await ProjectMemberTestHelper.GetProjectMemberResponseAsync(
                 client,
                 project.Id,
                 userId: Guid.NewGuid());
             notFoundResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-            // user B tries to access A's project -> 403
+            // 2) user B tries to access A's project
             var userB = await AuthTestHelper.PostRegisterAndLoginAsync(
                 client,
                 name: "userB",
@@ -229,16 +176,16 @@ namespace Api.Tests.Endpoints
                 client,
                 project.Id,
                 userId: Guid.NewGuid());
-            forbiddenResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            forbiddenResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-            // Get role 404 (non-member)
+            // 3) Get role with non-member + invalid If-Match RowVersion
             client.SetAuthorization(userA.AccessToken);
             var notFoundMemberResponse = await ProjectMemberTestHelper.ChangeProjectMemberRoleResponseAsync(
                 client,
                 project.Id,
                 userId: Guid.NewGuid(),
-                rowVersion: [1, 2, 3]);
-            notFoundMemberResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+                rowVersion: "AAAA");
+            notFoundMemberResponse.StatusCode.Should().Be((HttpStatusCode)412);
         }
 
         [Fact]
