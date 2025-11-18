@@ -1,8 +1,10 @@
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Domain.Tests.ValueObjects
 {
+    [UnitTest]
     public sealed class NoteContentTests
     {
         private readonly string _defaultNoteContent = "note content";
@@ -90,8 +92,8 @@ namespace Domain.Tests.ValueObjects
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void Create_NullEmptyOrWhitespace_Throws(string input)
-            => Assert.Throws<ArgumentException>(() => NoteContent.Create(input));
+        public void Create_NullEmptyOrWhitespace_Throws(string? input)
+            => Assert.Throws<ArgumentException>(() => NoteContent.Create(input!));
 
         [Fact]
         public void ToString_ReturnsValue()

@@ -8,10 +8,12 @@ using Microsoft.Extensions.Options;
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using TestHelpers.Common.Testing;
 using TestHelpers.Common.Time;
 
 namespace Infrastructure.Tests.Security
 {
+    [UnitTest]
     public sealed class JwtTokenServiceTests
     {
         private readonly FakeClock _clock = new(

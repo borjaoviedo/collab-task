@@ -1,5 +1,4 @@
 using Domain.Entities;
-using Domain.Enums;
 using Domain.ValueObjects;
 
 namespace Application.Users.Abstractions
@@ -9,58 +8,58 @@ namespace Application.Users.Abstractions
     /// </summary>
     public interface IUserRepository
     {
-        /// <summary>Lists all users in the persistence store.</summary>
+        /// <summary>
+        /// Retrieves all users from the persistence store.
+        /// </summary>
+        /// <param name="ct">A token to observe while waiting for the operation to complete.</param>
+        /// <returns>A read-only list of <see cref="User"/> entities.</returns>
         Task<IReadOnlyList<User>> ListAsync(CancellationToken ct = default);
 
-        /// <summary>Retrieves a user by their email address.</summary>
+        /// <summary>
+        /// Retrieves a user by its unique identifier.
+        /// </summary>
+        /// <param name="userId">The unique identifier of the user to retrieve.</param>
+        /// <param name="ct">A token to observe while waiting for the operation to complete.</param>
+        /// <returns>The <see cref="User"/> entity, or <c>null</c> if no user is found.</returns>
+        Task<User?> GetByIdAsync(Guid userId, CancellationToken ct = default);
+
+        /// <summary>
+        /// Retrieves a <see cref="User"/> aggregate for update with EF Core tracking enabled.
+        /// Use this when you plan to mutate the aggregate so EF can detect changed columns
+        /// and persist minimal updates without calling <c>Update(entity)</c>.
+        /// </summary>
+        /// <param name="userId">The unique identifier of the user to retrieve.</param>
+        /// <param name="ct">A token to observe while waiting for the operation to complete.</param>
+        /// <returns>The tracked <see cref="User"/> entity, or <c>null</c> if no user is found.</returns>
+        Task<User?> GetByIdForUpdateAsync(Guid userId, CancellationToken ct = default);
+
+        /// <summary>
+        /// Retrieves a user by their email address.
+        /// </summary>
+        /// <param name="email">The email address of the user to retrieve.</param>
+        /// <param name="ct">A token to observe while waiting for the operation to complete.</param>
+        /// <returns>The <see cref="User"/> entity, or <c>null</c> if no user is found.</returns>
         Task<User?> GetByEmailAsync(Email email, CancellationToken ct = default);
 
-        /// <summary>Gets a user by their identifier without tracking.</summary>
-        Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default);
-
-        /// <summary>Gets a user by their identifier with change tracking enabled.</summary>
-        Task<User?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default);
-
-        /// <summary>Adds a new user to the persistence context.</summary>
-        Task AddAsync(User item, CancellationToken ct = default);
-
-        /// <summary>Renames an existing user enforcing concurrency via row version.</summary>
-        Task<PrecheckStatus> RenameAsync(
-            Guid id,
-            UserName newName,
-            byte[] rowVersion,
-            CancellationToken ct = default);
-
-        /// <summary>Changes the role of an existing user enforcing concurrency.</summary>
-        Task<PrecheckStatus> ChangeRoleAsync(
-            Guid id,
-            UserRole newRole,
-            byte[] rowVersion,
-            CancellationToken ct = default);
-
-        /// <summary>Deletes a user if concurrency and constraints allow it.</summary>
-        Task<PrecheckStatus> DeleteAsync(
-            Guid id,
-            byte[] rowVersion,
-            CancellationToken ct = default);
+        /// <summary>
+        /// Adds a new user entity to the persistence context.
+        /// </summary>
+        /// <param name="user">The user entity to add.</param>
+        /// <param name="ct">A token to observe while waiting for the operation to complete.</param>
+        Task AddAsync(User user, CancellationToken ct = default);
 
         /// <summary>
-        /// Checks whether a user already exists with the specified email,
-        /// optionally excluding one user ID from the comparison.
+        /// Updates an existing user entity within the persistence context.
         /// </summary>
-        Task<bool> ExistsWithEmailAsync(
-            Email email,
-            Guid? excludeUserId = null,
-            CancellationToken ct = default);
+        /// <param name="user">The user entity with modified state.</param>
+        /// <param name="ct">A token to observe while waiting for the operation to complete.</param>
+        Task UpdateAsync(User user, CancellationToken ct = default);
 
         /// <summary>
-        /// Checks whether a user already exists with the specified name,
-        /// optionally excluding one user ID from the comparison.
+        /// Removes a user entity from the persistence context.
         /// </summary>
-        Task<bool> ExistsWithNameAsync(
-            UserName name,
-            Guid? excludeUserId = null,
-            CancellationToken ct = default);
+        /// <param name="user">The user entity to remove.</param>
+        /// <param name="ct">A token to observe while waiting for the operation to complete.</param>
+        Task RemoveAsync(User user, CancellationToken ct = default);
     }
-
 }

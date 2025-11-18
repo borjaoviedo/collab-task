@@ -1,8 +1,11 @@
-using Application.Abstractions.Extensions;
+using Application.Abstractions.Auth;
 using Application.Abstractions.Persistence;
+using Application.Common.Exceptions;
 using Application.TaskActivities.Abstractions;
 using Application.TaskActivities.Payloads;
 using Application.TaskNotes.Abstractions;
+using Application.TaskNotes.DTOs;
+using Application.TaskNotes.Mapping;
 using Application.TaskNotes.Realtime;
 using Domain.Entities;
 using Domain.Enums;
@@ -12,140 +15,133 @@ using MediatR;
 namespace Application.TaskNotes.Services
 {
     /// <summary>
-    /// Write-side application service for task notes.
+    /// Application write-side service for <see cref="TaskNote"/> aggregates.
+    /// Handles creation, editing, and deletion of task-attached notes while enforcing
+    /// project/task membership and note ownership rules. Each successful write operation
+    /// persists changes via <see cref="IUnitOfWork"/>, records a corresponding
+    /// <see cref="TaskActivity"/> entry, and publishes MediatR notifications
+    /// so that other parts of the system can react to note lifecycle events.
     /// </summary>
+    /// <param name="taskNoteRepository">
+    /// Repository used for retrieving, tracking, and persisting <see cref="TaskNote"/> entities.
+    /// </param>
+    /// <param name="unitOfWork">
+    /// Coordinates transactional persistence and maps <see cref="DomainMutation"/> outcomes
+    /// to optimistic concurrency handling for note operations.
+    /// </param>
+    /// <param name="taskActivityWriteService">
+    /// Service responsible for creating <see cref="TaskActivity"/> records that
+    /// capture note-related events such as creation, edits, and deletions.
+    /// </param>
+    /// <param name="currentUserService">
+    /// Provides information about the currently authenticated user, such as <c>UserId</c>.
+    /// </param>
+    /// <param name="mediator">
+    /// MediatR abstraction used to publish note domain notifications so other components
+    /// (for example, real-time hubs or background workers) can subscribe to note changes.
+    /// </param>
     public sealed class TaskNoteWriteService(
-        ITaskNoteRepository repo,
-        IUnitOfWork uow,
-        ITaskActivityWriteService activityWriter,
+        ITaskNoteRepository taskNoteRepository,
+        IUnitOfWork unitOfWork,
+        ITaskActivityWriteService taskActivityWriteService,
+        ICurrentUserService currentUserService,
         IMediator mediator) : ITaskNoteWriteService
     {
-        /// <summary>
-        /// Creates a new note, records a "note added" activity, and publishes a creation notification.
-        /// </summary>
-        /// <param name="projectId">Project identifier for notification scoping.</param>
-        /// <param name="taskId">Task to attach the note to.</param>
-        /// <param name="userId">Author user identifier.</param>
-        /// <param name="content">Note content.</param>
-        /// <param name="ct">Cancellation token.</param>
-        /// <returns>The mutation result and the created note when successful.</returns>
-        public async Task<(DomainMutation, TaskNote?)> CreateAsync(
+        private readonly ITaskNoteRepository _taskNoteRepository = taskNoteRepository;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly ITaskActivityWriteService _taskActivityWriteService = taskActivityWriteService;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
+        private readonly IMediator _mediator = mediator;
+
+        /// <inheritdoc/>
+        public async Task<TaskNoteReadDto> CreateAsync(
             Guid projectId,
             Guid taskId,
-            Guid userId,
-            NoteContent content,
+            TaskNoteCreateDto dto,
             CancellationToken ct = default)
         {
-            var note = TaskNote.Create(taskId, userId, content);
-            await repo.AddAsync(note, ct);
+            var noteContentVo = NoteContent.Create(dto.Content);
+            var currentUserId = (Guid)_currentUserService.UserId!;
+            var note = TaskNote.Create(taskId, currentUserId, noteContentVo);
+
+            await _taskNoteRepository.AddAsync(note, ct);
+
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Create, ct);
+            if (mutation != DomainMutation.Created)
+                throw new ConflictException("Task note could not be created due to a conflicting state.");
 
             var payload = ActivityPayloadFactory.NoteAdded(note.Id);
-            await activityWriter.CreateAsync(
+            await _taskActivityWriteService.CreateAsync(
                 taskId,
-                userId,
+                currentUserId,
                 TaskActivityType.NoteAdded,
                 payload,
                 ct);
 
-            var saveCreateResult = await uow.SaveAsync(MutationKind.Create, ct);
-
-            if (saveCreateResult == DomainMutation.Created)
-            {
-                var notification = new TaskNoteCreated(
+            var notification = new TaskNoteCreated(
                 projectId,
-                new TaskNoteCreatedPayload(taskId, note.Id, note.Content.Value));
-                await mediator.Publish(notification, ct);
-            }
+                new TaskNoteCreatedPayload(taskId, note.Id, noteContentVo.Value));
+            await _mediator.Publish(notification, ct);
 
-            return (saveCreateResult, note);
+            return note.ToReadDto();
         }
 
-        /// <summary>
-        /// Edits an existing note, records an edit activity, and publishes an update notification.
-        /// </summary>
-        /// <param name="projectId">Project identifier for notification scoping.</param>
-        /// <param name="taskId">Task identifier.</param>
-        /// <param name="noteId">Note identifier.</param>
-        /// <param name="userId">Actor user identifier.</param>
-        /// <param name="content">New content.</param>
-        /// <param name="rowVersion">Concurrency token.</param>
-        /// <param name="ct">Cancellation token.</param>
-        /// <returns>A mutation describing the outcome.</returns>
-        public async Task<DomainMutation> EditAsync(
+        /// <inheritdoc/>
+        public async Task<TaskNoteReadDto> EditAsync(
             Guid projectId,
             Guid taskId,
             Guid noteId,
-            Guid userId,
-            NoteContent content,
-            byte[] rowVersion,
+            TaskNoteEditDto dto,
             CancellationToken ct = default)
         {
-            var editStatus = await repo.EditAsync(noteId, content, rowVersion, ct);
-            if (editStatus != PrecheckStatus.Ready) return editStatus.ToErrorDomainMutation();
+            var note = await _taskNoteRepository.GetByIdForUpdateAsync(noteId, ct)
+                ?? throw new NotFoundException("Task note not found.");
+
+            var noteContentVo = NoteContent.Create(dto.NewContent);
+            note.Edit(noteContentVo);
+
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Update, ct);
+            if (mutation != DomainMutation.Updated)
+                throw new ConflictException("The task note could not be edited due to a conflicting state.");
+
+            var currentUserId = (Guid)_currentUserService.UserId!;
 
             var payload = ActivityPayloadFactory.NoteEdited(noteId);
-            await activityWriter.CreateAsync(
+            await _taskActivityWriteService.CreateAsync(
                 taskId,
-                userId,
+                currentUserId,
                 TaskActivityType.NoteEdited,
                 payload,
                 ct);
 
-            var saveUpdateResult = await uow.SaveAsync(MutationKind.Update, ct);
-
-            if (saveUpdateResult == DomainMutation.Updated)
-            {
-                var notification = new TaskNoteUpdated(
+            var notification = new TaskNoteUpdated(
                     projectId,
-                    new TaskNoteUpdatedPayload(taskId, noteId, content.Value));
-                await mediator.Publish(notification, ct);
-            }
+                    new TaskNoteUpdatedPayload(taskId, noteId, noteContentVo.Value));
+            await _mediator.Publish(notification, ct);
 
-            return saveUpdateResult;
+            return note.ToReadDto();
         }
 
-        /// <summary>
-        /// Deletes a note, records a removal activity, and publishes a deletion notification.
-        /// </summary>
-        /// <param name="projectId">Project identifier for notification scoping.</param>
-        /// <param name="noteId">Note identifier.</param>
-        /// <param name="userId">Actor user identifier.</param>
-        /// <param name="rowVersion">Concurrency token.</param>
-        /// <param name="ct">Cancellation token.</param>
-        /// <returns>A mutation describing the outcome.</returns>
-        public async Task<DomainMutation> DeleteAsync(
+        /// <inheritdoc/>
+        public async Task DeleteAsync(
             Guid projectId,
+            Guid taskId,
             Guid noteId,
-            Guid userId,
-            byte[] rowVersion,
             CancellationToken ct = default)
         {
-            var note = await repo.GetByIdAsync(noteId, ct);
-            if (note is null) return DomainMutation.NotFound;
+            var note = await _taskNoteRepository.GetByIdForUpdateAsync(noteId, ct)
+                ?? throw new NotFoundException("Task note not found.");
 
-            var deleteStatus = await repo.DeleteAsync(noteId, rowVersion, ct);
-            if (deleteStatus != PrecheckStatus.Ready) return deleteStatus.ToErrorDomainMutation();
+            await _taskNoteRepository.RemoveAsync(note, ct);
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Delete, ct);
 
-            var payload = ActivityPayloadFactory.NoteRemoved(noteId);
-            await activityWriter.CreateAsync(
-                note.TaskId,
-                userId,
-                TaskActivityType.NoteRemoved,
-                payload,
-                ct);
+            if (mutation != DomainMutation.Deleted && mutation != DomainMutation.NoOp)
+                throw new ConflictException("The task note could not be deleted due to a conflicting state.");
 
-            var saveDeleteResult = await uow.SaveAsync(MutationKind.Delete, ct);
-
-            if (saveDeleteResult == DomainMutation.Deleted)
-            {
-                var notification = new TaskNoteDeleted(
-                    projectId,
-                    new TaskNoteDeletedPayload(note.TaskId, note.Id));
-                await mediator.Publish(notification, ct);
-            }
-
-            return saveDeleteResult;
+            var notification = new TaskNoteDeleted(
+                projectId,
+                new TaskNoteDeletedPayload(taskId, noteId));
+            await _mediator.Publish(notification, ct);
         }
     }
-
 }

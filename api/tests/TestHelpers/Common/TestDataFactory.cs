@@ -2,6 +2,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using Infrastructure.Persistence;
+using System.Security.Cryptography;
 using TestHelpers.Common.Time;
 
 namespace TestHelpers.Common
@@ -12,6 +13,17 @@ namespace TestHelpers.Common
         // --- Primitives / Generators ---
 
         public static byte[] Bytes(int n, byte fill = 0x5A) => Enumerable.Repeat(fill, n).ToArray();
+
+        private static byte[] SecureBytes(int length)
+        {
+            var buffer = new byte[length];
+            RandomNumberGenerator.Fill(buffer);
+            return buffer;
+        }
+
+        public static byte[] CreateHash() => SecureBytes(32);
+
+        public static byte[] CreateSalt() => SecureBytes(16);
 
         public static string GetRandomString(int length)
         {
@@ -355,6 +367,8 @@ namespace TestHelpers.Common
                 laneOrder,
                 columnOrder);
             var taskNote = SeedTaskNote(db, taskId, userId, noteContent);
+
+            SeedTaskAssignment(db, taskId, userId);
 
             return (projectId, laneId, columnId, taskId, taskNote.Id, userId);
         }

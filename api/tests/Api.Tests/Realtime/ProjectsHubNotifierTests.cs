@@ -5,9 +5,11 @@ using Application.TaskNotes.Realtime;
 using Domain.Enums;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
+using TestHelpers.Common.Testing;
 
 namespace Api.Tests.Realtime
 {
+    [UnitTest]
     public class ProjectsHubNotifierTests
     {
         [Fact]

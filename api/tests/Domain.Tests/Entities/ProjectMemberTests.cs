@@ -3,10 +3,12 @@ using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 using TestHelpers.Common.Time;
 
 namespace Domain.Tests.Entities
 {
+    [UnitTest]
     public class ProjectMemberTests
     {
         private static readonly Guid _defaultProjectId = Guid.NewGuid();

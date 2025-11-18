@@ -1,15 +1,10 @@
 using Domain.Enums;
-using System.Security.Claims;
 
 namespace Application.Abstractions.Security
 {
     /// <summary>
     /// Issues and validates JSON Web Tokens for API authentication.
     /// </summary>
-    /// <remarks>
-    /// Tokens must be signed and time-bound. Validation should verify signature, issuer/audience,
-    /// expiry, and not-before constraints. No data store access is required for validation.
-    /// </remarks>
     public interface IJwtTokenService
     {
         /// <summary>
@@ -27,14 +22,5 @@ namespace Application.Abstractions.Security
             string email,
             string name,
             UserRole role);
-
-        /// <summary>
-        /// Validates a serialized JWT and returns the associated principal, or <c>null</c> if invalid or expired.
-        /// </summary>
-        /// <param name="token">The serialized JWT to validate.</param>
-        /// <returns>
-        /// A <see cref="ClaimsPrincipal"/> constructed from the token claims when valid; otherwise <c>null</c>.
-        /// </returns>
-        ClaimsPrincipal? ValidateToken(string token);
     }
 }

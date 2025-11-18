@@ -1,88 +1,64 @@
+using Application.Common.Exceptions;
+using Application.Lanes.DTOs;
 using Application.Lanes.Services;
-using Domain.Enums;
-using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.Lanes.Services
 {
+    [IntegrationTest]
     public sealed class LaneWriteServiceTests
     {
         [Fact]
-        public async Task Create_Assigns_Next_Order_When_Null()
+        public async Task Create_Throws_Conflict_On_Duplicate_Name_In_Project()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new LaneRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new LaneWriteService(repo, uow);
+            var (db, writeSvc, _) = await CreateSutAsync(dbh);
 
+            var sameName = "Dup";
             var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
-            await writeSvc.CreateAsync(projectId, LaneName.Create("First"), order: null);
 
-            var (created, lane) = await writeSvc.CreateAsync(
-                projectId,
-                LaneName.Create("Second"),
-                order: null);
+            var dto1 = new LaneCreateDto { Name = sameName, Order = 0 };
+            await writeSvc.CreateAsync(projectId, dto1);
 
-            created.Should().Be(DomainMutation.Created);
-            lane!.Order.Should().Be(1);
-        }
+            var dto2 = new LaneCreateDto { Name = sameName, Order = 1 };
 
-        [Fact]
-        public async Task Create_Returns_Conflict_On_Duplicate_Name_In_Project()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new LaneRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new LaneWriteService(repo, uow);
+            var act = async () => await writeSvc.CreateAsync(projectId, dto2);
 
-            var sameName = LaneName.Create("Dup");
-            var (projectId, _) = TestDataFactory.SeedUserWithProject(db);
-            var (firstResult, _) = await writeSvc.CreateAsync(projectId, sameName);
-            firstResult.Should().Be(DomainMutation.Created);
-
-            var (secondResult, lane2) = await writeSvc.CreateAsync(projectId, sameName);
-            secondResult.Should().Be(DomainMutation.Conflict);
-            lane2.Should().BeNull();
+            await act.Should().ThrowAsync<ConflictException>();
         }
 
         [Fact]
         public async Task Rename_Delegates_To_Repository()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new LaneRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new LaneWriteService(repo, uow);
+            var (db, writeSvc, _) = await CreateSutAsync(dbh);
 
             var (_, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
 
-            var current = await db.Lanes.FirstAsync(l => l.Id == laneId);
-            var result = await writeSvc.RenameAsync(
-                laneId,
-                LaneName.Create("New"),
-                current.RowVersion);
-            result.Should().Be(DomainMutation.Updated);
+            var dto = new LaneRenameDto { NewName = "New" };
+            var result = await writeSvc.RenameAsync(laneId, dto);
+
+            result.Should().NotBeNull();
+            result.Id.Should().Be(laneId);
+            result.Name.Should().Be("New");
         }
 
         [Fact]
         public async Task Reorder_Delegates_To_Repository()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new LaneRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new LaneWriteService(repo, uow);
+            var (db, writeSvc, _) = await CreateSutAsync(dbh);
 
             var firstLaneName = "Lane A";
             var secondLaneName = "Lane B";
             var thirdLaneName = "Lane C";
+
             var (projectId, _, _) = TestDataFactory.SeedProjectWithLane(
                 db,
                 laneName: firstLaneName,
@@ -91,34 +67,35 @@ namespace Application.Tests.Lanes.Services
             TestDataFactory.SeedLane(db, projectId, secondLaneName, order: 1);
             var laneC = TestDataFactory.SeedLane(db, projectId, thirdLaneName, order: 2);
 
-            var current = await db.Lanes.FirstAsync(l => l.Id == laneC.Id);
-            var result = await writeSvc.ReorderAsync(laneC.Id, 1, current.RowVersion);
-            result.Should().Be(DomainMutation.Updated);
+            var dto = new LaneReorderDto { NewOrder = 1 };
+            var result = await writeSvc.ReorderAsync(laneC.Id, dto);
+
+            result.Should().NotBeNull();
+            result.Id.Should().Be(laneC.Id);
+            result.Order.Should().Be(1);
 
             var names = await db.Lanes
-                                .AsNoTracking()
-                                .Where(l => l.ProjectId == projectId)
-                                .OrderBy(l => l.Order)
-                                .Select(l => l.Name.Value)
-                                .ToListAsync();
+                .AsNoTracking()
+                .Where(l => l.ProjectId == projectId)
+                .OrderBy(l => l.Order)
+                .Select(l => l.Name.Value)
+                .ToListAsync();
 
             names.Should().Equal(firstLaneName, thirdLaneName, secondLaneName);
         }
 
-        [Fact]
-        public async Task Delete_Delegates_To_Repository()
+        // ---------- HELPERS ----------
+
+        private static Task<(CollabTaskDbContext Db, LaneWriteService Service, LaneRepository Repo)>
+            CreateSutAsync(SqliteTestDb dbh)
         {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
+            var db = dbh.CreateContext();
             var repo = new LaneRepository(db);
             var uow = new UnitOfWork(db);
-            var writeSvc = new LaneWriteService(repo, uow);
 
-            var (_, laneId, _) = TestDataFactory.SeedProjectWithLane(db);
+            var svc = new LaneWriteService(repo, uow);
 
-            var current = await db.Lanes.FirstAsync(x => x.Id == laneId);
-            var result = await writeSvc.DeleteAsync(laneId, current.RowVersion);
-            result.Should().Be(DomainMutation.Deleted);
+            return Task.FromResult((db, svc, repo));
         }
     }
 }

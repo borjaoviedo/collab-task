@@ -1,70 +1,85 @@
+using Application.Projects.DTOs;
 using Application.Projects.Services;
-using Domain.Enums;
-using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers.Common;
+using TestHelpers.Common.Fakes;
+using TestHelpers.Common.Testing;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.Projects.Services
 {
+    [IntegrationTest]
     public sealed class ProjectWriteServiceTests
     {
-
         [Fact]
-        public async Task CreateAsync_Returns_Created_And_Id()
+        public async Task CreateAsync_Returns_Created_Project()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ProjectRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new ProjectWriteService(repo, uow);
+            var (db, writeSvc, currentUser) = await CreateSutAsync(dbh);
 
-            var owner = TestDataFactory.SeedUser(db);
+            var user = TestDataFactory.SeedUser(db);
+            currentUser.UserId = user.Id;
 
-            var (result, projectId) = await writeSvc.CreateAsync(owner.Id, ProjectName.Create("Alpha Board"));
+            var dto = new ProjectCreateDto { Name = "Board" };
 
-            result.Should().Be(DomainMutation.Created);
-            projectId.Should().NotBeNull();
+            var project = await writeSvc.CreateAsync(dto);
+
+            project.Should().NotBeNull();
+            project.Id.Should().NotBe(Guid.Empty);
+            project.Name.Should().Be("Board");
+
+            var fromDb = await db.Projects.AsNoTracking().SingleAsync();
+            fromDb.Id.Should().Be(project.Id);
+            fromDb.Name.Value.Should().Be("Board");
         }
 
         [Fact]
-        public async Task RenameAsync_Returns_Updated_And_Recomputes_Slug()
+        public async Task RenameAsync_Updates_Name_And_Recomputes_Slug()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new ProjectRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new ProjectWriteService(repo, uow);
+            var (db, writeSvc, currentUser) = await CreateSutAsync(dbh);
 
             var user = TestDataFactory.SeedUser(db);
+            currentUser.UserId = user.Id;
+
             var project = TestDataFactory.SeedProject(db, user.Id);
 
-            var result = await writeSvc.RenameAsync(project.Id, ProjectName.Create("New Name"), project.RowVersion);
-            result.Should().Be(DomainMutation.Updated);
+            var dto = new ProjectRenameDto { NewName = "New Name" };
+
+            var updated = await writeSvc.RenameAsync(project.Id, dto);
+
+            updated.Name.Should().Be("New Name");
+            updated.Slug.Should().Be("new-name");
 
             var fromDb = await db.Projects.AsNoTracking().SingleAsync();
             fromDb.Name.Value.Should().Be("New Name");
             fromDb.Slug.Value.Should().Be("new-name");
         }
 
-        [Fact]
-        public async Task DeleteAsync_Returns_Conflict_When_RowVersion_Mismatch()
+        // ---------- HELPERS ----------
+
+        private static Task<(CollabTaskDbContext Db, ProjectWriteService Service, FakeCurrentUserService CurrentUser)>
+            CreateSutAsync(
+                SqliteTestDb dbh,
+                Guid? userId = null)
         {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
+            var db = dbh.CreateContext();
             var repo = new ProjectRepository(db);
             var uow = new UnitOfWork(db);
-            var writeSvc = new ProjectWriteService(repo, uow);
+            var currentUser = new FakeCurrentUserService
+            {
+                UserId = userId
+            };
 
-            var user = TestDataFactory.SeedUser(db);
-            var project = TestDataFactory.SeedProject(db, user.Id);
+            var svc = new ProjectWriteService(
+                repo,
+                uow,
+                currentUser);
 
-            var result = await writeSvc.DeleteAsync(project.Id, [9, 9, 9, 9]);
-
-            result.Should().Be(DomainMutation.Conflict);
+            return Task.FromResult((db, svc, currentUser));
         }
     }
 }

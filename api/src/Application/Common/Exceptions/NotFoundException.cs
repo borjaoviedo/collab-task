@@ -1,10 +1,12 @@
 
 namespace Application.Common.Exceptions
 {
-    public sealed class NotFoundException : BaseAppException
-    {
-        public NotFoundException(
-            string message,
-            string? code = "not_found") : base(message, code) { }
-    }
+    /// <summary>
+    /// Exception thrown when a requested entity or resource cannot be found.
+    /// Maps to HTTP 404 Not Found in the API layer.
+    /// Typical use cases include lookups by identifier or unique key
+    /// when the target record does not exist.
+    /// </summary>
+    /// <param name="message">A human-readable description of the missing entity.</param>
+    public sealed class NotFoundException(string message) : Exception(message) { }
 }

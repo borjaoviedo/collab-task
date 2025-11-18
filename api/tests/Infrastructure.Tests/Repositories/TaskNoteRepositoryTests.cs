@@ -6,10 +6,12 @@ using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Repositories
 {
+    [IntegrationTest]
     public sealed class TaskNoteRepositoryTests
     {
         [Fact]
@@ -35,78 +37,52 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task EditAsync_Returns_Updated_When_Content_Changes()
+        public async Task UpdateAsync_Marks_Entity_Modified_And_Persists_Changes()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
-            var uow = new UnitOfWork(db);
+            var (db, repo) = await CreateSutAsync(dbh);
 
             var (_, _, _, _, noteId, _) = TestDataFactory.SeedFullBoard(db);
-            var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
+            var note = await repo.GetByIdForUpdateAsync(noteId);
 
-            var newContent = NoteContent.Create("New Content");
-            var result = await repo.EditAsync(noteId, newContent, noteFromDb.RowVersion);
-            result.Should().Be(PrecheckStatus.Ready);
+            // Modify through domain behavior
+            note!.Edit(NoteContent.Create("Updated Content"));
 
-            await uow.SaveAsync(MutationKind.Update);
+            await repo.UpdateAsync(note);
+            await db.SaveChangesAsync();
 
-            noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
-            noteFromDb.Content.Value.Should().Be(newContent);
+            var reloaded = await db.TaskNotes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(tn => tn.Id == noteId);
+
+            reloaded.Should().NotBeNull();
+            reloaded!.Content.Value.Should().Be("Updated Content");
         }
 
         [Fact]
-        public async Task EditAsync_Returns_NoOp_When_Content_Does_Not_Change()
+        public async Task RemoveAsync_Deletes_User_On_SaveChanges()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
-            var uow = new UnitOfWork(db);
-
-            var originalNoteContent = NoteContent.Create("Note content");
-            var (_, _, _, _, noteId, _) = TestDataFactory.SeedFullBoard(db, noteContent: originalNoteContent);
-            var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
-
-            var result = await repo.EditAsync(noteId, originalNoteContent, noteFromDb.RowVersion);
-            result.Should().Be(PrecheckStatus.NoOp);
-
-            await uow.SaveAsync(MutationKind.Update);
-
-            noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
-            noteFromDb.Content.Value.Should().Be(originalNoteContent);
-        }
-
-        [Fact]
-        public async Task DeleteAsync_Returns_Ready_When_Note_Exists()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
+            var (db, repo) = await CreateSutAsync(dbh);
 
             var (_, _, _, _, noteId, _) = TestDataFactory.SeedFullBoard(db);
-            var noteFromDb = await db.TaskNotes.AsNoTracking().SingleAsync();
+            var note = await repo.GetByIdForUpdateAsync(noteId);
 
-            var result = await repo.DeleteAsync(noteId, noteFromDb.RowVersion);
-            result.Should().Be(PrecheckStatus.Ready);
-        }
+            await repo.RemoveAsync(note!);
+            await db.SaveChangesAsync();
 
-        [Fact]
-        public async Task DeleteAsync_Returns_NotFound_When_Note_Id_Does_Not_Exist()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
+            var reloaded = await db.TaskNotes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(tn => tn.Id == noteId);
 
-            var result = await repo.DeleteAsync(noteId: Guid.NewGuid(), rowVersion: [1, 2]);
-            result.Should().Be(PrecheckStatus.NotFound);
+            reloaded.Should().BeNull();
         }
 
         [Fact]
         public async Task GetByIdAsync_Returns_TaskNote_When_Exists_Otherwise_Null()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
+            var (db, repo) = await CreateSutAsync(dbh);
 
             var (_, _, _, _, noteId, _) = TestDataFactory.SeedFullBoard(db);
 
@@ -119,104 +95,98 @@ namespace Infrastructure.Tests.Repositories
         }
 
         [Fact]
-        public async Task GetTrackedByIdAsync_Returns_TaskNote_When_Exists_Otherwise_Null()
+        public async Task GetByIdForUpdateAsync_Returns_TaskNote_When_Exists_Otherwise_Null()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
+            var (db, repo) = await CreateSutAsync(dbh);
 
             var (_, _, _, _, noteId, _) = TestDataFactory.SeedFullBoard(db);
 
-            var existing = await repo.GetTrackedByIdAsync(noteId);
+            var existing = await repo.GetByIdForUpdateAsync(noteId);
             existing.Should().NotBeNull();
             existing.Id.Should().Be(noteId);
 
-            var notFound = await repo.GetTrackedByIdAsync(noteId: Guid.NewGuid());
+            var notFound = await repo.GetByIdForUpdateAsync(noteId: Guid.NewGuid());
             notFound.Should().BeNull();
         }
 
         [Fact]
-        public async Task ListByTaskAsync_Returns_TaskNotes_In_Column()
+        public async Task ListByTaskIdAsync_Returns_TaskNotes_In_Column()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
+            var (db, repo) = await CreateSutAsync(dbh);
 
             var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
 
-            var list = await repo.ListByTaskAsync(taskId);
+            var list = await repo.ListByTaskIdAsync(taskId);
             list.Should().NotBeNull();
             list.Count.Should().Be(1);
 
             TestDataFactory.SeedTaskNote(db, taskId, userId);
-            list = await repo.ListByTaskAsync(taskId);
+            list = await repo.ListByTaskIdAsync(taskId);
             list.Count.Should().Be(2);
         }
 
         [Fact]
-        public async Task ListByTaskAsync_Returns_Empty_List_When_Empty_Task()
+        public async Task ListByTaskIdAsync_Returns_Empty_List_When_Empty_Task()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
+            var (db, repo) = await CreateSutAsync(dbh);
 
             var (_, _, _, taskId, _) = TestDataFactory.SeedColumnWithTask(db);
 
-            var list = await repo.ListByTaskAsync(taskId);
+            var list = await repo.ListByTaskIdAsync(taskId);
             list.Should().BeEmpty();
         }
 
         [Fact]
-        public async Task ListByColumnAsync_Returns_Empty_List_When_NotFound_Column()
+        public async Task ListByUserIdAsync_Returns_Author_TaskNotes()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
-
-            var list = await repo.ListByTaskAsync(taskId: Guid.NewGuid());
-            list.Should().BeEmpty();
-        }
-
-        [Fact]
-        public async Task ListByUserAsync_Returns_Author_TaskNotes()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
+            var (db, repo) = await CreateSutAsync(dbh);
 
             var (_, _, _, taskId, _, userId) = TestDataFactory.SeedFullBoard(db);
 
-            var list = await repo.ListByUserAsync(userId);
+            var list = await repo.ListByUserIdAsync(userId);
             list.Should().NotBeNull();
             list.Count.Should().Be(1);
 
             TestDataFactory.SeedTaskNote(db, taskId, userId);
-            list = await repo.ListByUserAsync(userId);
+            list = await repo.ListByUserIdAsync(userId);
             list.Count.Should().Be(2);
         }
 
         [Fact]
-        public async Task ListByUserAsync_Returns_Empty_List_When_Author_Without_Tasks()
+        public async Task ListByUserIdAsync_Returns_Empty_List_When_Author_Without_Tasks()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new TaskNoteRepository(db);
+            var (db, repo) = await CreateSutAsync(dbh);
 
             var (_, _, _, taskId, _) = TestDataFactory.SeedColumnWithTask(db);
 
-            var list = await repo.ListByUserAsync(taskId);
+            var list = await repo.ListByUserIdAsync(taskId);
             list.Should().BeEmpty();
         }
 
         [Fact]
-        public async Task ListByUserAsync_Returns_Empty_List_When_NotFound_Author()
+        public async Task ListByUserIdAsync_Returns_Empty_List_When_NotFound_Author()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
+            var (_, repo) = await CreateSutAsync(dbh);
+
+            var list = await repo.ListByUserIdAsync(userId: Guid.NewGuid());
+            list.Should().BeEmpty();
+        }
+
+        // ---------- HELPERS ----------
+
+        private static Task<(CollabTaskDbContext Db, TaskNoteRepository Repo)>
+            CreateSutAsync(SqliteTestDb dbh)
+        {
+            var db = dbh.CreateContext();
             var repo = new TaskNoteRepository(db);
 
-            var list = await repo.ListByUserAsync(userId: Guid.NewGuid());
-            list.Should().BeEmpty();
+            return Task.FromResult((db, repo));
         }
     }
 }

@@ -34,56 +34,73 @@ namespace Api.ErrorHandling
         }
 
         /// <summary>
-        /// Enables a global exception handler that converts thrown exceptions into
-        /// RFC 7807 ProblemDetails using a consistent mapping strategy.
-        /// Ensures <c>application/problem+json</c> content type and appropriate status codes.
+        /// Enables a global exception handler that converts unhandled exceptions into
+        /// RFC 7807 <c>ProblemDetails</c> responses.
+        /// The mapping is aligned with the non-2xx status codes documented in
+        /// the EventDesk API endpoints specification:
+        /// <list type="bullet">
+        /// <item>400 Bad Request</item>
+        /// <item><c>401 Unauthorized</c></item>
+        /// <item><c>403 Forbidden</c></item>
+        /// <item><c>404 Not Found</c></item>
+        /// <item><c>409 Conflict</c></item>
+        /// <item><c>412 Precondition Failed</c></item>
+        /// <item><c>428 Precondition Required</c></item>
+        /// <item><c>500 Internal Server Error</c></item>
+        /// </list>
         /// </summary>
-        /// <param name="app">The application builder.</param>
-        /// <returns>The same application builder for chaining.</returns>
+        /// <param name="app">The application builder to configure.</param>
+        /// <returns>The same <see cref="IApplicationBuilder"/> instance for chaining.</returns>
         public static IApplicationBuilder UseGlobalExceptionHandling(this IApplicationBuilder app)
         {
             app.UseExceptionHandler(builder =>
             {
-                builder.Run(async http =>
+                builder.Run(async httpContext =>
                 {
-                    var feature = http.Features.Get<IExceptionHandlerFeature>();
-                    var ex = feature?.Error;
+                    var feature = httpContext.Features.Get<IExceptionHandlerFeature>();
+                    var exception = feature?.Error;
 
-                    var (status, type, title, detail, extensions) = MapException(ex, http);
+                    var (status, type, title, detail, extensions) = MapException(exception, httpContext);
 
-                    // Ensures content-type RFC7807
-                    http.Response.ContentType = "application/problem+json";
-                    http.Response.StatusCode = status;
+                    httpContext.Response.StatusCode = status;
+                    httpContext.Response.ContentType = "application/problem+json";
+
+                    // TraceId always present
+                    extensions ??= new Dictionary<string, object?>();
+                    extensions["traceId"] ??= httpContext.TraceIdentifier;
 
                     var result = Results.Problem(
                         detail: detail,
-                        instance: http.Request.Path,
+                        instance: httpContext.Request.Path,
                         statusCode: status,
                         title: title,
                         type: type,
                         extensions: extensions);
 
-                    await result.ExecuteAsync(http);
+                    await result.ExecuteAsync(httpContext);
                 });
             });
+
             return app;
         }
 
         /// <summary>
-        /// Maps a caught <see cref="Exception"/> to a ProblemDetails-compatible tuple,
-        /// selecting status code, problem <c>type</c>, <c>title</c>, human-readable <c>detail</c>,
-        /// and an <c>extensions</c> dictionary (e.g., <c>traceId</c>, validation errors, JSON path).
+        /// Maps a caught <see cref="Exception"/> into a ProblemDetails-compatible shape:
+        /// HTTP status code, problem <c>type</c> URI, <c>title</c>, human-readable <c>detail</c>,
+        /// and an optional <c>extensions</c> dictionary.
+        /// Only the HTTP status codes required by the EventDesk API contract are used:
+        /// 400, 401, 403, 404, 409, 412, 428. All other unexpected errors become 500.
         /// </summary>
-        /// <param name="ex">The exception to map (can be <c>null</c>).</param>
-        /// <param name="http">The current HTTP context for request/host information.</param>
+        /// <param name="exception">The exception to map (can be <c>null</c>).</param>
+        /// <param name="httpContext">The current HTTP context.</param>
         /// <returns>
         /// A tuple with:
         /// <list type="bullet">
-        /// <item><description><c>status</c>: HTTP status code.</description></item>
-        /// <item><description><c>type</c>: problem type URI.</description></item>
-        /// <item><description><c>title</c>: short summary of the problem.</description></item>
-        /// <item><description><c>detail</c>: human-readable explanation.</description></item>
-        /// <item><description><c>extensions</c>: extra properties (e.g., <c>traceId</c>, <c>errors</c>).</description></item>
+        ///   <item><description><c>status</c>: HTTP status code.</description></item>
+        ///   <item><description><c>type</c>: problem type URI.</description></item>
+        ///   <item><description><c>title</c>: short summary of the problem.</description></item>
+        ///   <item><description><c>detail</c>: human-readable explanation.</description></item>
+        ///   <item><description><c>extensions</c>: extra metadata (e.g. <c>traceId</c>, <c>errors</c>, <c>jsonPath</c>).</description></item>
         /// </list>
         /// </returns>
         private static (
@@ -92,143 +109,181 @@ namespace Api.ErrorHandling
             string title,
             string detail,
             IDictionary<string, object?> extensions)
-        MapException(Exception? ex, HttpContext http)
+        MapException(Exception? exception, HttpContext httpContext)
         {
-            // Base
             var extensions = new Dictionary<string, object?>
             {
-                ["traceId"] = http.TraceIdentifier
+                ["traceId"] = httpContext.TraceIdentifier
             };
 
-            switch (ex)
+            switch (exception)
             {
-                // 400 - Bad Request / Malformed Payload
-                case BadHttpRequestException bhe:
+                // -------------------- 400 - Bad Request / Validation --------------------
+
+                case ValidationException validationException:
+                    // Thrown by FluentValidation when DTO validation fails
+                    {
+                        var errors = validationException.Errors
+                            .GroupBy(e => e.PropertyName)
+                            .ToDictionary(
+                                g => g.Key,
+                                g => g.Select(e => e.ErrorMessage).ToArray());
+
+                        extensions["errors"] = errors;
+
+                        return (
+                            StatusCodes.Status400BadRequest,
+                            ProblemTypes.ValidationError,
+                            "Validation failed",
+                            "One or more validation errors occurred.",
+                            extensions);
+                    }
+
+                case JsonException jsonException:
+                    // Thrown when request body contains malformed JSON
+                    {
+                        if (!string.IsNullOrWhiteSpace(jsonException.Path))
+                        {
+                            extensions["jsonPath"] = jsonException.Path;
+                        }
+
+                        return (
+                            StatusCodes.Status400BadRequest,
+                            ProblemTypes.BadRequest,
+                            "Malformed JSON payload",
+                            "Request body is not valid JSON.",
+                            extensions);
+                    }
+
+                case BadHttpRequestException badHttpRequest:
+                    // Raised by ASP.NET Core for malformed or invalid HTTP requests
                     return (
                         StatusCodes.Status400BadRequest,
                         ProblemTypes.BadRequest,
                         "Bad request",
-                        bhe.Message,
+                        badHttpRequest.Message,
                         extensions);
 
-                case JsonException je:
-                    if (!string.IsNullOrWhiteSpace(je.Path)) extensions["jsonPath"] = je.Path;
-                    return (
-                        StatusCodes.Status400BadRequest,
-                        ProblemTypes.BadRequest,
-                        "Malformed JSON",
-                        "Request body is not valid JSON.",
-                        extensions);
-
-                case ArgumentException ae:
+                case ArgumentException argumentException:
+                    // Used for invalid argument in input parsing
                     return (
                         StatusCodes.Status400BadRequest,
                         ProblemTypes.BadRequest,
                         "Bad request",
-                        ae.Message,
+                        argumentException.Message,
                         extensions);
 
-                // 400 - Validation
-                case ValidationException ve:
-                    var errors = ve.Errors
-                        .GroupBy(e => e.PropertyName)
-                        .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
-                    extensions["errors"] = errors;
+                case FormatException formatException:
+                    // Used for format issues in input parsing
                     return (
                         StatusCodes.Status400BadRequest,
-                        ProblemTypes.ValidationError,
-                        "Validation failed",
-                        "One or more validation errors occurred.",
+                        ProblemTypes.BadRequest,
+                        "Bad request",
+                        formatException.Message,
                         extensions);
 
-                // 401/403 - Unauthorized
+                // -------------------- 401 - Unauthorized --------------------
+
+                case InvalidCredentialsException invalidCredentials:
+                    // Indicates failed authentication due to invalid username, password, or token
+                    return (
+                        StatusCodes.Status401Unauthorized,
+                        ProblemTypes.Unauthorized,
+                        "Unauthorized",
+                        invalidCredentials.Message,
+                        extensions);
+
                 case UnauthorizedAccessException:
+                    // Raised when no authentication token is provided or it is invalid
                     return (
                         StatusCodes.Status401Unauthorized,
                         ProblemTypes.Unauthorized,
                         "Unauthorized",
-                        "Authentication required.",
+                        "Authentication is required to access this resource.",
                         extensions);
 
-                case InvalidCredentialsException ice:
-                    return (
-                        StatusCodes.Status401Unauthorized,
-                        ProblemTypes.Unauthorized,
-                        "Unauthorized",
-                        ice.Message,
-                        extensions);
+                // -------------------- 403 - Forbidden --------------------
 
-                case ForbiddenAccessException fae:
+                case ForbiddenAccessException forbidden:
+                    // Thrown when user is authenticated but not authorized to access the requested resource
                     return (
                         StatusCodes.Status403Forbidden,
                         ProblemTypes.Forbidden,
                         "Forbidden",
-                        fae.Message,
+                        forbidden.Message,
                         extensions);
 
-                // 404 - Not Found
-                case NotFoundException nfe:
+                // -------------------- 404 - Not Found --------------------
+
+                case NotFoundException notFound:
+                    // Indicates a requested entity or resource does not exist
                     return (
                         StatusCodes.Status404NotFound,
                         ProblemTypes.NotFound,
                         "Resource not found",
-                        nfe.Message,
+                        notFound.Message,
                         extensions);
 
-                // 409 - Conflict
-                case DuplicateEntityException dee:
+                // -------------------- 409 - Conflict --------------------
+
+                case ConflictException conflict:
+                    // Thrown when a business rule or data constraint conflict occurs
                     return (
                         StatusCodes.Status409Conflict,
                         ProblemTypes.Conflict,
                         "Conflict",
-                        dee.Message,
+                        conflict.Message,
                         extensions);
 
                 case DbUpdateConcurrencyException:
+                    // Fallback for EF Core concurrency violations not translated by Infrastructure
                     return (
                         StatusCodes.Status409Conflict,
                         ProblemTypes.Conflict,
-                        "Concurrency conflict",
-                        "The resource was modified by another process.",
+                        "Conflict",
+                        "The resource could not be updated due to a concurrency conflict.",
                         extensions);
 
-                // 412 - If-Match / ETag
-                case PreconditionFailedException pfe:
+                // -------------------- 412 - Precondition Failed --------------------
+
+                case OptimisticConcurrencyException optimistic:
+                    // Thrown when an ETag or RowVersion mismatch occurs
                     return (
                         StatusCodes.Status412PreconditionFailed,
                         ProblemTypes.PreconditionFailed,
                         "Precondition failed",
-                        pfe.Message,
+                        optimistic.Message,
                         extensions);
 
-                // 422 - Domain Rules
-                case DomainRuleViolationException dr:
+                // -------------------- 428 - Precondition Required --------------------
+
+                case PreconditionRequiredException preconditionRequired:
+                    // Indicates a conditional request is missing required If-Match header
                     return (
-                        StatusCodes.Status422UnprocessableEntity,
-                        ProblemTypes.Unprocessable,
-                        "Unprocessable entity",
-                        dr.Message,
+                        StatusCodes.Status428PreconditionRequired,
+                        ProblemTypes.PreconditionRequired,
+                        "Precondition required",
+                        preconditionRequired.Message,
                         extensions);
 
-                // 408 - Cancellation / Timeout
-                case OperationCanceledException:
-                    return (
-                        StatusCodes.Status408RequestTimeout,
-                        ProblemTypes.RequestTimeout,
-                        "Request timeout",
-                        "The request was canceled or timed out.",
-                        extensions);
+                // -------------------- Fallback: 500 - Internal Server Error --------------------
 
-                // 500 - Generic
                 default:
-                    var isDev = http.RequestServices.GetRequiredService<IHostEnvironment>().IsDevelopment();
-                    var safe = isDev && ex is not null ? ex.Message : "An unexpected error occurred.";
-                    return (
-                        StatusCodes.Status500InternalServerError,
-                        ProblemTypes.Internal,
-                        "Unexpected error",
-                        safe,
-                        extensions);
+                    // Generic fallback for unexpected exceptions
+                    {
+                        var env = httpContext.RequestServices.GetRequiredService<IHostEnvironment>();
+
+                        var detail = env.IsDevelopment() && exception is not null
+                            ? exception.Message
+                            : "An unexpected error occurred. Please try again or contact support if the problem persists.";
+
+                        return (
+                            StatusCodes.Status500InternalServerError,
+                            ProblemTypes.Internal,
+                            "Unexpected error",
+                            detail,
+                            extensions);
+                    }
             }
         }
     }

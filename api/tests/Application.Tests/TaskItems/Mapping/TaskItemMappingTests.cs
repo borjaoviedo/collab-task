@@ -2,9 +2,11 @@ using Application.TaskItems.Mapping;
 using Domain.Entities;
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.TaskItems.Mapping
 {
+    [UnitTest]
     public sealed class TaskItemMappingTests
     {
         [Fact]
@@ -30,7 +32,6 @@ namespace Application.Tests.TaskItems.Mapping
             dto.Description.Should().Be(entity.Description.Value);
             dto.DueDate.Should().Be(entity.DueDate);
             dto.SortKey.Should().Be(entity.SortKey);
-            dto.RowVersion.Should().Equal(entity.RowVersion);
         }
     }
 }

@@ -14,7 +14,9 @@ namespace Application.TaskNotes.Mapping
                 Content = entity.Content.Value,
                 CreatedAt = entity.CreatedAt,
                 UpdatedAt = entity.UpdatedAt,
-                RowVersion = entity.RowVersion
+                RowVersion = entity.RowVersion is { Length: > 0 }
+                    ? Convert.ToBase64String(entity.RowVersion)
+                    : string.Empty
             };
     }
 }

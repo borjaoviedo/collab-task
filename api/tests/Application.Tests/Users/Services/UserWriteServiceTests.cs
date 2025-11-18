@@ -1,107 +1,126 @@
+using Application.Common.Exceptions;
+using Application.Users.DTOs;
 using Application.Users.Services;
 using Domain.Enums;
-using Domain.ValueObjects;
 using FluentAssertions;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers.Common;
+using TestHelpers.Common.Fakes;
+using TestHelpers.Common.Testing;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.Users.Services
 {
+    [IntegrationTest]
     public sealed class UserWriteServiceTests
     {
-        private readonly byte[] _validHash = TestDataFactory.Bytes(32);
-        private readonly byte[] _validSalt = TestDataFactory.Bytes(16);
+
+        // --------------- ChangeRoleAsync ---------------
 
         [Fact]
-        public async Task CreateAsync_Returns_Created_And_User()
+        public async Task ChangeRoleAsync_Updates_Role()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new UserWriteService(repo, uow);
+            var (db, writeSvc, _) = await CreateSutAsync(dbh);
 
-            var (created, user) = await writeSvc.CreateAsync(
-                Email.Create("email@e.com"),
-                UserName.Create("user name"),
-                _validHash,
-                _validSalt,
-                UserRole.Admin);
+            var user = TestDataFactory.SeedUser(db, role: UserRole.User);
+            var dto = new UserChangeRoleDto { NewRole = UserRole.Admin };
 
-            created.Should().Be(DomainMutation.Created);
-            user.Should().NotBeNull();
+            var result = await writeSvc.ChangeRoleAsync(user.Id, dto);
+
+            result.Role.Should().Be(UserRole.Admin);
+
+            var reloaded = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
+            reloaded!.Role.Should().Be(UserRole.Admin);
         }
 
         [Fact]
-        public async Task Rename_Delegates_To_Repository()
+        public async Task ChangeRoleAsync_Throws_When_User_Not_Found()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new UserWriteService(repo, uow);
+            var (_, writeSvc, _) = await CreateSutAsync(dbh);
+
+            var dto = new UserChangeRoleDto { NewRole = UserRole.Admin };
+
+            await FluentActions.Invoking(() =>
+                writeSvc.ChangeRoleAsync(Guid.NewGuid(), dto))
+                .Should()
+                .ThrowAsync<NotFoundException>();
+        }
+
+        // --------------- RenameAsync ---------------
+
+        [Fact]
+        public async Task RenameAsync_Throws_When_Not_Authenticated()
+        {
+            using var dbh = new SqliteTestDb();
+            var (_, writeSvc, _) = await CreateSutAsync(dbh);
+
+            var dto = new UserRenameDto { NewName = "New Name" };
+
+            await FluentActions.Invoking(() =>
+                writeSvc.RenameAsync(dto))
+                .Should()
+                .ThrowAsync<InvalidOperationException>();
+        }
+
+        [Fact]
+        public async Task RenameAsync_Updates_Current_User_Name()
+        {
+            using var dbh = new SqliteTestDb();
+            var (db, writeSvc, currentUser) = await CreateSutAsync(dbh);
 
             var user = TestDataFactory.SeedUser(db);
-            var current = await db.Users.FirstAsync(u => u.Id == user.Id);
-            var result = await writeSvc.RenameAsync(
-                user.Id,
-                UserName.Create("new name"),
-                current.RowVersion);
+            currentUser.UserId = user.Id;
 
-            result.Should().Be(DomainMutation.Updated);
+            var dto = new UserRenameDto { NewName = "John Doe" };
+
+            var result = await writeSvc.RenameAsync(dto);
+
+            result.Name.Should().Be("John Doe");
+
+            var reloaded = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
+            reloaded!.Name.Value.Should().Be("John Doe");
         }
+        
+        // --------------- DeleteById ---------------
 
         [Fact]
-        public async Task RenameAsync_Returns_NoOp_When_Unchanged()
+        public async Task DeleteByIdAsync_Is_NoOp_When_User_Not_Found()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new UserWriteService(repo, uow);
+            var (db, writeSvc, _) = await CreateSutAsync(dbh);
 
-            var sameName = UserName.Create("same name");
-            var user = TestDataFactory.SeedUser(db, name: sameName);
-            var result = await writeSvc.RenameAsync(user.Id, sameName, user.RowVersion);
+            var existing = TestDataFactory.SeedUser(db);
 
-            result.Should().Be(DomainMutation.NoOp);
+            await writeSvc.DeleteByIdAsync(Guid.NewGuid());
+
+            var users = await db.Users.AsNoTracking().ToListAsync();
+            users.Should().ContainSingle(u => u.Id == existing.Id);
         }
 
-        [Fact]
-        public async Task ChangeRoleAsync_Returns_Conflict_When_RowVersion_Mismatch()
+
+        // ---------- HELPERS ----------
+
+        private static Task<(CollabTaskDbContext Db, UserWriteService Service, FakeCurrentUserService CurrentUser)>
+            CreateSutAsync(
+                SqliteTestDb dbh,
+                Guid? userId = null)
         {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
+            var db = dbh.CreateContext();
             var repo = new UserRepository(db);
             var uow = new UnitOfWork(db);
-            var writeSvc = new UserWriteService(repo, uow);
+            var currentUser = new FakeCurrentUserService
+            {
+                UserId = userId
+            };
+            var passwordHasher = new FakePasswordHasher();
+            var jwtTokenService = new FakeJwtTokenService();
 
-            var user = TestDataFactory.SeedUser(db);
-            var result = await writeSvc.ChangeRoleAsync(
-                user.Id,
-                UserRole.Admin,
-                rowVersion: [1, 2, 3, 4]);
-
-            result.Should().Be(DomainMutation.Conflict);
-        }
-
-        [Fact]
-        public async Task Delete_Delegates_To_Repository()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-            var uow = new UnitOfWork(db);
-            var writeSvc = new UserWriteService(repo, uow);
-
-            var user = TestDataFactory.SeedUser(db);
-            var current = await db.Users.FirstAsync(u => u.Id == user.Id);
-            var result = await writeSvc.DeleteAsync(user.Id, current.RowVersion);
-
-            result.Should().Be(DomainMutation.Deleted);
+            var svc = new UserWriteService(repo, uow, currentUser, passwordHasher, jwtTokenService);
+            return Task.FromResult((db, svc, currentUser));
         }
     }
 }

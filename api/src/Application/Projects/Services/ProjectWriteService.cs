@@ -1,6 +1,9 @@
-using Application.Abstractions.Extensions;
+using Application.Abstractions.Auth;
 using Application.Abstractions.Persistence;
+using Application.Common.Exceptions;
 using Application.Projects.Abstractions;
+using Application.Projects.DTOs;
+using Application.Projects.Mapping;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -8,68 +11,88 @@ using Domain.ValueObjects;
 namespace Application.Projects.Services
 {
     /// <summary>
-    /// Write-side application service for projects.
+    /// Application write-side service for <see cref="Project"/> aggregates.
+    /// Handles creation, renaming, and deletion of projects. All write operations
+    /// enforce domain invariants (such as name validity), uniqueness constraints,
+    /// and optimistic concurrency through <see cref="IUnitOfWork"/> using
+    /// <see cref="DomainMutation"/> and <see cref="MutationKind"/>.
     /// </summary>
-    public sealed class ProjectWriteService(IProjectRepository repo, IUnitOfWork uow) : IProjectWriteService
+    /// <param name="projectRepository">
+    /// Repository used for retrieving, tracking, modifying and persisting
+    /// <see cref="Project"/> entities, including name-based lookups for uniqueness.
+    /// </param>
+    /// <param name="unitOfWork">
+    /// Coordinates atomic persistence of changes and enforces optimistic concurrency.
+    /// </param>
+    /// <param name="currentUserService">
+    /// Provides the identity of the currently authenticated user, used to associate
+    /// new projects with their owner and to contextualize read models.
+    /// </param>
+    public sealed class ProjectWriteService(
+        IProjectRepository projectRepository,
+        IUnitOfWork unitOfWork,
+        ICurrentUserService currentUserService) : IProjectWriteService
     {
-        /// <summary>
-        /// Creates a new project for the specified user.
-        /// </summary>
-        /// <param name="userId">The owner user identifier.</param>
-        /// <param name="name">The project name.</param>
-        /// <param name="ct">Cancellation token.</param>
-        /// <returns>The mutation result and the created project when successful.</returns>
-        public async Task<(DomainMutation, Project?)> CreateAsync(
-            Guid userId,
-            ProjectName name,
+        private readonly IProjectRepository _projectRepository = projectRepository;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
+
+        /// <inheritdoc/>
+        public async Task<ProjectReadDto> CreateAsync(
+            ProjectCreateDto dto,
             CancellationToken ct = default)
         {
-            if (await repo.ExistsByNameAsync(userId, name, ct)) return (DomainMutation.Conflict, null);
+            var projectNameVo = ProjectName.Create(dto.Name);
+            if (await _projectRepository.ExistsByNameAsync(projectNameVo, ct))
+                throw new ConflictException("A project with the specified name already exists.");
 
-            var project = Project.Create(userId, name);
-            await repo.AddAsync(project, ct);
+            var currentUserId = (Guid)_currentUserService.UserId!;
 
-            var createResult = await uow.SaveAsync(MutationKind.Create, ct);
-            return (createResult, project);
+            var project = Project.Create(currentUserId, projectNameVo);
+            await _projectRepository.AddAsync(project, ct);
+
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Create, ct);
+            if (mutation != DomainMutation.Created)
+                throw new ConflictException("Project could not be created due to a conflicting state.");
+
+
+            return project.ToReadDto(currentUserId);
         }
 
-        /// <summary>
-        /// Renames an existing project with concurrency enforcement.
-        /// </summary>
-        /// <param name="projectId">The project identifier.</param>
-        /// <param name="newName">The new project name.</param>
-        /// <param name="rowVersion">Concurrency token.</param>
-        /// <param name="ct">Cancellation token.</param>
-        public async Task<DomainMutation> RenameAsync(
+        /// <inheritdoc/>
+        public async Task<ProjectReadDto> RenameAsync(
             Guid projectId,
-            ProjectName newName,
-            byte[] rowVersion,
+            ProjectRenameDto dto,
             CancellationToken ct = default)
         {
-            var rename = await repo.RenameAsync(projectId, newName, rowVersion, ct);
-            if (rename != PrecheckStatus.Ready) return rename.ToErrorDomainMutation();
+            var project = await _projectRepository.GetByIdForUpdateAsync(projectId, ct)
+                ?? throw new NotFoundException("Project not found.");
 
-            var updateResult = await uow.SaveAsync(MutationKind.Update, ct);
-            return updateResult;
+            var newNameVo = ProjectName.Create(dto.NewName);
+            project.Rename(newNameVo);
+
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Update, ct);
+            if (mutation != DomainMutation.Updated)
+                throw new ConflictException("The project name could not be changed due to a conflicting state.");
+
+            var currentUserId = (Guid)_currentUserService.UserId!;
+
+            return project.ToReadDto(currentUserId);
         }
 
-        /// <summary>
-        /// Deletes a project with concurrency enforcement.
-        /// </summary>
-        /// <param name="projectId">The project identifier.</param>
-        /// <param name="rowVersion">Concurrency token.</param>
-        /// <param name="ct">Cancellation token.</param>
-        public async Task<DomainMutation> DeleteAsync(
+        /// <inheritdoc/>
+        public async Task DeleteByIdAsync(
             Guid projectId,
-            byte[] rowVersion,
             CancellationToken ct = default)
         {
-            var delete = await repo.DeleteAsync(projectId, rowVersion, ct);
-            if (delete != PrecheckStatus.Ready) return delete.ToErrorDomainMutation();
+            var project = await _projectRepository.GetByIdForUpdateAsync(projectId, ct)
+                ?? throw new NotFoundException("Project not found.");
 
-            var deleteResult = await uow.SaveAsync(MutationKind.Delete, ct);
-            return deleteResult;
+            await _projectRepository.RemoveAsync(project, ct);
+            var mutation = await _unitOfWork.SaveAsync(MutationKind.Delete, ct);
+
+            if (mutation != DomainMutation.Deleted && mutation != DomainMutation.NoOp)
+                throw new ConflictException("The project could not be deleted due to a conflicting state.");
         }
     }
-
 }

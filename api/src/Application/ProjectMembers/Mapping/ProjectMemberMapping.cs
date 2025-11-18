@@ -16,7 +16,9 @@ namespace Application.ProjectMembers.Mapping
                 Role = item.Role,
                 JoinedAt = item.JoinedAt,
                 RemovedAt = item.RemovedAt,
-                RowVersion = item.RowVersion
+                RowVersion = item.RowVersion is { Length: > 0 }
+                    ? Convert.ToBase64String(item.RowVersion)
+                    : string.Empty
             };
 
         public static ProjectMemberRoleReadDto ToRoleReadDto(this ProjectRole role)

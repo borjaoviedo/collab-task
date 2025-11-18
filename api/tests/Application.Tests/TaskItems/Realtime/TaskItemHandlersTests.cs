@@ -1,9 +1,11 @@
 using Application.Realtime;
 using Application.TaskItems.Realtime;
 using Moq;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.TaskItems.Realtime
 {
+    [IntegrationTest]
     public class TaskItemHandlersTests
     {
         [Fact]

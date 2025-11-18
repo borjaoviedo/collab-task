@@ -155,7 +155,7 @@ namespace Infrastructure.Persistence.Seeders
                 ActivityPayloadFactory.AssignmentCreated(admin.Id, TaskRole.Owner),
                 createdAt: Now());
 
-            tA3.Move(prjA.Id, laneExec.Id, colDoing.Id, NextKey());
+            tA3.Move(laneExec.Id, colDoing.Id, NextKey());
             var tA3a2 = TaskActivity.Create(
                 tA3.Id,
                 admin.Id,
@@ -171,7 +171,7 @@ namespace Infrastructure.Persistence.Seeders
                 Payload(new { title = (string)TaskTitle.Create("Implement task CRUD + move") }),
                 createdAt: Now());
 
-            tA3.Move(prjA.Id, laneExec.Id, colReview.Id, NextKey());
+            tA3.Move(laneExec.Id, colReview.Id, NextKey());
             var tA3a4 = TaskActivity.Create(
                 tA3.Id,
                 admin.Id,
@@ -179,7 +179,7 @@ namespace Infrastructure.Persistence.Seeders
                 Payload(new { from = "Doing", to = "Review" }),
                 createdAt: Now());
 
-            tA3.Move(prjA.Id, laneExec.Id, colDone.Id, NextKey());
+            tA3.Move(laneExec.Id, colDone.Id, NextKey());
             var tA3a5 = TaskActivity.Create(
                 tA3.Id,
                 admin.Id,

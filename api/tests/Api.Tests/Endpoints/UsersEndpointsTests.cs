@@ -6,13 +6,16 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
-using TestHelpers.Api.Auth;
-using TestHelpers.Api.Defaults;
-using TestHelpers.Api.Http;
-using TestHelpers.Api.Users;
+using TestHelpers.Api.Common;
+using TestHelpers.Api.Common.Http;
+using TestHelpers.Api.Endpoints.Auth;
+using TestHelpers.Api.Endpoints.Defaults;
+using TestHelpers.Api.Endpoints.Users;
+using TestHelpers.Common.Testing;
 
 namespace Api.Tests.Endpoints
 {
+    [IntegrationTest]
     public sealed class UsersEndpointsTests
     {
         [Fact]
@@ -91,25 +94,6 @@ namespace Api.Tests.Endpoints
         }
 
         [Fact]
-        public async Task Delete_Returns204_When_Admin()
-        {
-            using var app = new TestApiFactory();
-            using var client = app.CreateClient();
-
-            var victim = await AuthTestHelper.PostRegisterAndLoginAsync(client);
-            var adminBearer = await MintTokenAsync(app, victim.UserId, victim.Email, victim.Name, UserRole.Admin);
-            client.SetAuthorization(adminBearer);
-
-            var currentUser = await UserTestHelper.GetUserByIdDtoAsync(client, victim.UserId);
-            var etag = $"W/\"{Convert.ToBase64String(currentUser.RowVersion)}\"";
-            var request = new HttpRequestMessage(HttpMethod.Delete, $"/users/{victim.UserId}");
-
-            IfMatchExtensions.SetIfMatchFromETag(request, etag);
-            var response = await client.SendAsync(request);
-            response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        }
-
-        [Fact]
         public async Task Get_ById_And_List_Admin_vs_NotAdmin()
         {
             using var app = new TestApiFactory();
@@ -139,30 +123,6 @@ namespace Api.Tests.Endpoints
         }
 
         [Fact]
-        public async Task Get_ByEmail_Admin_200_And_404_And_403()
-        {
-            using var app = new TestApiFactory();
-            using var client = app.CreateClient();
-
-            var user = await AuthTestHelper.PostRegisterAndLoginAsync(client);
-            var adminBearer = await MintTokenAsync(app, user.UserId, user.Email, user.Name, UserRole.Admin);
-
-            // 200
-            client.SetAuthorization(adminBearer);
-            var response = await UserTestHelper.GetUserByEmailResponseAsync(client);
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-            // 404
-            response = await UserTestHelper.GetUserByEmailResponseAsync(client, "random@email.com");
-            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-
-            // 403
-            client.SetAuthorization(user.AccessToken);
-            response = await UserTestHelper.GetUserByEmailResponseAsync(client);
-            response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        }
-
-        [Fact]
         public async Task Rename_Self_Valid_200_Stale_412_Missing_428()
         {
             using var app = new TestApiFactory();
@@ -170,38 +130,35 @@ namespace Api.Tests.Endpoints
 
             var user = await AuthTestHelper.PostRegisterAndLoginAsync(client);
 
-            // Elevate to admin to read current user by id
             var adminBearer = await MintTokenAsync(app, user.UserId, user.Email, user.Name, UserRole.Admin);
             client.SetAuthorization(adminBearer);
 
             var currentUser = await UserTestHelper.GetUserByIdDtoAsync(client, user.UserId);
+            var originalRowVersion = currentUser.RowVersion;
 
-            // Back to self auth for rename flow
             client.SetAuthorization(user.AccessToken);
 
-            // Self rename with valid If-Match
+            // ----- 200: rename with If-Match -----
             client.DefaultRequestHeaders.IfMatch.Clear();
             var okRenameResponse = await UserTestHelper.RenameUserResponseAsync(
                 client,
                 currentUser.Id,
-                currentUser.RowVersion);
+                originalRowVersion);
             okRenameResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            // Stale 412 (reuse old rowversion)
-            client.DefaultRequestHeaders.IfMatch.Clear();
-            client.DefaultRequestHeaders.TryAddWithoutValidation(
-                "If-Match",
-                $"W/\"{Convert.ToBase64String(currentUser.RowVersion)}\"");
+            // ----- 412: rename with stale If-Match -----
+            var staleRowVersion = CommonApiTestHelpers.GenerateStaleRowVersion(originalRowVersion);
 
+            client.DefaultRequestHeaders.IfMatch.Clear();
             var secondRenameDto = new UserRenameDto { NewName = "second" };
             var staleRenameResponse = await UserTestHelper.RenameUserResponseAsync(
                 client,
                 currentUser.Id,
-                currentUser.RowVersion,
+                staleRowVersion,
                 secondRenameDto);
             staleRenameResponse.StatusCode.Should().Be((HttpStatusCode)412);
 
-            // Missing 428
+            // ----- 428: Missing If-Match -----
             client.DefaultRequestHeaders.IfMatch.Clear();
             var thirdRenameDto = new UserRenameDto { NewName = "third" };
             var missingRenameResponse = await client.PatchAsJsonAsync(
@@ -219,45 +176,54 @@ namespace Api.Tests.Endpoints
             var user = await AuthTestHelper.PostRegisterAndLoginAsync(client);
             var adminBearer = await MintTokenAsync(app, user.UserId, user.Email, user.Name, UserRole.Admin);
             client.SetAuthorization(adminBearer);
-            var currentUser = await UserTestHelper.GetUserByIdDtoAsync(client, user.UserId);
 
-            // Admin OK
+            var currentUser = await UserTestHelper.GetUserByIdDtoAsync(client, user.UserId);
+            var originalRowVersion = currentUser.RowVersion;
+
             client.DefaultRequestHeaders.IfMatch.Clear();
             client.DefaultRequestHeaders.TryAddWithoutValidation(
                 "If-Match",
-                $"W/\"{Convert.ToBase64String(currentUser.RowVersion)}\"");
+                $"W/\"{originalRowVersion}\"");
 
             var okChangeRoleResponse = await client.PatchAsJsonAsync(
                 $"/users/{user.UserId}/role",
                 UserDefaults.DefaultUserChangeRoleDto);
             okChangeRoleResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            // Stale 412
+            var staleRowVersion = CommonApiTestHelpers.GenerateStaleRowVersion(originalRowVersion);
+
+            // ----- 412: Stale If-Match -----
             client.DefaultRequestHeaders.IfMatch.Clear();
             client.DefaultRequestHeaders.TryAddWithoutValidation(
                 "If-Match",
-                $"W/\"{Convert.ToBase64String(currentUser.RowVersion)}\"");
+                $"W/\"{staleRowVersion}\"");
 
             var differentChangeRoleDto = new UserChangeRoleDto { NewRole = UserRole.User };
             var stale = await client.PatchAsJsonAsync($"/users/{user.UserId}/role", differentChangeRoleDto);
             stale.StatusCode.Should().Be((HttpStatusCode)412);
 
+            // ----- 412: Stale If-Match  -----
+            client.DefaultRequestHeaders.IfMatch.Clear();
             var staleChangeRoleResponse = await UserTestHelper.ChangeRoleResponseAsync(
                 client,
                 currentUser.Id,
-                currentUser.RowVersion,
+                staleRowVersion,
                 differentChangeRoleDto);
             staleChangeRoleResponse.StatusCode.Should().Be((HttpStatusCode)412);
 
-            // Missing 428
+            // ----- 428: Missing If-Match -----
             client.DefaultRequestHeaders.IfMatch.Clear();
-            var missingChangeRoleResponse = await client.PatchAsJsonAsync($"/users/{user.UserId}/role", differentChangeRoleDto);
+            var missingChangeRoleResponse = await client.PatchAsJsonAsync(
+                $"/users/{user.UserId}/role",
+                differentChangeRoleDto);
             missingChangeRoleResponse.StatusCode.Should().Be((HttpStatusCode)428);
 
-            // 403 not admin
+            // ----- 403: Not admin -----
             client.SetAuthorization(user.AccessToken);
             client.DefaultRequestHeaders.IfMatch.Clear();
-            var forbiddenChangeRoleResponse = await client.PatchAsJsonAsync($"/users/{user.UserId}/role", differentChangeRoleDto);
+            var forbiddenChangeRoleResponse = await client.PatchAsJsonAsync(
+                $"/users/{user.UserId}/role",
+                differentChangeRoleDto);
             forbiddenChangeRoleResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         }
 
@@ -279,7 +245,7 @@ namespace Api.Tests.Endpoints
             deleteResponse.StatusCode.Should().Be((HttpStatusCode)428);
 
             // 204
-            var etag = $"W/\"{Convert.ToBase64String(currentUser.RowVersion)}\"";
+            var etag = $"W/\"{currentUser.RowVersion}\"";
             var request = new HttpRequestMessage(HttpMethod.Delete, $"/users/{victim.UserId}");
 
             request.Headers.TryAddWithoutValidation("If-Match", etag);
@@ -287,7 +253,12 @@ namespace Api.Tests.Endpoints
             deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
 
-        public static async Task<string> MintTokenAsync(TestApiFactory app, Guid userId, string email, string name, UserRole role)
+        public static async Task<string> MintTokenAsync(
+            TestApiFactory app,
+            Guid userId,
+            string email,
+            string name,
+            UserRole role)
         {
             await using var scope = app.Services.CreateAsyncScope();
 

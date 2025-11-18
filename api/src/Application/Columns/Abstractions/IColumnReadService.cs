@@ -1,26 +1,36 @@
+using Application.Columns.DTOs;
 using Domain.Entities;
 
 namespace Application.Columns.Abstractions
 {
     /// <summary>
-    /// Read-side operations for <see cref="Column"/> entities.
+    /// Provides read-only access to <see cref="Column"/> entities.
     /// </summary>
     public interface IColumnReadService
     {
         /// <summary>
         /// Retrieves a column by its unique identifier.
+        /// Throws <see cref="Common.Exceptions.NotFoundException"/>
+        /// when the column does not exist or is not accessible to the current user.
         /// </summary>
-        /// <param name="columnId">The unique identifier of the column.</param>
-        /// <param name="ct">Optional cancellation token.</param>
-        /// <returns>The matching <see cref="Column"/> or <c>null</c> if not found.</returns>
-        Task<Column?> GetAsync(Guid columnId, CancellationToken ct = default);
+        /// <param name="columnId">The unique identifier of the column to retrieve.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>
+        /// A <see cref="ColumnReadDto"/> representing the requested column.
+        /// </returns>
+        Task<ColumnReadDto> GetByIdAsync(Guid columnId, CancellationToken ct = default);
 
         /// <summary>
-        /// Retrieves all columns that belong to a given lane, ordered by their display order.
+        /// Lists all columns belonging to the specified lane, ordered by their configured sort/order value.
+        /// Throws <see cref="Common.Exceptions.NotFoundException"/> when the lane does not exist.
         /// </summary>
-        /// <param name="laneId">The identifier of the parent lane.</param>
-        /// <param name="ct">Optional cancellation token.</param>
-        /// <returns>A read-only list of <see cref="Column"/> instances.</returns>
-        Task<IReadOnlyList<Column>> ListByLaneAsync(Guid laneId, CancellationToken ct = default);
+        /// <param name="laneId">The unique identifier of the lane whose columns will be listed.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>
+        /// A read-only list of <see cref="ColumnReadDto"/> objects for the specified lane.
+        /// </returns>
+        Task<IReadOnlyList<ColumnReadDto>> ListByLaneIdAsync(
+            Guid laneId,
+            CancellationToken ct = default);
     }
 }

@@ -1,93 +1,109 @@
+using Application.Common.Exceptions;
 using Application.Users.Services;
-using Domain.ValueObjects;
+using Domain.Enums;
 using FluentAssertions;
+using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using TestHelpers.Common;
+using TestHelpers.Common.Fakes;
+using TestHelpers.Common.Testing;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.Users.Services
 {
+    [IntegrationTest]
     public sealed class UserReadServiceTests
     {
+        // --------------- GetByIdAsync ---------------
+
         [Fact]
-        public async Task Get_Returns_Entity()
+        public async Task GetByIdAsync_Returns_Entity()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-            var readSvc = new UserReadService(repo);
+            var (db, readSvc, _) = await CreateSutAsync(dbh);
 
             var user = TestDataFactory.SeedUser(db);
-            var found = await readSvc.GetAsync(user.Id);
+            var dto = await readSvc.GetByIdAsync(user.Id);
 
-            found.Should().NotBeNull();
+            dto.Should().NotBeNull();
+            dto!.Id.Should().Be(user.Id);
         }
 
         [Fact]
-        public async Task Get_Returns_Null_When_Not_Found()
+        public async Task GetByIdAsync_Throws_When_Not_Found()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-            var readSvc = new UserReadService(repo);
+            var (_, readSvc, _) = await CreateSutAsync(dbh);
 
-            var found = await readSvc.GetAsync(userId: Guid.Empty);
-            found.Should().BeNull();
+            await FluentActions.Invoking(() =>
+                readSvc.GetByIdAsync(Guid.NewGuid()))
+                .Should()
+                .ThrowAsync<NotFoundException>();
+        }
+
+        // --------------- GetCurrentAsync ---------------
+
+        [Fact]
+        public async Task GetCurrentAsync_Returns_Current_User()
+        {
+            using var dbh = new SqliteTestDb();
+            var (db, readSvc, currentUser) = await CreateSutAsync(
+                dbh,
+                userId: null);
+
+            var user = TestDataFactory.SeedUser(db, role: UserRole.Admin);
+            currentUser.UserId = user.Id;
+
+            var dto = await readSvc.GetCurrentAsync();
+
+            dto.Should().NotBeNull();
+            dto!.Id.Should().Be(user.Id);
+        }
+
+        // --------------- SearchAsync ---------------
+
+        [Fact]
+        public async Task SearchAsync_Returns_Users_List()
+        {
+            using var dbh = new SqliteTestDb();
+            var (db, readSvc, _) = await CreateSutAsync(dbh);
+
+            // Seed users with different roles
+            TestDataFactory.SeedUser(db, role: UserRole.User);
+            TestDataFactory.SeedUser(db, role: UserRole.Admin);
+
+            var result = await readSvc.ListAsync();
+
+            result.Should().HaveCount(2);
         }
 
         [Fact]
-        public async Task GetByEmail_Returns_Entity()
+        public async Task ListAsync_Returns_Empty_When_No_Matches()
         {
             using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-            var readSvc = new UserReadService(repo);
+            var (_, readSvc, _) = await CreateSutAsync(dbh);
 
-            var user = TestDataFactory.SeedUser(db);
-            var found = await readSvc.GetByEmailAsync(user.Email);
+            var result = await readSvc.ListAsync();
 
-            found.Should().NotBeNull();
+            result.Should().BeEmpty();
         }
 
-        [Fact]
-        public async Task GetByEmail_Returns_Null_When_Not_Found()
+        // ---------- HELPERS ----------
+
+        private static Task<(CollabTaskDbContext Db, UserReadService Service, FakeCurrentUserService CurrentUser)>
+            CreateSutAsync(
+                SqliteTestDb dbh,
+                Guid? userId = null)
         {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
+            var db = dbh.CreateContext();
             var repo = new UserRepository(db);
-            var readSvc = new UserReadService(repo);
+            var currentUser = new FakeCurrentUserService
+            {
+                UserId = userId
+            };
+            var service = new UserReadService(repo, currentUser);
 
-            var found = await readSvc.GetByEmailAsync(Email.Create("email@e.com"));
-            found.Should().BeNull();
-        }
-
-        [Fact]
-        public async Task List_Returns_Users()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-            var readSvc = new UserReadService(repo);
-
-            var firstUserName = "User A";
-            var secondUserName = "User B";
-            TestDataFactory.SeedUser(db, name: firstUserName);
-            TestDataFactory.SeedUser(db, name: secondUserName);
-
-            var list = await readSvc.ListAsync();
-            list.Select(x => x.Name.Value).Should().ContainInOrder(firstUserName, secondUserName);
-        }
-
-        [Fact]
-        public async Task List_Returns_Empty_When_None()
-        {
-            using var dbh = new SqliteTestDb();
-            await using var db = dbh.CreateContext();
-            var repo = new UserRepository(db);
-            var readSvc = new UserReadService(repo);
-
-            var list = await readSvc.ListAsync();
-            list.Should().BeEmpty();
+            return Task.FromResult((db, service, currentUser));
         }
     }
 }

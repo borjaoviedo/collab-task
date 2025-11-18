@@ -1,6 +1,3 @@
-using System.Net;
-using System.Security.Claims;
-using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Connections;
@@ -9,9 +6,14 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Net;
+using System.Security.Claims;
+using System.Text.Encodings.Web;
+using TestHelpers.Common.Testing;
 
 namespace Api.Tests.Realtime
 {
+    [IntegrationTest]
     public sealed class ProjectsHubAuthorizationTests
     {
         [Fact]

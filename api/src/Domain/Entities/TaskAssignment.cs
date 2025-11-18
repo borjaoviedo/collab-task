@@ -48,18 +48,12 @@ namespace Domain.Entities
             return Create(taskId, userId, TaskRole.CoOwner);
         }
 
-        /// <summary>Sets the concurrency token after persistence.</summary>
-        internal void SetRowVersion(byte[] rowVersion)
+        public void ChangeRole(TaskRole newRole)
         {
-            Guards.NotNull(rowVersion);
-            RowVersion = rowVersion;
-        }
+            Guards.EnumDefined(newRole);
+            if (newRole == Role) return;
 
-        /// <summary>Changes the task role, validating enum constraints.</summary>
-        internal void SetRole(TaskRole role)
-        {
-            Guards.EnumDefined(role);
-            Role = role;
+            Role = newRole;
         }
     }
 }
