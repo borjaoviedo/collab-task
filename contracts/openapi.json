@@ -86,6 +86,16 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -113,7 +123,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MeReadDto"
+                  "$ref": "#/components/schemas/UserReadDto"
                 }
               }
             }
@@ -132,69 +142,6 @@
       }
     },
     "/projects/{projectId}/lanes/{laneId}/columns": {
-      "get": {
-        "tags": [
-          "Columns"
-        ],
-        "summary": "List columns",
-        "description": "Returns columns for the lane.",
-        "operationId": "Columns_Get_All",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ColumnReadDto"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "tags": [
           "Columns"
@@ -273,8 +220,82 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Columns"
+        ],
+        "summary": "List columns",
+        "description": "Returns columns for the lane.",
+        "operationId": "Columns_Get_All",
+        "parameters": [
+          {
+            "name": "laneId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ColumnReadDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -295,24 +316,6 @@
         "description": "Returns a column in the lane. Sets ETag.",
         "operationId": "Columns_Get_ById",
         "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
           {
             "name": "columnId",
             "in": "path",
@@ -374,24 +377,6 @@
         "description": "Admin-only. Deletes a column using optimistic concurrency (If-Match).",
         "operationId": "Columns_Delete",
         "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
           {
             "name": "columnId",
             "in": "path",
@@ -489,7 +474,7 @@
       }
     },
     "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename": {
-      "put": {
+      "patch": {
         "tags": [
           "Columns"
         ],
@@ -497,24 +482,6 @@
         "description": "Admin-only. Renames a column using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "Columns_Rename",
         "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
           {
             "name": "columnId",
             "in": "path",
@@ -629,7 +596,7 @@
       }
     },
     "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/reorder": {
-      "put": {
+      "patch": {
         "tags": [
           "Columns"
         ],
@@ -637,24 +604,6 @@
         "description": "Admin-only. Changes column order using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "Columns_Reorder",
         "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
           {
             "name": "columnId",
             "in": "path",
@@ -779,16 +728,6 @@
         "responses": {
           "200": {
             "description": "OK"
-          },
-          "503": {
-            "description": "Service Unavailable",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       }
@@ -838,6 +777,16 @@
           },
           "403": {
             "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -917,6 +866,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -939,15 +898,6 @@
         "description": "Returns a lane in the project. Sets ETag.",
         "operationId": "Lanes_Get_ById",
         "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
           {
             "name": "laneId",
             "in": "path",
@@ -1009,15 +959,6 @@
         "description": "Admin-only. Deletes a lane using optimistic concurrency (If-Match).",
         "operationId": "Lanes_Delete",
         "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
           {
             "name": "laneId",
             "in": "path",
@@ -1115,7 +1056,7 @@
       }
     },
     "/projects/{projectId}/lanes/{laneId}/rename": {
-      "put": {
+      "patch": {
         "tags": [
           "Lanes"
         ],
@@ -1123,15 +1064,6 @@
         "description": "Admin-only. Renames a lane using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "Lanes_Rename",
         "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
           {
             "name": "laneId",
             "in": "path",
@@ -1246,7 +1178,7 @@
       }
     },
     "/projects/{projectId}/lanes/{laneId}/reorder": {
-      "put": {
+      "patch": {
         "tags": [
           "Lanes"
         ],
@@ -1254,15 +1186,6 @@
         "description": "Admin-only. Changes lane order using optimistic concurrency (If-Match). Returns the updated resource and ETag.",
         "operationId": "Lanes_Reorder",
         "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
           {
             "name": "laneId",
             "in": "path",
@@ -1429,6 +1352,16 @@
           },
           "403": {
             "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2127,6 +2060,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -2438,41 +2381,6 @@
         }
       }
     },
-    "/projects/me": {
-      "get": {
-        "tags": [
-          "Projects"
-        ],
-        "summary": "List my projects",
-        "description": "Returns projects accessible to the authenticated user.",
-        "operationId": "Projects_Get_Mine",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ProjectReadDto"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/projects/users/{userId}": {
       "get": {
         "tags": [
@@ -2518,6 +2426,16 @@
           },
           "403": {
             "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2651,7 +2569,7 @@
         }
       }
     },
-    "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities": {
+    "/projects/{projectId}/tasks/{taskId}/activities": {
       "get": {
         "tags": [
           "Task Activities"
@@ -2660,33 +2578,6 @@
         "description": "Returns activities for the task. Optional filter by activity type.",
         "operationId": "TaskActivities_Get_All",
         "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
           {
             "name": "taskId",
             "in": "path",
@@ -2737,55 +2628,29 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
     },
-    "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/activities/{activityId}": {
+    "/projects/{projectId}/activities/{activityId}": {
       "get": {
         "tags": [
           "Task Activities"
         ],
         "summary": "Get task activity",
-        "description": "Returns a single activity if it belongs to the task.",
+        "description": "Returns a single activity if it belongs to a project the user can read.",
         "operationId": "TaskActivities_Get_ById",
         "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "taskId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
           {
             "name": "activityId",
             "in": "path",
@@ -2927,11 +2792,21 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
     },
-    "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments": {
+    "/projects/{projectId}/tasks/{taskId}/assignments": {
       "get": {
         "tags": [
           "Task Assignments"
@@ -2940,33 +2815,6 @@
         "description": "Returns all assignments for the task.",
         "operationId": "TaskAssignments_Get_All",
         "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
           {
             "name": "taskId",
             "in": "path",
@@ -3010,6 +2858,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       },
@@ -3023,24 +2881,6 @@
         "parameters": [
           {
             "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
             "in": "path",
             "required": true,
             "schema": {
@@ -3119,6 +2959,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -3132,7 +2982,7 @@
         }
       }
     },
-    "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}": {
+    "/projects/{projectId}/tasks/{taskId}/assignments/{userId}": {
       "get": {
         "tags": [
           "Task Assignments"
@@ -3141,33 +2991,6 @@
         "description": "Returns a user’s assignment for the task. Sets ETag.",
         "operationId": "TaskAssignments_Get_ById",
         "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
           {
             "name": "taskId",
             "in": "path",
@@ -3248,24 +3071,6 @@
             }
           },
           {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
             "name": "taskId",
             "in": "path",
             "required": true,
@@ -3317,6 +3122,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -3350,7 +3165,7 @@
         }
       }
     },
-    "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/assignments/{userId}/role": {
+    "/projects/{projectId}/tasks/{taskId}/assignments/{userId}/role": {
       "patch": {
         "tags": [
           "Task Assignments"
@@ -3361,24 +3176,6 @@
         "parameters": [
           {
             "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
             "in": "path",
             "required": true,
             "schema": {
@@ -3595,11 +3392,21 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
     },
-    "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes": {
+    "/projects/{projectId}/tasks/{taskId}/notes": {
       "get": {
         "tags": [
           "Task Notes"
@@ -3608,33 +3415,6 @@
         "description": "Returns notes for the task.",
         "operationId": "Notes_Get_All",
         "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
           {
             "name": "taskId",
             "in": "path",
@@ -3678,6 +3458,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       },
@@ -3691,24 +3481,6 @@
         "parameters": [
           {
             "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
             "in": "path",
             "required": true,
             "schema": {
@@ -3777,214 +3549,6 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{noteId}": {
-      "get": {
-        "tags": [
-          "Task Notes"
-        ],
-        "summary": "Get task note",
-        "description": "Returns a task note. Sets ETag.",
-        "operationId": "TaskNotes_Get_ById",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "taskId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "noteId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TaskNoteReadDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Task Notes"
-        ],
-        "summary": "Delete task note",
-        "description": "Member-only. Deletes a note using optimistic concurrency (If-Match).",
-        "operationId": "Notes_Delete",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "taskId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "noteId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "If-Match",
-            "in": "header",
-            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -4004,31 +3568,11 @@
                 }
               }
             }
-          },
-          "412": {
-            "description": "Precondition Failed",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "428": {
-            "description": "Precondition Required",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       }
     },
-    "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/notes/{noteId}/edit": {
+    "/projects/{projectId}/tasks/{taskId}/notes/{noteId}/edit": {
       "patch": {
         "tags": [
           "Task Notes"
@@ -4039,24 +3583,6 @@
         "parameters": [
           {
             "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
             "in": "path",
             "required": true,
             "schema": {
@@ -4186,6 +3712,192 @@
         }
       }
     },
+    "/projects/{projectId}/tasks/{taskId}/notes/{noteId}": {
+      "delete": {
+        "tags": [
+          "Task Notes"
+        ],
+        "summary": "Delete task note",
+        "description": "Member-only. Deletes a note using optimistic concurrency (If-Match).",
+        "operationId": "Notes_Delete",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "noteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "ETag from previous GET. Accepts multiple values and weak/strong: W/\"base64\" or \"base64\".",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/notes/{noteId}": {
+      "get": {
+        "tags": [
+          "Task Notes"
+        ],
+        "summary": "Get task note",
+        "description": "Returns a task note. Sets ETag.",
+        "operationId": "TaskNotes_Get_ById",
+        "parameters": [
+          {
+            "name": "noteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskNoteReadDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/notes/me": {
       "get": {
         "tags": [
@@ -4273,83 +3985,21 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
     },
     "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks": {
-      "get": {
-        "tags": [
-          "Tasks"
-        ],
-        "summary": "List tasks",
-        "description": "Returns tasks for the column.",
-        "operationId": "Tasks_Get_All",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TaskItemReadDto"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "tags": [
           "Tasks"
@@ -4437,6 +4087,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -4450,14 +4110,14 @@
         }
       }
     },
-    "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}": {
+    "/projects/{projectId}/columns/{columnId}/tasks": {
       "get": {
         "tags": [
           "Tasks"
         ],
-        "summary": "Get task",
-        "description": "Returns a task in the column. Sets ETag.",
-        "operationId": "Tasks_Get_ById",
+        "summary": "List tasks",
+        "description": "Returns tasks for the column.",
+        "operationId": "Tasks_Get_All",
         "parameters": [
           {
             "name": "projectId",
@@ -4469,16 +4129,73 @@
             }
           },
           {
-            "name": "laneId",
+            "name": "columnId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
             }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TaskItemReadDto"
+                  }
+                }
+              }
+            }
           },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/tasks/{taskId}": {
+      "get": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Get task",
+        "description": "Returns a task in the project. Sets ETag.",
+        "operationId": "Tasks_Get_ById",
+        "parameters": [
           {
-            "name": "columnId",
+            "name": "projectId",
             "in": "path",
             "required": true,
             "schema": {
@@ -4549,24 +4266,6 @@
         "parameters": [
           {
             "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
             "in": "path",
             "required": true,
             "schema": {
@@ -4670,7 +4369,7 @@
         }
       }
     },
-    "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/edit": {
+    "/projects/{projectId}/tasks/{taskId}/edit": {
       "patch": {
         "tags": [
           "Tasks"
@@ -4681,24 +4380,6 @@
         "parameters": [
           {
             "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
             "in": "path",
             "required": true,
             "schema": {
@@ -4819,7 +4500,7 @@
         }
       }
     },
-    "/projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks/{taskId}/move": {
+    "/projects/{projectId}/tasks/{taskId}/move": {
       "put": {
         "tags": [
           "Tasks"
@@ -4830,24 +4511,6 @@
         "parameters": [
           {
             "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "laneId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "columnId",
             "in": "path",
             "required": true,
             "schema": {
@@ -5179,68 +4842,6 @@
         }
       }
     },
-    "/users/by-email": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Get user by email",
-        "description": "Admin-only. Returns a user by email.",
-        "operationId": "Users_Get_ByEmail",
-        "parameters": [
-          {
-            "name": "email",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserReadDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/users/{userId}/rename": {
       "patch": {
         "tags": [
@@ -5504,9 +5105,6 @@
           "name": {
             "type": "string",
             "nullable": true
-          },
-          "role": {
-            "$ref": "#/components/schemas/UserRole"
           }
         },
         "additionalProperties": false
@@ -5554,7 +5152,6 @@
           },
           "rowVersion": {
             "type": "string",
-            "format": "byte",
             "nullable": true
           }
         },
@@ -5625,7 +5222,6 @@
           },
           "rowVersion": {
             "type": "string",
-            "format": "byte",
             "nullable": true
           }
         },
@@ -5651,31 +5247,6 @@
         "type": "object",
         "properties": {
           "newOrder": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "MeReadDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "email": {
-            "type": "string",
-            "nullable": true
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "role": {
-            "$ref": "#/components/schemas/UserRole"
-          },
-          "projectMembershipsCount": {
             "type": "integer",
             "format": "int32"
           }
@@ -5797,7 +5368,6 @@
           },
           "rowVersion": {
             "type": "string",
-            "format": "byte",
             "nullable": true
           }
         },
@@ -5851,7 +5421,6 @@
           },
           "rowVersion": {
             "type": "string",
-            "format": "byte",
             "nullable": true
           },
           "membersCount": {
@@ -5974,7 +5543,6 @@
           },
           "rowVersion": {
             "type": "string",
-            "format": "byte",
             "nullable": true
           }
         },
@@ -6096,7 +5664,6 @@
           },
           "rowVersion": {
             "type": "string",
-            "format": "byte",
             "nullable": true
           }
         },
@@ -6157,7 +5724,6 @@
           },
           "rowVersion": {
             "type": "string",
-            "format": "byte",
             "nullable": true
           }
         },
@@ -6232,7 +5798,6 @@
           },
           "rowVersion": {
             "type": "string",
-            "format": "byte",
             "nullable": true
           }
         },
