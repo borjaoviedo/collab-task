@@ -27,10 +27,19 @@ RUN dotnet restore src/Presentation/Api.csproj \
 COPY . .
 
 # Build
-RUN dotnet build src/Presentation/Api.csproj -c $BUILD_CONFIGURATION -o /app/build --no-restore
+RUN dotnet build src/Presentation/Api.csproj \
+    -c $BUILD_CONFIGURATION \
+    -o /app/build \
+    --no-restore \
+    -p:RestoreFallbackFolders=""
 
 # Publish trimmed app
-RUN dotnet publish src/Presentation/Api.csproj -c $BUILD_CONFIGURATION -o /app/publish --no-restore /p:UseAppHost=false
+RUN dotnet publish src/Presentation/Api.csproj \
+    -c $BUILD_CONFIGURATION \
+    -o /app/publish \
+    --no-restore \
+    /p:UseAppHost=false \
+    -p:RestoreFallbackFolders=""
 
 # ---------------------------------------
 # Stage 2: runtime image
