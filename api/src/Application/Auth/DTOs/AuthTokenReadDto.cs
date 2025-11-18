@@ -1,4 +1,3 @@
-using Domain.Enums;
 
 namespace Application.Auth.DTOs
 {
@@ -10,6 +9,5 @@ namespace Application.Auth.DTOs
         public Guid UserId { get; init; }
         public string Email { get; init; } = default!;
         public string Name { get; init; } = default!;
-        public UserRole Role { get; init; }
     }
 }

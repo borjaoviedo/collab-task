@@ -131,7 +131,7 @@ namespace Api.Tests.Endpoints
 
             client.DefaultRequestHeaders.IfMatch.Clear(); // missing
 
-            var renameResponse = await client.PutAsJsonAsync(
+            var renameResponse = await client.PatchAsJsonAsync(
                 $"/projects/{project.Id}/lanes/{lane.Id}/columns/{column!.Id}/rename",
                 ColumnDefaults.DefaultColumnRenameDto);
             renameResponse.StatusCode.Should().Be((HttpStatusCode)428);

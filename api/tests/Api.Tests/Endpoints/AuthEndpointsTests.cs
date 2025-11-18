@@ -37,7 +37,6 @@ namespace Api.Tests.Endpoints
             dto.ExpiresAtUtc.Offset.Should().Be(TimeSpan.Zero);
             dto.Email.Should().Be(UserDefaults.DefaultEmail.ToLowerInvariant());
             dto.Name.Should().Be(UserDefaults.DefaultUserName);
-            dto.Role.Should().NotBe(null);
         }
 
         [Fact]

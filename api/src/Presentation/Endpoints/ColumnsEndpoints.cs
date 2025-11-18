@@ -26,13 +26,20 @@ namespace Api.Endpoints
         /// <returns>The configured route group for column item endpoints.</returns>
         public static RouteGroupBuilder MapColumns(this IEndpointRouteBuilder app)
         {
+            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
+            // include consistent success/error shapes and auth requirements
+
+
             // /projects/{projectId}/lanes/{laneId}/columns
             var projectColumnsGroup = app
                 .MapGroup("/projects/{projectId:guid}/lanes/{laneId:guid}/columns")
                 .WithTags("Columns")
                 .RequireAuthorization(Policies.ProjectReader);
 
+
+            // ===================================================================================
             // POST /projects/{projectId}/lanes/{laneId}/columns
+            // ===================================================================================
             projectColumnsGroup.MapPost("/", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
@@ -55,12 +62,15 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Create column")
             .WithDescription("Admin-only. Creates a column in the lane. Returns the resource with ETag.")
             .WithName("Columns_Create");
 
+            // ===================================================================================
             // GET /projects/{projectId}/lanes/{laneId}/columns
+            // ===================================================================================
             projectColumnsGroup.MapGet("/", async (
                 [FromRoute] Guid laneId,
                 [FromServices] IColumnReadService columnReadSvc,
@@ -72,11 +82,14 @@ namespace Api.Endpoints
             .Produces<IEnumerable<ColumnReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("List columns")
             .WithDescription("Returns columns for the lane.")
             .WithName("Columns_Get_All");
 
+            // ===================================================================================
             // GET /projects/{projectId}/lanes/{laneId}/columns/{columnId}
+            // ===================================================================================
             projectColumnsGroup.MapGet("/{columnId:guid}", async (
                 [FromRoute] Guid columnId,
                 [FromServices] IColumnReadService columnReadSvc,
@@ -95,8 +108,10 @@ namespace Api.Endpoints
             .WithDescription("Returns a column in the lane. Sets ETag.")
             .WithName("Columns_Get_ById");
 
-            // PUT /projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename
-            projectColumnsGroup.MapPut("/{columnId:guid}/rename", async (
+            // ===================================================================================
+            // PATCH /projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename
+            // ===================================================================================
+            projectColumnsGroup.MapPatch("/{columnId:guid}/rename", async (
                 [FromRoute] Guid columnId,
                 [FromBody] ColumnRenameDto dto,
                 [FromServices] IColumnWriteService columnWriteSvc,
@@ -123,8 +138,10 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Renames a column using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Columns_Rename");
 
-            // PUT /projects/{projectId}/lanes/{laneId}/columns/{columnId}/reorder
-            projectColumnsGroup.MapPut("/{columnId:guid}/reorder", async (
+            // ===================================================================================
+            // PATCH /projects/{projectId}/lanes/{laneId}/columns/{columnId}/reorder
+            // ===================================================================================
+            projectColumnsGroup.MapPatch("/{columnId:guid}/reorder", async (
                 [FromRoute] Guid columnId,
                 [FromBody] ColumnReorderDto dto,
                 [FromServices] IColumnWriteService columnWriteSvc,
@@ -151,7 +168,9 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Changes column order using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Columns_Reorder");
 
+            // ===================================================================================
             // DELETE /projects/{projectId}/lanes/{laneId}/columns/{columnId}
+            // ===================================================================================
             projectColumnsGroup.MapDelete("/{columnId:guid}", async (
                 [FromRoute] Guid columnId,
                 [FromServices] IColumnWriteService columnWriteSvc,

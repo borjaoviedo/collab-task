@@ -13,8 +13,7 @@ namespace Application.Auth.Mapping
             ExpiresAtUtc = expiresAtUtc,
             UserId = user.Id,
             Email = user.Email.Value,
-            Name = user.Name.Value,
-            Role = user.Role
+            Name = user.Name.Value
         };
     }
 }

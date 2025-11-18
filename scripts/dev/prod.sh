@@ -60,10 +60,10 @@ wait_health() {
       fi
     fi
     sleep "${delay}"
-  end
+  done
   # Fallback to HTTP if the API port is exposed (demo mode)
   if out="$(curl -fsS "http://localhost:${API_PORT}/health" 2>/dev/null || true)"; then
-    if [[ "$out" == *'"status"'*":"*"ok"* ]]; then
+    if [[ "$out" == *'"status"'*":"*"Healthy"* ]]; then
       return 0
     fi
   fi
@@ -87,7 +87,7 @@ case "${CMD}" in
     docker compose --project-directory "${INFRA}" "${FILES[@]}" "${PROJECT[@]}" "${ENVARGS[@]}" logs -f api
     ;;
   health)
-    if wait_health; then echo '{ "status": "ok" }'; fi
+    if wait_health; then echo '{ "status": "Healthy" }'; fi
     ;;
   *)
     echo "Usage: $0 {up|down|rebuild|logs|health} [--project-name NAME] [--api-port PORT]" >&2

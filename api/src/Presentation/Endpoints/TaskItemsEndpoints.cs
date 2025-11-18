@@ -24,13 +24,20 @@ namespace Api.Endpoints
         /// <returns>The configured route group for project-scoped task item operations.</returns>
         public static RouteGroupBuilder MapTaskItems(this IEndpointRouteBuilder app)
         {
+            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
+            // include consistent success/error shapes and auth requirements
+
+
             // /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks
             var projectColumnTasksGroup = app
                 .MapGroup("/projects/{projectId:guid}/lanes/{laneId:guid}/columns/{columnId:guid}/tasks")
                 .WithTags("Tasks")
                 .RequireAuthorization(Policies.ProjectReader);
 
+
+            // ===================================================================================
             // POST /projects/{projectId}/lanes/{laneId}/columns/{columnId}/tasks
+            // ===================================================================================
             projectColumnTasksGroup.MapPost("/", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid laneId,
@@ -59,6 +66,7 @@ namespace Api.Endpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .WithSummary("Create task")
             .WithDescription("Member-only. Creates a task in the column. Returns the resource with ETag.")
@@ -72,7 +80,9 @@ namespace Api.Endpoints
                 .RequireAuthorization(Policies.ProjectReader);
 
 
+            // ===================================================================================
             // GET /projects/{projectId}/columns/{columnId}/tasks
+            // ===================================================================================
             columnsTasksGroup.MapGet("/", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid columnId,
@@ -85,6 +95,7 @@ namespace Api.Endpoints
             .Produces<IEnumerable<TaskItemReadDto>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("List tasks")
             .WithDescription("Returns tasks for the column.")
             .WithName("Tasks_Get_All");
@@ -96,7 +107,10 @@ namespace Api.Endpoints
                 .WithTags("Tasks")
                 .RequireAuthorization(Policies.ProjectReader);
 
+
+            // ===================================================================================
             // GET /projects/{projectId}/tasks/{taskId}
+            // ===================================================================================
             projectTasksGroup.MapGet("/{taskId:guid}", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid taskId,
@@ -116,7 +130,9 @@ namespace Api.Endpoints
             .WithDescription("Returns a task in the project. Sets ETag.")
             .WithName("Tasks_Get_ById");
 
+            // ===================================================================================
             // PATCH /projects/{projectId}/tasks/{taskId}/edit
+            // ===================================================================================
             projectTasksGroup.MapPatch("/{taskId:guid}/edit", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid taskId,
@@ -149,7 +165,9 @@ namespace Api.Endpoints
             .WithDescription("Member-only. Updates task fields using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Tasks_Edit");
 
-            // PUT /projects/{projectId}/tasks/{taskId}/move
+            // ===================================================================================
+            // PATCH /projects/{projectId}/tasks/{taskId}/move
+            // ===================================================================================
             projectTasksGroup.MapPut("/{taskId:guid}/move", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid taskId,
@@ -182,7 +200,9 @@ namespace Api.Endpoints
             .WithDescription("Member-only. Moves the task to another lane/column using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Tasks_Move");
 
+            // ===================================================================================
             // DELETE /projects/{projectId}/tasks/{taskId}
+            // ===================================================================================
             projectTasksGroup.MapDelete("/{taskId:guid}", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid taskId,

@@ -115,15 +115,14 @@ public interface ICurrentUserService
 **Métodos**
 
 ```csharp
-Task<User?> GetAsync(
+Task<UserReadDto> GetByIdAsync(
     Guid userId,
     CancellationToken ct = default);
 
-Task<User?> GetByEmailAsync(
-    string email,
+Task<UserReadDto> GetCurrentAsync(
     CancellationToken ct = default);
 
-Task<IReadOnlyList<User>> ListAsync(
+Task<IReadOnlyList<UserReadDto>> ListAsync(
     CancellationToken ct = default);
 ```
 
@@ -138,29 +137,25 @@ Task<IReadOnlyList<User>> ListAsync(
 **Métodos**
 
 ```csharp
-Task<(DomainMutation, User?)> CreateAsync(
-    Email email,
-    UserName name,
-    byte[] hash,
-    byte[] salt,
-    UserRole role,
+Task<AuthTokenReadDto> RegisterAsync(
+    UserRegisterDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> RenameAsync(
-    Guid id,
-    UserName newName,
-    byte[] rowVersion,
+Task<AuthTokenReadDto> LoginAsync(
+    UserLoginDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> ChangeRoleAsync(
-    Guid id,
-    UserRole newRole,
-    byte[] rowVersion,
+Task<UserReadDto> RenameAsync(
+    UserRenameDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> DeleteAsync(
-    Guid id,
-    byte[] rowVersion,
+Task<UserReadDto> ChangeRoleAsync(
+    Guid userId,
+    UserChangeRoleDto dto,
+    CancellationToken ct = default);
+
+Task DeleteAsync(
+    Guid userId,
     CancellationToken ct = default);
 ```
 
@@ -178,14 +173,18 @@ Task<DomainMutation> DeleteAsync(
 **Métodos**
 
 ```csharp
-Task<Project?> GetAsync(
+Task<ProjectReadDto> GetByIdAsync(
     Guid projectId,
     CancellationToken ct = default);
 
-Task<IReadOnlyList<Project>> ListByUserAsync(
+Task<IReadOnlyList<ProjectReadDto>> ListByUserIdAsync(
     Guid userId,
     ProjectFilter? filter = null,
     CancellationToken ct = default);
+
+Task<IReadOnlyList<ProjectReadDto>> ListSelfAsync(
+    ProjectFilter? filter = null,
+    CancellationToken ct = default);  
 ```
 
 Ejemplo de propiedades de `ProjectFilter`:
@@ -206,20 +205,17 @@ Ejemplo de propiedades de `ProjectFilter`:
 **Métodos**
 
 ```csharp
-Task<(DomainMutation, Project?)> CreateAsync(
-    Guid userId,
-    ProjectName name,
+Task<ProjectReadDto> CreateAsync(
+    ProjectCreateDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> RenameAsync(
+Task<ProjectReadDto> RenameAsync(
     Guid projectId,
-    ProjectName newName,
-    byte[] rowVersion,
+    ProjectRenameDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> DeleteAsync(
+Task DeleteAsync(
     Guid projectId,
-    byte[] rowVersion,
     CancellationToken ct = default);
 ```
 
@@ -237,23 +233,26 @@ Task<DomainMutation> DeleteAsync(
 **Métodos**
 
 ```csharp
-Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(
+Task<ProjectMemberReadDto> GetByProjectAndUserIdAsync(
+    Guid projectId,
+    Guid userId,
+    CancellationToken ct = default);
+
+Task<IReadOnlyList<ProjectMemberReadDto>> ListByProjectIdAsync(
     Guid projectId,
     bool includeRemoved = false,
     CancellationToken ct = default);
 
-Task<ProjectMember?> GetAsync(
+Task<ProjectMemberReadDto> GetUserRoleAsync(
     Guid projectId,
     Guid userId,
     CancellationToken ct = default);
 
-Task<ProjectRole?> GetRoleAsync(
-    Guid projectId,
+Task<ProjectMemberCountReadDto> CountActiveUsersAsync(
     Guid userId,
     CancellationToken ct = default);
 
-Task<int> CountActiveAsync(
-    Guid userId,
+Task<ProjectMemberCountReadDto> CountActiveSelfAsync(
     CancellationToken ct = default);
 ```
 
@@ -268,29 +267,25 @@ Task<int> CountActiveAsync(
 **Métodos**
 
 ```csharp
-Task<(DomainMutation, ProjectMember?)> CreateAsync(
+Task<ProjectMemberReadDto> CreateAsync(
     Guid projectId,
-    Guid userId,
-    ProjectRole role,
+    ProjectMemberCreateDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> ChangeRoleAsync(
+Task<ProjectMemberReadDto> ChangeRoleAsync(
     Guid projectId,
     Guid userId,
-    ProjectRole newRole,
-    byte[] rowVersion,
+    ProjectMemberChangeRoleDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> RemoveAsync(
+Task<ProjectMemberReadDto> RemoveAsync(
     Guid projectId,
     Guid userId,
-    byte[] rowVersion,
     CancellationToken ct = default);
 
-Task<DomainMutation> RestoreAsync(
+Task<ProjectMemberReadDto> RestoreAsync(
     Guid projectId,
     Guid userId,
-    byte[] rowVersion,
     CancellationToken ct = default);
 ```
 
@@ -307,12 +302,12 @@ Task<DomainMutation> RestoreAsync(
 **Métodos**
 
 ```csharp
-Task<IReadOnlyList<Lane>> ListByProjectAsync(
-    Guid projectId,
+Task<LaneReadDto> GetByIdAsync(
+    Guid laneId,
     CancellationToken ct = default);
 
-Task<Lane?> GetAsync(
-    Guid laneId,
+Task<IReadOnlyList<LaneReadDto>> ListByProjectIdAsync(
+    Guid projectId,
     CancellationToken ct = default);
 ```
 
@@ -328,27 +323,23 @@ Task<Lane?> GetAsync(
 **Métodos**
 
 ```csharp
-Task<(DomainMutation, Lane?)> CreateAsync(
+Task<LaneReadDto> CreateAsync(
     Guid projectId,
-    LaneName name,
-    int? order = null,
+    LaneCreateDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> RenameAsync(
+Task<LaneReadDto> RenameAsync(
     Guid laneId,
-    LaneName newName,
-    byte[] rowVersion,
+    LaneCreateDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> ReorderAsync(
+Task<LaneReadDto> ReorderAsync(
     Guid laneId,
-    int newOrder,
-    byte[] rowVersion,
+    LaneCreateDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> DeleteAsync(
+Task DeleteAsync(
     Guid laneId,
-    byte[] rowVersion,
     CancellationToken ct = default);
 ```
 
@@ -365,12 +356,12 @@ Task<DomainMutation> DeleteAsync(
 **Métodos**
 
 ```csharp
-Task<IReadOnlyList<Column>> ListByLaneAsync(
-    Guid laneId,
+Task<ColumnReadDto> GetByIdAsync(
+    Guid columnId,
     CancellationToken ct = default);
 
-Task<Column?> GetAsync(
-    Guid columnId,
+Task<IReadOnlyList<ColumnReadDto>> ListByLaneIdAsync(
+    Guid laneId,
     CancellationToken ct = default);
 ```
 
@@ -386,28 +377,24 @@ Task<Column?> GetAsync(
 **Métodos**
 
 ```csharp
-Task<(DomainMutation, Column?)> CreateAsync(
+Task<ColumnReadDto> CreateAsync(
     Guid projectId,
     Guid laneId,
-    ColumnName name,
-    int? order = null,
+    ColumnCreateDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> RenameAsync(
+Task<ColumnReadDto> RenameAsync(
     Guid columnId,
-    ColumnName newName,
-    byte[] rowVersion,
+    ColumnRenameDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> ReorderAsync(
+Task<ColumnReadDto> ReorderAsync(
     Guid columnId,
-    int newOrder,
-    byte[] rowVersion,
+    ColumnReorderDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> DeleteAsync(
+Task DeleteAsync(
     Guid columnId,
-    byte[] rowVersion,
     CancellationToken ct = default);
 ```
 
@@ -424,12 +411,12 @@ Task<DomainMutation> DeleteAsync(
 **Métodos**
 
 ```csharp
-Task<IReadOnlyList<TaskItem>> ListByColumnAsync(
-    Guid columnId,
+Task<TaskItemReadDto> GetByIdAsync(
+    Guid taskId,
     CancellationToken ct = default);
 
-Task<TaskItem?> GetAsync(
-    Guid taskId,
+Task<IReadOnlyList<TaskItemReadDto>> ListByColumnIdAsync(
+    Guid columnId,
     CancellationToken ct = default);
 ```
 
@@ -445,41 +432,28 @@ Task<TaskItem?> GetAsync(
 **Métodos**
 
 ```csharp
-Task<(DomainMutation, TaskItem?)> CreateAsync(
+Task<TaskItemReadDto> CreateAsync(
     Guid projectId,
     Guid laneId,
     Guid columnId,
-    Guid userId,
-    TaskTitle title,
-    TaskDescription description,
-    DateTimeOffset? dueDate = null,
-    decimal? sortKey = null,
+    TaskItemCreateDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> EditAsync(
+Task<TaskItemReadDto> EditAsync(
     Guid projectId,
     Guid taskId,
-    Guid userId,
-    TaskTitle? newTitle,
-    TaskDescription? newDescription,
-    DateTimeOffset? newDueDate,
-    byte[] rowVersion,
+    TaskItemEditDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> MoveAsync(
+Task<TaskItemReadDto> MoveAsync(
     Guid projectId,
     Guid taskId,
-    Guid targetColumnId,
-    Guid targetLaneId,
-    Guid userId,
-    decimal targetSortKey,
-    byte[] rowVersion,
+    TaskItemMoveDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> DeleteAsync(
+Task DeleteAsync(
     Guid projectId,
     Guid taskId,
-    byte[] rowVersion,
     CancellationToken ct = default);
 ```
 
@@ -496,16 +470,16 @@ Task<DomainMutation> DeleteAsync(
 **Métodos**
 
 ```csharp
-Task<IReadOnlyList<TaskNote>> ListByTaskAsync(
+Task<TaskNoteReadDto> GetByIdAsync(
+    Guid noteId,
+    CancellationToken ct = default);
+
+Task<IReadOnlyList<TaskNoteReadDto>> ListByTaskIdAsync(
     Guid taskId,
     CancellationToken ct = default);
 
-Task<IReadOnlyList<TaskNote>> ListByUserAsync(
+Task<IReadOnlyList<TaskNoteReadDto>> ListByUserIdAsync(
     Guid userId,
-    CancellationToken ct = default);
-
-Task<TaskNote?> GetAsync(
-    Guid noteId,
     CancellationToken ct = default);
 ```
 
@@ -521,27 +495,23 @@ Task<TaskNote?> GetAsync(
 **Métodos**
 
 ```csharp
-Task<(DomainMutation, TaskNote?)> CreateAsync(
+Task<TaskNoteReadDto> CreateAsync(
     Guid projectId,
     Guid taskId,
-    Guid userId,
-    NoteContent content,
+    TaskNoteCreateDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> EditAsync(
+Task<TaskNoteReadDto> EditAsync(
     Guid projectId,
     Guid taskId,
     Guid noteId,
-    Guid userId,
-    NoteContent content,
-    byte[] rowVersion,
+    TaskNoteEditDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> DeleteAsync(
+Task DeleteAsync(
     Guid projectId,
     Guid noteId,
     Guid userId,
-    byte[] rowVersion,
     CancellationToken ct = default);
 ```
 
@@ -558,16 +528,16 @@ Task<DomainMutation> DeleteAsync(
 **Métodos**
 
 ```csharp
-Task<IReadOnlyList<TaskAssignment>> ListByTaskAsync(
+Task<TaskAssignmentReadDto> GetByTaskAndUserIdAsync(
     Guid taskId,
-    CancellationToken ct = default);
-
-Task<IReadOnlyList<TaskAssignment>> ListByUserAsync(
     Guid userId,
     CancellationToken ct = default);
 
-Task<TaskAssignment?> GetAsync(
+Task<IReadOnlyList<TaskAssignmentReadDto>> ListByTaskIdAsync(
     Guid taskId,
+    CancellationToken ct = default);
+
+Task<IReadOnlyList<TaskAssignmentReadDto>> ListByUserIdAsync(
     Guid userId,
     CancellationToken ct = default);
 ```
@@ -584,29 +554,23 @@ Task<TaskAssignment?> GetAsync(
 **Métodos**
 
 ```csharp
-Task<(DomainMutation, TaskAssignment?)> CreateAsync(
+Task<TaskAssignmentReadDto> CreateAsync(
     Guid projectId,
     Guid taskId,
-    Guid targetUserId,
-    TaskRole role,
-    Guid executedBy,
+    TaskAssignmentCreateDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> ChangeRoleAsync(
+Task<TaskAssignmentReadDto> ChangeRoleAsync(
     Guid projectId,
     Guid taskId,
     Guid targetUserId,
-    TaskRole newRole,
-    Guid executedBy,
-    byte[] rowVersion,
+    TaskAssignmentChangeRoleDto dto,
     CancellationToken ct = default);
 
-Task<DomainMutation> DeleteAsync(
+Task DeleteAsync(
     Guid projectId,
     Guid taskId,
     Guid targetUserId,
-    Guid executedBy,
-    byte[] rowVersion,
     CancellationToken ct = default);
 ```
 
@@ -623,21 +587,24 @@ Task<DomainMutation> DeleteAsync(
 **Métodos**
 
 ```csharp
-Task<IReadOnlyList<TaskActivity>> ListByTaskAsync(
+Task<TaskActivityReadDto> GetByIdAsync(
+    Guid activityId,
+    CancellationToken ct = default);
+
+Task<IReadOnlyList<TaskActivityReadDto>> ListByTaskIdAsync(
     Guid taskId,
     CancellationToken ct = default);
 
-Task<IReadOnlyList<TaskActivity>> ListByTaskTypeAsync(
-    Guid taskId,
-    TaskActivityType type,
-    CancellationToken ct = default);
-
-Task<IReadOnlyList<TaskActivity>> ListByUserAsync(
+Task<IReadOnlyList<TaskActivityReadDto>> ListByUserIdAsync(
     Guid userId,
     CancellationToken ct = default);
 
-Task<TaskActivity?> GetAsync(
-    Guid activityId,
+Task<IReadOnlyList<TaskActivityReadDto>> ListSelfAsync(
+    CancellationToken ct = default);
+
+Task<IReadOnlyList<TaskActivityReadDto>> ListByActivityTypeAsync(
+    Guid taskId,
+    TaskActivityType type,
     CancellationToken ct = default);
 ```
 
@@ -650,7 +617,7 @@ Task<TaskActivity?> GetAsync(
 **Métodos**
 
 ```csharp
-Task<(DomainMutation, TaskActivity?)> CreateAsync(
+Task<TaskActivityReadDto> CreateAsync(
     Guid taskId,
     Guid userId,
     TaskActivityType type,
@@ -684,50 +651,31 @@ Task<(DomainMutation, TaskActivity?)> CreateAsync(
 **Métodos**
 
 ```csharp
-Task<User?> GetByIdAsync(
-    Guid id,
+Task<IReadOnlyList<User>> ListAsync(
     CancellationToken ct = default);
 
-Task<User?> GetTrackedByIdAsync(
-    Guid id,
+Task<User?> GetByIdAsync(
+    Guid userId,
+    CancellationToken ct = default);
+
+Task<User?> GetByIdForUpdateAsync(
+    Guid userId,
     CancellationToken ct = default);
 
 Task<User?> GetByEmailAsync(
     Email email,
     CancellationToken ct = default);
 
-Task<IReadOnlyList<User>> ListAsync(
-    CancellationToken ct = default);
-
 Task AddAsync(
     User item,
     CancellationToken ct = default);
 
-Task<PrecheckStatus> RenameAsync(
-    Guid id,
-    UserName newName,
-    byte[] rowVersion,
+Task UpdateAsync(
+    User user, 
     CancellationToken ct = default);
 
-Task<PrecheckStatus> ChangeRoleAsync(
-    Guid id,
-    UserRole newRole,
-    byte[] rowVersion,
-    CancellationToken ct = default);
-
-Task<PrecheckStatus> DeleteAsync(
-    Guid id,
-    byte[] rowVersion,
-    CancellationToken ct = default);
-
-Task<bool> ExistsWithEmailAsync(
-    Email email,
-    Guid? excludeUserId = null,
-    CancellationToken ct = default);
-
-Task<bool> ExistsWithNameAsync(
-    UserName name,
-    Guid? excludeUserId = null,
+Task RemoveAsync(
+    User user, 
     CancellationToken ct = default);
 ```
 
@@ -744,37 +692,33 @@ Task<bool> ExistsWithNameAsync(
 **Métodos**
 
 ```csharp
-Task<Project?> GetByIdAsync(
-    Guid id,
-    CancellationToken ct = default);
-
-Task<Project?> GetTrackedByIdAsync(
-    Guid id,
-    CancellationToken ct = default);
-
-Task<IReadOnlyList<Project>> ListByUserAsync(
+Task<IReadOnlyList<Project>> ListByUserIdAsync(
     Guid userId,
     ProjectFilter? filter = null,
+    CancellationToken ct = default);
+
+Task<Project?> GetByIdAsync(
+    Guid projectId,
+    CancellationToken ct = default);
+
+Task<Project?> GetByIdForUpdateAsync(
+    Guid projectId,
+    CancellationToken ct = default);
+
+Task<bool> ExistsByNameAsync(
+    string name, 
     CancellationToken ct = default);
 
 Task AddAsync(
     Project project,
     CancellationToken ct = default);
 
-Task<PrecheckStatus> RenameAsync(
-    Guid id,
-    ProjectName newName,
-    byte[] rowVersion,
+Task UpdateAsync(
+    Project project, 
     CancellationToken ct = default);
 
-Task<PrecheckStatus> DeleteAsync(
-    Guid id,
-    byte[] rowVersion,
-    CancellationToken ct = default);
-
-Task<bool> ExistsByNameAsync(
-    Guid ownerId,
-    ProjectName name,
+Task RemoveAsync(
+    Project project, 
     CancellationToken ct = default);
 ```
 
@@ -791,56 +735,41 @@ Task<bool> ExistsByNameAsync(
 **Métodos**
 
 ```csharp
+Task<IReadOnlyList<ProjectMember>> ListByProjectIdAsync(
+    Guid projectId,
+    bool includeRemoved = false,
+    CancellationToken ct = default);
+
 Task<ProjectMember?> GetByProjectAndUserIdAsync(
     Guid projectId,
     Guid userId,
     CancellationToken ct = default);
     
-Task<ProjectMember?> GetTrackedByProjectAndUserIdAsync(
+Task<ProjectMember?> GetByProjectAndUserIdForUpdateAsync(
     Guid projectId,
     Guid userId,
     CancellationToken ct = default);
 
-Task<IReadOnlyList<ProjectMember>> ListByProjectAsync(
-    Guid projectId,
-    bool includeRemoved = false,
-    CancellationToken ct = default);
-
-Task<ProjectRole?> GetRoleAsync(
+Task<ProjectRole?> GetUserRoleAsync(
     Guid projectId, 
     Guid userId, 
+    CancellationToken ct = default);
+
+Task<bool> ExistsAsync(
+    Guid projectId,
+    Guid userId, 
+    CancellationToken ct = default);
+
+Task<int> CountUserActiveMembershipsAsync(
+    Guid userId,
     CancellationToken ct = default);
 
 Task AddAsync(
     ProjectMember member, 
     CancellationToken ct = default);
 
-Task<PrecheckStatus> UpdateRoleAsync(
-    Guid projectId,
-    Guid userId,
-    ProjectRole newRole,
-    byte[] rowVersion,
-    CancellationToken ct = default);
-
-Task<PrecheckStatus> SetRemovedAsync(
-    Guid projectId,
-    Guid userId,
-    byte[] rowVersion,
-    CancellationToken ct = default);
-
-Task<PrecheckStatus> SetRestoredAsync(
-    Guid projectId,
-    Guid userId,
-    byte[] rowVersion,
-    CancellationToken ct = default);
-
-Task<bool> ExistsAsync(
-    Guid projectId, 
-    Guid userId,
-    CancellationToken ct = default);
-
-Task<int> CountUserActiveMembershipsAsync(
-    Guid userId, 
+Task UpdateAsync(
+    ProjectMember member, 
     CancellationToken ct = default);
 ```
 
@@ -856,51 +785,47 @@ Task<int> CountUserActiveMembershipsAsync(
 **Métodos**
 
 ```csharp
+Task<IReadOnlyList<Lane>> ListByProjectIdAsync(
+    Guid projectId,
+    CancellationToken ct = default);
+
 Task<Lane?> GetByIdAsync(
     Guid laneId,
     CancellationToken ct = default);
     
-Task<Lane?> GetTrackedByIdAsync(
+Task<Lane?> GetByIdForUpdateAsync(
     Guid laneId,
     CancellationToken ct = default);
 
-Task<IReadOnlyList<Lane>> ListByProjectAsync(
+Task<PrecheckStatus> PrepareReorderAsync(
+    Guid laneId,
+    int newOrder,
+    CancellationToken ct = default);
+
+Task FinalizeReorderAsync(
+    Guid laneId, 
+    CancellationToken ct = default);
+
+Task<bool> ExistsWithNameAsync(
     Guid projectId,
+    string laneName,
+    Guid? excludeLaneId = null,
+    CancellationToken ct = default);
+
+Task<int> GetMaxOrderAsync(
+    Guid projectId, 
     CancellationToken ct = default);
 
 Task AddAsync(
     Lane lane,
     CancellationToken ct = default);
 
-Task<PrecheckStatus> RenameAsync(
-    Guid laneId,
-    LaneName newName,
-    byte[] rowVersion,
+Task UpdateAsync(
+    Lane lane,
     CancellationToken ct = default);
 
-Task<PrecheckStatus> ReorderPhase1Async(
-    Guid laneId,
-    int newOrder,
-    byte[] rowVersion,
-    CancellationToken ct = default);
-
-Task ApplyReorderPhase2Async(
-    Guid laneId, 
-    CancellationToken ct = default);
-
-Task<PrecheckStatus> DeleteAsync(
-    Guid laneId,
-    byte[] rowVersion,
-    CancellationToken ct = default);
-
-Task<bool> ExistsWithNameAsync(
-    Guid projectId,
-    LaneName name,
-    Guid? excludeLaneId = null,
-    CancellationToken ct = default);
-
-Task<int> GetMaxOrderAsync(
-    Guid projectId, 
+Task RemoveAsync(
+    Lane lane,
     CancellationToken ct = default);
 ```
 
@@ -916,51 +841,47 @@ Task<int> GetMaxOrderAsync(
 **Métodos**
 
 ```csharp
+Task<IReadOnlyList<Column>> ListByLaneIdAsync(
+    Guid laneId,
+    CancellationToken ct = default);
+
 Task<Column?> GetByIdAsync(
     Guid columnId,
     CancellationToken ct = default);
     
-Task<Column?> GetTrackedByIdAsync(
+Task<Column?> GetByIdForUpdateAsync(
     Guid columnId,
     CancellationToken ct = default);
 
-Task<IReadOnlyList<Column>> ListByLaneAsync(
+Task<PrecheckStatus> PrepareReorderAsync(
+    Guid columnId,
+    int newOrder,
+    CancellationToken ct = default);
+
+Task FinalizeReorderAsync(
+    Guid columnId,
+    CancellationToken ct = default);
+
+Task<bool> ExistsWithNameAsync(
     Guid laneId,
+    string columnName,
+    Guid? excludeColumnId = null,
+    CancellationToken ct = default);
+
+Task<int> GetMaxOrderAsync(
+    Guid laneId, 
     CancellationToken ct = default);
 
 Task AddAsync(
     Column column,
     CancellationToken ct = default);
 
-Task<PrecheckStatus> RenameAsync(
-    Guid columnId,
-    ColumnName newName,
-    byte[] rowVersion,
+Task UpdateAsync(
+    Column column,
     CancellationToken ct = default);
 
-Task<PrecheckStatus> ReorderPhase1Async(
-    Guid columnId,
-    int newOrder,
-    byte[] rowVersion,
-    CancellationToken ct = default);
-
-Task ApplyReorderPhase2Async(
-    Guid columnId, 
-    CancellationToken ct = default);
-
-Task<PrecheckStatus> DeleteAsync(
-    Guid columnId,
-    byte[] rowVersion,
-    CancellationToken ct = default);
-
-Task<bool> ExistsWithNameAsync(
-    Guid laneId,
-    ColumnName name,
-    Guid? excludeColumnId = null,
-    CancellationToken ct = default);
-
-Task<int> GetMaxOrderAsync(
-    Guid laneId, 
+Task RemoveAsync(
+    Column column,
     CancellationToken ct = default);
 ```
 
@@ -976,15 +897,25 @@ Task<int> GetMaxOrderAsync(
 **Métodos**
 
 ```csharp
+Task<IReadOnlyList<TaskItem>> ListByColumnIdAsync(
+    Guid columnId,
+    CancellationToken ct = default);
+
 Task<TaskItem?> GetByIdAsync(
     Guid taskId,
     CancellationToken ct = default);
     
-Task<TaskItem?> GetTrackedByIdAsync(
+Task<TaskItem?> GetByIdForUpdateAsync(
     Guid taskId,
     CancellationToken ct = default);
 
-Task<IReadOnlyList<TaskItem>> ListByColumnAsync(
+Task<bool> ExistsWithTitleAsync(
+    Guid columnId,
+    string taskTitle,
+    Guid? excludeTaskId = null,
+    CancellationToken ct = default);
+
+Task<decimal> GetNextSortKeyAsync(
     Guid columnId,
     CancellationToken ct = default);
 
@@ -992,36 +923,12 @@ Task AddAsync(
     TaskItem task,
     CancellationToken ct = default);
 
-Task<(PrecheckStatus Status, TaskItemEditedChange? Change)> EditAsync(
-    Guid taskId,
-    TaskTitle? newTitle,
-    TaskDescription? newDescription,
-    DateTimeOffset? newDueDate,
-    byte[] rowVersion,
+Task UpdateAsync(
+    TaskItem task, 
     CancellationToken ct = default);
-
-Task<(PrecheckStatus Status, TaskItemMovedChange? Change)> MoveAsync(
-    Guid taskId,
-    Guid targetColumnId,
-    Guid targetLaneId,
-    Guid targetProjectId,
-    decimal targetSortKey,
-    byte[] rowVersion,
-    CancellationToken ct = default);
-
-Task<PrecheckStatus> DeleteAsync(
-    Guid taskId,
-    byte[] rowVersion,
-    CancellationToken ct = default);
-
-Task<bool> ExistsWithTitleAsync(
-    Guid columnId,
-    TaskTitle title,
-    Guid? excludeTaskId = null,
-    CancellationToken ct = default);
-
-Task<decimal> GetNextSortKeyAsync(
-    Guid columnId, 
+    
+Task RemoveAsync(
+    TaskItem task, 
     CancellationToken ct = default);
 ```
 
@@ -1037,35 +944,32 @@ Task<decimal> GetNextSortKeyAsync(
 **Métodos**
 
 ```csharp
+Task<IReadOnlyList<TaskNote>> ListByTaskIdAsync(
+    Guid taskId,
+    CancellationToken ct = default);
+
+Task<IReadOnlyList<TaskNote>> ListByUserIdAsync(
+    Guid userId,
+    CancellationToken ct = default);
+
 Task<TaskNote?> GetByIdAsync(
     Guid noteId,
     CancellationToken ct = default);
     
-Task<TaskNote?> GetTrackedByIdAsync(
+Task<TaskNote?> GetByIdForUpdateAsync(
     Guid noteId,
-    CancellationToken ct = default);
-
-Task<IReadOnlyList<TaskNote>> ListByTaskAsync(
-    Guid taskId,
-    CancellationToken ct = default);
-
-Task<IReadOnlyList<TaskNote>> ListByUserAsync(
-    Guid userId,
     CancellationToken ct = default);
 
 Task AddAsync(
     TaskNote note,
     CancellationToken ct = default);
 
-Task<PrecheckStatus> EditAsync(
-    Guid noteId,
-    NoteContent newContent,
-    byte[] rowVersion,
+Task UpdateAsync(
+    TaskNote note, 
     CancellationToken ct = default);
 
-Task<PrecheckStatus> DeleteAsync(
-    Guid noteId,
-    byte[] rowVersion,
+Task RemoveAsync(
+    TaskNote note, 
     CancellationToken ct = default);
 ```
 
@@ -1081,39 +985,22 @@ Task<PrecheckStatus> DeleteAsync(
 **Métodos**
 
 ```csharp
+Task<IReadOnlyList<TaskAssignment>> ListByTaskIdAsync(
+    Guid taskId,
+    CancellationToken ct = default);
+
+Task<IReadOnlyList<TaskAssignment>> ListByUserIdAsync(
+    Guid userId,
+    CancellationToken ct = default);
+
 Task<TaskAssignment?> GetByTaskAndUserIdAsync(
     Guid taskId,
     Guid userId,
     CancellationToken ct = default);
     
-Task<TaskAssignment?> GetTrackedByTaskAndUserIdAsync(
+Task<TaskAssignment?> GetByTaskAndUserIdForUpdateAsync(
     Guid taskId,
     Guid userId,
-    CancellationToken ct = default);
-
-Task<IReadOnlyList<TaskAssignment>> ListByTaskAsync(
-    Guid taskId,
-    CancellationToken ct = default);
-
-Task<IReadOnlyList<TaskAssignment>> ListByUserAsync(
-    Guid userId,
-    CancellationToken ct = default);
-
-Task AddAsync(
-    TaskAssignment assignment,
-    CancellationToken ct = default);
-
-Task<(PrecheckStatus Status, AssignmentChange? Change)> ChangeRoleAsync(
-    Guid taskId,
-    Guid userId,
-    TaskRole newRole,
-    byte[] rowVersion,
-    CancellationToken ct = default);
-
-Task<PrecheckStatus> DeleteAsync(
-    Guid taskId,
-    Guid userId,
-    byte[] rowVersion,
     CancellationToken ct = default);
 
 Task<bool> ExistsAsync(
@@ -1124,6 +1011,18 @@ Task<bool> ExistsAsync(
 Task<bool> AnyOwnerAsync(
     Guid taskId,
     Guid? excludeUserId = null,
+    CancellationToken ct = default);
+
+Task AddAsync(
+    TaskAssignment assignment,
+    CancellationToken ct = default);
+
+Task UpdateAsync(
+    TaskAssignment assignment,
+    CancellationToken ct = default);
+
+Task RemoveAsync(
+    TaskAssignment assignment,
     CancellationToken ct = default);
 ```
 
@@ -1139,21 +1038,21 @@ Task<bool> AnyOwnerAsync(
 **Métodos**
 
 ```csharp
-Task<TaskActivity?> GetByIdAsync(
-    Guid activityId,
-    CancellationToken ct = default);
-
-Task<IReadOnlyList<TaskActivity>> ListByTaskAsync(
+Task<IReadOnlyList<TaskActivity>> ListByTaskIdAsync(
     Guid taskId,
     CancellationToken ct = default);
 
-Task<IReadOnlyList<TaskActivity>> ListByTypeAsync(
+Task<IReadOnlyList<TaskActivity>> ListByTaskTypeAsync(
     Guid taskId,
     TaskActivityType type,
     CancellationToken ct = default);
 
-Task<IReadOnlyList<TaskActivity>> ListByUserAsync(
+Task<IReadOnlyList<TaskActivity>> ListByUserIdAsync(
     Guid userId,
+    CancellationToken ct = default);
+
+Task<TaskActivity?> GetByIdAsync(
+    Guid activityId,
     CancellationToken ct = default);
 
 Task AddAsync(
@@ -1174,6 +1073,6 @@ La unidad de trabajo coordina la consistencia transaccional entre múltiples rep
 ```csharp
 public interface IUnitOfWork
 {
-    Task<int> SaveChangesAsync(CancellationToken ct = default);
+    Task<DomainMutation> SaveAsync(MutationKind kind, CancellationToken ct = default);
 }
 ```

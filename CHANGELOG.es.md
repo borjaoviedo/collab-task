@@ -8,6 +8,56 @@ Todos los cambios relevantes de este proyecto se documentan en este archivo.
 El formato sigue las directrices de [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2025-11-18
+
+### Cambios
+- **Capa de Aplicación**
+  - Normalización de todas las **interfaces e implementaciones de servicios de aplicación**, garantizando consistencia en nombres, dependencias y mapeo de resultados/excepciones.
+  - Unificación de validaciones de parámetros, comprobaciones de coherencia de IDs y precondiciones de concurrencia en todos los servicios.
+  - Refinado del mapeo de **DTOs**, eliminando conversiones redundantes y asegurando que todos los DTOs reflejen los contratos finales del dominio y de los value objects.
+
+- **Dominio e Integración con Repositorios**
+  - Refactorización de todas las **interfaces de repositorio** para alinearlas con el uso actualizado de value objects y la semántica estricta de prechecks.
+  - Mejora de la consistencia en los nombres de métodos de repositorios, alineándolos con los casos de uso de la capa de aplicación.
+  - Refuerzo de las consultas restringidas por ID y validaciones dentro del ámbito del proyecto en todos los repositorios del ProjectBoard.
+
+- **Endpoints de la API**
+  - Normalización de todos los handlers para garantizar uniformidad en:
+    - Firmas de rutas y enlace de parámetros.
+    - Uso de ETag/If-Match únicamente cuando corresponde.
+    - Mapeo de errores al modelo canónico de resultados de la API.
+  - Eliminación de códigos de respuesta obsoletos y alineación de todas las operaciones de escritura a **`412 PreconditionFailed`** y **`428 PreconditionRequired`**.
+  - Actualización de summaries, agrupación de handlers y secuenciación coherente con los contratos actualizados de los servicios.
+
+- **Infraestructura e Inyección de Dependencias**
+  - Refinado de **DependencyInjection.cs** en todas las capas para asegurar:
+    - Consistencia en la nomenclatura y agrupación de registros.
+    - Separación clara entre registros de Dominio, Aplicación, Infraestructura y Realtime.
+    - Eliminación de registros duplicados u obsoletos.
+  - Actualización del wiring de DI para reflejar las nuevas abstracciones de servicios y repositorios.
+
+- **Testing**
+  - Refactor completo de todos los suites de tests (unitarios, integración, API):
+    - Eliminación de scripts antiguos y consolidación de pipelines.
+    - Actualización de todos los tests para usar las nuevas firmas.
+    - Sustitución de `Bytes(16/32)` por `TestDataFactory.CreateHash()` y `TestDataFactory.CreateSalt()`.
+    - Normalización de nombres, estructura y aserciones.
+    - Actualización de los tests del ProjectBoard según los invariantes corregidos y el comportamiento final de la API.
+
+- **Herramientas de Desarrollo y Build**
+  - Actualización de los scripts (`dev.ps1`, `dev.sh`, `prod.ps1`, `prod.sh`) para:
+    - Cargar variables desde `.env.dev` y aplicarlas mediante `--env-file`.
+    - Usar el estado de salud estándar (`"Healthy"`) expuesto por la API.
+  - Actualización del Dockerfile de la API para usar un comportamiento limpio de restore y una configuración de publish mejorada.
+
+- **Documentación**
+  - Revisión completa de la documentación para asegurar consistencia con los servicios, repositorios y endpoints refactorizados.
+
+### Notas
+- Esta versión completa la **limpieza y unificación interna**: DTOs, servicios, repositorios, endpoints, estructura de DI y suites de tests.
+- **Tag creado: `v1.0.2`**
+
+
 ## [1.0.1] - 2025-11-07
 
 ### Añadido

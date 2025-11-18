@@ -87,7 +87,7 @@ Las reglas se aplican al construir las entidades o mediante fábricas estáticas
 ### Unit of Work
 Centraliza la persistencia para garantizar operaciones atómicas:
 ```csharp
-Task<DomainMutation> SaveAsync(CancellationToken ct = default);
+Task<DomainMutation> SaveAsync(MutationKind kind, CancellationToken ct = default);
 ```
 
 ### DomainMutation y PrecheckStatus
@@ -97,7 +97,7 @@ Estandarizan los resultados de las operaciones y permiten mapearlos directamente
 - `RowVersion` gestionado por EF Core.  
 - `ETag` expuesto por HTTP.  
 - `If-Match` requerido en actualizaciones/eliminaciones.  
-- Respuestas estándar: `409`, `412`, `428`.
+- Respuestas estándar: `412`, `428`.
 
 ### Colaboración en Tiempo Real
 SignalR difunde eventos por grupo de proyecto:
@@ -145,7 +145,7 @@ Estos seis documentos amplían la información técnica del presente resumen gen
 
 ## 7. Resumen
 
-**CollabTask v1.0.0** ofrece:
+**CollabTask v1.0.2** ofrece:
 - Un backend modular y mantenible para la gestión colaborativa de tareas.  
 - Separación limpia entre Dominio, Aplicación, Infraestructura y API.  
 - Concurrencia optimista y colaboración en tiempo real.  

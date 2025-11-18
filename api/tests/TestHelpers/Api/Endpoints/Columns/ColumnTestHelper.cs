@@ -97,7 +97,7 @@ namespace TestHelpers.Api.Endpoints.Columns
             var newName = dto is null ? ColumnDefaults.DefaultColumnRename : dto.NewName;
             var renameDto = new ColumnRenameDto() { NewName = newName };
 
-            var renameResponse = await client.PutWithIfMatchAsync(
+            var renameResponse = await client.PatchWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename",
                 renameDto);
@@ -118,7 +118,7 @@ namespace TestHelpers.Api.Endpoints.Columns
             var newOrder = dto is null ? ColumnDefaults.DefaultColumnReorder : dto.NewOrder;
             var reorderDto = new ColumnReorderDto() { NewOrder = newOrder };
 
-            var reorderResponse = await client.PutWithIfMatchAsync(
+            var reorderResponse = await client.PatchWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/reorder",
                 reorderDto);

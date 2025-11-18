@@ -6,7 +6,6 @@
 
 ## Table of Contents
 - [Auth](#auth)
-- [Me](#me)
 - [User](#user)
 - [Project](#project)
 - [ProjectMember](#projectmember)
@@ -47,7 +46,6 @@ public sealed class AuthTokenReadDto
     public Guid UserId { get; init; }
     public string Email { get; init; } = default!;
     public string Name { get; init; } = default!;
-    public UserRole Role { get; init; }
 }
 ```
 
@@ -77,24 +75,6 @@ public sealed class UserLoginDto
 ```
 
 
-## Me
-
-### `MeReadDto`
-```csharp
-/// <summary>
-/// Represents the authenticated user profile derived from JWT claims.
-/// </summary>
-public sealed class MeReadDto
-{
-    public Guid Id { get; init; }
-    public string Email { get; init; } = default!;
-    public string Name { get; init; } = default!;
-    public UserRole Role { get; init; }
-    public int ProjectMembershipsCount { get; init; }
-}
-```
-
-
 ## [User](01_Domain_Model.md#user)
 
 ### `UserReadDto`
@@ -115,7 +95,7 @@ public sealed class UserReadDto
 
     public int ProjectMembershipsCount { get; init; }
 
-    public byte[] RowVersion { get; init; } = default!;
+    public string RowVersion { get; init; } = default!;
 }
 ```
 
@@ -159,7 +139,7 @@ public sealed class ProjectReadDto
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset UpdatedAt { get; init; }
 
-    public byte[] RowVersion { get; init; } = default!;
+    public string RowVersion { get; init; } = default!;
 
     public int MembersCount { get; init; }
     public ProjectRole CurrentUserRole { get; init; }
@@ -210,7 +190,7 @@ public sealed class ProjectMemberReadDto
     public DateTimeOffset JoinedAt { get; init; }
     public DateTimeOffset? RemovedAt { get; init; }
 
-    public byte[] RowVersion { get; init; } = default!;
+    public string RowVersion { get; init; } = default!;
 }
 ```
 
@@ -275,7 +255,7 @@ public sealed class LaneReadDto
     public string Name { get; init; } = default!;
     public int Order { get; init; }
 
-    public byte[] RowVersion { get; init; } = default!;
+    public string RowVersion { get; init; } = default!;
 }
 ```
 
@@ -330,7 +310,7 @@ public sealed class ColumnReadDto
     public string Name { get; init; } = default!;
     public int Order { get; init; }
 
-    public byte[] RowVersion { get; init; } = default!;
+    public string RowVersion { get; init; } = default!;
 }
 ```
 
@@ -393,7 +373,7 @@ public sealed class TaskItemReadDto
 
     public decimal SortKey { get; init; }
 
-    public byte[] RowVersion { get; init; } = default!;
+    public string RowVersion { get; init; } = default!;
 }
 ```
 
@@ -459,7 +439,7 @@ public sealed class TaskNoteReadDto
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset UpdatedAt { get; init; }
 
-    public byte[] RowVersion { get; init; } = default!;
+    public string RowVersion { get; init; } = default!;
 }
 ```
 
@@ -500,7 +480,7 @@ public sealed class TaskAssignmentReadDto
 
     public TaskRole Role { get; init; }
 
-    public byte[] RowVersion { get; init; } = default!;
+    public string RowVersion { get; init; } = default!;
 }
 ```
 
