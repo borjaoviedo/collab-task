@@ -8,9 +8,11 @@ using TestHelpers.Api.Endpoints.Auth;
 using TestHelpers.Api.Endpoints.Columns;
 using TestHelpers.Api.Endpoints.Defaults;
 using TestHelpers.Api.Endpoints.Projects;
+using TestHelpers.Common.Testing;
 
 namespace Api.Tests.Endpoints
 {
+    [IntegrationTest]
     public sealed class ColumnsEndpointsTests
     {
         [Fact]

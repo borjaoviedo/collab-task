@@ -3,9 +3,11 @@ using Application.TaskItems.Realtime;
 using Application.TaskNotes.Realtime;
 using Domain.Enums;
 using System.Text.Json;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.Realtime
 {
+    [IntegrationTest]
     public class BoardEvent_Serialization_Tests
     {
         private readonly JsonSerializerOptions _jsonOptions = new()

@@ -3,10 +3,12 @@ using Application.TaskItems.Services;
 using FluentAssertions;
 using Infrastructure.Persistence.Repositories;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.TaskItems.Services
 {
+    [IntegrationTest]
     public sealed class TaskItemReadServiceTests
     {
         [Fact]

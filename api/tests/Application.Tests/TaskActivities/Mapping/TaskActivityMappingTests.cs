@@ -3,10 +3,12 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 using TestHelpers.Common.Time;
 
 namespace Application.Tests.TaskActivities.Mapping
 {
+    [UnitTest]
     public sealed class TaskActivityMappingTests
     {
         [Fact]

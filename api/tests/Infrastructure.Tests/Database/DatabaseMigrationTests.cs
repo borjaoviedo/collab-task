@@ -2,9 +2,12 @@ using FluentAssertions;
 using Infrastructure.Persistence;
 using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
+using TestHelpers.Common.Testing;
 
 namespace Infrastructure.Tests.Database
 {
+    [IntegrationTest]
+    [SqlServerContainerTest]
     [Collection("SqlServerContainer")]
     public sealed class DatabaseMigrationTests(MsSqlContainerFixture fx)
     {

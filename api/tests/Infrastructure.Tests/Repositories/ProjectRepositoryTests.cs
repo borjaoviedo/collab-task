@@ -3,14 +3,15 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
-using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Repositories
 {
+    [IntegrationTest]
     public sealed class ProjectRepositoryTests
     {
         [Fact]

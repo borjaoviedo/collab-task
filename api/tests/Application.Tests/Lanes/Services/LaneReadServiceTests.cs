@@ -4,10 +4,12 @@ using FluentAssertions;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.Lanes.Services
 {
+    [IntegrationTest]
     public sealed class LaneReadServiceTests
     {
         [Fact]

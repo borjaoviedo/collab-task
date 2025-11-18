@@ -6,10 +6,12 @@ using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.Lanes.Services
 {
+    [IntegrationTest]
     public sealed class LaneWriteServiceTests
     {
         [Fact]

@@ -1,9 +1,11 @@
 using Domain.Entities;
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Domain.Tests.Entities
 {
+    [UnitTest]
     public sealed class TaskNoteTests
     {
         private static readonly Guid _defaultTaskId = Guid.NewGuid();
@@ -62,12 +64,12 @@ namespace Domain.Tests.Entities
         [InlineData("   ")]
         [InlineData("note")]
         [InlineData("  note ")]
-        public void Create_Throws_When_Invalid_NoteContent(string input)
+        public void Create_Throws_When_Invalid_NoteContent(string? input)
         {
             var act = () => TaskNote.Create(
                 _defaultTaskId,
                 userId: Guid.Empty,
-                content: NoteContent.Create(input));
+                content: NoteContent.Create(input!));
 
             act.Should().Throw<ArgumentException>();
         }

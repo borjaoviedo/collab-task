@@ -1,9 +1,11 @@
 using Application.TaskAssignments.Mapping;
 using Domain.Entities;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.TaskAssignments.Mapping
 {
+    [UnitTest]
     public sealed class TaskAssignmentMappingTests
     {
         [Fact]

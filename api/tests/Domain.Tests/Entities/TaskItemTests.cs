@@ -1,9 +1,11 @@
 using Domain.Entities;
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Domain.Tests.Entities
 {
+    [UnitTest]
     public sealed class TaskItemTests
     {
         private readonly DateTimeOffset _utcNow = DateTimeOffset.UtcNow;

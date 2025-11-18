@@ -3,9 +3,11 @@ using Domain.Enums;
 using Domain.ValueObjects;
 using FluentAssertions;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 
 namespace Domain.Tests.Entities
 {
+    [UnitTest]
     public class UserTests
     {
         private static readonly Email _defaultEmail = Email.Create("email@test.com");

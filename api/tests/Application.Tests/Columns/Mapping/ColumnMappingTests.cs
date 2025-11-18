@@ -2,9 +2,11 @@ using Application.Columns.Mapping;
 using Domain.Entities;
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.Columns.Mapping
 {
+    [UnitTest]
     public sealed class ColumnMappingTests
     {
         [Fact]

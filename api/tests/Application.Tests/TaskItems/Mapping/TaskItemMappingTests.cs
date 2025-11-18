@@ -2,9 +2,11 @@ using Application.TaskItems.Mapping;
 using Domain.Entities;
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.TaskItems.Mapping
 {
+    [UnitTest]
     public sealed class TaskItemMappingTests
     {
         [Fact]

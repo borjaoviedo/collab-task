@@ -1,7 +1,9 @@
 using Api.Realtime;
+using TestHelpers.Common.Testing;
 
 namespace Api.Tests.Realtime
 {
+    [UnitTest]
     public sealed class ProjectsHubMetadataTests
     {
         [Fact]

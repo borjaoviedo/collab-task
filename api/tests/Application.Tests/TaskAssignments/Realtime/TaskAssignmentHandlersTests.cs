@@ -2,9 +2,11 @@ using Application.Realtime;
 using Application.TaskAssignments.Realtime;
 using Domain.Enums;
 using Moq;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.TaskAssignments.Realtime
 {
+    [IntegrationTest]
     public sealed class TaskAssignmentHandlersTests
     {
         [Fact]

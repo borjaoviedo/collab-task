@@ -1,12 +1,15 @@
-using FluentAssertions;
 using Domain.Entities;
 using Domain.ValueObjects;
+using FluentAssertions;
 using Infrastructure.Tests.Containers;
-using TestHelpers.Persistence;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
+using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Auditing
 {
+    [IntegrationTest]
+    [SqlServerContainerTest]
     [Collection("SqlServerContainer")]
     public sealed class AuditingSaveChangesInterceptorTests(MsSqlContainerFixture fx)
     {

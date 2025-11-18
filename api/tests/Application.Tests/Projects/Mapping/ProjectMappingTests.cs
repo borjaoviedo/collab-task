@@ -3,9 +3,11 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.Projects.Mapping
 {
+    [UnitTest]
     public sealed class ProjectMappingTests
     {
         private readonly byte[] _validHash = TestDataFactory.Bytes(32);

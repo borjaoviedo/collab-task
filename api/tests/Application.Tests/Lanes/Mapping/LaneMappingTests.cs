@@ -2,9 +2,11 @@ using Application.Lanes.Mapping;
 using Domain.Entities;
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.Lanes.Mapping
 {
+    [UnitTest]
     public sealed class LaneMappingTests
     {
         [Fact]

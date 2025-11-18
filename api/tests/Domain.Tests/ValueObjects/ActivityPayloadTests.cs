@@ -1,9 +1,11 @@
 using Domain.ValueObjects;
 using FluentAssertions;
 using System.Text.Json;
+using TestHelpers.Common.Testing;
 
 namespace Domain.Tests.ValueObjects
 {
+    [UnitTest]
     public sealed class ActivityPayloadTests
     {
         private readonly string _defaultPayload = "{ \"a\": 1 }";
@@ -21,9 +23,9 @@ namespace Domain.Tests.ValueObjects
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void Create_EmptyOrWhitespace_Throws(string input)
+        public void Create_EmptyOrWhitespace_Throws(string? input)
         {
-            var act = () => ActivityPayload.Create(input);
+            var act = () => ActivityPayload.Create(input!);
 
             act.Should().Throw<ArgumentException>();
         }

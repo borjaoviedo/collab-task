@@ -1,15 +1,18 @@
 using Domain.Entities;
 using Domain.ValueObjects;
 using FluentAssertions;
+using Infrastructure.Persistence;
+using Infrastructure.Tests.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Infrastructure.Tests.Containers;
-using TestHelpers.Persistence;
 using TestHelpers.Common;
-using Infrastructure.Persistence;
+using TestHelpers.Common.Testing;
+using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Persistence
 {
+    [IntegrationTest]
+    [SqlServerContainerTest]
     [Collection("SqlServerContainer")]
     public sealed class LanePersistenceTests(MsSqlContainerFixture fx)
     {

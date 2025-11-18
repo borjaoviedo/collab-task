@@ -5,11 +5,13 @@ using FluentAssertions;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 using TestHelpers.Common.Time;
 using TestHelpers.Persistence;
 
 namespace Infrastructure.Tests.Repositories
 {
+    [IntegrationTest]
     public sealed class TaskActivityRepositoryTests
     {
         [Fact]

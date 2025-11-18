@@ -7,11 +7,13 @@ using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 using TestHelpers.Common.Time;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.ProjectMembers.Services
 {
+    [IntegrationTest]
     public sealed class ProjectMemberWriteServiceTests
     {
         private static readonly IDateTimeProvider _clock = TestTime.FixedClock();

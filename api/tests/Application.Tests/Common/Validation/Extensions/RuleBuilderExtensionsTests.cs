@@ -3,9 +3,11 @@ using Domain.Enums;
 using FluentValidation;
 using FluentValidation.TestHelper;
 using System.Text;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.Common.Validation.Extensions
 {
+    [UnitTest]
     public sealed class RuleBuilderExtensionsTests
     {
         private sealed class UserDto

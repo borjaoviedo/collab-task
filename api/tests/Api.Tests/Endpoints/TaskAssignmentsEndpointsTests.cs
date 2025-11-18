@@ -7,9 +7,11 @@ using TestHelpers.Api.Common;
 using TestHelpers.Api.Common.Http;
 using TestHelpers.Api.Endpoints.Projects;
 using TestHelpers.Api.Endpoints.TaskAssignments;
+using TestHelpers.Common.Testing;
 
 namespace Api.Tests.Endpoints
 {
+    [IntegrationTest]
     public sealed class TaskAssignmentsEndpointsTests
     {
         [Fact]

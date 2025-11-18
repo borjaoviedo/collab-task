@@ -1,9 +1,11 @@
 using Application.Projects.DTOs;
 using Application.Projects.Validation;
 using FluentValidation.TestHelper;
+using TestHelpers.Common.Testing;
 
 namespace Application.Tests.Projects.Validation
 {
+    [UnitTest]
     public sealed class ProjectDtoValidatorTests
     {
         [Fact]

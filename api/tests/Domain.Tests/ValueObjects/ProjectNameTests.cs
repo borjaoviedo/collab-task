@@ -1,8 +1,10 @@
 using Domain.ValueObjects;
 using FluentAssertions;
+using TestHelpers.Common.Testing;
 
 namespace Domain.Tests.ValueObjects
 {
+    [UnitTest]
     public class ProjectNameTests
     {
         private readonly string _defaultProjectName = "project name";
@@ -80,8 +82,8 @@ namespace Domain.Tests.ValueObjects
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void Create_NullEmptyOrWhitespace_Throws(string input)
-            => Assert.Throws<ArgumentException>(() => ProjectName.Create(input));
+        public void Create_NullEmptyOrWhitespace_Throws(string? input)
+            => Assert.Throws<ArgumentException>(() => ProjectName.Create(input!));
 
         [Fact]
         public void ToString_ReturnsValue()

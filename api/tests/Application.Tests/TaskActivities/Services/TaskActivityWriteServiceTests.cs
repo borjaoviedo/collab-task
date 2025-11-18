@@ -6,11 +6,13 @@ using FluentAssertions;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using TestHelpers.Common;
+using TestHelpers.Common.Testing;
 using TestHelpers.Common.Time;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.TaskActivities.Services
 {
+    [IntegrationTest]
     public sealed class TaskActivityWriteServiceTests
     {
         private readonly IDateTimeProvider _clock = TestTime.FixedClock();

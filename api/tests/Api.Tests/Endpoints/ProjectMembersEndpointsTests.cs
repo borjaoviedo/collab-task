@@ -5,15 +5,16 @@ using Domain.Enums;
 using FluentAssertions;
 using System.Net;
 using System.Net.Http.Json;
-using TestHelpers.Api.Common;
 using TestHelpers.Api.Common.Http;
 using TestHelpers.Api.Endpoints.Auth;
 using TestHelpers.Api.Endpoints.Defaults;
 using TestHelpers.Api.Endpoints.ProjectMembers;
 using TestHelpers.Api.Endpoints.Projects;
+using TestHelpers.Common.Testing;
 
 namespace Api.Tests.Endpoints
 {
+    [IntegrationTest]
     public sealed class ProjectMembersEndpointsTests
     {
         [Fact]

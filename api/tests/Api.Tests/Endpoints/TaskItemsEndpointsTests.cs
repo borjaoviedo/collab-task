@@ -7,9 +7,11 @@ using TestHelpers.Api.Common.Http;
 using TestHelpers.Api.Endpoints.Auth;
 using TestHelpers.Api.Endpoints.Projects;
 using TestHelpers.Api.Endpoints.TaskItems;
+using TestHelpers.Common.Testing;
 
 namespace Api.Tests.Endpoints
 {
+    [IntegrationTest]
     public sealed class TaskItemsEndpointsTests
     {
         [Fact]

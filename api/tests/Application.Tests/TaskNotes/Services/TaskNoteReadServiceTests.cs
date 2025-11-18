@@ -5,10 +5,12 @@ using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using TestHelpers.Common;
 using TestHelpers.Common.Fakes;
+using TestHelpers.Common.Testing;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.TaskNotes.Services
 {
+    [IntegrationTest]
     public sealed class TaskNoteReadServiceTests
     {
         [Fact]

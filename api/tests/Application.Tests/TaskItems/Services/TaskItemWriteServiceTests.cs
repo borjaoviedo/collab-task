@@ -13,11 +13,13 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 using TestHelpers.Common;
 using TestHelpers.Common.Fakes;
+using TestHelpers.Common.Testing;
 using TestHelpers.Common.Time;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.TaskItems.Services
 {
+    [IntegrationTest]
     public sealed class TaskItemWriteServiceTests
     {
         private static readonly IDateTimeProvider _clock = TestTime.FixedClock();
