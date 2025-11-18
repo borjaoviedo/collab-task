@@ -8,6 +8,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2025-11-18
+
+### Changed
+- **Application Layer**
+  - Normalized all **application service interfaces and implementations** for consistent naming, dependency structure, and exception/result mapping.
+  - Unified parameter validation, ID-coherence checks, and concurrency preconditions across all services.
+  - Refined **DTO mappings**, removing redundant conversions and ensuring all DTOs reflect the final domain/value-object contracts.
+
+- **Domain & Repository Integration**
+  - Refactored all **repository interfaces** to follow updated value-object usage and strict precheck semantics.
+  - Improved consistency of **repository method names**, aligning them with service-level use cases.
+  - Strengthened ID-scoped querying and project-scoped validation logic across ProjectBoard repositories.
+
+- **API Endpoints**
+  - Normalized all endpoint handlers for uniform:
+    - Route signatures and parameter binding.
+    - ETag/If-Match usage only where appropriate.
+    - Error mapping to the canonical API result model.
+  - Removed outdated response codes and aligned all write operations strictly to **`412 PreconditionFailed`** and **`428 PreconditionRequired`**.
+  - Updated summaries, grouped route handlers, and aligned operation sequencing with current service contracts.
+
+- **Infrastructure & Dependency Injection**
+  - Refined **DependencyInjection.cs** across layers to ensure:
+    - Uniform naming and grouping of service registrations.
+    - Clear separation between Domain, Application, Infrastructure, and Realtime registrations.
+    - Removal of obsolete or duplicated registrations introduced prior to consolidation.
+  - Updated DI wiring to reflect the rewritten repository and service abstractions.
+
+- **Testing**
+  - Comprehensive refactor of all test suites (unit, integration, API):
+    - Removed test scripts and consolidated pipelines.
+    - Updated all tests to use the new repository/service signatures.
+    - Replaced test factories (`Bytes(16/32)`) with `TestDataFactory.CreateHash()` and `TestDataFactory.CreateSalt()`.
+    - Normalized test naming, structure, and assertions.
+    - Updated ProjectBoard tests to reflect the corrected domain invariants and API behavior.
+
+- **Dev & Build Tooling**
+  - Updated dev scripts (`dev.ps1`, `dev.sh`, `prod.ps1`, `prod.sh`) to:
+    - Load environment variables via `.env.dev` and apply them consistently with `--env-file`.
+    - Expect the canonical health status output (`"Healthy"`) from the API.
+  - Updated API Dockerfile to use clean restore fallback behavior and improved publish configuration.
+
+- **Documentation**
+  - Performed a full pass of documentation cleanup to ensure consistency with the refactored service, repository, and endpoint model.
+
+### Notes
+- This release completes the internal **cleanup and unification** of the v1.0.x backend:
+  consistent DTOs, services, repositories, endpoints, DI structure, and test suites.
+- **Tag created: `v1.0.2`**
+
+
 ## [1.0.1] - 2025-11-07
 
 ### Added

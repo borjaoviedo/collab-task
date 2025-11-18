@@ -6,7 +6,7 @@
 **CollabTask** is a collaborative task management backend built with **ASP.NET Core 8** following **Clean Architecture** principles.
 
 It provides a real-time Kanban board API supporting multi-user collaboration, optimistic concurrency, and strong domain modeling.  
-Current stable release: **v1.0.1**
+Current stable release: **v1.0.2**
 
 
 ## Key Features
@@ -78,12 +78,14 @@ Run test suites through unified scripts:
 
 ```bash
 npm run test:unit
-npm run test:infra
+npm run test:integration
+npm run test:sqlserver
 npm run test:all
 ```
 
-- Unit tests cover domain and application logic.  
-- Integration tests validate persistence, concurrency, and endpoint behavior.  
+- **Unit tests** validate domain rules and application logic.  
+- **Integration tests** verify persistence, concurrency, and end-to-end service behavior.  
+- **SQL Server tests** ensure database compatibility and correct DB-level execution using Testcontainers.  
 
 
 ## Continuous Integration
