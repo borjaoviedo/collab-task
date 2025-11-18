@@ -1,6 +1,6 @@
 using Application.Abstractions.Auth;
 
-namespace TestHelpers.Api.Fakes
+namespace TestHelpers.Common.Fakes
 {
     /// <summary>
     /// Provides a controllable fake implementation of <see cref="ICurrentUserService"/> 

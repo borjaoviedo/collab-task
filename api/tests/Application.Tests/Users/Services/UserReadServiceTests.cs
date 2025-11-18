@@ -4,8 +4,8 @@ using Domain.Enums;
 using FluentAssertions;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
-using TestHelpers.Api.Fakes;
 using TestHelpers.Common;
+using TestHelpers.Common.Fakes;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.Users.Services

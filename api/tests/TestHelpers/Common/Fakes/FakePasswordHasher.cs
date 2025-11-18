@@ -2,7 +2,7 @@
 using Application.Abstractions.Security;
 using System.Text;
 
-namespace TestHelpers.Api.Fakes
+namespace TestHelpers.Common.Fakes
 {
     /// <summary>
     /// Deterministic fake password hasher for testing purposes.

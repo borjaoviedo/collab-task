@@ -6,8 +6,10 @@ using FluentAssertions;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
+using TestHelpers.Api.Common.Fakes;
 using TestHelpers.Api.Fakes;
 using TestHelpers.Common;
+using TestHelpers.Common.Fakes;
 using TestHelpers.Persistence;
 
 namespace Application.Tests.Users.Services

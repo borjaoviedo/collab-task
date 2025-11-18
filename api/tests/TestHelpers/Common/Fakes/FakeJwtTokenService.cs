@@ -1,7 +1,7 @@
 using Application.Abstractions.Security;
 using Domain.Enums;
 
-namespace TestHelpers.Api.Fakes
+namespace TestHelpers.Common.Fakes
 {
     public sealed class FakeJwtTokenService : IJwtTokenService
     {

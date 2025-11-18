@@ -9,8 +9,8 @@ using Infrastructure.Persistence.Repositories;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Moq;
-using TestHelpers.Api.Fakes;
 using TestHelpers.Common;
+using TestHelpers.Common.Fakes;
 using TestHelpers.Common.Time;
 using TestHelpers.Persistence;
 
