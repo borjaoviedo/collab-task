@@ -1,9 +1,9 @@
 using Application.ProjectMembers.DTOs;
 using Domain.Enums;
-using TestHelpers.Api.Defaults;
+using TestHelpers.Api.Endpoints.Defaults;
 using TestHelpers.Api.Http;
 
-namespace TestHelpers.Api.ProjectMembers
+namespace TestHelpers.Api.Endpoints.ProjectMembers
 {
     public static class ProjectMemberTestHelper
     {

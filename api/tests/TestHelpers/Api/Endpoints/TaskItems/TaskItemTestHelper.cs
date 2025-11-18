@@ -1,8 +1,8 @@
 using Application.TaskItems.DTOs;
-using TestHelpers.Api.Defaults;
+using TestHelpers.Api.Endpoints.Defaults;
 using TestHelpers.Api.Http;
 
-namespace TestHelpers.Api.TaskItems
+namespace TestHelpers.Api.Endpoints.TaskItems
 {
     public static class TaskItemTestHelper
     {

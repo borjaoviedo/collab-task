@@ -1,7 +1,7 @@
 using Application.TaskAssignments.DTOs;
 using TestHelpers.Api.Http;
 
-namespace TestHelpers.Api.TaskAssignments
+namespace TestHelpers.Api.Endpoints.TaskAssignments
 {
     public static class TaskAssignmentTestHelper
     {

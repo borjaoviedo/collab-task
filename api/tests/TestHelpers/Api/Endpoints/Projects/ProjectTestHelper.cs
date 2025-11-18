@@ -1,8 +1,8 @@
 using Application.Projects.DTOs;
-using TestHelpers.Api.Defaults;
+using TestHelpers.Api.Endpoints.Defaults;
 using TestHelpers.Api.Http;
 
-namespace TestHelpers.Api.Projects
+namespace TestHelpers.Api.Endpoints.Projects
 {
     public static class ProjectTestHelper
     {

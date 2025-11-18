@@ -1,10 +1,10 @@
 using Application.Auth.DTOs;
 using Application.Users.DTOs;
 using System.Net.Http.Json;
-using TestHelpers.Api.Defaults;
+using TestHelpers.Api.Endpoints.Defaults;
 using TestHelpers.Api.Http;
 
-namespace TestHelpers.Api.Auth
+namespace TestHelpers.Api.Endpoints.Auth
 {
     public static class AuthTestHelper
     {

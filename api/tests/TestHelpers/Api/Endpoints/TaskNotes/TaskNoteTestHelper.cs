@@ -1,8 +1,8 @@
 using Application.TaskNotes.DTOs;
-using TestHelpers.Api.Defaults;
+using TestHelpers.Api.Endpoints.Defaults;
 using TestHelpers.Api.Http;
 
-namespace TestHelpers.Api.TaskNotes
+namespace TestHelpers.Api.Endpoints.TaskNotes
 {
     public static class TaskNoteTestHelper
     {

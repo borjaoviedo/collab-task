@@ -1,5 +1,5 @@
 using System.Net.Http.Headers;
-using TestHelpers.Api.Defaults;
+using TestHelpers.Api.Endpoints.Defaults;
 
 namespace TestHelpers.Api.Http
 {

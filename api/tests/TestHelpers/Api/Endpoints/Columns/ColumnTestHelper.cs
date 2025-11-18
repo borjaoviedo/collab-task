@@ -1,8 +1,8 @@
 using Application.Columns.DTOs;
-using TestHelpers.Api.Defaults;
+using TestHelpers.Api.Endpoints.Defaults;
 using TestHelpers.Api.Http;
 
-namespace TestHelpers.Api.Columns
+namespace TestHelpers.Api.Endpoints.Columns
 {
     public static class ColumnTestHelper
     {
@@ -97,8 +97,7 @@ namespace TestHelpers.Api.Columns
             var newName = dto is null ? ColumnDefaults.DefaultColumnRename : dto.NewName;
             var renameDto = new ColumnRenameDto() { NewName = newName };
 
-            var renameResponse = await HttpRequestExtensions.PutWithIfMatchAsync(
-                client,
+            var renameResponse = await client.PutWithIfMatchAsync(
                 rowVersion,
                 $"/projects/{projectId}/lanes/{laneId}/columns/{columnId}/rename",
                 renameDto);

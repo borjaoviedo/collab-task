@@ -4,13 +4,13 @@ using Application.Lanes.DTOs;
 using Application.Projects.DTOs;
 using Application.TaskItems.DTOs;
 using Application.TaskNotes.DTOs;
-using TestHelpers.Api.Auth;
-using TestHelpers.Api.Columns;
-using TestHelpers.Api.Lanes;
-using TestHelpers.Api.TaskItems;
-using TestHelpers.Api.TaskNotes;
+using TestHelpers.Api.Endpoints.Auth;
+using TestHelpers.Api.Endpoints.Columns;
+using TestHelpers.Api.Endpoints.Lanes;
+using TestHelpers.Api.Endpoints.TaskItems;
+using TestHelpers.Api.Endpoints.TaskNotes;
 
-namespace TestHelpers.Api.Projects
+namespace TestHelpers.Api.Endpoints.Projects
 {
     public static class BoardSetupHelper
     {
@@ -77,7 +77,9 @@ namespace TestHelpers.Api.Projects
         {
             var (project, lane, column, task, user) = await SetupBoard(client);
             var note = await TaskNoteTestHelper.PostNoteDtoAsync(
-                client, project.Id, lane.Id, column.Id, task.Id);
+                client,
+                project.Id,
+                task.Id);
             return (project, lane, column, task, note, user);
         }
     }

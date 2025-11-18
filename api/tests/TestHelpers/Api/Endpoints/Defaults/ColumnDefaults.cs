@@ -1,6 +1,6 @@
 using Application.Columns.DTOs;
 
-namespace TestHelpers.Api.Defaults
+namespace TestHelpers.Api.Endpoints.Defaults
 {
     public static class ColumnDefaults
     {

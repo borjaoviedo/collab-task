@@ -1,5 +1,4 @@
-
-namespace TestHelpers.Api.TaskActivities
+namespace TestHelpers.Api.Endpoints.TaskActivities
 {
     public static class TaskActivityTestHelper
     {

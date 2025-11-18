@@ -1,6 +1,6 @@
 using Application.TaskItems.DTOs;
 
-namespace TestHelpers.Api.Defaults
+namespace TestHelpers.Api.Endpoints.Defaults
 {
     public static class TaskItemDefaults
     {

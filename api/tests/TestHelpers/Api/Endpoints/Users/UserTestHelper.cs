@@ -1,8 +1,8 @@
 using Application.Users.DTOs;
-using TestHelpers.Api.Defaults;
+using TestHelpers.Api.Endpoints.Defaults;
 using TestHelpers.Api.Http;
 
-namespace TestHelpers.Api.Users
+namespace TestHelpers.Api.Endpoints.Users
 {
     public static class UserTestHelper
     {
