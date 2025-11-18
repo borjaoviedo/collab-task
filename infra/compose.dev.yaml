@@ -3,7 +3,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       DOTNET_ENVIRONMENT: Development
-      Jwt__Key: "${JWT_KEY:-dev_32bytes_minimum_base64_or_random_string_XXXXXXXX}"
+      Jwt__Key: "${JWT_KEY}"
       Jwt__Issuer: "collabtask"
       Jwt__Audience: "collabtask"
     # In dev we expose the API directly to the host on 8080
