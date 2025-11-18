@@ -22,7 +22,7 @@ namespace TestHelpers.Api.Http
 
         public static async Task<HttpResponseMessage> PutWithIfMatchAsync<T>(
             this HttpClient client,
-            byte[] rowVersion,
+            string rowVersion,
             string url,
             T payload)
         {
@@ -32,7 +32,7 @@ namespace TestHelpers.Api.Http
 
         public static async Task<HttpResponseMessage> PatchWithIfMatchAsync<T>(
             this HttpClient client,
-            byte[] rowVersion,
+            string rowVersion,
             string url,
             T payload)
         {
@@ -42,7 +42,7 @@ namespace TestHelpers.Api.Http
 
         public static async Task<HttpResponseMessage> DeleteWithIfMatchAsync(
             this HttpClient client,
-            byte[] rowVersion,
+            string rowVersion,
             string url)
         {
             IfMatchExtensions.SetIfMatchFromRowVersion(client, rowVersion);
