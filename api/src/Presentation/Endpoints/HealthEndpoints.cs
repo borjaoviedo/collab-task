@@ -13,16 +13,20 @@ namespace Api.Endpoints
         /// <returns>The configured route group.</returns>
         public static RouteGroupBuilder MapHealth(this IEndpointRouteBuilder app)
         {
+            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
+            // include consistent success/error shapes and auth requirements
+
+
             // Health group is public (no auth) and tagged for OpenAPI grouping
             var group = app
                         .MapGroup("/health")
                         .WithTags("Health")
                         .AllowAnonymous();
 
-            // OpenAPI metadata in the endpoint: ensures generated clients and API docs
-            // include consistent success/error shapes and operational visibility
 
+            // ===================================================================================
             // GET /health
+            // ===================================================================================
             group.MapGet("/", (HttpContext context) =>
             {
                 // Returns service status and uptime in days.hours:minutes:seconds format

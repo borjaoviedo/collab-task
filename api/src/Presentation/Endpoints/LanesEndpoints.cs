@@ -25,13 +25,20 @@ namespace Api.Endpoints
         /// <returns>The configured route group for lane item endpoints.</returns>
         public static RouteGroupBuilder MapLanes(this IEndpointRouteBuilder app)
         {
+            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
+            // include consistent success/error shapes and auth requirements
+
+
             // /projects/{projectId}/lanes
             var projectLanesGroup = app
                 .MapGroup("/projects/{projectId:guid}/lanes")
                 .WithTags("Lanes")
                 .RequireAuthorization(Policies.ProjectReader);
 
+
+            // ===================================================================================
             // GET /projects/{projectId}/lanes
+            // ===================================================================================
             projectLanesGroup.MapGet("/", async (
                 [FromRoute] Guid projectId,
                 [FromServices] ILaneReadService laneReadSvc,
@@ -48,7 +55,9 @@ namespace Api.Endpoints
             .WithDescription("Returns lanes for the project.")
             .WithName("Lanes_Get_All");
 
+            // ===================================================================================
             // POST /projects/{projectId}/lanes
+            // ===================================================================================
             projectLanesGroup.MapPost("/", async (
                 [FromRoute] Guid projectId,
                 [FromBody] LaneCreateDto dto,
@@ -76,7 +85,9 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Creates a lane in the project. Returns the resource with ETag.")
             .WithName("Lanes_Create");
 
+            // ===================================================================================
             // GET /projects/{projectId}/lanes/{laneId}
+            // ===================================================================================
             projectLanesGroup.MapGet("/{laneId:guid}", async (
                 [FromRoute] Guid laneId,
                 [FromServices] ILaneReadService laneReadSvc,
@@ -95,7 +106,9 @@ namespace Api.Endpoints
             .WithDescription("Returns a lane in the project. Sets ETag.")
             .WithName("Lanes_Get_ById");
 
+            // ===================================================================================
             // PATCH /projects/{projectId}/lanes/{laneId}/rename
+            // ===================================================================================
             projectLanesGroup.MapPatch("/{laneId:guid}/rename", async (
                 [FromRoute] Guid laneId,
                 [FromBody] LaneRenameDto dto,
@@ -123,7 +136,9 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Renames a lane using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Lanes_Rename");
 
+            // ===================================================================================
             // PATCH /projects/{projectId}/lanes/{laneId}/reorder
+            // ===================================================================================
             projectLanesGroup.MapPatch("/{laneId:guid}/reorder", async (
                 [FromRoute] Guid laneId,
                 [FromBody] LaneReorderDto dto,
@@ -151,7 +166,9 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Changes lane order using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Lanes_Reorder");
 
+            // ===================================================================================
             // DELETE /projects/{projectId}/lanes/{laneId}
+            // ===================================================================================
             projectLanesGroup.MapDelete("/{laneId:guid}", async (
                 [FromRoute] Guid laneId,
                 [FromServices] ILaneWriteService laneWriteSvc,

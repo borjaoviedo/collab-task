@@ -23,16 +23,20 @@ namespace Api.Endpoints
         /// <returns>The configured route group.</returns>
         public static RouteGroupBuilder MapProjectMembers(this IEndpointRouteBuilder app)
         {
+            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
+            // include consistent success/error shapes and auth requirements
+
+
             // Group all project-scoped member endpoints; minimum access is ProjectReader
             var projectMembersGroup = app
                 .MapGroup("/projects/{projectId:guid}/members")
                 .WithTags("Project Members")
                 .RequireAuthorization(Policies.ProjectReader);
 
-            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
-            // include consistent success/error shapes, auth requirements, and concurrency responses
 
+            // ===================================================================================
             // GET /projects/{projectId}/members
+            // ===================================================================================
             projectMembersGroup.MapGet("/", async (
                 [FromRoute] Guid projectId,
                 [FromQuery] bool includeRemoved,
@@ -53,7 +57,9 @@ namespace Api.Endpoints
             .WithDescription("Returns project members. Can include removed members.")
             .WithName("ProjectMembers_Get_All");
 
+            // ===================================================================================
             // GET /projects/{projectId}/members/{userId}
+            // ===================================================================================
             projectMembersGroup.MapGet("/{userId:guid}", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
@@ -76,7 +82,9 @@ namespace Api.Endpoints
             .WithDescription("Returns a member entry. Sets ETag.")
             .WithName("ProjectMembers_Get_ById");
 
+            // ===================================================================================
             // GET /projects/{projectId}/members/{userId}/role
+            // ===================================================================================
             projectMembersGroup.MapGet("/{userId:guid}/role", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
@@ -97,7 +105,9 @@ namespace Api.Endpoints
             .WithDescription("Returns the role of the user in the project.")
             .WithName("ProjectMembers_Get_Role");
 
+            // ===================================================================================
             // POST /projects/{projectId}/members
+            // ===================================================================================
             projectMembersGroup.MapPost("/", async (
                 [FromRoute] Guid projectId,
                 [FromBody] ProjectMemberCreateDto dto,
@@ -125,7 +135,9 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Adds a user to the project. Returns the resource with ETag.")
             .WithName("ProjectMembers_Create");
 
+            // ===================================================================================
             // PATCH /projects/{projectId}/members/{userId}/role
+            // ===================================================================================
             projectMembersGroup.MapPatch("/{userId:guid}/role", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
@@ -157,7 +169,9 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Changes role using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("ProjectMembers_ChangeRole");
 
+            // ===================================================================================
             // PATCH /projects/{projectId}/members/{userId}/remove
+            // ===================================================================================
             projectMembersGroup.MapPatch("/{userId:guid}/remove", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
@@ -183,7 +197,9 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Soft-removes a member using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("ProjectMembers_Remove");
 
+            // ===================================================================================
             // PATCH /projects/{projectId}/members/{userId}/restore
+            // ===================================================================================
             projectMembersGroup.MapPatch("/{userId:guid}/restore", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid userId,
@@ -210,12 +226,16 @@ namespace Api.Endpoints
             .WithName("ProjectMembers_Restore");
 
 
+
             // Global member utilities not bound to a specific project scope
             var globalMembersGroup = app.MapGroup("/members")
                 .WithTags("Project Members")
                 .RequireAuthorization();
 
+
+            // ===================================================================================
             // GET /members/me/count
+            // ===================================================================================
             globalMembersGroup.MapGet("/me/count", async (
                 [FromServices] IProjectMemberReadService projectMemberReadSvc,
                 CancellationToken ct = default) =>
@@ -229,7 +249,9 @@ namespace Api.Endpoints
             .WithDescription("Returns the number of active projects for the authenticated user.")
             .WithName("ProjectMembers_CountActive_Mine");
 
+            // ===================================================================================
             // GET /members/{userId}/count
+            // ===================================================================================
             globalMembersGroup.MapGet("/{userId:guid}/count", async (
                 [FromRoute] Guid userId,
                 [FromServices] IProjectMemberReadService projectMemberReadSvc,

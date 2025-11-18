@@ -24,16 +24,20 @@ namespace Api.Endpoints
         /// <returns>The configured route group for global activity endpoints.</returns>
         public static RouteGroupBuilder MapTaskActivities(this IEndpointRouteBuilder app)
         {
+            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
+            // include consistent success/error shapes and auth requirements
+
+
             // projects/{projectId}/tasks/{taskId}/activities
             var taskActivitiesGroup = app
                 .MapGroup("projects/{projectId:guid}/tasks/{taskId:guid}/activities")
                 .WithTags("Task Activities")
                 .RequireAuthorization(Policies.ProjectReader);
 
-            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
-            // include consistent success/error shapes, auth requirements, and read-only behavior
 
+            // ===================================================================================
             // GET projects/{projectId:guid}/tasks/{taskId}/activities
+            // ===================================================================================
             taskActivitiesGroup.MapGet("/", async (
                 [FromRoute] Guid taskId,
                 [FromQuery] TaskActivityType? activityType,
@@ -54,13 +58,17 @@ namespace Api.Endpoints
             .WithDescription("Returns activities for the task. Optional filter by activity type.")
             .WithName("TaskActivities_Get_All");
 
+
             // projects/{projectId}/activities/{activityId}
             var activityGroup = app
                 .MapGroup("projects/{projectId:guid}/activities/{activityId:guid}")
                 .WithTags("Task Activities")
                 .RequireAuthorization(Policies.ProjectReader);
 
+
+            // ===================================================================================
             // GET projects/{projectId:guid}/activities/{activityId}
+            // ===================================================================================
             activityGroup.MapGet("/", async (
                 [FromRoute] Guid activityId,
                 [FromServices] ITaskActivityReadService taskActivityReadSvc,
@@ -77,12 +85,16 @@ namespace Api.Endpoints
             .WithDescription("Returns a single activity if it belongs to a project the user can read.")
             .WithName("TaskActivities_Get_ById");
 
+
             // Global access group for querying task activities by authenticated user or admin context
             var activitiesGroup = app.MapGroup("/activities")
                 .WithTags("Task Activities")
                 .RequireAuthorization();
 
+
+            // ===================================================================================
             // GET /activities/me
+            // ===================================================================================
             activitiesGroup.MapGet("/me", async (
                 [FromServices] ITaskActivityReadService taskActivityReadSvc,
                 CancellationToken ct = default) =>
@@ -96,7 +108,9 @@ namespace Api.Endpoints
             .WithDescription("Returns activities performed by the authenticated user.")
             .WithName("TaskActivities_Get_Mine");
 
+            // ===================================================================================
             // GET /activities/users/{userId}
+            // ===================================================================================
             activitiesGroup.MapGet("/users/{userId:guid}", async (
                 [FromRoute] Guid userId,
                 [FromServices] ITaskActivityReadService taskActivityReadSvc,

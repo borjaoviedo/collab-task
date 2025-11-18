@@ -21,6 +21,10 @@ namespace Api.Endpoints
         /// <returns>The configured route group.</returns>
         public static RouteGroupBuilder MapProjects(this IEndpointRouteBuilder app)
         {
+            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
+            // include consistent success/error shapes and auth requirements
+
+
             // Group all project endpoints; default requires authentication
             // Specific routes tighten auth further
             var group = app
@@ -28,10 +32,10 @@ namespace Api.Endpoints
                         .WithTags("Projects")
                         .RequireAuthorization();
 
-            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
-            // include consistent success/error shapes, auth requirements, and concurrency responses
 
+            // ===================================================================================
             // GET /projects?filter=...
+            // ===================================================================================
             group.MapGet("/", async (
                 [AsParameters] ProjectFilter filter,
                 [FromServices] IProjectReadService projectReadSvc,
@@ -46,7 +50,9 @@ namespace Api.Endpoints
             .WithDescription("Returns projects where the caller has at least reader rights. Respects optional filters.")
             .WithName("Projects_Get_All");
 
+            // ===================================================================================
             // GET /projects/{projectId}
+            // ===================================================================================
             group.MapGet("/{projectId:guid}", async (
                 [FromRoute] Guid projectId,
                 [FromServices] IProjectReadService projectReadSvc,
@@ -66,7 +72,9 @@ namespace Api.Endpoints
             .WithDescription("Returns the project if the caller has reader rights. Sets ETag.")
             .WithName("Projects_Get_ById");
 
+            // ===================================================================================
             // GET /projects/users/{userId}
+            // ===================================================================================
             group.MapGet("/users/{userId:guid}", async (
                 [FromRoute] Guid userId,
                 [FromServices] IProjectReadService projectReadSvc,
@@ -84,7 +92,9 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Returns projects accessible to the specified user.")
             .WithName("Projects_Get_ByUser");
 
+            // ===================================================================================
             // POST /projects
+            // ===================================================================================
             group.MapPost("/", async (
                 [FromBody] ProjectCreateDto dto,
                 [FromServices] IProjectWriteService projectWriteSvc,
@@ -107,7 +117,9 @@ namespace Api.Endpoints
             .WithDescription("Creates a project owned by the caller. Returns the resource with ETag.")
             .WithName("Projects_Create");
 
+            // ===================================================================================
             // PATCH /projects/{projectId}/rename
+            // ===================================================================================
             group.MapPatch("/{projectId:guid}/rename", async (
                 [FromRoute] Guid projectId,
                 [FromBody] ProjectRenameDto dto,
@@ -135,7 +147,9 @@ namespace Api.Endpoints
             .WithDescription("Updates the project name using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Projects_Rename");
 
+            // ===================================================================================
             // DELETE /projects/{projectId}
+            // ===================================================================================
             group.MapDelete("/{projectId:guid}", async (
                 [FromRoute] Guid projectId,
                 [FromServices] IProjectWriteService projectWriteSvc,

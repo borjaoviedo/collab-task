@@ -21,16 +21,20 @@ namespace Api.Endpoints
         /// <returns>The configured route group.</returns>
         public static RouteGroupBuilder MapUsers(this IEndpointRouteBuilder app)
         {
+            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
+            // include consistent success/error shapes and auth requirements
+
+
             // Group user admin endpoints; default requires authentication
             var group = app
                 .MapGroup("/users")
                 .WithTags("Users")
                 .RequireAuthorization();
 
-            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
-            // include consistent success/error shapes, auth requirements, and concurrency responses
 
+            // ===================================================================================
             // GET /users
+            // ===================================================================================
             group.MapGet("/", async (
                 [FromServices] IUserReadService userReadSvc,
                 CancellationToken ct = default) =>
@@ -46,7 +50,9 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Returns users with summary info and active membership counts.")
             .WithName("Users_Get_All");
 
+            // ===================================================================================
             // GET /users/{userId}
+            // ===================================================================================
             group.MapGet("/{userId:guid}", async (
                 [FromRoute] Guid userId,
                 [FromServices] IUserReadService userReadSvc,
@@ -66,7 +72,9 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Returns a user. Sets ETag.")
             .WithName("Users_Get_ById");
 
+            // ===================================================================================
             // PATCH /users/{userId}/rename
+            // ===================================================================================
             group.MapPatch("/{userId:guid}/rename", async (
                 [FromRoute] Guid userId,
                 [FromBody] UserRenameDto dto,
@@ -92,7 +100,9 @@ namespace Api.Endpoints
             .WithDescription("Updates the user name using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Users_Rename");
 
+            // ===================================================================================
             // PATCH /users/{userId}/role
+            // ===================================================================================
             group.MapPatch("/{userId:guid}/role", async (
                 [FromRoute] Guid userId,
                 [FromBody] UserChangeRoleDto dto,
@@ -120,7 +130,9 @@ namespace Api.Endpoints
             .WithDescription("Admin-only. Changes role using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Users_ChangeRole");
 
+            // ===================================================================================
             // DELETE /users/{userId}
+            // ===================================================================================
             group.MapDelete("/{userId:guid}", async (
                 [FromRoute] Guid userId,
                 [FromServices] IUserWriteService userWriteSvc,

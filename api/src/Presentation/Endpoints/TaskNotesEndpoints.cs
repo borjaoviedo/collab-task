@@ -25,17 +25,20 @@ namespace Api.Endpoints
         /// <returns>The configured route group for global note endpoints.</returns>
         public static RouteGroupBuilder MapTaskNotes(this IEndpointRouteBuilder app)
         {
+            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
+            // include consistent success/error shapes and auth requirements
+
+
             // /projects/{projectId}/tasks/{taskId}/notes
             var projectTaskNotesGroup = app
                 .MapGroup("/projects/{projectId:guid}/tasks/{taskId:guid}/notes")
                 .WithTags("Task Notes")
                 .RequireAuthorization(Policies.ProjectReader);
 
-            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
-            // include consistent success/error shapes, auth requirements, and concurrency responses
 
-
+            // ===================================================================================
             // GET /projects/{projectId}/tasks/{taskId}/notes
+            // ===================================================================================
             projectTaskNotesGroup.MapGet("/", async (
                 [FromRoute] Guid taskId,
                 [FromServices] ITaskNoteReadService taskNoteReadSvc,
@@ -52,7 +55,9 @@ namespace Api.Endpoints
             .WithDescription("Returns notes for the task.")
             .WithName("Notes_Get_All");
 
+            // ===================================================================================
             // POST /projects/{projectId}/tasks/{taskId}/notes
+            // ===================================================================================
             projectTaskNotesGroup.MapPost("/", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid taskId,
@@ -85,7 +90,9 @@ namespace Api.Endpoints
             .WithDescription("Member-only. Creates a note on the task. Returns the resource with ETag.")
             .WithName("Notes_Create");
 
+            // ===================================================================================
             // PATCH /projects/{projectId}/tasks/{taskId}/notes/{noteId}/edit
+            // ===================================================================================
             projectTaskNotesGroup.MapPatch("/{noteId:guid}/edit", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid taskId,
@@ -120,7 +127,9 @@ namespace Api.Endpoints
             .WithDescription("Member-only. Updates a note using optimistic concurrency (If-Match). Returns the updated resource and ETag.")
             .WithName("Notes_Edit");
 
+            // ===================================================================================
             // DELETE /projects/{projectId}/tasks/{taskId}/notes/{noteId}
+            // ===================================================================================
             projectTaskNotesGroup.MapDelete("/{noteId:guid}", async (
                 [FromRoute] Guid projectId,
                 [FromRoute] Guid taskId,
@@ -153,7 +162,10 @@ namespace Api.Endpoints
                 .WithTags("Task Notes")
                 .RequireAuthorization(Policies.ProjectReader);
 
+
+            // ===================================================================================
             // GET /projects/{projectId}/notes/{noteId}
+            // ===================================================================================
             noteGroup.MapGet("/", async (
                 [FromRoute] Guid noteId,
                 [FromServices] ITaskNoteReadService taskNoteReadSvc,
@@ -178,7 +190,10 @@ namespace Api.Endpoints
                 .WithTags("Task Notes")
                 .RequireAuthorization();
 
+
+            // ===================================================================================
             // GET /notes/me
+            // ===================================================================================
             notesGroup.MapGet("/me", async (
                 [FromServices] ITaskNoteReadService taskNoteReadSvc,
                 CancellationToken ct = default) =>
@@ -192,7 +207,9 @@ namespace Api.Endpoints
             .WithDescription("Returns notes authored by the authenticated user.")
             .WithName("TaskNotes_Get_Mine");
 
+            // ===================================================================================
             // GET /notes/users/{userId}
+            // ===================================================================================
             notesGroup.MapGet("/users/{userId:guid}", async (
                 [FromRoute] Guid userId,
                 [FromServices] ITaskNoteReadService taskNoteReadSvc,

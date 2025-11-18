@@ -22,15 +22,19 @@ namespace Api.Endpoints
         /// <returns>The configured route group.</returns>
         public static RouteGroupBuilder MapAuth(this IEndpointRouteBuilder app)
         {
+            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
+            // include consistent success/error shapes and auth requirements
+
+
             // Create '/auth' route group and tag for OpenAPI grouping
             var group = app
                         .MapGroup("/auth")
                         .WithTags("Auth");
 
-            // OpenAPI metadata across all endpoints: ensures generated clients and API docs
-            // include consistent success/error shapes and auth requirements
 
+            // ===================================================================================
             // POST /auth/register
+            // ===================================================================================
             group.MapPost("/register", async (
                 [FromBody] UserRegisterDto dto,
                 [FromServices] IUserWriteService userWriteSvc,
@@ -48,7 +52,9 @@ namespace Api.Endpoints
             .WithDescription("Creates a user and returns a JWT for immediate authentication.")
             .WithName("Auth_Register");
 
+            // ===================================================================================
             // POST /auth/login
+            // ===================================================================================
             group.MapPost("/login", async (
                 [FromBody] UserLoginDto dto,
                 [FromServices] IUserWriteService userWriteSvc,
@@ -65,7 +71,9 @@ namespace Api.Endpoints
             .WithDescription("Validates credentials and returns a JWT on success.")
             .WithName("Auth_Login");
 
+            // ===================================================================================
             // GET /auth/me
+            // ===================================================================================
             group.MapGet("/me", async (
                 [FromServices] IUserReadService userReadSvc,
                 CancellationToken ct = default) =>
