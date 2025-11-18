@@ -87,7 +87,7 @@ Rules and invariants are enforced at construction level.
 ### Unit of Work
 Centralizes persistence, ensuring atomic saves:
 ```csharp
-Task<DomainMutation> SaveAsync(CancellationToken ct = default);
+Task<DomainMutation> SaveAsync(MutationKind kind, CancellationToken ct = default);
 ```
 
 ### DomainMutation & PrecheckStatus
@@ -97,7 +97,7 @@ Encapsulate the outcome of domain operations, allowing direct HTTP mapping.
 - `RowVersion` handled by EF Core.  
 - `ETag` exposed via HTTP.  
 - `If-Match` required for updates/deletes.  
-- Standard responses: `409`, `412`, `428`.
+- Standard responses: `412`, `428`.
 
 ### Realtime Collaboration
 SignalR broadcasts board events per project group:
@@ -145,7 +145,7 @@ These six documents complement the present overview by expanding each subsystem 
 
 ## 7. Summary
 
-**CollabTask v1.0.0** provides:
+**CollabTask v1.0.2** provides:
 - A modular and maintainable backend for collaborative task management.  
 - Clean separation between Domain, Application, Infrastructure, and API.  
 - Optimistic concurrency and real-time updates.  
