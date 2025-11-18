@@ -20,20 +20,17 @@ namespace Infrastructure.Tests.Persistence
         private readonly MsSqlContainerFixture _fx = fx;
         private readonly string _cs = fx.ConnectionString;
 
-        private readonly static byte[] _validHash = TestDataFactory.Bytes(32);
-        private readonly static byte[] _validSalt = TestDataFactory.Bytes(16);
-
         private readonly User _owner = User.Create(
                 Email.Create("o@demo.com"),
                 UserName.Create("Owner"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
 
         private readonly User _user = User.Create(
                 Email.Create("m@demo.com"),
                 UserName.Create("Member"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
 
         [Fact]
         public async Task Unique_Index_ProjectId_UserId_Is_Enforced()
@@ -63,8 +60,8 @@ namespace Infrastructure.Tests.Persistence
             var other = User.Create(
                 Email.Create("x@demo.com"),
                 UserName.Create("Other"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             db.Users.Add(other);
             await db.SaveChangesAsync();
 

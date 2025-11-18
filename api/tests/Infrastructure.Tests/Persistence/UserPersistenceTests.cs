@@ -20,17 +20,14 @@ namespace Infrastructure.Tests.Persistence
         private readonly MsSqlContainerFixture _fx = fx;
         private readonly string _cs = fx.ConnectionString;
 
-        private readonly static byte[] _validHash = TestDataFactory.Bytes(32);
-        private readonly static byte[] _validSalt = TestDataFactory.Bytes(16);
-
         private readonly static string _userName = "User";
         private readonly static string _userEmail = "user@email.com";
 
         private readonly User _user = User.Create(
                 Email.Create(_userEmail),
                 UserName.Create(_userName),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
 
         [Fact]
         public async Task Add_And_GetByEmail_Works()
@@ -75,8 +72,8 @@ namespace Infrastructure.Tests.Persistence
             var user1 = User.Create(
                 sameEmail,
                 UserName.Create("first user name"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             db.Users.Add(user1);
 
             await db.SaveChangesAsync();
@@ -84,8 +81,8 @@ namespace Infrastructure.Tests.Persistence
             var user2 = User.Create(
                 sameEmail,
                 UserName.Create("second user name"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             db.Users.Add(user2);
 
             await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
@@ -102,8 +99,8 @@ namespace Infrastructure.Tests.Persistence
             var user1 = User.Create(
                 Email.Create("first@email.com"),
                 sameName,
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             db.Users.Add(user1);
 
             await db.SaveChangesAsync();
@@ -111,8 +108,8 @@ namespace Infrastructure.Tests.Persistence
             var user2 = User.Create(
                 Email.Create("second@email.com"),
                 sameName,
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             db.Users.Add(user2);
 
             await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
@@ -130,8 +127,8 @@ namespace Infrastructure.Tests.Persistence
             var user = User.Create(
                 mixedEmail,
                 UserName.Create(_userName),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             db.Users.Add(user);
             await db.SaveChangesAsync();
 

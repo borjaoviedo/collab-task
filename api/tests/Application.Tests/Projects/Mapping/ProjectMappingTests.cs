@@ -10,17 +10,14 @@ namespace Application.Tests.Projects.Mapping
     [UnitTest]
     public sealed class ProjectMappingTests
     {
-        private readonly byte[] _validHash = TestDataFactory.Bytes(32);
-        private readonly byte[] _validSalt = TestDataFactory.Bytes(16);
-
         [Fact]
         public void ToReadDto_Maps_All_Fields()
         {
             var user = User.Create(
                 Email.Create("user@demo.com"),
                 UserName.Create("Demo User"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             var project = Project.Create(user.Id, ProjectName.Create("Project Name"));
 
             var dto = project.ToReadDto(user.Id);
@@ -40,29 +37,29 @@ namespace Application.Tests.Projects.Mapping
             var u1 = User.Create(
                 Email.Create("user@demo.com"),
                 UserName.Create("Owner User"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             var project = Project.Create(u1.Id, ProjectName.Create("Project Name"));
 
             var u2 = User.Create(
                 Email.Create("user2@demo.com"),
                 UserName.Create("Member User"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             project.AddMember(u2.Id, ProjectRole.Member);
 
             var u3 = User.Create(
                 Email.Create("user3@demo.com"),
                 UserName.Create("Reader User"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             project.AddMember(u3.Id, ProjectRole.Reader);
 
             var u4 = User.Create(
                 Email.Create("user4@demo.com"),
                 UserName.Create("Admin User"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             project.AddMember(u4.Id, ProjectRole.Admin);
 
             var dto1 = project.ToReadDto(u1.Id);
@@ -82,15 +79,15 @@ namespace Application.Tests.Projects.Mapping
             var user = User.Create(
                 Email.Create("user@demo.com"),
                 UserName.Create("Owner User"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             var project = Project.Create(user.Id, ProjectName.Create("Project Name"));
 
             var member = User.Create(
                 Email.Create("removed@demo.com"),
                 UserName.Create("Removed User"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             project.AddMember(member.Id, ProjectRole.Member);
             project.Members
                 .First(m => m.UserId == member.Id)

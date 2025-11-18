@@ -20,14 +20,11 @@ namespace Infrastructure.Tests.Persistence
         private readonly MsSqlContainerFixture _fx = fx;
         private readonly string _cs = fx.ConnectionString;
 
-        private readonly static byte[] _validHash = TestDataFactory.Bytes(32);
-        private readonly static byte[] _validSalt = TestDataFactory.Bytes(16);
-
         private readonly User _owner = User.Create(
                 Email.Create("o@demo.com"),
                 UserName.Create("Owner"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
 
         [Fact]
         public async Task Add_And_GetBySlug_Works()
@@ -61,8 +58,8 @@ namespace Infrastructure.Tests.Persistence
             var owner2 = User.Create(
                 Email.Create("o2@demo.com"),
                 UserName.Create("Other Owner"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             db.Users.AddRange(_owner, owner2);
             await db.SaveChangesAsync();
 

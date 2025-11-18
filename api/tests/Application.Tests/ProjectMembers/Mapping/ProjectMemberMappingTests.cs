@@ -10,9 +10,6 @@ namespace Application.Tests.ProjectMembers.Mapping
     [UnitTest]
     public sealed class ProjectMemberMappingTests
     {
-        private readonly byte[] _validHash = TestDataFactory.Bytes(32);
-        private readonly byte[] _validSalt = TestDataFactory.Bytes(16);
-
         [Fact]
         public void ToReadDto_Maps_All_Fields()
         {
@@ -42,8 +39,8 @@ namespace Application.Tests.ProjectMembers.Mapping
             var user = User.Create(
                 Email.Create("test@demo.com"),
                 UserName.Create("Test User"),
-                _validHash,
-                _validSalt,
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt(),
                 UserRole.User);
             projectMember.SetUser(user);
 

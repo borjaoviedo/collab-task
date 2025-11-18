@@ -16,9 +16,6 @@ namespace Infrastructure.Tests.Auditing
         private readonly MsSqlContainerFixture _fx = fx;
         private readonly string _cs = fx.ConnectionString;
 
-        private readonly byte[] _validHash = TestDataFactory.Bytes(32);
-        private readonly byte[] _validSalt = TestDataFactory.Bytes(16);
-
         [Fact]
         public async Task CreatedAt_And_UpdatedAt_Are_Set_On_Insert()
         {
@@ -28,8 +25,8 @@ namespace Infrastructure.Tests.Auditing
             var user = User.Create(
                 Email.Create($"{Guid.NewGuid()}@demo.com"),
                 UserName.Create("Project user"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             var project = Project.Create(user.Id, ProjectName.Create("Audit Test"));
 
             db.AddRange(user, project);
@@ -49,8 +46,8 @@ namespace Infrastructure.Tests.Auditing
             var user = User.Create(
                 Email.Create($"{Guid.NewGuid()}@demo.com"),
                 UserName.Create("Project user"),
-                _validHash,
-                _validSalt);
+                TestDataFactory.CreateHash(),
+                TestDataFactory.CreateSalt());
             var project = Project.Create(user.Id, ProjectName.Create("Audit Test 2"));
 
             db.AddRange(user, project);
