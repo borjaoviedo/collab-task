@@ -37,7 +37,6 @@ namespace Api.Endpoints
                 return Results.Ok(status);
             })
             .Produces(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             .WithName("Health_Get")
             .WithSummary("Health check")
             .WithDescription("Verifies API availability and basic server uptime.");
