@@ -1,5 +1,5 @@
 using Application.TaskAssignments.DTOs;
-using TestHelpers.Api.Http;
+using TestHelpers.Api.Common.Http;
 
 namespace TestHelpers.Api.Endpoints.TaskAssignments
 {

@@ -1,5 +1,4 @@
-
-namespace TestHelpers.Api.Http
+namespace TestHelpers.Api.Common.Http
 {
     public static class IfMatchExtensions
     {

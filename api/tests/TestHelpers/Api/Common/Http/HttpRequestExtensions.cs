@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 
-namespace TestHelpers.Api.Http
+namespace TestHelpers.Api.Common.Http
 {
     public static class HttpRequestExtensions
     {
@@ -26,7 +26,7 @@ namespace TestHelpers.Api.Http
             string url,
             T payload)
         {
-            IfMatchExtensions.SetIfMatchFromRowVersion(client, rowVersion);
+            client.SetIfMatchFromRowVersion(rowVersion);
             return await client.PutAsJsonAsync(url, payload);
         }
 
@@ -36,7 +36,7 @@ namespace TestHelpers.Api.Http
             string url,
             T payload)
         {
-            IfMatchExtensions.SetIfMatchFromRowVersion(client, rowVersion);
+            client.SetIfMatchFromRowVersion(rowVersion);
             return await client.PatchAsJsonAsync(url, payload);
         }
 
@@ -45,7 +45,7 @@ namespace TestHelpers.Api.Http
             string rowVersion,
             string url)
         {
-            IfMatchExtensions.SetIfMatchFromRowVersion(client, rowVersion);
+            client.SetIfMatchFromRowVersion(rowVersion);
             return await client.DeleteAsync(url);
         }
     }

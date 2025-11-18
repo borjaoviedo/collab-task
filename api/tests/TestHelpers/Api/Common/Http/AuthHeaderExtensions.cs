@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using TestHelpers.Api.Endpoints.Defaults;
 
-namespace TestHelpers.Api.Http
+namespace TestHelpers.Api.Common.Http
 {
     public static class AuthHeaderExtensions
     {

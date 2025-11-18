@@ -1,8 +1,8 @@
 using Application.Auth.DTOs;
 using Application.Users.DTOs;
 using System.Net.Http.Json;
+using TestHelpers.Api.Common.Http;
 using TestHelpers.Api.Endpoints.Defaults;
-using TestHelpers.Api.Http;
 
 namespace TestHelpers.Api.Endpoints.Auth
 {
