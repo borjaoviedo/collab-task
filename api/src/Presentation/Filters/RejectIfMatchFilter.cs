@@ -4,24 +4,25 @@ namespace Api.Filters
 {
     /// <summary>
     /// Endpoint filter that rejects requests containing an <c>If-Match</c> header.
-    /// Used for create endpoints where preconditions and concurrency tokens are invalid.
-    /// Returns HTTP 400 (Bad Request) if the header is present.
+    /// Intended for create endpoints where concurrency preconditions are meaningless.
+    /// Throws a domain exception mapped to HTTP 400 (Bad Request).
     /// </summary>
     public sealed class RejectIfMatchFilter : IEndpointFilter
     {
         /// <summary>
-        /// Executes the filter, blocking requests that include an <c>If-Match</c> header.
-        /// Continues the pipeline only if the header is absent.
+        /// Blocks execution if the request includes an <c>If-Match</c> header.
+        /// Continues the pipeline only when the header is absent.
         /// </summary>
-        /// <param name="context">The endpoint invocation context.</param>
-        /// <param name="next">The next delegate in the filter pipeline.</param>
-        /// <returns>An HTTP 400 result or the next delegate’s result.</returns>
+        /// <param name="context">Current endpoint invocation context.</param>
+        /// <param name="next">Next delegate in the execution pipeline.</param>
+        /// <returns>The next result, or an exception if the header is present.</returns>
         public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
         {
-            StringValues ifMatch = context.HttpContext.Request.Headers.IfMatch;
+            var http = context.HttpContext;
 
-            if (!StringValues.IsNullOrEmpty(ifMatch))
-                return Results.StatusCode(StatusCodes.Status400BadRequest); // client misuse on create
+            // Reject any request that includes If-Match (clients must not send ETags on POST)
+            if (!StringValues.IsNullOrEmpty(http.Request.Headers.IfMatch))
+                throw new ArgumentException("If-Match header is not allowed for create endpoints.");
 
             return await next(context);
         }
